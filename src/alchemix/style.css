@@ -180,6 +180,18 @@ h1 {
   gap: 0.2rem;
 }
 
+.lc-combo-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 1px 5px;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
 .cat-char {
   font-size: 0.85rem;
   color: var(--muted);
@@ -391,6 +403,20 @@ h1 {
 .tile.air    { background: linear-gradient(145deg, #9b59b6, #6c3483); }
 .tile.aether { background: linear-gradient(145deg, #16a085, #0e6655); }
 
+/* ── Phase indicator (bottom-left corner) ── */
+.phase-indicator {
+  position: absolute;
+  bottom: 5px;
+  left: 7px;
+  font-size: 0.6rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  color: rgba(255,255,255,0.75);
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
 /* ── Board scaling for larger grids ── */
 #board[data-cols="4"] .catalyst-symbol { width: 48%; }
 #board[data-cols="4"] .element-badge   { width: 15px; height: 15px; top: 6px; right: 6px; }
@@ -398,6 +424,19 @@ h1 {
 #board[data-cols="5"] .catalyst-symbol { width: 44%; }
 #board[data-cols="5"] .element-badge   { width: 13px; height: 13px; top: 5px; right: 5px; }
 #board[data-cols="5"] .tile-label      { font-size: 0.5rem; letter-spacing: 0.05em; }
+
+#board[data-cols="6"] .catalyst-symbol { width: 40%; }
+#board[data-cols="6"] .element-badge   { width: 12px; height: 12px; top: 4px; right: 4px; }
+#board[data-cols="6"] .tile-label,
+#board[data-cols="7"] .tile-label,
+#board[data-cols="8"] .tile-label      { display: none; }
+
+#board[data-cols="7"] .catalyst-symbol { width: 38%; }
+#board[data-cols="7"] .element-badge   { width: 11px; height: 11px; top: 4px; right: 4px; }
+
+#board[data-cols="8"] .catalyst-symbol { width: 34%; }
+#board[data-cols="8"] .element-badge   { width: 10px; height: 10px; top: 3px; right: 3px; }
+#board[data-cols="8"] .phase-indicator { font-size: 0.45rem; }
 
 .element-badge {
   position: absolute;
@@ -455,10 +494,82 @@ h1 {
 /* ── Controls ── */
 #controls {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+#selection-slots {
+  display: flex;
+  justify-content: center;
+  gap: 0.7rem;
+  padding: 0.2rem 0 0.1rem;
+}
+
+.slot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #3a3a5a;
+  background: transparent;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.12s;
+  flex-shrink: 0;
+}
+
+.slot-filled {
+  background: var(--gold);
+  border-color: var(--gold);
+  box-shadow: 0 0 12px var(--gold-glow);
+  transform: scale(1.2);
+}
+
+.slot-optional {
+  border-style: dashed;
+  opacity: 0.5;
+}
+
+.slot-optional.slot-filled {
+  border-style: solid;
+  opacity: 1;
+}
+
+#transmute-btn {
+  background: var(--gold);
+  color: #0d0d1a;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: 10px;
+  width: 100%;
+  box-shadow: 0 4px 20px var(--gold-glow);
+  transition: opacity 0.15s, transform 0.12s, box-shadow 0.15s;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  #transmute-btn:not(:disabled):hover {
+    opacity: 0.9;
+    transform: scale(1.02);
+    box-shadow: 0 6px 28px var(--gold-glow);
+  }
+}
+
+#transmute-btn:not(:disabled):active { transform: scale(0.97); }
+
+#transmute-btn:disabled {
+  background: #16162a;
+  color: #3a3a5a;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+  opacity: 1;
+}
+
+#secondary-controls {
+  display: flex;
   gap: 0.75rem;
   justify-content: center;
-  flex-wrap: wrap;
-  margin-bottom: 0.75rem;
 }
 
 button {
@@ -568,8 +679,9 @@ button:disabled { opacity: 0.3; cursor: not-allowed; }
   #board[data-cols="5"] .element-badge   { width: 10px; height: 10px; top: 4px; right: 4px; }
   #board[data-cols="5"] .tile-label      { display: none; }
 
-  #controls { gap: 0.5rem; }
-  #controls button { flex: 1; font-size: 0.85rem; padding: 0.5rem 0.4rem; }
+  #controls { gap: 0.4rem; }
+  #secondary-controls button { flex: 1; font-size: 0.85rem; }
+  #transmute-btn { font-size: 0.95rem; }
 
   .legend-grid { grid-template-columns: 1fr; gap: 0.5rem; }
 

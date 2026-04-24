@@ -73,8 +73,12 @@
       <div id="board"></div>
 
       <div id="controls">
-        <button id="hint-btn">Hint</button>
-        <button id="restart-btn">Restart</button>
+        <div id="selection-slots" role="status" aria-label="Tiles seleccionades"></div>
+        <button id="transmute-btn" disabled aria-label="Transmuta les tiles seleccionades">Transmuta!</button>
+        <div id="secondary-controls">
+          <button id="hint-btn">Hint</button>
+          <button id="restart-btn">Restart</button>
+        </div>
       </div>
 
       <div id="message" aria-live="polite"></div>

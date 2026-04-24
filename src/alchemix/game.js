@@ -2,28 +2,33 @@
 
 const CATALYST_NAMES = { copper: 'Copper', silver: 'Silver', gold: 'Gold', mercury: 'Mercury', iron: 'Iron' };
 
-// ── Tile model ────────────────────────────────────────────────────────────────
-function makeTile(e, c) { return { element: e, catalyst: c }; }
-
-function allTiles(level) {
-  const t = [];
-  for (const e of level.elements)
-    for (const c of level.catalysts)
-      t.push(makeTile(e, c));
-  return t;
-}
-
 // ── SET logic ─────────────────────────────────────────────────────────────────
-function isValidSet(a, b, c) {
-  const ok = attr => { const s = new Set([a[attr], b[attr], c[attr]]); return s.size === 1 || s.size === 3; };
-  return ok('element') && ok('catalyst');
+function isValidSet(...tiles) {
+  const attrs = Object.keys(tiles[0]);
+  return attrs.every(attr => {
+    const vals = new Set(tiles.map(t => t[attr]));
+    return vals.size === 1 || vals.size === tiles.length;
+  });
 }
 
-function findSet(board) {
-  for (let i = 0; i < board.length - 2; i++)
-    for (let j = i + 1; j < board.length - 1; j++)
-      for (let k = j + 1; k < board.length; k++)
-        if (isValidSet(board[i], board[j], board[k])) return [i, j, k];
+// Find any valid combo of size between min and max; returns array of indices or null
+function findCombo(board, min, max) {
+  for (let size = min; size <= max; size++) {
+    const result = searchCombo(board, [], 0, size);
+    if (result) return result;
+  }
+  return null;
+}
+
+function searchCombo(board, current, start, target) {
+  if (current.length === target) {
+    return isValidSet(...current.map(i => board[i])) ? [...current] : null;
+  }
+  const needed = target - current.length;
+  for (let i = start; i <= board.length - needed; i++) {
+    const result = searchCombo(board, [...current, i], i + 1, target);
+    if (result) return result;
+  }
   return null;
 }
 
@@ -33,16 +38,27 @@ let selected      = [];
 let score         = 0;
 let hintSet       = null;
 let busy          = false;
-let checkTimeout  = null;
 let currentLevel  = null;
 let gameStartTime = 0;
 
 // ── DOM ───────────────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
 function setMessage(text, cls) { const el = $('message'); el.textContent = text; el.className = cls || ''; }
+
 function updateStatus() {
-  const dots = '◆'.repeat(selected.length) + '◇'.repeat(3 - selected.length);
-  $('status').textContent = `${board.length} tiles · ${dots}`;
+  $('status').textContent = `${board.length} tile${board.length !== 1 ? 's' : ''} restants`;
+}
+
+function updateSlots() {
+  const min = currentLevel ? currentLevel.minCombo : 3;
+  const max = currentLevel ? currentLevel.maxCombo : 3;
+  const sel = selected.length;
+  $('selection-slots').innerHTML = Array.from({ length: max }, (_, i) => {
+    const filled   = i < sel;
+    const optional = i >= min;
+    return `<span class="slot${filled ? ' slot-filled' : ''}${optional ? ' slot-optional' : ''}"></span>`;
+  }).join('');
+  $('transmute-btn').disabled = sel < min || busy;
 }
 
 // ── Screen management ─────────────────────────────────────────────────────────
@@ -53,35 +69,25 @@ function showScreen(id) {
 
 // ── Menu ──────────────────────────────────────────────────────────────────────
 function showMenu() {
-  if (checkTimeout) { clearTimeout(checkTimeout); checkTimeout = null; }
-
   const grid = $('level-grid');
   grid.innerHTML = '';
 
   LEVELS.forEach((lvl, idx) => {
-    const save  = getLevelSave(lvl.id);
-    const stars = save.stars || 0;
-    const cols  = lvl.catalysts.length;
-    const rows  = lvl.elements.length;
-    const dots  = '◉'.repeat(lvl.difficulty) + '◎'.repeat(5 - lvl.difficulty);
+    const save   = getLevelSave(lvl.id);
+    const stars  = save.stars || 0;
+    const dots   = '◉'.repeat(lvl.difficulty) + '◎'.repeat(5 - lvl.difficulty);
+    const bgAttr = lvl.attributes.find(a => a.visual === 'background');
+    const symAttr= lvl.attributes.find(a => a.visual === 'symbol');
+    const comboLabel = lvl.minCombo === lvl.maxCombo
+      ? `×${lvl.minCombo}`
+      : `×${lvl.minCombo}–${lvl.maxCombo}`;
 
-    // Element swatches
-    const elSwatches = lvl.elements.map(e =>
-      `<span class="el-swatch ${e}" title="${e}"></span>`
+    const elSwatches = (bgAttr?.values || []).map(v =>
+      `<span class="el-swatch ${v}" title="${v}"></span>`
     ).join('');
-
-    // Catalyst chars — highlight the last one (newly added per level)
-    const catChars = lvl.catalysts.map((c, i) => {
-      const isNew = i === lvl.catalysts.length - 1 && lvl.id > 1;
-      return `<span class="cat-char${isNew ? ' cat-new' : ''}" title="${c}">${CATALYST_CHARS[c]}</span>`;
-    }).join('');
-
-    // New element badge (last element, levels > 1 that add one)
-    const newElIdx = lvl.elements.length - 1;
-    const hasNewEl = lvl.id > 1 && lvl.elements.length > LEVELS[idx - 1]?.elements.length;
-    const newElBadge = hasNewEl
-      ? `<span class="el-new-badge ${lvl.elements[newElIdx]}">${lvl.elements[newElIdx]}</span>`
-      : '';
+    const catChars = (symAttr?.values || []).map(v =>
+      `<span class="cat-char" title="${v}">${CATALYST_CHARS[v] || v[0].toUpperCase()}</span>`
+    ).join('');
 
     const card = document.createElement('div');
     card.className = 'level-card';
@@ -89,7 +95,7 @@ function showMenu() {
     card.setAttribute('role', 'listitem');
     card.setAttribute('tabindex', '0');
     card.setAttribute('aria-label',
-      `Level ${lvl.id}: ${lvl.name}, ${rows}×${cols} board, difficulty ${lvl.difficulty}/5, ${stars} stars`);
+      `Level ${lvl.id}: ${lvl.name}, ${lvl.rows}×${lvl.cols}, difficulty ${lvl.difficulty}/5, ${stars} stars`);
 
     card.innerHTML = `
       <div class="lc-header">
@@ -98,10 +104,11 @@ function showMenu() {
       </div>
       <div class="lc-name">${lvl.name}</div>
       <div class="lc-sub">${lvl.subtitle}</div>
-      <div class="lc-board-size">${rows}×${cols} · ${rows * cols} tiles</div>
+      <div class="lc-board-size">${lvl.rows}×${lvl.cols} · ${lvl.rows * lvl.cols} tiles</div>
       <div class="lc-preview">
-        <div class="lc-elements">${elSwatches}${newElBadge}</div>
+        <div class="lc-elements">${elSwatches}</div>
         <div class="lc-catalysts">${catChars}</div>
+        <span class="lc-combo-badge">${comboLabel}</span>
       </div>
       <div class="lc-stars">${renderStars(stars)}</div>
       ${save.bestTime != null ? `<div class="lc-best">Best: ${formatTime(save.bestTime)}</div>` : ''}`;
@@ -120,7 +127,7 @@ function startLevel(idx) {
   currentLevel = LEVELS[idx];
   $('level-title').textContent = `${currentLevel.id}. ${currentLevel.name}`;
   $('screen-game').style.setProperty('--level-accent', currentLevel.color);
-  $('timer').classList.add('hidden');   // no timers
+  $('timer').classList.add('hidden');
   $('overlay').classList.add('hidden');
   showScreen('screen-game');
   newGame();
@@ -128,9 +135,8 @@ function startLevel(idx) {
 
 // ── New game ──────────────────────────────────────────────────────────────────
 function newGame() {
-  if (checkTimeout) { clearTimeout(checkTimeout); checkTimeout = null; }
   clearHint(true);
-  board         = allTiles(currentLevel);
+  board         = generateBoard(currentLevel);
   selected      = [];
   score         = 0;
   busy          = false;
@@ -138,9 +144,8 @@ function newGame() {
   setMessage('');
   $('overlay').classList.add('hidden');
 
-  // Board grid columns = number of catalysts (one column per catalyst type)
-  $('board').style.gridTemplateColumns = `repeat(${currentLevel.catalysts.length}, 1fr)`;
-  $('board').dataset.cols = currentLevel.catalysts.length;
+  $('board').style.gridTemplateColumns = `repeat(${currentLevel.cols}, 1fr)`;
+  $('board').dataset.cols = currentLevel.cols;
 
   render(true);
 }
@@ -161,33 +166,44 @@ function clearHint(clearMsg = false) {
 function showHint() {
   if (busy) return;
   if (hintSet) { clearHint(true); return; }
-  const set = findSet(board);
-  if (!set) { setMessage('No SETs available.', 'msg-hint'); return; }
-  hintSet = set;
-  setMessage('Hint: tap the highlighted tiles. Tap Hint again to dismiss.', 'msg-hint');
+  const combo = findCombo(board, currentLevel.minCombo, currentLevel.maxCombo);
+  if (!combo) { setMessage('No hi ha combinacions disponibles.', 'msg-hint'); return; }
+  hintSet = combo;
+  setMessage('Hint: toca les tiles ressaltades. Toca Hint per tancar.', 'msg-hint');
   applyHintClasses();
 }
 
 // ── Render ────────────────────────────────────────────────────────────────────
 function render(animate = false) {
-  const boardEl = $('board');
+  const boardEl  = $('board');
   boardEl.innerHTML = '';
 
+  const bgAttr    = currentLevel.attributes.find(a => a.visual === 'background');
+  const symAttr   = currentLevel.attributes.find(a => a.visual === 'symbol');
+  const phaseAttr = currentLevel.attributes.find(a => a.visual === 'phase');
+
   board.forEach((tile, idx) => {
+    const bgVal    = bgAttr    ? tile[bgAttr.name]    : '';
+    const symVal   = symAttr   ? tile[symAttr.name]   : null;
+    const phaseVal = phaseAttr ? tile[phaseAttr.name] : null;
+
     const el = document.createElement('div');
-    el.className = `tile ${tile.element}`;
+    el.className = `tile${bgVal ? ` ${bgVal}` : ''}`;
     el.setAttribute('role', 'button');
-    el.setAttribute('aria-label',
-      `${tile.element} ${CATALYST_NAMES[tile.catalyst]}, ${selected.includes(idx) ? 'selected' : 'unselected'}`);
     el.setAttribute('tabindex', '0');
 
+    const attrDesc = currentLevel.attributes.map(a => `${a.name}:${tile[a.name]}`).join(' ');
+    el.setAttribute('aria-label',
+      `${attrDesc} — ${selected.includes(idx) ? 'selected' : 'unselected'}`);
+
     el.innerHTML = `
-      <div class="element-badge">${ELEMENT_SVG[tile.element]}</div>
-      <div class="catalyst-symbol">${CATALYST_SVG[tile.catalyst]}</div>
-      <span class="tile-label">${CATALYST_NAMES[tile.catalyst]}</span>`;
+      ${bgVal  ? `<div class="element-badge">${ELEMENT_SVG[bgVal] || ''}</div>` : ''}
+      ${symVal ? `<div class="catalyst-symbol">${CATALYST_SVG[symVal] || ''}</div>` : ''}
+      ${symVal ? `<span class="tile-label">${CATALYST_NAMES[symVal] || symVal}</span>` : ''}
+      ${phaseVal ? `<span class="phase-indicator">${phaseVal}</span>` : ''}`;
 
     if (selected.includes(idx)) el.classList.add('selected');
-    if (animate) { el.style.animationDelay = `${idx * 40}ms`; el.classList.add('tile-entering'); }
+    if (animate) { el.style.animationDelay = `${idx * 35}ms`; el.classList.add('tile-entering'); }
 
     const toggle = () => { if (!busy) toggleTile(idx); };
     el.addEventListener('click', toggle);
@@ -196,22 +212,19 @@ function render(animate = false) {
   });
 
   updateStatus();
+  updateSlots();
   applyHintClasses();
 }
 
 // ── Interaction ───────────────────────────────────────────────────────────────
 function toggleTile(idx) {
-  if (checkTimeout) { clearTimeout(checkTimeout); checkTimeout = null; }
+  if (busy) return;
   if (hintSet && !hintSet.includes(idx)) clearHint(true);
 
   const pos = selected.indexOf(idx);
-  if (pos >= 0)                 { selected.splice(pos, 1); }
-  else if (selected.length < 3) { selected.push(idx); }
+  if (pos >= 0)                                          { selected.splice(pos, 1); }
+  else if (selected.length < currentLevel.maxCombo)     { selected.push(idx); }
   render();
-
-  if (selected.length === 3) {
-    checkTimeout = setTimeout(() => { checkTimeout = null; checkSet(); }, 200);
-  }
 }
 
 // ── Animations ────────────────────────────────────────────────────────────────
@@ -230,18 +243,20 @@ function animateInvalid(indices, onDone) {
   setTimeout(onDone, INVALID_DURATION);
 }
 
-// ── Check SET ─────────────────────────────────────────────────────────────────
+// ── Transmute ─────────────────────────────────────────────────────────────────
 function checkSet() {
-  if (selected.length !== 3 || busy) return;
+  const { minCombo, maxCombo } = currentLevel;
+  if (selected.length < minCombo || selected.length > maxCombo || busy) return;
   clearHint(true);
 
-  const [a, b, c] = selected.map(i => board[i]);
-  const valid = isValidSet(a, b, c);
+  const tiles = selected.map(i => board[i]);
+  const valid = isValidSet(...tiles);
 
   if (valid) {
     busy = true;
     score++;
-    setMessage('✓ Alchemical harmony!', 'msg-success');
+    setMessage('✓ Harmonia alquímica!', 'msg-success');
+    updateSlots();
 
     const toRemove = [...selected].sort((x, y) => y - x);
     animateRemove(toRemove, () => {
@@ -253,7 +268,9 @@ function checkSet() {
         const elapsed = Math.floor((Date.now() - gameStartTime) / 1000);
         const stars   = calcStars(elapsed);
         const save    = saveLevelResult(currentLevel.id, { time: elapsed, score, stars });
-        showOverlay(elapsed, save);
+        showOverlay(elapsed, save, true);
+      } else if (!findCombo(board, minCombo, maxCombo)) {
+        showOverlay(null, null, false);
       } else {
         setMessage('');
         render();
@@ -262,34 +279,39 @@ function checkSet() {
 
   } else {
     busy = true;
-    setMessage('✗ Not a SET', 'msg-fail');
+    setMessage('✗ No és una combinació vàlida', 'msg-fail');
+    updateSlots();
     const failing = [...selected];
     selected = [];
     animateInvalid(failing, () => { busy = false; setMessage(''); render(); });
   }
 }
 
-// ── Completion overlay ────────────────────────────────────────────────────────
-function showOverlay(elapsed, save) {
-  const stars   = save.stars || 0;
-  const nextIdx = LEVELS.findIndex(l => l.id === currentLevel.id) + 1;
-  const hasNext = nextIdx < LEVELS.length;
+// ── Overlay (win + fail) ──────────────────────────────────────────────────────
+function showOverlay(elapsed, save, win) {
+  if (win) {
+    const stars   = save.stars || 0;
+    const isRecord = save.bestTime === elapsed;
+    $('overlay-icon').textContent  = renderStars(stars);
+    $('overlay-title').textContent = 'Harmonia aconseguida!';
+    $('overlay-stats').innerHTML = `
+      <p>Combinacions: <strong>${score}</strong></p>
+      <p>Temps: <strong>${formatTime(elapsed)}</strong>${isRecord ? ' 🏆' : ''}</p>
+      ${save.bestTime !== elapsed ? `<p>Millor: <strong>${formatTime(save.bestTime)}</strong></p>` : ''}`;
 
-  $('overlay-icon').textContent  = renderStars(stars);
-  $('overlay-title').textContent = 'Harmony achieved!';
+    const nextIdx = LEVELS.findIndex(l => l.id === currentLevel.id) + 1;
+    const hasNext = nextIdx < LEVELS.length;
+    const nextBtn = $('overlay-next');
+    if (hasNext) { nextBtn.classList.remove('hidden'); nextBtn.onclick = () => startLevel(nextIdx); }
+    else         { nextBtn.classList.add('hidden'); }
 
-  const isRecord = save.bestTime === elapsed;
-  $('overlay-stats').innerHTML = `
-    <p>SETs found: <strong>${score}</strong></p>
-    <p>Time: <strong>${formatTime(elapsed)}</strong>${isRecord ? ' 🏆' : ''}</p>
-    ${save.bestTime !== elapsed ? `<p>Best: <strong>${formatTime(save.bestTime)}</strong></p>` : ''}`;
-
-  const nextBtn = $('overlay-next');
-  if (hasNext) {
-    nextBtn.classList.remove('hidden');
-    nextBtn.onclick = () => startLevel(nextIdx);
   } else {
-    nextBtn.classList.add('hidden');
+    $('overlay-icon').textContent  = '✗';
+    $('overlay-title').textContent = 'Sense sortida!';
+    $('overlay-stats').innerHTML = `
+      <p>Combinacions trobades: <strong>${score}</strong></p>
+      <p>Tiles restants: <strong>${board.length}</strong></p>`;
+    $('overlay-next').classList.add('hidden');
   }
 
   $('overlay').classList.remove('hidden');
@@ -300,6 +322,7 @@ function showOverlay(elapsed, save) {
 $('back-btn').addEventListener('click', showMenu);
 $('hint-btn').addEventListener('click', showHint);
 $('restart-btn').addEventListener('click', newGame);
+$('transmute-btn').addEventListener('click', () => { if (!busy) checkSet(); });
 $('overlay-retry').addEventListener('click', newGame);
 $('overlay-menu').addEventListener('click', showMenu);
 
