@@ -5,7 +5,7 @@ const CATALYST_NAMES = { copper: 'Copper', silver: 'Silver', gold: 'Gold', mercu
 // ── SET logic ─────────────────────────────────────────────────────────────────
 function isValidSet(...tiles) {
   const attrs = Object.keys(tiles[0]);
-  return attrs.every(attr => {
+  return attrs.some(attr => {
     const vals = new Set(tiles.map(t => t[attr]));
     return vals.size === 1 || vals.size === tiles.length;
   });
@@ -30,6 +30,29 @@ function searchCombo(board, current, start, target) {
     if (result) return result;
   }
   return null;
+}
+
+// ── Tutorial helpers ──────────────────────────────────────────────────────────
+function getValidTiles() {
+  const { minCombo, maxCombo } = currentLevel;
+  const validIdx = new Set();
+  for (let i = 0; i < board.length; i++) {
+    if (selected.includes(i)) { validIdx.add(i); continue; }
+    if (selected.length >= maxCombo) continue;
+    if (canExtendToValid(board, [...selected, i], minCombo, maxCombo)) validIdx.add(i);
+  }
+  return validIdx;
+}
+
+function canExtendToValid(board, partial, min, max) {
+  if (partial.length >= min && isValidSet(...partial.map(i => board[i]))) return true;
+  if (partial.length >= max) return false;
+  const used = new Set(partial);
+  for (let i = 0; i < board.length; i++) {
+    if (used.has(i)) continue;
+    if (canExtendToValid(board, [...partial, i], min, max)) return true;
+  }
+  return false;
 }
 
 // ── Game state ────────────────────────────────────────────────────────────────
@@ -110,8 +133,11 @@ function showMenu() {
         <div class="lc-catalysts">${catChars}</div>
         <span class="lc-combo-badge">${comboLabel}</span>
       </div>
-      <div class="lc-stars">${renderStars(stars)}</div>
-      ${save.bestTime != null ? `<div class="lc-best">Best: ${formatTime(save.bestTime)}</div>` : ''}`;
+      ${lvl.tutorial
+        ? `<div class="lc-tutorial-badge">${save.completed ? '✓ Complet' : 'Tutorial'}</div>`
+        : `<div class="lc-stars">${renderStars(stars)}</div>
+           ${save.bestTime != null ? `<div class="lc-best">Best: ${formatTime(save.bestTime)}</div>` : ''}`
+      }`;
 
     const go = () => startLevel(idx);
     card.addEventListener('click', go);
@@ -129,6 +155,15 @@ function startLevel(idx) {
   $('screen-game').style.setProperty('--level-accent', currentLevel.color);
   $('timer').classList.add('hidden');
   $('overlay').classList.add('hidden');
+
+  const banner = $('tutorial-banner');
+  if (currentLevel.tutorial && currentLevel.instruction) {
+    banner.textContent = currentLevel.instruction;
+    banner.classList.remove('hidden');
+  } else {
+    banner.classList.add('hidden');
+  }
+
   showScreen('screen-game');
   newGame();
 }
@@ -211,6 +246,13 @@ function render(animate = false) {
     boardEl.appendChild(el);
   });
 
+  if (currentLevel.tutorial) {
+    const validSet = getValidTiles();
+    boardEl.querySelectorAll('.tile').forEach((el, i) => {
+      if (!validSet.has(i)) el.classList.add('tile-disabled');
+    });
+  }
+
   updateStatus();
   updateSlots();
   applyHintClasses();
@@ -290,14 +332,20 @@ function checkSet() {
 // ── Overlay (win + fail) ──────────────────────────────────────────────────────
 function showOverlay(elapsed, save, win) {
   if (win) {
-    const stars   = save.stars || 0;
-    const isRecord = save.bestTime === elapsed;
-    $('overlay-icon').textContent  = renderStars(stars);
-    $('overlay-title').textContent = 'Harmonia aconseguida!';
-    $('overlay-stats').innerHTML = `
-      <p>Combinacions: <strong>${score}</strong></p>
-      <p>Temps: <strong>${formatTime(elapsed)}</strong>${isRecord ? ' 🏆' : ''}</p>
-      ${save.bestTime !== elapsed ? `<p>Millor: <strong>${formatTime(save.bestTime)}</strong></p>` : ''}`;
+    if (currentLevel.tutorial) {
+      $('overlay-icon').textContent  = '✓';
+      $('overlay-title').textContent = 'Tutorial complet!';
+      $('overlay-stats').innerHTML   = `<p>Has après la mecànica. Ara és el teu torn.</p>`;
+    } else {
+      const stars    = save.stars || 0;
+      const isRecord = save.bestTime === elapsed;
+      $('overlay-icon').textContent  = renderStars(stars);
+      $('overlay-title').textContent = 'Harmonia aconseguida!';
+      $('overlay-stats').innerHTML = `
+        <p>Combinacions: <strong>${score}</strong></p>
+        <p>Temps: <strong>${formatTime(elapsed)}</strong>${isRecord ? ' 🏆' : ''}</p>
+        ${save.bestTime !== elapsed ? `<p>Millor: <strong>${formatTime(save.bestTime)}</strong></p>` : ''}`;
+    }
 
     const nextIdx = LEVELS.findIndex(l => l.id === currentLevel.id) + 1;
     const hasNext = nextIdx < LEVELS.length;

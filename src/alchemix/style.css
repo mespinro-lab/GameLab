@@ -350,6 +350,42 @@ h1 {
   to   { opacity: 0.5; }
 }
 
+/* ── Tutorial banner ── */
+#tutorial-banner {
+  background: color-mix(in srgb, var(--gold) 12%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--gold) 50%, transparent);
+  border-radius: var(--radius);
+  padding: 0.55rem 0.85rem;
+  font-size: 0.82rem;
+  color: var(--text);
+  line-height: 1.45;
+  margin-bottom: 0.6rem;
+  text-align: center;
+}
+
+/* ── Disabled tile (tutorial guidance) ── */
+.tile-disabled {
+  filter: grayscale(1) brightness(0.4);
+  opacity: 0.45;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* ── Tutorial badge on level card ── */
+.lc-tutorial-badge {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: #222236;
+  border: 1px solid #3a3a5a;
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin-top: 0.15rem;
+  display: inline-block;
+}
+
 /* ── Status ── */
 #status {
   color: var(--muted);
