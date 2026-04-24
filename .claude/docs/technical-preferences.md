@@ -5,83 +5,78 @@
 
 ## Engine & Language
 
-- **Engine**: [TO BE CONFIGURED — run /setup-engine]
-- **Language**: [TO BE CONFIGURED]
-- **Rendering**: [TO BE CONFIGURED]
-- **Physics**: [TO BE CONFIGURED]
+- **Engine**: HTML5 / Vanilla JavaScript (browser-based, no framework)
+- **Language**: JavaScript (ES2022, `'use strict'`, no transpiler)
+- **Rendering**: DOM + CSS (SVG/Canvas considered for M1 polish)
+- **Physics**: N/A
 
 ## Input & Platform
 
-<!-- Written by /setup-engine. Read by /ux-design, /ux-review, /test-setup, /team-ui, and /dev-story -->
-<!-- to scope interaction specs, test helpers, and implementation to the correct input methods. -->
-
-- **Target Platforms**: [TO BE CONFIGURED — e.g., PC, Console, Mobile, Web]
-- **Input Methods**: [TO BE CONFIGURED — e.g., Keyboard/Mouse, Gamepad, Touch, Mixed]
-- **Primary Input**: [TO BE CONFIGURED — the dominant input for this game]
-- **Gamepad Support**: [TO BE CONFIGURED — Full / Partial / None]
-- **Touch Support**: [TO BE CONFIGURED — Full / Partial / None]
-- **Platform Notes**: [TO BE CONFIGURED — any platform-specific UX constraints]
+- **Target Platforms**: Web (desktop primary, mobile secondary)
+- **Input Methods**: Mouse/Keyboard (desktop), Touch (mobile)
+- **Primary Input**: Mouse click / tap
+- **Gamepad Support**: None
+- **Touch Support**: Partial (tap-to-select works via click events; no drag gestures)
+- **Platform Notes**: Must run from `file://` without a server in M0/M1. Responsive
+  from 360 px (mobile) to 1440 px (desktop).
 
 ## Naming Conventions
 
-- **Classes**: [TO BE CONFIGURED]
-- **Variables**: [TO BE CONFIGURED]
-- **Signals/Events**: [TO BE CONFIGURED]
-- **Files**: [TO BE CONFIGURED]
-- **Scenes/Prefabs**: [TO BE CONFIGURED]
-- **Constants**: [TO BE CONFIGURED]
+- **Functions**: `camelCase` (e.g. `isValidSet`, `toggleTile`)
+- **Variables**: `camelCase` (e.g. `hintSet`, `selected`)
+- **Constants / config**: `UPPER_SNAKE_CASE` (e.g. `ELEMENTS`, `CATALYST_NAMES`)
+- **Files**: `kebab-case` (e.g. `game.js`, `style.css`, `level-config.js`)
+- **Scenes/Prefabs**: N/A (DOM-based)
+- **HTML IDs**: `kebab-case` (e.g. `check-btn`, `hint-btn`)
 
 ## Performance Budgets
 
-- **Target Framerate**: [TO BE CONFIGURED]
-- **Frame Budget**: [TO BE CONFIGURED]
-- **Draw Calls**: [TO BE CONFIGURED]
-- **Memory Ceiling**: [TO BE CONFIGURED]
+- **Target Framerate**: 60 fps (CSS transitions only; no rAF loop in M0)
+- **Frame Budget**: N/A (no game loop)
+- **JS Bundle Size**: < 30 KB unminified per file (M0 target)
+- **Memory Ceiling**: No explicit ceiling; avoid DOM node accumulation on re-renders
 
 ## Testing
 
-- **Framework**: [TO BE CONFIGURED]
-- **Minimum Coverage**: [TO BE CONFIGURED]
-- **Required Tests**: Balance formulas, gameplay systems, networking (if applicable)
+- **Framework**: Vanilla Node.js test runner (no Jest/Vitest until M2 when test
+  complexity warrants it). Unit tests in `tests/unit/alchemix/`.
+- **Minimum Coverage**: Core logic functions (`isValidSet`, `findSet`) — 100%.
+  DOM-dependent code excluded from unit coverage.
+- **Required Tests**: `isValidSet` all 9 attribute combinations, `findSet`
+  returns null for boards with no valid SET, board-empty win detection.
 
 ## Forbidden Patterns
 
-<!-- Add patterns that should never appear in this project's codebase -->
-- [None configured yet — add as architectural decisions are made]
+- No UI frameworks (React, Vue, etc.) — vanilla DOM only through M1
+- No module bundlers (Webpack, Vite) through M1 — plain `<script src="">` tags
+- No hardcoded game values in JS — tuning knobs must be `const` declarations at
+  the top of the file or in a separate `config.js`
+- No inline styles on tiles — use CSS classes; JS only adds/removes class names
 
 ## Allowed Libraries / Addons
 
-<!-- Add approved third-party dependencies here -->
-- [None configured yet — add as dependencies are approved]
+- None approved yet. CSS animations via native `@keyframes` only.
 
 ## Architecture Decisions Log
 
-<!-- Quick reference linking to full ADRs in docs/architecture/ -->
 - [No ADRs yet — use /architecture-decision to create one]
 
 ## Engine Specialists
 
-<!-- Written by /setup-engine when engine is configured. -->
-<!-- Read by /code-review, /architecture-decision, /architecture-review, and team skills -->
-<!-- to know which specialist to spawn for engine-specific validation. -->
-
-- **Primary**: [TO BE CONFIGURED — run /setup-engine]
-- **Language/Code Specialist**: [TO BE CONFIGURED]
-- **Shader Specialist**: [TO BE CONFIGURED]
-- **UI Specialist**: [TO BE CONFIGURED]
-- **Additional Specialists**: [TO BE CONFIGURED]
-- **Routing Notes**: [TO BE CONFIGURED]
+- **Primary**: `gameplay-programmer` (vanilla JS game logic)
+- **Language/Code Specialist**: `gameplay-programmer`
+- **Shader Specialist**: `technical-artist` (CSS/SVG visual effects)
+- **UI Specialist**: `ui-programmer`
+- **Additional Specialists**: N/A
+- **Routing Notes**: No Godot/Unity/Unreal specialists needed for this project.
 
 ### File Extension Routing
 
-<!-- Skills use this table to select the right specialist per file type. -->
-<!-- If a row says [TO BE CONFIGURED], fall back to Primary for that file type. -->
-
 | File Extension / Type | Specialist to Spawn |
 |-----------------------|---------------------|
-| Game code (primary language) | [TO BE CONFIGURED] |
-| Shader / material files | [TO BE CONFIGURED] |
-| UI / screen files | [TO BE CONFIGURED] |
-| Scene / prefab / level files | [TO BE CONFIGURED] |
-| Native extension / plugin files | [TO BE CONFIGURED] |
-| General architecture review | Primary |
+| `.js` (game logic) | `gameplay-programmer` |
+| `.css` (visual/layout) | `ui-programmer` |
+| `.html` (structure/screens) | `ui-programmer` |
+| `.svg` (icons/art) | `technical-artist` |
+| Config / balance JSON | `economy-designer` |
+| General architecture review | `lead-programmer` |

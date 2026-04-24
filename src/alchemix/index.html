@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alchemix</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Shared SVG defs — masks used by inline tile symbols -->
+  <svg hidden aria-hidden="true" focusable="false">
+    <defs>
+      <mask id="silver-mask">
+        <rect width="48" height="48" fill="white"/>
+        <circle cx="29" cy="24" r="13" fill="black"/>
+      </mask>
+    </defs>
+  </svg>
+
+  <div id="app">
+
+    <!-- ══ Menu screen ══════════════════════════════════════════════════════ -->
+    <div id="screen-menu" class="screen hidden">
+      <header class="menu-header">
+        <h1>ALCHEMIX</h1>
+        <p class="tagline">Find the alchemical harmony</p>
+      </header>
+
+      <div id="level-grid" role="list" aria-label="Level select"></div>
+
+      <details class="legend" id="legend">
+        <summary>How to play</summary>
+        <div class="legend-grid">
+          <div>
+            <strong>Element (background)</strong>
+            <ul>
+              <li><span class="swatch fire"></span> Fire</li>
+              <li><span class="swatch water"></span> Water</li>
+              <li><span class="swatch earth"></span> Earth</li>
+              <li><span class="swatch air"></span> Air</li>
+              <li><span class="swatch aether"></span> Aether</li>
+            </ul>
+          </div>
+          <div>
+            <strong>Catalyst (symbol)</strong>
+            <ul>
+              <li><span class="legend-icon copper-icon">♀</span> Copper</li>
+              <li><span class="legend-icon silver-icon">☽</span> Silver</li>
+              <li><span class="legend-icon gold-icon">☉</span> Gold</li>
+              <li><span class="legend-icon mercury-icon">☿</span> Mercury</li>
+              <li><span class="legend-icon iron-icon">♂</span> Iron</li>
+            </ul>
+          </div>
+          <div>
+            <strong>SET rule</strong>
+            <p>For each attribute, 3 tiles must be ALL THE SAME or ALL DIFFERENT.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <!-- ══ Game screen ══════════════════════════════════════════════════════ -->
+    <div id="screen-game" class="screen hidden">
+
+      <nav id="game-nav">
+        <button id="back-btn" aria-label="Back to level select">← Back</button>
+        <span id="level-title"></span>
+        <div id="timer" class="hidden" aria-live="polite" aria-label="Time remaining"></div>
+      </nav>
+
+      <p id="status"></p>
+      <div id="board"></div>
+
+      <div id="controls">
+        <button id="hint-btn">Hint</button>
+        <button id="restart-btn">Restart</button>
+      </div>
+
+      <div id="message" aria-live="polite"></div>
+
+      <!-- Level-complete / time-up overlay -->
+      <div id="overlay" class="hidden" role="dialog" aria-modal="true" aria-labelledby="overlay-title">
+        <div id="overlay-card">
+          <div id="overlay-icon" aria-hidden="true"></div>
+          <h2 id="overlay-title"></h2>
+          <div id="overlay-stats"></div>
+          <div id="overlay-actions">
+            <button id="overlay-retry">Play Again</button>
+            <button id="overlay-next" class="hidden">Next Level →</button>
+            <button id="overlay-menu">All Levels</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /#screen-game -->
+
+  </div><!-- /#app -->
+
+  <script src="levels.js"></script>
+  <script src="symbols.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
