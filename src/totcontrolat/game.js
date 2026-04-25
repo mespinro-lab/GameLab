@@ -173,7 +173,7 @@ function initCardDrag(oL, oR) {
     lastX  = cx;
     lastT  = now;
     dx     = cx - startX;
-    card.style.transform = `translateX(${dx}px) rotate(${dx * 0.05}deg)`;
+    card.style.transform = `translateX(${dx * 1.15}px) rotate(${dx * 0.1}deg)`;
     updateHighlight(dx);
     setOverlays(dx);
   }
