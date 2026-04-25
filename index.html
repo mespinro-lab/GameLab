@@ -2,10 +2,121 @@
 <html lang="ca">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="0; url=src/alchemix/index.html">
-  <title>Alchemix</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GameLab</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0d0d1a;
+      color: #e8e0d0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: clamp(1.5rem, 6vw, 3rem) clamp(1rem, 4vw, 1.5rem);
+    }
+
+    header { text-align: center; margin-bottom: 2.5rem; }
+
+    h1 {
+      font-size: clamp(1.8rem, 7vw, 2.8rem);
+      letter-spacing: clamp(0.2em, 2vw, 0.45em);
+      color: #f0c040;
+      text-shadow: 0 0 40px rgba(240,192,64,0.25);
+      margin-bottom: 0.35rem;
+    }
+
+    .tagline { color: #555; font-size: 0.85rem; }
+
+    .games {
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .game-card {
+      display: block;
+      background: #13132b;
+      border: 2px solid #1e1e3a;
+      border-left: 4px solid var(--accent, #f0c040);
+      border-radius: 14px;
+      padding: 1.2rem 1.35rem;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.15s, transform 0.12s, background 0.12s, box-shadow 0.15s;
+    }
+
+    .game-card:hover {
+      border-color: var(--accent, #f0c040);
+      background: #181830;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.4);
+    }
+
+    .game-card:active { transform: scale(0.98); }
+
+    .game-title {
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      color: var(--accent, #f0c040);
+      margin-bottom: 0.3rem;
+    }
+
+    .game-desc {
+      font-size: 0.8rem;
+      color: #777;
+      line-height: 1.5;
+      margin-bottom: 0.55rem;
+    }
+
+    .game-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+    .tag {
+      font-size: 0.6rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: #1e1e38;
+      color: #555;
+      border: 1px solid #2a2a44;
+    }
+  </style>
 </head>
 <body>
-  <a href="src/alchemix/index.html">Alchemix</a>
+  <header>
+    <h1>GAMELAB</h1>
+    <p class="tagline">Prototips i experiments de joc</p>
+  </header>
+
+  <div class="games">
+
+    <a class="game-card" href="src/totcontrolat/index.html" style="--accent:#f0c040">
+      <div class="game-title">Tot Controlat</div>
+      <div class="game-desc">Gestiona un poble absurd durant 26 setmanes sense que tot s'enfonsi. Decisions ràpides, faccions imprevisibles.</div>
+      <div class="game-tags">
+        <span class="tag">Gestió</span>
+        <span class="tag">Mobile</span>
+        <span class="tag">Prototype</span>
+      </div>
+    </a>
+
+    <a class="game-card" href="src/alchemix/index.html" style="--accent:#8e44ad">
+      <div class="game-title">Alchemix</div>
+      <div class="game-desc">Puzzle d'alquímia basat en el joc SET. Troba combinacions de tiles amb atributs compatibles i buida el tauler.</div>
+      <div class="game-tags">
+        <span class="tag">Puzzle</span>
+        <span class="tag">Tutorial</span>
+        <span class="tag">Levels</span>
+      </div>
+    </a>
+
+  </div>
 </body>
 </html>

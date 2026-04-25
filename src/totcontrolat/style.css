@@ -21,7 +21,8 @@
 
 html, body {
   width: 100%;
-  min-height: 100vh;
+  height: 100%;
+  overflow: hidden;
   font-family: 'Segoe UI', system-ui, sans-serif;
   background: hsl(var(--sky-h), var(--sky-s), var(--sky-l));
   transition: background 2.5s ease;
@@ -36,7 +37,9 @@ html, body {
   max-width: 420px;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 /* ═══════════════════════════════════════════════
@@ -267,6 +270,9 @@ html, body {
   border-radius: var(--radius);
   padding: 1rem;
   animation: card-in 0.28s ease-out both;
+  touch-action: none;
+  cursor: grab;
+  flex-shrink: 0;
 }
 
 @keyframes card-in {
@@ -381,6 +387,7 @@ html, body {
   justify-content: space-between;
   align-items: center;
   padding: 0.5rem 0.75rem;
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
   margin-top: auto;
 }
 
@@ -490,6 +497,27 @@ html, body {
 ═══════════════════════════════════════════════ */
 
 .hidden { display: none !important; }
+
+/* ── Small height (iPhone SE, compact phones) ── */
+@media (max-height: 620px) {
+  #sky-panel      { height: 115px; }
+  #happiness-val  { font-size: 2.1rem; }
+  #happiness-face { font-size: 1.5rem; }
+  #factions       { padding: 0.4rem 1rem; gap: 0.28rem; }
+  .faction-bar-bg { height: 6px; }
+  #event-card     { padding: 0.75rem; }
+  #event-text     { font-size: 0.78rem; margin-bottom: 0.6rem; }
+  #choice-indicators { margin-top: 0.5rem; }
+  .choice-label   { padding: 0.4rem 0.55rem; }
+}
+
+/* ── Narrow screens ── */
+@media (max-width: 360px) {
+  #top-bar      { padding: 0.5rem 0.75rem 0.4rem; font-size: 0.76rem; }
+  #event-title  { font-size: 0.78rem; }
+  .choice-name  { font-size: 0.78rem; }
+  .choice-preview { font-size: 0.62rem; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
