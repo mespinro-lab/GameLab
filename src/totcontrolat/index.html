@@ -19,6 +19,7 @@
       <div id="week-display">Setm. <span id="week-val">1</span> / 26</div>
       <div id="token-display">🪙 <span id="token-val">0</span></div>
     </div>
+    <div id="country-bar"><span id="country-val"></span></div>
 
     <!-- ── Event area (top) ── -->
     <div id="event-area">
@@ -108,6 +109,7 @@
           ⚠️ Perill: <span id="danger-weeks-val">0</span>/3 setm.
         </div>
         <button class="pill token-pill" id="spend-tokens" disabled>🪙×3 → +Moral</button>
+        <button id="menu-ingame-btn">☰</button>
         <button id="pause-btn">⏸</button>
       </div>
     </div>
@@ -122,6 +124,7 @@
       <p>Has aguantat 26 setmanes sense catàstrofe visible.<br>El poble et recordarà. En general.</p>
       <p id="final-score" class="overlay-score"></p>
       <button id="btn-retry">Tornar a Intentar</button>
+      <button id="btn-menu-won" class="overlay-btn-sec">Menu Principal</button>
     </div>
   </div>
 
@@ -133,6 +136,95 @@
       <p>La felicitat ha quedat per sota del llindar durant massa temps.<br>El poble ha pres decisions pròpies.</p>
       <p id="survive-weeks" class="overlay-score"></p>
       <button id="btn-retry-lost">Tornar a Intentar</button>
+      <button id="btn-menu-lost" class="overlay-btn-sec">Menu Principal</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       MENU SCREENS  (z-index: 200)
+  ════════════════════════════════════════════ -->
+
+  <!-- ── Menu principal ── -->
+  <div id="menu-screen" class="menu-overlay">
+    <div class="menu-hero">
+      <div class="menu-hero-icon">🏛️</div>
+      <h1 class="menu-title">TOT CONTROLAT</h1>
+      <p class="menu-subtitle">Simulador absurd de gestió municipal</p>
+    </div>
+    <div class="menu-buttons">
+      <button class="menu-btn primary" id="btn-nova">🎮 Nova Partida</button>
+      <button class="menu-btn" id="btn-carregar">📂 Carregar Partida</button>
+      <button class="menu-btn" id="btn-botiga">🛒 Botiga</button>
+      <button class="menu-btn" id="btn-config">⚙️ Configuració</button>
+      <button class="menu-btn reprendre hidden" id="btn-reprendre">▶ Reprendre</button>
+    </div>
+  </div>
+
+  <!-- ── Nova partida ── -->
+  <div id="nova-screen" class="menu-overlay hidden">
+    <div class="sub-card">
+      <button class="back-btn" id="btn-back-nova">← Enrere</button>
+      <h2>Nova Partida</h2>
+      <p class="sub-desc">Com s'anomena el teu poble?</p>
+      <input type="text" id="country-input" class="name-input"
+             placeholder="Viladalt, Poblenou, Calariu…" maxlength="28" autocomplete="off">
+      <p id="name-error" class="field-error hidden">Cal posar nom al poble.</p>
+      <button class="menu-btn primary mt" id="btn-start-new">Comença →</button>
+    </div>
+  </div>
+
+  <!-- ── Carregar partida ── -->
+  <div id="carregar-screen" class="menu-overlay hidden">
+    <div class="sub-card">
+      <button class="back-btn" id="btn-back-carregar">← Enrere</button>
+      <h2>Carregar Partida</h2>
+      <div id="saves-list"></div>
+      <p id="no-saves-msg" class="no-saves hidden">Cap partida guardada encara.</p>
+    </div>
+  </div>
+
+  <!-- ── Botiga ── -->
+  <div id="botiga-screen" class="menu-overlay hidden">
+    <div class="sub-card">
+      <button class="back-btn" id="btn-back-botiga">← Enrere</button>
+      <h2>🛒 Botiga</h2>
+      <p class="sub-desc">Tokens per quan el mandat s'acaba gràcies</p>
+      <p id="pending-tokens-info" class="pending-info"></p>
+      <div class="shop-items">
+        <div class="shop-item">
+          <div class="shop-item-body">
+            <span class="shop-name">Pack Petit</span>
+            <span class="shop-detail">🪙 +10 Tokens</span>
+          </div>
+          <button class="shop-btn" id="btn-buy-10">0,99 €</button>
+        </div>
+        <div class="shop-item featured-item">
+          <div class="shop-item-body">
+            <span class="shop-name">Pack Gran</span>
+            <span class="shop-detail">🪙 +100 Tokens</span>
+          </div>
+          <button class="shop-btn featured" id="btn-buy-100">4,99 €</button>
+        </div>
+      </div>
+      <p id="shop-confirm" class="shop-confirm hidden"></p>
+      <p class="shop-disclaimer">Pagaments simulats. Cap transacció real.</p>
+    </div>
+  </div>
+
+  <!-- ── Configuració ── -->
+  <div id="config-screen" class="menu-overlay hidden">
+    <div class="sub-card">
+      <button class="back-btn" id="btn-back-config">← Enrere</button>
+      <h2>⚙️ Configuració</h2>
+      <div class="config-section">
+        <p class="config-label">Idioma</p>
+        <div class="lang-pills">
+          <button class="lang-pill active" data-lang="ca">Català</button>
+          <button class="lang-pill" data-lang="va">Valencià</button>
+          <button class="lang-pill" data-lang="ba">Balear</button>
+        </div>
+        <p class="config-note">Tots els dialectes de la nostra estimada llengua funcionen exactament igual de bé.</p>
+      </div>
     </div>
   </div>
 

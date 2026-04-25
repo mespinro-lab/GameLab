@@ -40,8 +40,9 @@ const IDLE_MSGS = [
 let S = {};
 let cardCleanup = () => {};
 
-function initState() {
+function initState(countryName) {
   S = {
+    countryName: countryName,
     week:        1,
     money:       450,
     factions:    { veins: 62, mercat: 60, activistes: 58 },
@@ -57,12 +58,219 @@ function initState() {
     services:    false,
     comms:       false,
   };
+  flushPendingTokens();
 }
 
 // ── Derived ────────────────────────────────────────────────────────────────────
 function happiness() {
   const f = S.factions;
   return Math.round(f.veins * 0.4 + f.mercat * 0.3 + f.activistes * 0.3);
+}
+
+// ── Save system ────────────────────────────────────────────────────────────────
+const SAVE_KEY     = name => `totcontrolat_save_${name}`;
+const TOKEN_BANK   = 'totcontrolat_tokens';
+
+function saveGame() {
+  if (!S.countryName) return;
+  try {
+    localStorage.setItem(SAVE_KEY(S.countryName), JSON.stringify({
+      countryName: S.countryName,
+      week:        S.week,
+      money:       S.money,
+      factions:    { ...S.factions },
+      tokens:      S.tokens,
+      dangerWeeks: S.dangerWeeks,
+      tax:         S.tax,
+      services:    S.services,
+      comms:       S.comms,
+      happiness:   happiness(),
+      savedAt:     Date.now(),
+    }));
+  } catch(e) {}
+}
+
+function deleteSave(name) {
+  try { localStorage.removeItem(SAVE_KEY(name)); } catch(e) {}
+}
+
+function listSaves() {
+  const saves = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('totcontrolat_save_')) {
+        try { saves.push(JSON.parse(localStorage.getItem(k))); } catch(e) {}
+      }
+    }
+  } catch(e) {}
+  return saves.sort((a, b) => b.savedAt - a.savedAt);
+}
+
+function getPendingTokens() {
+  try { return Math.max(0, parseInt(localStorage.getItem(TOKEN_BANK) || '0', 10)); } catch(e) { return 0; }
+}
+
+function addPendingTokens(n) {
+  try { localStorage.setItem(TOKEN_BANK, getPendingTokens() + n); } catch(e) {}
+}
+
+function flushPendingTokens() {
+  const t = getPendingTokens();
+  if (t > 0) { S.tokens += t; try { localStorage.removeItem(TOKEN_BANK); } catch(e) {} }
+}
+
+// ── Menu navigation ────────────────────────────────────────────────────────────
+let fromIngame = false;
+
+function openMainMenu() {
+  if (S.countryName && S.phase === 'playing') {
+    S.pausedAt = Date.now();
+    S.phase    = 'paused';
+    clearInterval(S.tickTimer);
+    render();
+  }
+  fromIngame = !!S.countryName;
+  $('btn-reprendre').classList.toggle('hidden', !fromIngame);
+  showOnly('menu-screen');
+}
+
+function closeMainMenu() {
+  hide('menu-screen');
+  if (fromIngame && S.phase === 'paused') {
+    S.tickStart += Date.now() - S.pausedAt;
+    S.phase = 'playing';
+    startTick();
+    render();
+  }
+}
+
+function showSub(id) {
+  ['menu-screen','nova-screen','carregar-screen','botiga-screen','config-screen']
+    .forEach(hide);
+  show(id);
+}
+
+function showOnly(id) {
+  ['menu-screen','nova-screen','carregar-screen','botiga-screen','config-screen']
+    .forEach(x => x === id ? show(x) : hide(x));
+}
+
+// ── Nova partida ────────────────────────────────────────────────────────────────
+function openNova() {
+  $('country-input').value = '';
+  hide('name-error');
+  showSub('nova-screen');
+  setTimeout(() => $('country-input').focus(), 100);
+}
+
+function confirmNova() {
+  const name = $('country-input').value.trim();
+  if (!name) { show('name-error'); return; }
+  hide('name-error');
+  startSession(name);
+}
+
+// ── Carregar partida ────────────────────────────────────────────────────────────
+function openCarregar() {
+  renderSaves();
+  showSub('carregar-screen');
+}
+
+function renderSaves() {
+  const saves = listSaves();
+  const list  = $('saves-list');
+  list.innerHTML = '';
+  if (!saves.length) { show('no-saves-msg'); return; }
+  hide('no-saves-msg');
+  saves.forEach(sv => {
+    const date = new Date(sv.savedAt).toLocaleDateString('ca-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const row  = document.createElement('div');
+    row.className = 'save-item';
+    row.innerHTML = `
+      <div class="save-info">
+        <div class="save-name">🏛️ ${sv.countryName}</div>
+        <div class="save-meta">Setm. ${sv.week}/26 · Felicitat: ${sv.happiness} · ${date}</div>
+      </div>
+      <button class="save-load-btn">Carrega</button>
+      <button class="save-del-btn" title="Suprimeix">✕</button>
+    `;
+    row.querySelector('.save-load-btn').addEventListener('click', () => loadSession(sv));
+    row.querySelector('.save-del-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteSave(sv.countryName);
+      row.remove();
+      if (!$('saves-list').children.length) show('no-saves-msg');
+    });
+    list.appendChild(row);
+  });
+}
+
+function loadSession(sv) {
+  hide('overlay-won'); hide('overlay-lost');
+  hide('event-card');
+  S = {
+    countryName: sv.countryName,
+    week:        sv.week,
+    money:       sv.money,
+    factions:    { ...sv.factions },
+    tokens:      sv.tokens,
+    dangerWeeks: sv.dangerWeeks,
+    phase:       'playing',
+    tickTimer:   null,
+    tickStart:   0,
+    pausedAt:    0,
+    pool:        shuffle([...EVENTS]),
+    poolIdx:     0,
+    tax:         sv.tax   || 'mid',
+    services:    sv.services || false,
+    comms:       sv.comms    || false,
+  };
+  flushPendingTokens();
+  ['menu-screen','carregar-screen'].forEach(hide);
+  render();
+  showIdle();
+  startTick();
+}
+
+// ── Botiga ─────────────────────────────────────────────────────────────────────
+function openBotiga() {
+  hide('shop-confirm');
+  updatePendingInfo();
+  showSub('botiga-screen');
+}
+
+function updatePendingInfo() {
+  const t = getPendingTokens();
+  $('pending-tokens-info').textContent = t > 0
+    ? `🪙 ${t} token${t !== 1 ? 's' : ''} pendents d'assignar a la pròxima partida`
+    : '';
+}
+
+function buyTokens(n) {
+  if (S.countryName) {
+    S.tokens += n;
+    saveGame();
+    render();
+    showShopConfirm(`✓ +${n} tokens afegits a ${S.countryName}!`);
+  } else {
+    addPendingTokens(n);
+    updatePendingInfo();
+    showShopConfirm(`✓ +${n} tokens reservats per a la pròxima partida`);
+  }
+}
+
+function showShopConfirm(msg) {
+  const el = $('shop-confirm');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.add('hidden'), 2500);
+}
+
+// ── Configuració ───────────────────────────────────────────────────────────────
+function openConfig() {
+  showSub('config-screen');
 }
 
 // ── Tick loop ──────────────────────────────────────────────────────────────────
@@ -105,6 +313,7 @@ function advanceWeek() {
   if (S.week > MAX_WEEKS) { endGame(true); return; }
   if (h > 80) S.tokens++;
 
+  saveGame();
   render();
 
   const fireEvent = (S.week % 2 === 0) || Math.random() < 0.32;
@@ -145,7 +354,7 @@ function showEvent(evt) {
 function initCardDrag(oL, oR) {
   const card = $('event-card');
   const THRESH_DX = 60;
-  const THRESH_VX = 0.35; // px/ms
+  const THRESH_VX = 0.35;
   let dragging = false, startX = 0, dx = 0, lastX = 0, lastT = 0, vx = 0;
 
   function px(e) { return e.touches ? e.touches[0].clientX : e.clientX; }
@@ -169,10 +378,9 @@ function initCardDrag(oL, oR) {
     const now = Date.now();
     const cx  = px(e);
     const dt  = now - lastT || 1;
-    vx     = (cx - lastX) / dt;
-    lastX  = cx;
-    lastT  = now;
-    dx     = cx - startX;
+    vx    = (cx - lastX) / dt;
+    lastX = cx; lastT = now;
+    dx    = cx - startX;
     card.style.transform = `translateX(${dx * 1.15}px) rotate(${dx * 0.1}deg)`;
     updateHighlight(dx);
     setOverlays(dx);
@@ -280,6 +488,7 @@ function resolve(opt) {
     S.dangerWeeks = 0;
   }
 
+  saveGame();
   render();
   showIdle();
   S.phase = 'playing';
@@ -295,6 +504,7 @@ function showIdle() {
 function endGame(win) {
   clearInterval(S.tickTimer);
   S.phase = win ? 'won' : 'lost';
+  deleteSave(S.countryName);
 
   if (win) {
     const score = happiness() * MAX_WEEKS + S.tokens * 60;
@@ -317,6 +527,7 @@ function render() {
   $('week-val').textContent       = S.week;
   $('money-val').textContent      = S.money;
   $('token-val').textContent      = S.tokens;
+  $('country-val').textContent    = S.countryName || '';
 
   const ringColor = h > 60 ? 'var(--ok)' : h > 35 ? 'var(--warn)' : 'var(--bad)';
   const ringGlow  = h > 60 ? 'rgba(76,175,128,0.38)'  : h > 35 ? 'rgba(224,160,48,0.38)'  : 'rgba(224,64,64,0.38)';
@@ -345,8 +556,8 @@ function render() {
     $('danger-indicator').classList.add('hidden');
   }
 
-  $('pause-btn').textContent    = S.phase === 'paused' ? '▶' : '⏸';
-  $('spend-tokens').disabled    = S.tokens < 3;
+  $('pause-btn').textContent = S.phase === 'paused' ? '▶' : '⏸';
+  $('spend-tokens').disabled = S.tokens < 3;
 
   renderControls();
 }
@@ -360,15 +571,9 @@ function renderControls() {
 }
 
 // ── Controls ───────────────────────────────────────────────────────────────────
-function setTax(level) {
-  S.tax = level;
-  renderControls();
-}
+function setTax(level) { S.tax = level; renderControls(); }
 
-function togglePolicy(policy) {
-  S[policy] = !S[policy];
-  renderControls();
-}
+function togglePolicy(policy) { S[policy] = !S[policy]; renderControls(); }
 
 function spendTokens() {
   if (S.tokens < 3) return;
@@ -392,13 +597,20 @@ function togglePause() {
   render();
 }
 
-function startGame() {
+// ── Start session ──────────────────────────────────────────────────────────────
+function startSession(countryName) {
   hide('overlay-won'); hide('overlay-lost');
   hide('event-card');
-  initState();
+  ['menu-screen','nova-screen','carregar-screen','botiga-screen','config-screen']
+    .forEach(hide);
+  initState(countryName);
   render();
   showIdle();
-  setTimeout(() => { if (S.phase === 'playing') { showEvent(nextEvent()); } }, 800);
+  setTimeout(() => { if (S.phase === 'playing') showEvent(nextEvent()); }, 800);
+}
+
+function retrySession() {
+  startSession(S.countryName);
 }
 
 // ── Utils ──────────────────────────────────────────────────────────────────────
@@ -415,16 +627,52 @@ function shuffle(arr) {
   return arr;
 }
 
-// ── Init ───────────────────────────────────────────────────────────────────────
-$('btn-retry').addEventListener('click',      startGame);
-$('btn-retry-lost').addEventListener('click', startGame);
+// ── Event listeners ────────────────────────────────────────────────────────────
+// Game controls
+$('btn-retry').addEventListener('click',      retrySession);
+$('btn-retry-lost').addEventListener('click', retrySession);
 $('pause-btn').addEventListener('click',      togglePause);
 $('spend-tokens').addEventListener('click',   spendTokens);
-
-['low', 'mid', 'high'].forEach(t => {
-  $(`tax-${t}`).addEventListener('click', () => setTax(t));
-});
+['low', 'mid', 'high'].forEach(t =>
+  $(`tax-${t}`).addEventListener('click', () => setTax(t)));
 $('toggle-services').addEventListener('click', () => togglePolicy('services'));
 $('toggle-comms').addEventListener('click',    () => togglePolicy('comms'));
 
-startGame();
+// Win/lose → menu
+$('btn-menu-won').addEventListener('click',  openMainMenu);
+$('btn-menu-lost').addEventListener('click', openMainMenu);
+
+// In-game menu button
+$('menu-ingame-btn').addEventListener('click', openMainMenu);
+
+// Main menu
+$('btn-nova').addEventListener('click',     openNova);
+$('btn-carregar').addEventListener('click', openCarregar);
+$('btn-botiga').addEventListener('click',   openBotiga);
+$('btn-config').addEventListener('click',   openConfig);
+$('btn-reprendre').addEventListener('click', closeMainMenu);
+
+// Nova partida
+$('btn-back-nova').addEventListener('click',  () => showOnly('menu-screen'));
+$('btn-start-new').addEventListener('click',  confirmNova);
+$('country-input').addEventListener('keydown', e => { if (e.key === 'Enter') confirmNova(); });
+
+// Carregar partida
+$('btn-back-carregar').addEventListener('click', () => showOnly('menu-screen'));
+
+// Botiga
+$('btn-back-botiga').addEventListener('click', () => showOnly('menu-screen'));
+$('btn-buy-10').addEventListener('click',  () => buyTokens(10));
+$('btn-buy-100').addEventListener('click', () => buyTokens(100));
+
+// Configuració
+$('btn-back-config').addEventListener('click', () => showOnly('menu-screen'));
+document.querySelectorAll('.lang-pill').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.lang-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+openMainMenu();
