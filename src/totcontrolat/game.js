@@ -2,7 +2,8 @@
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const MAX_WEEKS    = 26;
-const TICK_MS      = 5000;
+const TICK_MS         = 5000;
+const EVENT_TIMER_MS  = 12000;
 const DANGER_LEVEL = 40;
 const DANGER_LIMIT = 3;
 
@@ -47,16 +48,17 @@ function initState(countryName) {
     money:       450,
     factions:    { veins: 62, mercat: 60, activistes: 58 },
     tokens:      0,
-    dangerWeeks: 0,
-    phase:       'playing',
-    tickTimer:   null,
-    tickStart:   0,
-    pausedAt:    0,
-    pool:        shuffle([...EVENTS]),
-    poolIdx:     0,
-    tax:         'mid',
-    services:    false,
-    comms:       false,
+    dangerWeeks:    0,
+    phase:          'playing',
+    tickTimer:      null,
+    tickStart:      0,
+    pausedAt:       0,
+    prePausePhase:  null,
+    pool:           shuffle([...EVENTS]),
+    poolIdx:        0,
+    tax:            'mid',
+    services:       false,
+    comms:          false,
   };
   flushPendingTokens();
 }
@@ -124,9 +126,10 @@ function flushPendingTokens() {
 let fromIngame = false;
 
 function openMainMenu() {
-  if (S.countryName && S.phase === 'playing') {
-    S.pausedAt = Date.now();
-    S.phase    = 'paused';
+  if (S.countryName && (S.phase === 'playing' || S.phase === 'event')) {
+    S.pausedAt     = Date.now();
+    S.prePausePhase = S.phase;
+    S.phase        = 'paused';
     clearInterval(S.tickTimer);
     render();
   }
@@ -139,9 +142,22 @@ function closeMainMenu() {
   hide('menu-screen');
   if (fromIngame && S.phase === 'paused') {
     S.tickStart += Date.now() - S.pausedAt;
-    S.phase = 'playing';
-    startTick();
+    S.phase = S.prePausePhase || 'playing';
+    S.prePausePhase = null;
+    resumeActiveTimer();
     render();
+  }
+}
+
+function resumeActiveTimer() {
+  if (S.phase === 'event') {
+    S.tickTimer = setInterval(() => {
+      const p = Math.max(0, 1 - (Date.now() - S.tickStart) / EVENT_TIMER_MS);
+      $('tick-bar').style.width = (p * 100) + '%';
+      if (p <= 0) { clearInterval(S.tickTimer); autoResolveEvent(); }
+    }, 80);
+  } else if (S.phase === 'playing') {
+    startTick();
   }
 }
 
@@ -324,13 +340,35 @@ function advanceWeek() {
 // ── Events ─────────────────────────────────────────────────────────────────────
 function nextEvent() {
   if (S.poolIdx >= S.pool.length) { S.pool = shuffle([...EVENTS]); S.poolIdx = 0; }
+  const remaining = S.pool.slice(S.poolIdx);
+  const weights   = remaining.map(eventWeight);
+  const total     = weights.reduce((a, b) => a + b, 0);
+  let r = Math.random() * total, chosen = 0;
+  for (let i = 0; i < weights.length; i++) { r -= weights[i]; if (r <= 0) { chosen = i; break; } }
+  const gi = S.poolIdx + chosen;
+  [S.pool[S.poolIdx], S.pool[gi]] = [S.pool[gi], S.pool[S.poolIdx]];
   return S.pool[S.poolIdx++];
+}
+
+function eventWeight(evt) {
+  let w = 1.0;
+  const factionKeys = evt.options
+    .flatMap(o => Object.keys(o.fx || {}))
+    .filter(k => k !== 'money');
+  [...new Set(factionKeys)].forEach(k => {
+    const v = S.factions[k] || 50;
+    if      (v < 35) w += 2.0;
+    else if (v < 50) w += 0.9;
+    else if (v > 70) w += 0.5;
+  });
+  return w;
 }
 
 function showEvent(evt) {
   S.phase = 'event';
   clearInterval(S.tickTimer);
-  $('tick-bar').style.width = '0%';
+  $('tick-bar').style.width      = '100%';
+  $('tick-bar').style.background = 'var(--warn)';
 
   $('event-icon').textContent   = evt.icon;
   $('event-title').textContent  = evt.title;
@@ -339,20 +377,39 @@ function showEvent(evt) {
   const [oL, oR] = evt.options;
   $('opt-left-name').textContent     = oL.label;
   $('opt-left-preview').textContent  = oL.preview;
-  $('opt-left-risk').textContent     = oL.risk || '';
   $('opt-right-name').textContent    = oR.label;
   $('opt-right-preview').textContent = oR.preview;
-  $('opt-right-risk').textContent    = oR.risk || '';
+
+  const canAfford = opt => {
+    const cost = opt.fx && opt.fx.money ? opt.fx.money : 0;
+    return cost >= 0 || S.money + cost >= 0;
+  };
+  const lOk = canAfford(oL), rOk = canAfford(oR);
+  $('opt-left-risk').textContent  = lOk ? (oL.risk || '') : '⚠ Sense fons suficients';
+  $('opt-right-risk').textContent = rOk ? (oR.risk || '') : '⚠ Sense fons suficients';
+  $('choice-left').classList.toggle('choice-disabled',  !lOk);
+  $('choice-right').classList.toggle('choice-disabled', !rOk);
 
   hide('idle-state');
   show('event-card');
 
-  const onClickL = () => flyOff('left',  oL);
-  const onClickR = () => flyOff('right', oR);
-  const onKey    = e => {
+  S.tickStart = Date.now();
+  S.tickTimer = setInterval(() => {
+    const p = Math.max(0, 1 - (Date.now() - S.tickStart) / EVENT_TIMER_MS);
+    $('tick-bar').style.width = (p * 100) + '%';
+    if (p <= 0) { clearInterval(S.tickTimer); autoResolveEvent(); }
+  }, 80);
+
+  const onClickL = () => {
+    if (!$('choice-left').classList.contains('choice-disabled')) flyOff('left',  oL);
+  };
+  const onClickR = () => {
+    if (!$('choice-right').classList.contains('choice-disabled')) flyOff('right', oR);
+  };
+  const onKey = e => {
     if (S.phase !== 'event') return;
-    if (e.key === 'ArrowLeft')  flyOff('left',  oL);
-    if (e.key === 'ArrowRight') flyOff('right', oR);
+    if (e.key === 'ArrowLeft'  && !$('choice-left').classList.contains('choice-disabled'))  flyOff('left',  oL);
+    if (e.key === 'ArrowRight' && !$('choice-right').classList.contains('choice-disabled')) flyOff('right', oR);
   };
   $('choice-left').addEventListener('click',  onClickL);
   $('choice-right').addEventListener('click', onClickR);
@@ -365,9 +422,44 @@ function showEvent(evt) {
   };
 }
 
+function autoResolveEvent() {
+  if (S.phase !== 'event') return;
+  cardCleanup();
+  const card = $('event-card');
+  card.style.transition = 'opacity 0.25s ease-out';
+  card.style.opacity    = '0';
+  setTimeout(() => {
+    card.style.transition = '';
+    card.style.opacity    = '';
+    hide('event-card');
+    $('choice-left').classList.remove('choice-disabled');
+    $('choice-right').classList.remove('choice-disabled');
+    resetTickBar();
+    Object.keys(S.factions).forEach(k => {
+      S.factions[k] = clamp(S.factions[k] - 5, 5, 96);
+    });
+    const h = happiness();
+    if (h < DANGER_LEVEL) {
+      S.dangerWeeks++;
+      if (S.dangerWeeks >= DANGER_LIMIT) { endGame(false); return; }
+    } else {
+      S.dangerWeeks = 0;
+    }
+    saveGame();
+    render();
+    showIdle();
+    S.phase = 'playing';
+    startTick();
+  }, 280);
+}
+
 
 function flyOff(direction, opt) {
+  if (S.phase !== 'event') return;
+  clearInterval(S.tickTimer);
   cardCleanup();
+  $('choice-left').classList.remove('choice-disabled');
+  $('choice-right').classList.remove('choice-disabled');
   const card = $('event-card');
   const tx   = direction === 'right' ?  window.innerWidth * 1.2 : -window.innerWidth * 1.2;
   const rot  = direction === 'right' ? 25 : -25;
@@ -379,8 +471,14 @@ function flyOff(direction, opt) {
     card.style.transform  = '';
     card.style.opacity    = '';
     hide('event-card');
+    resetTickBar();
     resolve(opt);
   }, 300);
+}
+
+function resetTickBar() {
+  $('tick-bar').style.width      = '0%';
+  $('tick-bar').style.background = '';
 }
 
 function resolve(opt) {
@@ -498,14 +596,16 @@ function spendTokens() {
 }
 
 function togglePause() {
-  if (S.phase === 'playing') {
-    S.pausedAt = Date.now();
-    S.phase = 'paused';
+  if (S.phase === 'playing' || S.phase === 'event') {
+    S.pausedAt      = Date.now();
+    S.prePausePhase = S.phase;
+    S.phase         = 'paused';
     clearInterval(S.tickTimer);
   } else if (S.phase === 'paused') {
     S.tickStart += Date.now() - S.pausedAt;
-    S.phase = 'playing';
-    startTick();
+    S.phase = S.prePausePhase || 'playing';
+    S.prePausePhase = null;
+    resumeActiveTimer();
   }
   render();
 }

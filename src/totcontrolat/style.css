@@ -160,6 +160,11 @@ html, body {
   box-shadow: 0 0 14px rgba(240,192,64,0.2);
 }
 
+.choice-label.choice-disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 #choice-left  { text-align: left; }
 #choice-right { text-align: right; }
 
@@ -337,7 +342,7 @@ html, body {
   width: 0%;
   background: var(--gold);
   opacity: 0.6;
-  transition: width 0.08s linear;
+  transition: width 0.08s linear, background-color 0.4s ease;
 }
 
 /* ═══════════════════════════════════════════════
