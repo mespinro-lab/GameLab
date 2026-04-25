@@ -281,4 +281,94 @@ const EVENTS = [
       { label: 'Visita virtual al Parlament', preview: '−Veïns  s\'estalvia el viatge', fx: { veins: -10 }, risk: 'La plataforma val 320€ de totes maneres' },
     ],
   },
+  {
+    id: 'dj',
+    icon: '🎧',
+    title: 'DJ MUNICIPAL',
+    text: 'L\'associació de veïns proposa un DJ permanent a la plaça cada divendres. S\'anomena "Dr. Baix Continu" i ha presentat un rider de 4 pàgines. L\'apartat "ambient manager" és el més llarg.',
+    options: [
+      { label: 'Autoritzar', preview: '+Activistes  +Mercat  −Veïns', fx: { activistes: 12, mercat: 6, veins: -10 }, risk: 'El rider inclou retroalimentació "orgànica"' },
+      { label: 'Denegar', preview: '+Veïns  −Activistes', fx: { veins: 10, activistes: -12 } },
+    ],
+  },
+  {
+    id: 'teletreball',
+    icon: '💻',
+    title: 'HUB DIGITAL',
+    text: 'Una empresa proposa un espai de cotreball al mercat vell. "Atraurem talent jove", asseguren. Han portat mockups en paper d\'estrassa i parlen molt de "sinèrgies locals".',
+    options: [
+      { label: 'Cedir l\'espai', preview: '+Mercat  −Veïns  −200€', fx: { mercat: 12, veins: -8, money: -200 } },
+      { label: 'Mantenir l\'ús actual', preview: '+Veïns  −Mercat', fx: { veins: 8, mercat: -10 } },
+    ],
+  },
+  {
+    id: 'arbrat',
+    icon: '🌳',
+    title: 'PLA D\'ARBRAT',
+    text: 'El pla de sostenibilitat preveu 80 arbres nous. L\'inconvenient: cal suprimir 40 places d\'aparcament. El regidor d\'obres ha aparcat a la vorera mentre feia la proposta.',
+    options: [
+      { label: 'Aprovar el pla complet', preview: '+Activistes  −Veïns  −Mercat', fx: { activistes: 14, veins: -10, mercat: -8 } },
+      { label: 'Versió reduïda (20 arbres)', preview: '+Activistes parcial  −150€', fx: { activistes: 6, money: -150 } },
+    ],
+  },
+  {
+    id: 'font',
+    icon: '⛲',
+    title: 'LA FONT LLEGENDÀRIA',
+    text: 'La font monumental porta 18 anys sense funcionar. Algú hi ha instal·lat un peix de plàstic a la bassa i els turistes la fotografien igualment. La restauració costa 340€.',
+    options: [
+      { label: 'Restaurar-la', preview: '+Veïns  +Mercat  −340€', fx: { veins: 12, mercat: 8, money: -340 } },
+      { label: 'Deixar el peix', preview: 'Estalvia diners', fx: { veins: -2 }, risk: 'El peix té 4 seguidors a Instagram' },
+    ],
+  },
+  {
+    id: 'policia',
+    icon: '🛵',
+    title: 'MODERNITZACIÓ POLICIAL',
+    text: 'La policia local vol patinets elèctrics en lloc de cotxes. "Reduïrem emissions i serem més àgils", diuen. El sergent ha provat el patinet i ha trencat dos testos.',
+    options: [
+      { label: 'Aprovar els patinets', preview: '+Activistes  −Veïns  −280€', fx: { activistes: 10, veins: -8, money: -280 } },
+      { label: 'Mantenir els cotxes', preview: '+Veïns  −Activistes', fx: { veins: 8, activistes: -10 } },
+    ],
+  },
+  {
+    id: 'ginkgo',
+    icon: '🍂',
+    title: 'EL PROBLEMA DELS GINKGOS',
+    text: 'Els 12 ginkgos plantats fa dos anys ara fan una olor que els veïns descriuen com "mantega rància mesclada amb petons de iaia". El jardiner diu que "és natural i transitori". Dura 6 setmanes.',
+    options: [
+      { label: 'Substituir els arbres', preview: '+Veïns  −420€', fx: { veins: 14, money: -420 } },
+      { label: 'Campanya de sensibilització', preview: '−Veïns  estalvia diners', fx: { veins: -8 }, risk: 'Ningú llegirà el fulletó' },
+    ],
+  },
+  {
+    id: 'expo',
+    icon: '🖼️',
+    title: 'EXPOSICIÓ ITINERANT',
+    text: 'Una exposició d\'art contemporani vol instal·lar-se a la plaça 3 mesos. Hi ha una escultura de 4 metres anomenada "El Pes de la Gestió". El pes real és de 2 tones.',
+    options: [
+      { label: 'Acceptar', preview: '+Activistes  +Mercat  −Veïns', fx: { activistes: 12, mercat: 8, veins: -10 } },
+      { label: 'Proposar lloc alternatiu', preview: '+Veïns  −Activistes', fx: { veins: 8, activistes: -10 }, risk: 'L\'únic lloc lliure és el cementiri' },
+    ],
+  },
+  {
+    id: 'casament',
+    icon: '💒',
+    title: 'CONFLICTE NUPCIAL',
+    text: 'Dues famílies prominents han reservat el mateix dia la sala de plens per a un casament. Tots dos diuen tenir "la reserva original". Ambdós documents porten la mateixa taca de cafè.',
+    options: [
+      { label: 'Sorteig oficial', preview: '+Veïns  −Mercat (una família)', fx: { veins: 6, mercat: -6 } },
+      { label: 'Proposar data alternativa', preview: '−Veïns  tots dos enutjats', fx: { veins: -8, mercat: -8 }, risk: 'La nova data és cap d\'any' },
+    ],
+  },
+  {
+    id: 'ratolins',
+    icon: '🐭',
+    title: 'FAUNA NO DESITJADA',
+    text: 'S\'han vist ratolins a l\'arxiu municipal. L\'empresa de control de plagues ha presentat un pressupost en tres toms. El gat de l\'ajuntament ha presentat la seva dimissió.',
+    options: [
+      { label: 'Contractar l\'empresa', preview: '+Veïns  −310€', fx: { veins: 10, money: -310 } },
+      { label: 'Convèncer el gat de tornar', preview: '+Activistes  estalvia diners', fx: { activistes: 8 }, risk: 'El gat demana augment de sou' },
+    ],
+  },
 ];

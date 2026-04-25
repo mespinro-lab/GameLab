@@ -68,8 +68,8 @@ html, body {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding: 0.4rem 0.75rem 0.8rem;
+  justify-content: flex-end;
+  padding: 0.3rem 0.75rem 0.9rem;
 }
 
 #idle-state {
@@ -94,7 +94,7 @@ html, body {
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: var(--radius);
-  padding: 0.9rem;
+  padding: 0.75rem;
   animation: card-in 0.28s ease-out both;
   touch-action: none;
   cursor: grab;
@@ -125,10 +125,10 @@ html, body {
 }
 
 #event-text {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: rgba(255,255,255,0.82);
-  line-height: 1.5;
-  margin-bottom: 0.7rem;
+  line-height: 1.45;
+  margin-bottom: 0.5rem;
 }
 
 /* Choice indicators */
@@ -206,16 +206,16 @@ html, body {
 #center-area {
   flex-shrink: 0;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  padding: 0.55rem 0;
+  padding: 0.3rem 0;
 }
 
 #happiness-ring {
-  width: 112px;
-  height: 112px;
+  width: 92px;
+  height: 92px;
   border-radius: 50%;
-  border: 5px solid var(--hring);
+  border: 4px solid var(--hring);
   box-shadow: 0 0 24px var(--hring-glow);
   display: flex;
   flex-direction: column;
@@ -227,13 +227,13 @@ html, body {
 }
 
 #happiness-face {
-  font-size: 1.55rem;
+  font-size: 1.35rem;
   line-height: 1;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
 }
 
 #happiness-val {
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 900;
   color: #fff;
   line-height: 1;
@@ -256,10 +256,10 @@ html, body {
 #factions {
   background: var(--surface);
   backdrop-filter: blur(8px);
-  padding: 0.55rem 1rem;
+  padding: 0.38rem 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.22rem;
   flex-shrink: 0;
 }
 
@@ -267,7 +267,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.76rem;
+  font-size: 0.72rem;
 }
 
 .faction-icon { font-size: 0.85rem; flex-shrink: 0; }
@@ -281,7 +281,7 @@ html, body {
 
 .faction-bar-bg {
   flex: 1;
-  height: 7px;
+  height: 6px;
   background: rgba(255,255,255,0.08);
   border-radius: 4px;
   overflow: hidden;
@@ -332,10 +332,10 @@ html, body {
   flex-shrink: 0;
   background: var(--surface);
   backdrop-filter: blur(8px);
-  padding: 0.55rem 0.9rem 0.55rem;
+  padding: 0.4rem 0.9rem 0.4rem;
   display: flex;
   flex-direction: column;
-  gap: 0.42rem;
+  gap: 0.3rem;
 }
 
 .ctrl-row {
@@ -372,8 +372,8 @@ html, body {
   color: rgba(255,255,255,0.55);
   font-size: 0.72rem;
   font-weight: 700;
-  padding: 0.3rem 0.68rem;
-  min-height: 36px;
+  padding: 0.25rem 0.6rem;
+  min-height: 32px;
   cursor: pointer;
   touch-action: manipulation;
   transition: background 0.12s, color 0.12s, border-color 0.12s, box-shadow 0.15s;
@@ -426,8 +426,8 @@ html, body {
   border-radius: 8px;
   color: var(--muted);
   font-size: 0.9rem;
-  padding: 0.3rem 0.68rem;
-  min-height: 36px;
+  padding: 0.25rem 0.6rem;
+  min-height: 32px;
   cursor: pointer;
   touch-action: manipulation;
   transition: background 0.12s, color 0.12s;
@@ -550,18 +550,21 @@ html, body {
 
 /* ── Small height (iPhone SE, compact phones) ── */
 @media (max-height: 640px) {
-  #happiness-ring { width: 90px; height: 90px; }
-  #happiness-val  { font-size: 1.65rem; }
-  #happiness-face { font-size: 1.25rem; }
-  #center-area    { padding: 0.35rem 0; }
-  #factions       { padding: 0.35rem 1rem; gap: 0.28rem; }
-  .faction-bar-bg { height: 6px; }
-  #event-card     { padding: 0.7rem; }
-  #event-text     { font-size: 0.76rem; margin-bottom: 0.55rem; }
-  #choice-indicators { gap: 0.35rem; }
-  .choice-label   { padding: 0.42rem 0.5rem; }
-  #controls-area  { padding: 0.4rem 0.9rem; gap: 0.3rem; }
-  .pill           { min-height: 32px; padding: 0.24rem 0.58rem; }
+  #happiness-ring { width: 76px; height: 76px; }
+  #happiness-val  { font-size: 1.45rem; }
+  #happiness-face { font-size: 1.1rem; }
+  #happiness-label { font-size: 0.5rem; }
+  #ring-country   { font-size: 0.58rem; margin-bottom: 0.18rem; }
+  #center-area    { padding: 0.2rem 0; }
+  #factions       { padding: 0.25rem 1rem; gap: 0.15rem; }
+  .faction-bar-bg { height: 5px; }
+  #event-card     { padding: 0.6rem; }
+  #event-text     { font-size: 0.74rem; margin-bottom: 0.4rem; }
+  #choice-indicators { gap: 0.3rem; }
+  .choice-label   { padding: 0.35rem 0.45rem; }
+  #controls-area  { padding: 0.28rem 0.9rem; gap: 0.22rem; }
+  .pill           { min-height: 28px; padding: 0.2rem 0.5rem; font-size: 0.68rem; }
+  #pause-btn, #menu-ingame-btn { min-height: 28px; padding: 0.2rem 0.55rem; }
 }
 
 /* ── Narrow screens ── */
@@ -579,14 +582,14 @@ html, body {
 
 /* ── Country name above ring ── */
 #ring-country {
-  font-size: 0.58rem;
+  font-size: 0.65rem;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.28);
+  color: rgba(255,255,255,0.55);
   text-align: center;
-  margin-bottom: 0.3rem;
-  max-width: 120px;
+  margin-bottom: 0.28rem;
+  max-width: 140px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
