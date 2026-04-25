@@ -181,4 +181,104 @@ const EVENTS = [
       { label: 'Absorbir la diferència', preview: '−280€  nota de premsa breu', fx: { money: -280 } },
     ],
   },
+  {
+    id: 'globus',
+    icon: '🎈',
+    title: 'EMERGÈNCIA AÈRIA',
+    text: 'Un globus d\'aire calent s\'ha enganxat al campanar. La parella a bord porta 4 hores allà dalt. Han demanat pizza. La pizza ja ha arribat. El campaner no sap on mirar.',
+    options: [
+      { label: 'Desplegar la grua', preview: '+Veïns  −180€', fx: { veins: 12, money: -180 }, risk: 'La grua és del 1987' },
+      { label: 'Esperar que baixi sol', preview: '+Mercat  −Veïns  (espectacle)', fx: { mercat: 8, veins: -10 }, risk: 'Bateria per a dos dies més' },
+    ],
+  },
+  {
+    id: 'gossos',
+    icon: '🐕',
+    title: 'GUERRA PEL SOLAR',
+    text: 'El solar de la cantonada desperta passions. Els propietaris de gossos volen parc caní. Els Activistes volen hort comunitari. El Mercat vol aparcament. El solar fa 8×6 metres.',
+    options: [
+      { label: 'Parc caní', preview: '+Veïns  −Activistes  −Mercat', fx: { veins: 10, activistes: -10, mercat: -8 } },
+      { label: 'Hort comunitari', preview: '+Activistes  −Veïns  −Mercat', fx: { activistes: 12, veins: -8, mercat: -10 } },
+    ],
+  },
+  {
+    id: 'xocolata',
+    icon: '🍫',
+    title: 'AROMA PERSISTENT',
+    text: 'La nova fàbrica de xocolata fa olor increïble. Les 24 hores. Els veïns del carrer del costat han engreixat 2kg de mitjana i no saben per quina raó. El metge apunta "estrès osmòtic".',
+    options: [
+      { label: 'Horari de producció restringit', preview: '+Veïns  −Mercat', fx: { veins: 10, mercat: -12 } },
+      { label: 'Filtres antiolor (acord)', preview: '−300€  equilibri de faccions', fx: { money: -300, veins: 4, mercat: 4 } },
+    ],
+  },
+  {
+    id: 'asfaltat',
+    icon: '🔨',
+    title: 'SORPRESA GEOLÒGICA',
+    text: 'El pla d\'asfaltat ha descobert tubs de gas no cartografiats sota el 40% dels carrers. L\'empresa demana un "sobrecost d\'incertesa geològica" del 280%. El plànol original era en un paper de serviette.',
+    options: [
+      { label: 'Acceptar el sobrecost', preview: '+Veïns  −550€', fx: { veins: 14, money: -550 } },
+      { label: 'Cancel·lar el pla', preview: '−Veïns  +Mercat', fx: { veins: -12, mercat: 6 }, risk: 'Els carrers seguiran com estaven' },
+    ],
+  },
+  {
+    id: 'wifi',
+    icon: '📡',
+    title: 'CONNECTIVITAT PATROCINADA',
+    text: 'Una empresa ofereix WiFi gratuït a la plaça. La lletra petita: el nom de xarxa serà "AjuntamentXarxa_MoblesMartí" per sempre. Inclou un banner animat cada 10 minuts.',
+    options: [
+      { label: 'Acceptar (WiFi gratis!)', preview: '+Veïns  +Mercat  −Activistes', fx: { veins: 8, mercat: 10, activistes: -10 } },
+      { label: 'Rebutjar', preview: '+Activistes  −Veïns  −Mercat', fx: { activistes: 10, veins: -6, mercat: -8 } },
+    ],
+  },
+  {
+    id: 'murals',
+    icon: '🎨',
+    title: 'PROPOSTA ARTÍSTICA',
+    text: 'Un artista reconegut vol pintar un mural a la façana de l\'ajuntament. L\'obra s\'anomena "Burocracia en Descomposició III". Ha mostrat els esbossos. La secretaria ha demanat la baixa laboral.',
+    options: [
+      { label: 'Autoritzar', preview: '+Activistes  −Veïns', fx: { activistes: 14, veins: -10 }, risk: 'La premsa nacional vindrà. Dividits.' },
+      { label: 'Rebutjar educadament', preview: '+Veïns  −Activistes', fx: { veins: 8, activistes: -12 } },
+    ],
+  },
+  {
+    id: 'piscina',
+    icon: '🏊',
+    title: 'TROBALLES ARQUEOLÒGIQUES',
+    text: 'La piscina municipal porta 3 anys tancada per obres. L\'empresa ha trobat "restes arqueològiques": un calçotets dels 90 i una xancla. El Ministeri ha enviat un arqueòleg. Porta lupa i entusiasme.',
+    options: [
+      { label: 'Contractar nova empresa', preview: '+Veïns  −500€', fx: { veins: 16, money: -500 }, risk: 'L\'arqueòleg vol quedar-se' },
+      { label: 'Seguir esperant', preview: '−Veïns  s\'estalvia diners', fx: { veins: -12 } },
+    ],
+  },
+  {
+    id: 'mercat',
+    icon: '🛒',
+    title: 'RENOVACIÓ DEL MERCAT',
+    text: 'El mercat vol renovar-se. El projecte inclou zona gastronòmica premium, espai de "street food artesà" i un "corner de mindfulness". El lloc de les mongetes quedarà "repensant el seu rol".',
+    options: [
+      { label: 'Aprovar la renovació', preview: '+Mercat  −Veïns  −480€', fx: { mercat: 16, veins: -10, money: -480 } },
+      { label: 'Renovació mínima', preview: '+Veïns  −Mercat  −120€', fx: { veins: 8, mercat: -10, money: -120 } },
+    ],
+  },
+  {
+    id: 'pluja',
+    icon: '⛈️',
+    title: 'L\'ARXIU INUNDAT',
+    text: 'Les pluges han inundat el soterrani. Concretament, l\'arxiu d\'expedients pendents del 2018-2023. L\'administratiu en cap ha dit "quin desastre" sense dissimular del tot un somriure.',
+    options: [
+      { label: 'Recuperar els expedients', preview: '+Veïns  −260€', fx: { veins: 10, money: -260 } },
+      { label: 'Digitalitzar "el que es pugui"', preview: '−Veïns  −100€', fx: { veins: -8, money: -100 }, risk: 'El 60% ja era il·legible abans' },
+    ],
+  },
+  {
+    id: 'escola',
+    icon: '🏫',
+    title: 'EXCURSIÓ FORMATIVA',
+    text: 'L\'escola vol anar a Brussel·les per "formació cívica europea". Surten a 480€ per alumne. Hi ha 180 alumnes. El director ha reservat habitació individual amb minibar.',
+    options: [
+      { label: 'Subvencionar parcialment', preview: '+Veïns  −700€', fx: { veins: 12, money: -700 } },
+      { label: 'Visita virtual al Parlament', preview: '−Veïns  s\'estalvia el viatge', fx: { veins: -10 }, risk: 'La plataforma val 320€ de totes maneres' },
+    ],
+  },
 ];
