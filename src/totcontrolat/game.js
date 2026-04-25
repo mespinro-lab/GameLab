@@ -527,7 +527,7 @@ function render() {
   $('week-val').textContent       = S.week;
   $('money-val').textContent      = S.money;
   $('token-val').textContent      = S.tokens;
-  $('country-val').textContent    = S.countryName || '';
+  $('ring-country').textContent   = S.countryName || '';
 
   const ringColor = h > 60 ? 'var(--ok)' : h > 35 ? 'var(--warn)' : 'var(--bad)';
   const ringGlow  = h > 60 ? 'rgba(76,175,128,0.38)'  : h > 35 ? 'rgba(224,160,48,0.38)'  : 'rgba(224,64,64,0.38)';
