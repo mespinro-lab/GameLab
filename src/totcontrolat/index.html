@@ -7,18 +7,18 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Swipe overlays (Reigns-style side tints) -->
-  <div id="swipe-ol" class="swipe-overlay"></div>
-  <div id="swipe-or" class="swipe-overlay"></div>
-
   <div id="app">
 
     <!-- ── Top bar ── -->
     <div id="top-bar">
       <div id="money-display">💰 <span id="money-val">450</span>€</div>
       <div id="week-display">Setm. <span id="week-val">1</span> / 26</div>
-      <div id="token-display">🪙 <span id="token-val">0</span></div>
+      <div id="top-right">
+        <div id="token-display">🪙 <span id="token-val">0</span></div>
+        <button id="menu-ingame-btn">☰</button>
+      </div>
     </div>
+
     <!-- ── Event area (top) ── -->
     <div id="event-area">
       <div id="idle-state">
@@ -33,29 +33,37 @@
         <p id="event-text"></p>
         <div id="choice-indicators">
           <div id="choice-left" class="choice-label">
-            <span class="choice-arrow">◀</span>
             <span class="choice-name" id="opt-left-name"></span>
             <span class="choice-preview" id="opt-left-preview"></span>
             <span class="choice-risk" id="opt-left-risk"></span>
           </div>
           <div id="choice-right" class="choice-label">
-            <span class="choice-arrow">▶</span>
             <span class="choice-name" id="opt-right-name"></span>
             <span class="choice-preview" id="opt-right-preview"></span>
             <span class="choice-risk" id="opt-right-risk"></span>
           </div>
         </div>
-        <p id="swipe-hint">← llisca per decidir →</p>
       </div>
     </div>
 
-    <!-- ── Happiness (centre) ── -->
+    <!-- ── Happiness (centre) + skyline ── -->
     <div id="center-area">
       <div id="ring-country"></div>
-      <div id="happiness-ring">
-        <div id="happiness-face">😐</div>
-        <div id="happiness-val">60</div>
-        <div id="happiness-label">Felicitat</div>
+      <div id="ring-row">
+        <div class="skyline-side skyline-l">
+          <div class="bldg bl-1"></div>
+          <div class="bldg bl-2"></div>
+          <div class="bldg bl-3"></div>
+        </div>
+        <div id="happiness-ring">
+          <div id="happiness-face">😐</div>
+          <div id="happiness-val">60</div>
+        </div>
+        <div class="skyline-side skyline-r">
+          <div class="bldg br-1"></div>
+          <div class="bldg br-2"></div>
+          <div class="bldg br-3"></div>
+        </div>
       </div>
     </div>
 
@@ -106,7 +114,6 @@
           ⚠️ Perill: <span id="danger-weeks-val">0</span>/3 setm.
         </div>
         <button class="pill token-pill" id="spend-tokens" disabled>🪙×3 → +Moral</button>
-        <button id="menu-ingame-btn">☰</button>
         <button id="pause-btn">⏸</button>
       </div>
     </div>
@@ -141,7 +148,6 @@
        MENU SCREENS  (z-index: 200)
   ════════════════════════════════════════════ -->
 
-  <!-- ── Menu principal ── -->
   <div id="menu-screen" class="menu-overlay">
     <div class="menu-hero">
       <div class="menu-hero-icon">🏛️</div>
@@ -157,7 +163,6 @@
     </div>
   </div>
 
-  <!-- ── Nova partida ── -->
   <div id="nova-screen" class="menu-overlay hidden">
     <div class="sub-card">
       <button class="back-btn" id="btn-back-nova">← Enrere</button>
@@ -170,7 +175,6 @@
     </div>
   </div>
 
-  <!-- ── Carregar partida ── -->
   <div id="carregar-screen" class="menu-overlay hidden">
     <div class="sub-card">
       <button class="back-btn" id="btn-back-carregar">← Enrere</button>
@@ -180,7 +184,6 @@
     </div>
   </div>
 
-  <!-- ── Botiga ── -->
   <div id="botiga-screen" class="menu-overlay hidden">
     <div class="sub-card">
       <button class="back-btn" id="btn-back-botiga">← Enrere</button>
@@ -208,7 +211,6 @@
     </div>
   </div>
 
-  <!-- ── Configuració ── -->
   <div id="config-screen" class="menu-overlay hidden">
     <div class="sub-card">
       <button class="back-btn" id="btn-back-config">← Enrere</button>

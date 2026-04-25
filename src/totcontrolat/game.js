@@ -344,111 +344,27 @@ function showEvent(evt) {
   $('opt-right-preview').textContent = oR.preview;
   $('opt-right-risk').textContent    = oR.risk || '';
 
-  updateHighlight(0);
   hide('idle-state');
   show('event-card');
 
-  cardCleanup = initCardDrag(oL, oR);
-}
-
-function initCardDrag(oL, oR) {
-  const card = $('event-card');
-  const THRESH_DX = 60;
-  const THRESH_VX = 0.35;
-  let dragging = false, startX = 0, dx = 0, lastX = 0, lastT = 0, vx = 0;
-
-  function px(e) { return e.touches ? e.touches[0].clientX : e.clientX; }
-
-  function onStart(e) {
-    if (e.type === 'mousedown') e.preventDefault();
-    dragging = true;
-    startX = lastX = px(e);
-    lastT  = Date.now();
-    dx = 0; vx = 0;
-    card.style.transition = '';
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup',   onEnd);
-    document.addEventListener('touchmove', onMove, { passive: false });
-    document.addEventListener('touchend',  onEnd);
-  }
-
-  function onMove(e) {
-    if (!dragging) return;
-    if (e.cancelable) e.preventDefault();
-    const now = Date.now();
-    const cx  = px(e);
-    const dt  = now - lastT || 1;
-    vx    = (cx - lastX) / dt;
-    lastX = cx; lastT = now;
-    dx    = cx - startX;
-    card.style.transform = `translateX(${dx * 1.15}px) rotate(${dx * 0.1}deg)`;
-    updateHighlight(dx);
-    setOverlays(dx);
-  }
-
-  function onEnd() {
-    if (!dragging) return;
-    dragging = false;
-    rmDocListeners();
-    setOverlays(0);
-    if      (dx < -THRESH_DX || vx < -THRESH_VX) flyOff('left',  oL);
-    else if (dx >  THRESH_DX || vx >  THRESH_VX) flyOff('right', oR);
-    else                                           snapBack();
-  }
-
-  function snapBack() {
-    card.style.transition = 'transform 0.3s cubic-bezier(0.34,1.56,0.64,1)';
-    card.style.transform  = '';
-    updateHighlight(0);
-    setTimeout(() => { card.style.transition = ''; }, 350);
-  }
-
-  function rmDocListeners() {
-    document.removeEventListener('mousemove', onMove);
-    document.removeEventListener('mouseup',   onEnd);
-    document.removeEventListener('touchmove', onMove);
-    document.removeEventListener('touchend',  onEnd);
-  }
-
-  const onClickL = () => { if (!dragging) flyOff('left',  oL); };
-  const onClickR = () => { if (!dragging) flyOff('right', oR); };
+  const onClickL = () => flyOff('left',  oL);
+  const onClickR = () => flyOff('right', oR);
   const onKey    = e => {
     if (S.phase !== 'event') return;
     if (e.key === 'ArrowLeft')  flyOff('left',  oL);
     if (e.key === 'ArrowRight') flyOff('right', oR);
   };
-
-  card.addEventListener('mousedown',  onStart);
-  card.addEventListener('touchstart', onStart, { passive: true });
   $('choice-left').addEventListener('click',  onClickL);
   $('choice-right').addEventListener('click', onClickR);
   document.addEventListener('keydown', onKey);
 
-  return function cleanup() {
-    dragging = false;
-    rmDocListeners();
-    card.removeEventListener('mousedown',  onStart);
-    card.removeEventListener('touchstart', onStart);
+  cardCleanup = function() {
     $('choice-left').removeEventListener('click',  onClickL);
     $('choice-right').removeEventListener('click', onClickR);
     document.removeEventListener('keydown', onKey);
   };
 }
 
-function setOverlays(dx) {
-  const ol = $('swipe-ol');
-  const or = $('swipe-or');
-  if (dx < -15) {
-    ol.style.opacity = Math.min((-dx - 15) / 120, 0.6);
-    or.style.opacity = '0';
-  } else if (dx > 15) {
-    or.style.opacity = Math.min((dx - 15) / 120, 0.6);
-    ol.style.opacity = '0';
-  } else {
-    ol.style.opacity = '0';
-    or.style.opacity = '0';
-  }
-}
 
 function flyOff(direction, opt) {
   cardCleanup();
@@ -458,7 +374,6 @@ function flyOff(direction, opt) {
   card.style.transition = 'transform 0.28s ease-in, opacity 0.28s ease-in';
   card.style.transform  = `translateX(${tx}px) rotate(${rot}deg)`;
   card.style.opacity    = '0';
-  setOverlays(0);
   setTimeout(() => {
     card.style.transition = '';
     card.style.transform  = '';
@@ -466,11 +381,6 @@ function flyOff(direction, opt) {
     hide('event-card');
     resolve(opt);
   }, 300);
-}
-
-function updateHighlight(dx) {
-  $('choice-left').classList.toggle('choice-active',  dx < -60);
-  $('choice-right').classList.toggle('choice-active', dx >  60);
 }
 
 function resolve(opt) {
@@ -540,6 +450,9 @@ function render() {
   document.documentElement.style.setProperty('--sky-h', skyH);
   document.documentElement.style.setProperty('--sky-s', skyS + '%');
   document.documentElement.style.setProperty('--sky-l', skyL + '%');
+
+  const bldAlpha = (0.08 + (h / 100) * 0.18).toFixed(3);
+  document.documentElement.style.setProperty('--bld-alpha', bldAlpha);
 
   ['veins', 'mercat', 'activistes'].forEach(k => {
     const v = Math.round(S.factions[k]);
