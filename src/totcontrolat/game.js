@@ -1,13 +1,25 @@
 'use strict';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-const MAX_WEEKS     = 26;
-const TICK_MS       = 5000;
-const INCOME        = 55;
-const DANGER_LEVEL  = 40;
-const DANGER_LIMIT  = 3;
+const MAX_WEEKS    = 26;
+const TICK_MS      = 5000;
+const DANGER_LEVEL = 40;
+const DANGER_LIMIT = 3;
+
+const TAX_INCOME   = { low: 30, mid: 55, high: 85 };
+const POLICY_COSTS = { services: 35, comms: 25 };
 
 const DRIFT = { veins: -1.2, mercat: -0.9, activistes: -1.4 };
+
+const POLICY_FX = {
+  services: { veins: 0.8, activistes: 0.4 },
+  comms:    { veins: 0.4, mercat: 0.6 },
+};
+
+const TAX_FX = {
+  high: { mercat: -0.5, veins: -0.3 },
+  low:  { mercat:  0.4, veins:  0.3 },
+};
 
 const IDLE_MSGS = [
   'Setmana tranquil·la... de moment.',
@@ -41,6 +53,9 @@ function initState() {
     pausedAt:    0,
     pool:        shuffle([...EVENTS]),
     poolIdx:     0,
+    tax:         'mid',
+    services:    false,
+    comms:       false,
   };
 }
 
@@ -64,11 +79,19 @@ function startTick() {
 
 function advanceWeek() {
   S.week++;
-  S.money += INCOME;
+
+  let income = TAX_INCOME[S.tax];
+  if (S.services) income -= POLICY_COSTS.services;
+  if (S.comms)    income -= POLICY_COSTS.comms;
+  S.money += income;
 
   Object.keys(S.factions).forEach(k => {
     const noise = Math.random() * 1.6 - 0.8;
-    S.factions[k] = clamp(S.factions[k] + DRIFT[k] + noise, 5, 96);
+    let delta = DRIFT[k] + noise;
+    if (S.services && POLICY_FX.services[k]) delta += POLICY_FX.services[k];
+    if (S.comms    && POLICY_FX.comms[k])    delta += POLICY_FX.comms[k];
+    if (TAX_FX[S.tax]?.[k]) delta += TAX_FX[S.tax][k];
+    S.factions[k] = clamp(S.factions[k] + delta, 5, 96);
   });
 
   const h = happiness();
@@ -100,17 +123,17 @@ function showEvent(evt) {
   clearInterval(S.tickTimer);
   $('tick-bar').style.width = '0%';
 
-  $('event-icon').textContent  = evt.icon;
-  $('event-title').textContent = evt.title;
-  $('event-text').textContent  = evt.text;
+  $('event-icon').textContent   = evt.icon;
+  $('event-title').textContent  = evt.title;
+  $('event-text').textContent   = evt.text;
 
   const [oL, oR] = evt.options;
-  $('opt-left-name').textContent    = oL.label;
-  $('opt-left-preview').textContent = oL.preview;
-  $('opt-left-risk').textContent    = oL.risk || '';
-  $('opt-right-name').textContent   = oR.label;
+  $('opt-left-name').textContent     = oL.label;
+  $('opt-left-preview').textContent  = oL.preview;
+  $('opt-left-risk').textContent     = oL.risk || '';
+  $('opt-right-name').textContent    = oR.label;
   $('opt-right-preview').textContent = oR.preview;
-  $('opt-right-risk').textContent   = oR.risk || '';
+  $('opt-right-risk').textContent    = oR.risk || '';
 
   updateHighlight(0);
   hide('idle-state');
@@ -121,36 +144,48 @@ function showEvent(evt) {
 
 function initCardDrag(oL, oR) {
   const card = $('event-card');
-  const THRESH = 75;
-  let dragging = false, startX = 0, dx = 0;
+  const THRESH_DX = 60;
+  const THRESH_VX = 0.35; // px/ms
+  let dragging = false, startX = 0, dx = 0, lastX = 0, lastT = 0, vx = 0;
 
   function px(e) { return e.touches ? e.touches[0].clientX : e.clientX; }
 
   function onStart(e) {
     if (e.type === 'mousedown') e.preventDefault();
-    dragging = true; startX = px(e); dx = 0;
+    dragging = true;
+    startX = lastX = px(e);
+    lastT  = Date.now();
+    dx = 0; vx = 0;
     card.style.transition = '';
     document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('mouseup',   onEnd);
     document.addEventListener('touchmove', onMove, { passive: false });
-    document.addEventListener('touchend', onEnd);
+    document.addEventListener('touchend',  onEnd);
   }
 
   function onMove(e) {
     if (!dragging) return;
     if (e.cancelable) e.preventDefault();
-    dx = px(e) - startX;
-    card.style.transform = `translateX(${dx}px) rotate(${dx * 0.06}deg)`;
+    const now = Date.now();
+    const cx  = px(e);
+    const dt  = now - lastT || 1;
+    vx     = (cx - lastX) / dt;
+    lastX  = cx;
+    lastT  = now;
+    dx     = cx - startX;
+    card.style.transform = `translateX(${dx}px) rotate(${dx * 0.05}deg)`;
     updateHighlight(dx);
+    setOverlays(dx);
   }
 
   function onEnd() {
     if (!dragging) return;
     dragging = false;
     rmDocListeners();
-    if      (dx < -THRESH) flyOff('left',  oL);
-    else if (dx >  THRESH) flyOff('right', oR);
-    else                   snapBack();
+    setOverlays(0);
+    if      (dx < -THRESH_DX || vx < -THRESH_VX) flyOff('left',  oL);
+    else if (dx >  THRESH_DX || vx >  THRESH_VX) flyOff('right', oR);
+    else                                           snapBack();
   }
 
   function snapBack() {
@@ -177,7 +212,7 @@ function initCardDrag(oL, oR) {
 
   card.addEventListener('mousedown',  onStart);
   card.addEventListener('touchstart', onStart, { passive: true });
-  $('choice-left').addEventListener('click', onClickL);
+  $('choice-left').addEventListener('click',  onClickL);
   $('choice-right').addEventListener('click', onClickR);
   document.addEventListener('keydown', onKey);
 
@@ -186,32 +221,48 @@ function initCardDrag(oL, oR) {
     rmDocListeners();
     card.removeEventListener('mousedown',  onStart);
     card.removeEventListener('touchstart', onStart);
-    $('choice-left').removeEventListener('click', onClickL);
+    $('choice-left').removeEventListener('click',  onClickL);
     $('choice-right').removeEventListener('click', onClickR);
     document.removeEventListener('keydown', onKey);
   };
 }
 
+function setOverlays(dx) {
+  const ol = $('swipe-ol');
+  const or = $('swipe-or');
+  if (dx < -15) {
+    ol.style.opacity = Math.min((-dx - 15) / 120, 0.6);
+    or.style.opacity = '0';
+  } else if (dx > 15) {
+    or.style.opacity = Math.min((dx - 15) / 120, 0.6);
+    ol.style.opacity = '0';
+  } else {
+    ol.style.opacity = '0';
+    or.style.opacity = '0';
+  }
+}
+
 function flyOff(direction, opt) {
   cardCleanup();
   const card = $('event-card');
-  const tx   = direction === 'right' ? window.innerWidth : -window.innerWidth;
-  const rot  = direction === 'right' ? 22 : -22;
-  card.style.transition = 'transform 0.3s ease-in, opacity 0.3s ease-in';
+  const tx   = direction === 'right' ?  window.innerWidth * 1.2 : -window.innerWidth * 1.2;
+  const rot  = direction === 'right' ? 25 : -25;
+  card.style.transition = 'transform 0.28s ease-in, opacity 0.28s ease-in';
   card.style.transform  = `translateX(${tx}px) rotate(${rot}deg)`;
   card.style.opacity    = '0';
+  setOverlays(0);
   setTimeout(() => {
     card.style.transition = '';
     card.style.transform  = '';
     card.style.opacity    = '';
     hide('event-card');
     resolve(opt);
-  }, 310);
+  }, 300);
 }
 
 function updateHighlight(dx) {
-  $('choice-left').classList.toggle('choice-active',  dx < -75);
-  $('choice-right').classList.toggle('choice-active', dx >  75);
+  $('choice-left').classList.toggle('choice-active',  dx < -60);
+  $('choice-right').classList.toggle('choice-active', dx >  60);
 }
 
 function resolve(opt) {
@@ -237,7 +288,7 @@ function resolve(opt) {
 
 function showIdle() {
   $('idle-message').textContent = IDLE_MSGS[Math.floor(Math.random() * IDLE_MSGS.length)];
-  $('idle-state').classList.remove('hidden');
+  show('idle-state');
 }
 
 // ── End game ───────────────────────────────────────────────────────────────────
@@ -267,6 +318,11 @@ function render() {
   $('money-val').textContent      = S.money;
   $('token-val').textContent      = S.tokens;
 
+  const ringColor = h > 60 ? 'var(--ok)' : h > 35 ? 'var(--warn)' : 'var(--bad)';
+  const ringGlow  = h > 60 ? 'rgba(76,175,128,0.38)'  : h > 35 ? 'rgba(224,160,48,0.38)'  : 'rgba(224,64,64,0.38)';
+  document.documentElement.style.setProperty('--hring',      ringColor);
+  document.documentElement.style.setProperty('--hring-glow', ringGlow);
+
   const skyH = h > 50 ? 30 + (h - 50) * 0.8  : h * 0.4;
   const skyS = h > 50 ? 18 + (h - 50) * 0.5  : 15;
   const skyL = h > 50 ? 10 + (h - 50) * 0.15 : 6 + h * 0.08;
@@ -274,14 +330,11 @@ function render() {
   document.documentElement.style.setProperty('--sky-s', skyS + '%');
   document.documentElement.style.setProperty('--sky-l', skyL + '%');
 
-  const bldAlpha = 0.35 + (1 - h / 100) * 0.3;
-  document.documentElement.style.setProperty('--bld-alpha', bldAlpha);
-
   ['veins', 'mercat', 'activistes'].forEach(k => {
     const v = Math.round(S.factions[k]);
-    $(`val-${k}`).textContent   = v;
-    $(`bar-${k}`).style.width   = v + '%';
-    $(`bar-${k}`).className = 'faction-bar-fill ' +
+    $(`val-${k}`).textContent = v;
+    $(`bar-${k}`).style.width = v + '%';
+    $(`bar-${k}`).className   = 'faction-bar-fill ' +
       (v > 60 ? 'bar-ok' : v > 35 ? 'bar-warn' : 'bar-bad');
   });
 
@@ -292,10 +345,40 @@ function render() {
     $('danger-indicator').classList.add('hidden');
   }
 
-  $('pause-btn').textContent = S.phase === 'paused' ? '▶ Reprendre' : '⏸ Pausa';
+  $('pause-btn').textContent    = S.phase === 'paused' ? '▶' : '⏸';
+  $('spend-tokens').disabled    = S.tokens < 3;
+
+  renderControls();
+}
+
+function renderControls() {
+  ['low', 'mid', 'high'].forEach(t => {
+    $(`tax-${t}`).classList.toggle('active', S.tax === t);
+  });
+  $('toggle-services').classList.toggle('active', S.services);
+  $('toggle-comms').classList.toggle('active',    S.comms);
 }
 
 // ── Controls ───────────────────────────────────────────────────────────────────
+function setTax(level) {
+  S.tax = level;
+  renderControls();
+}
+
+function togglePolicy(policy) {
+  S[policy] = !S[policy];
+  renderControls();
+}
+
+function spendTokens() {
+  if (S.tokens < 3) return;
+  S.tokens -= 3;
+  S.factions.veins      = clamp(S.factions.veins      + 8, 5, 96);
+  S.factions.mercat     = clamp(S.factions.mercat     + 6, 5, 96);
+  S.factions.activistes = clamp(S.factions.activistes + 6, 5, 96);
+  render();
+}
+
 function togglePause() {
   if (S.phase === 'playing') {
     S.pausedAt = Date.now();
@@ -333,8 +416,15 @@ function shuffle(arr) {
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────────
-$('btn-retry').addEventListener('click', startGame);
+$('btn-retry').addEventListener('click',      startGame);
 $('btn-retry-lost').addEventListener('click', startGame);
-$('pause-btn').addEventListener('click', togglePause);
+$('pause-btn').addEventListener('click',      togglePause);
+$('spend-tokens').addEventListener('click',   spendTokens);
+
+['low', 'mid', 'high'].forEach(t => {
+  $(`tax-${t}`).addEventListener('click', () => setTax(t));
+});
+$('toggle-services').addEventListener('click', () => togglePolicy('services'));
+$('toggle-comms').addEventListener('click',    () => togglePolicy('comms'));
 
 startGame();

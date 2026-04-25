@@ -2,35 +2,60 @@
 <html lang="ca">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Tot Controlat</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- Swipe overlays (Reigns-style side tints) -->
+  <div id="swipe-ol" class="swipe-overlay"></div>
+  <div id="swipe-or" class="swipe-overlay"></div>
+
   <div id="app">
 
     <!-- ── Top bar ── -->
     <div id="top-bar">
       <div id="money-display">💰 <span id="money-val">450</span>€</div>
-      <div id="week-display">Setm. <span id="week-val">1</span>/26</div>
+      <div id="week-display">Setm. <span id="week-val">1</span> / 26</div>
       <div id="token-display">🪙 <span id="token-val">0</span></div>
     </div>
 
-    <!-- ── Sky + town ── -->
-    <div id="sky-panel">
-      <div id="happiness-display">
+    <!-- ── Event area (top) ── -->
+    <div id="event-area">
+      <div id="idle-state">
+        <p id="idle-message">Setmana tranquil·la... de moment.</p>
+      </div>
+
+      <div id="event-card" class="hidden">
+        <div id="event-header">
+          <span id="event-icon"></span>
+          <span id="event-title"></span>
+        </div>
+        <p id="event-text"></p>
+        <div id="choice-indicators">
+          <div id="choice-left" class="choice-label">
+            <span class="choice-arrow">◀</span>
+            <span class="choice-name" id="opt-left-name"></span>
+            <span class="choice-preview" id="opt-left-preview"></span>
+            <span class="choice-risk" id="opt-left-risk"></span>
+          </div>
+          <div id="choice-right" class="choice-label">
+            <span class="choice-arrow">▶</span>
+            <span class="choice-name" id="opt-right-name"></span>
+            <span class="choice-preview" id="opt-right-preview"></span>
+            <span class="choice-risk" id="opt-right-risk"></span>
+          </div>
+        </div>
+        <p id="swipe-hint">← llisca per decidir →</p>
+      </div>
+    </div>
+
+    <!-- ── Happiness (centre) ── -->
+    <div id="center-area">
+      <div id="happiness-ring">
         <div id="happiness-face">😐</div>
         <div id="happiness-val">60</div>
         <div id="happiness-label">Felicitat</div>
-      </div>
-      <div id="town-scene">
-        <div class="building b-far-l"></div>
-        <div class="building b-left"></div>
-        <div class="building b-center">
-          <div class="bld-roof"></div>
-        </div>
-        <div class="building b-right"></div>
-        <div class="building b-far-r"></div>
       </div>
     </div>
 
@@ -39,25 +64,19 @@
       <div class="faction">
         <span class="faction-icon">🏘️</span>
         <span class="faction-name">Veïns</span>
-        <div class="faction-bar-bg">
-          <div class="faction-bar-fill" id="bar-veins"></div>
-        </div>
+        <div class="faction-bar-bg"><div class="faction-bar-fill" id="bar-veins"></div></div>
         <span class="faction-val" id="val-veins">62</span>
       </div>
       <div class="faction">
         <span class="faction-icon">🏪</span>
         <span class="faction-name">Mercat</span>
-        <div class="faction-bar-bg">
-          <div class="faction-bar-fill" id="bar-mercat"></div>
-        </div>
+        <div class="faction-bar-bg"><div class="faction-bar-fill" id="bar-mercat"></div></div>
         <span class="faction-val" id="val-mercat">60</span>
       </div>
       <div class="faction">
         <span class="faction-icon">✊</span>
-        <span class="faction-name">Activistes</span>
-        <div class="faction-bar-bg">
-          <div class="faction-bar-fill" id="bar-activistes"></div>
-        </div>
+        <span class="faction-name">Activ.</span>
+        <div class="faction-bar-bg"><div class="faction-bar-fill" id="bar-activistes"></div></div>
         <span class="faction-val" id="val-activistes">58</span>
       </div>
     </div>
@@ -65,41 +84,30 @@
     <!-- ── Tick progress ── -->
     <div id="tick-track"><div id="tick-bar"></div></div>
 
-    <!-- ── Idle message ── -->
-    <div id="idle-state">
-      <p id="idle-message">Setmana tranquil·la... de moment.</p>
-    </div>
-
-    <!-- ── Event card ── -->
-    <div id="event-card" class="hidden">
-      <div id="event-header">
-        <span id="event-icon"></span>
-        <span id="event-title"></span>
-      </div>
-      <p id="event-text"></p>
-      <div id="choice-indicators">
-        <div id="choice-left" class="choice-label">
-          <span class="choice-arrow">◀</span>
-          <span class="choice-name" id="opt-left-name"></span>
-          <span class="choice-preview" id="opt-left-preview"></span>
-          <span class="choice-risk" id="opt-left-risk"></span>
-        </div>
-        <div id="choice-right" class="choice-label">
-          <span class="choice-arrow">▶</span>
-          <span class="choice-name" id="opt-right-name"></span>
-          <span class="choice-preview" id="opt-right-preview"></span>
-          <span class="choice-risk" id="opt-right-risk"></span>
+    <!-- ── Controls (bottom) ── -->
+    <div id="controls-area">
+      <div class="ctrl-row">
+        <span class="ctrl-label">Impostos</span>
+        <div class="ctrl-pills">
+          <button class="pill" id="tax-low"  data-tax="low">Baix<span class="pill-sub">+30€</span></button>
+          <button class="pill active" id="tax-mid"  data-tax="mid">Mig<span class="pill-sub">+55€</span></button>
+          <button class="pill" id="tax-high" data-tax="high">Alt<span class="pill-sub">+85€</span></button>
         </div>
       </div>
-      <p id="swipe-hint">← arrossega per decidir →</p>
-    </div>
-
-    <!-- ── Bottom bar ── -->
-    <div id="bottom-bar">
-      <div id="danger-indicator" class="hidden">
-        ⚠️ Perill: <span id="danger-weeks-val">0</span>/3 setm.
+      <div class="ctrl-row">
+        <span class="ctrl-label">Polítiques</span>
+        <div class="ctrl-pills">
+          <button class="pill toggle" id="toggle-services">🏥 Serveis<span class="pill-sub">−35€</span></button>
+          <button class="pill toggle" id="toggle-comms">📢 Comunicació<span class="pill-sub">−25€</span></button>
+        </div>
       </div>
-      <button id="pause-btn">⏸ Pausa</button>
+      <div class="ctrl-row ctrl-row-bottom">
+        <div id="danger-indicator" class="hidden">
+          ⚠️ Perill: <span id="danger-weeks-val">0</span>/3 setm.
+        </div>
+        <button class="pill token-pill" id="spend-tokens" disabled>🪙×3 → +Moral</button>
+        <button id="pause-btn">⏸</button>
+      </div>
     </div>
 
   </div><!-- /#app -->
