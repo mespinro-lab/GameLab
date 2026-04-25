@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tot Controlat</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- ── Top bar ── -->
+    <div id="top-bar">
+      <div id="money-display">💰 <span id="money-val">450</span>€</div>
+      <div id="week-display">Setm. <span id="week-val">1</span>/26</div>
+      <div id="token-display">🪙 <span id="token-val">0</span></div>
+    </div>
+
+    <!-- ── Sky + town ── -->
+    <div id="sky-panel">
+      <div id="happiness-display">
+        <div id="happiness-face">😐</div>
+        <div id="happiness-val">60</div>
+        <div id="happiness-label">Felicitat</div>
+      </div>
+      <div id="town-scene">
+        <div class="building b-far-l"></div>
+        <div class="building b-left"></div>
+        <div class="building b-center">
+          <div class="bld-roof"></div>
+        </div>
+        <div class="building b-right"></div>
+        <div class="building b-far-r"></div>
+      </div>
+    </div>
+
+    <!-- ── Faction bars ── -->
+    <div id="factions">
+      <div class="faction">
+        <span class="faction-icon">🏘️</span>
+        <span class="faction-name">Veïns</span>
+        <div class="faction-bar-bg">
+          <div class="faction-bar-fill" id="bar-veins"></div>
+        </div>
+        <span class="faction-val" id="val-veins">62</span>
+      </div>
+      <div class="faction">
+        <span class="faction-icon">🏪</span>
+        <span class="faction-name">Mercat</span>
+        <div class="faction-bar-bg">
+          <div class="faction-bar-fill" id="bar-mercat"></div>
+        </div>
+        <span class="faction-val" id="val-mercat">60</span>
+      </div>
+      <div class="faction">
+        <span class="faction-icon">✊</span>
+        <span class="faction-name">Activistes</span>
+        <div class="faction-bar-bg">
+          <div class="faction-bar-fill" id="bar-activistes"></div>
+        </div>
+        <span class="faction-val" id="val-activistes">58</span>
+      </div>
+    </div>
+
+    <!-- ── Tick progress ── -->
+    <div id="tick-track"><div id="tick-bar"></div></div>
+
+    <!-- ── Idle message ── -->
+    <div id="idle-state">
+      <p id="idle-message">Setmana tranquil·la... de moment.</p>
+    </div>
+
+    <!-- ── Event card ── -->
+    <div id="event-card" class="hidden">
+      <div id="event-header">
+        <span id="event-icon"></span>
+        <span id="event-title"></span>
+      </div>
+      <p id="event-text"></p>
+      <div id="event-options"></div>
+    </div>
+
+    <!-- ── Bottom bar ── -->
+    <div id="bottom-bar">
+      <div id="danger-indicator" class="hidden">
+        ⚠️ Perill: <span id="danger-weeks-val">0</span>/3 setm.
+      </div>
+      <button id="pause-btn">⏸ Pausa</button>
+    </div>
+
+  </div><!-- /#app -->
+
+  <!-- ── Overlay: win ── -->
+  <div id="overlay-won" class="overlay hidden">
+    <div class="overlay-card">
+      <div class="overlay-icon">🏆</div>
+      <h2>Mandat Completat</h2>
+      <p>Has aguantat 26 setmanes sense catàstrofe visible.<br>El poble et recordarà. En general.</p>
+      <p id="final-score" class="overlay-score"></p>
+      <button id="btn-retry">Tornar a Intentar</button>
+    </div>
+  </div>
+
+  <!-- ── Overlay: lose ── -->
+  <div id="overlay-lost" class="overlay hidden">
+    <div class="overlay-card">
+      <div class="overlay-icon">💥</div>
+      <h2>Col·lapse</h2>
+      <p>La felicitat ha quedat per sota del llindar durant massa temps.<br>El poble ha pres decisions pròpies.</p>
+      <p id="survive-weeks" class="overlay-score"></p>
+      <button id="btn-retry-lost">Tornar a Intentar</button>
+    </div>
+  </div>
+
+  <script src="events.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
