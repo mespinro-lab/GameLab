@@ -2,7 +2,7 @@
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const MAX_WEEKS     = 26;
-const TICK_MS       = 9000;
+const TICK_MS       = 5000;
 const INCOME        = 55;
 const DANGER_LEVEL  = 40;
 const DANGER_LIMIT  = 3;
@@ -26,6 +26,7 @@ const IDLE_MSGS = [
 
 // ── State ──────────────────────────────────────────────────────────────────────
 let S = {};
+let cardCleanup = () => {};
 
 function initState() {
   S = {
@@ -103,29 +104,117 @@ function showEvent(evt) {
   $('event-title').textContent = evt.title;
   $('event-text').textContent  = evt.text;
 
-  const container = $('event-options');
-  container.innerHTML = '';
-  evt.options.forEach(opt => {
-    const canAfford = !opt.fx.money || opt.fx.money >= 0 || (S.money + opt.fx.money) >= 0;
-    const btn = document.createElement('button');
-    btn.className = 'opt-btn' + (canAfford ? '' : ' opt-disabled');
-    btn.disabled  = !canAfford;
-    btn.innerHTML =
-      `<span class="opt-label">${opt.label}</span>` +
-      `<span class="opt-preview">${opt.preview}</span>` +
-      (opt.risk ? `<span class="opt-risk">⚠ ${opt.risk}</span>` : '') +
-      (!canAfford ? `<span class="opt-risk">💸 Sense prou diners</span>` : '');
-    btn.addEventListener('click', () => resolve(opt));
-    container.appendChild(btn);
-  });
+  const [oL, oR] = evt.options;
+  $('opt-left-name').textContent    = oL.label;
+  $('opt-left-preview').textContent = oL.preview;
+  $('opt-left-risk').textContent    = oL.risk || '';
+  $('opt-right-name').textContent   = oR.label;
+  $('opt-right-preview').textContent = oR.preview;
+  $('opt-right-risk').textContent   = oR.risk || '';
 
-  $('idle-state').classList.add('hidden');
-  $('event-card').classList.remove('hidden');
+  updateHighlight(0);
+  hide('idle-state');
+  show('event-card');
+
+  cardCleanup = initCardDrag(oL, oR);
+}
+
+function initCardDrag(oL, oR) {
+  const card = $('event-card');
+  const THRESH = 75;
+  let dragging = false, startX = 0, dx = 0;
+
+  function px(e) { return e.touches ? e.touches[0].clientX : e.clientX; }
+
+  function onStart(e) {
+    if (e.type === 'mousedown') e.preventDefault();
+    dragging = true; startX = px(e); dx = 0;
+    card.style.transition = '';
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onEnd);
+  }
+
+  function onMove(e) {
+    if (!dragging) return;
+    if (e.cancelable) e.preventDefault();
+    dx = px(e) - startX;
+    card.style.transform = `translateX(${dx}px) rotate(${dx * 0.06}deg)`;
+    updateHighlight(dx);
+  }
+
+  function onEnd() {
+    if (!dragging) return;
+    dragging = false;
+    rmDocListeners();
+    if      (dx < -THRESH) flyOff('left',  oL);
+    else if (dx >  THRESH) flyOff('right', oR);
+    else                   snapBack();
+  }
+
+  function snapBack() {
+    card.style.transition = 'transform 0.3s cubic-bezier(0.34,1.56,0.64,1)';
+    card.style.transform  = '';
+    updateHighlight(0);
+    setTimeout(() => { card.style.transition = ''; }, 350);
+  }
+
+  function rmDocListeners() {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup',   onEnd);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend',  onEnd);
+  }
+
+  const onClickL = () => { if (!dragging) flyOff('left',  oL); };
+  const onClickR = () => { if (!dragging) flyOff('right', oR); };
+  const onKey    = e => {
+    if (S.phase !== 'event') return;
+    if (e.key === 'ArrowLeft')  flyOff('left',  oL);
+    if (e.key === 'ArrowRight') flyOff('right', oR);
+  };
+
+  card.addEventListener('mousedown',  onStart);
+  card.addEventListener('touchstart', onStart, { passive: true });
+  $('choice-left').addEventListener('click', onClickL);
+  $('choice-right').addEventListener('click', onClickR);
+  document.addEventListener('keydown', onKey);
+
+  return function cleanup() {
+    dragging = false;
+    rmDocListeners();
+    card.removeEventListener('mousedown',  onStart);
+    card.removeEventListener('touchstart', onStart);
+    $('choice-left').removeEventListener('click', onClickL);
+    $('choice-right').removeEventListener('click', onClickR);
+    document.removeEventListener('keydown', onKey);
+  };
+}
+
+function flyOff(direction, opt) {
+  cardCleanup();
+  const card = $('event-card');
+  const tx   = direction === 'right' ? window.innerWidth : -window.innerWidth;
+  const rot  = direction === 'right' ? 22 : -22;
+  card.style.transition = 'transform 0.3s ease-in, opacity 0.3s ease-in';
+  card.style.transform  = `translateX(${tx}px) rotate(${rot}deg)`;
+  card.style.opacity    = '0';
+  setTimeout(() => {
+    card.style.transition = '';
+    card.style.transform  = '';
+    card.style.opacity    = '';
+    hide('event-card');
+    resolve(opt);
+  }, 310);
+}
+
+function updateHighlight(dx) {
+  $('choice-left').classList.toggle('choice-active',  dx < -75);
+  $('choice-right').classList.toggle('choice-active', dx >  75);
 }
 
 function resolve(opt) {
-  $('event-card').classList.add('hidden');
-
   const fx = opt.fx || {};
   if (fx.veins)      S.factions.veins      = clamp(S.factions.veins      + fx.veins,      5, 96);
   if (fx.mercat)     S.factions.mercat     = clamp(S.factions.mercat     + fx.mercat,     5, 96);
@@ -226,7 +315,7 @@ function startGame() {
   initState();
   render();
   showIdle();
-  setTimeout(() => { if (S.phase === 'playing') { showEvent(nextEvent()); } }, 1800);
+  setTimeout(() => { if (S.phase === 'playing') { showEvent(nextEvent()); } }, 800);
 }
 
 // ── Utils ──────────────────────────────────────────────────────────────────────

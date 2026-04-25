@@ -109,7 +109,6 @@ const EVENTS = [
     options: [
       { label: 'Uniformes nous (sense LED)', preview: '+Veïns  −180€', fx: { veins: 10, money: -180 } },
       { label: 'Vaga que és vaga', preview: '−Veïns  −Activistes', fx: { veins: -16, activistes: -8 }, risk: 'Durarà més del previst' },
-      { label: 'Tot el que demanen (amb LED)', preview: '+Veïns  +Activistes  −420€', fx: { veins: 14, activistes: 10, money: -420 } },
     ],
   },
   {
@@ -158,7 +157,6 @@ const EVENTS = [
     title: 'PLA VERD',
     text: 'Els Activistes proposen substituir tots els contenidors per "Punts de Consciència Ambiental". Costen el triple. Vénen en colors que "no existien fins ara".',
     options: [
-      { label: 'Pla complet', preview: '+Activistes  −Mercat  −450€', fx: { activistes: 15, mercat: -8, money: -450 } },
       { label: 'Pla mixt (la meitat)', preview: '+Activistes  −Mercat  −220€', fx: { activistes: 8, mercat: -4, money: -220 } },
       { label: 'Contenidors de sempre', preview: '+Mercat  −Activistes', fx: { mercat: 8, activistes: -14 } },
     ],
