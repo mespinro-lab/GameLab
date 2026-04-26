@@ -1,7 +1,8 @@
 'use strict';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-const MAX_WEEKS    = 26;
+const MAX_WEEKS    = 6;
+const MAX_LEVELS   = 5;
 const TICK_MS         = 5000;
 const EVENT_TIMER_MS  = 12000;
 const DANGER_LEVEL = 40;
@@ -41,26 +42,29 @@ const IDLE_MSGS = [
 let S = {};
 let cardCleanup = () => {};
 
-function initState(countryName) {
+function initState(worldId, levelNum) {
+  const world = WORLDS.find(w => w.id === worldId);
   S = {
-    countryName: countryName,
-    week:        1,
-    money:       450,
-    factions:    { veins: 62, mercat: 60, activistes: 58 },
-    tokens:      0,
-    mandate:        1,
-    dangerWeeks:    0,
-    phase:          'playing',
-    tickTimer:      null,
-    tickStart:      0,
-    pausedAt:       0,
-    prePausePhase:  null,
-    currentEvent:   null,
-    pool:           shuffle([...EVENTS]),
-    poolIdx:        0,
-    tax:            'mid',
-    services:       false,
-    comms:          false,
+    worldId,
+    levelNum,
+    worldConfig:     world,
+    countryName:     world.name,
+    week:            1,
+    money:           world.startMoney,
+    factions:        { ...world.startFactions },
+    tokens:          0,
+    dangerWeeks:     0,
+    phase:           'playing',
+    tickTimer:       null,
+    tickStart:       0,
+    pausedAt:        0,
+    prePausePhase:   null,
+    currentEvent:    null,
+    pool:            shuffle([...world.events, ...EVENTS]),
+    poolIdx:         0,
+    tax:             world.startTax || 'mid',
+    services:        false,
+    comms:           false,
     conjunctureMods: { incomeMod: 0, driftMod: {} },
   };
   flushPendingTokens();
@@ -73,29 +77,43 @@ function happiness() {
 }
 
 // ── Save system ────────────────────────────────────────────────────────────────
-const SAVE_KEY     = name => `totcontrolat_save_${name}`;
-const TOKEN_BANK   = 'totcontrolat_tokens';
-const BADGES_KEY   = 'totcontrolat_badges';
+const WORLD_SAVE_KEY = id => `totcontrolat_world_${id}`;
+const PROGRESS_KEY   = 'totcontrolat_progress';
+const TOKEN_BANK     = 'totcontrolat_tokens';
+const BADGES_KEY     = 'totcontrolat_badges';
+
+function getProgress() {
+  try { return JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}'); } catch(e) { return {}; }
+}
+
+function incrementWorldProgress(worldId, levelNum) {
+  const p = getProgress();
+  if ((p[worldId] || 0) < levelNum) {
+    p[worldId] = levelNum;
+    try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(p)); } catch(e) {}
+  }
+}
 
 function getBadges() {
   try { return JSON.parse(localStorage.getItem(BADGES_KEY) || '[]'); } catch(e) { return []; }
 }
+
 function addBadge(id) {
   const b = getBadges();
   if (!b.includes(id)) { b.push(id); try { localStorage.setItem(BADGES_KEY, JSON.stringify(b)); } catch(e) {} }
 }
 
 function saveGame() {
-  if (!S.countryName) return;
+  if (!S.worldId) return;
   try {
-    localStorage.setItem(SAVE_KEY(S.countryName), JSON.stringify({
-      countryName:     S.countryName,
+    localStorage.setItem(WORLD_SAVE_KEY(S.worldId), JSON.stringify({
+      worldId:         S.worldId,
+      levelNum:        S.levelNum,
       week:            S.week,
       money:           S.money,
       factions:        { ...S.factions },
       tokens:          S.tokens,
       dangerWeeks:     S.dangerWeeks,
-      mandate:         S.mandate,
       conjunctureMods: S.conjunctureMods,
       tax:             S.tax,
       services:        S.services,
@@ -106,21 +124,12 @@ function saveGame() {
   } catch(e) {}
 }
 
-function deleteSave(name) {
-  try { localStorage.removeItem(SAVE_KEY(name)); } catch(e) {}
+function deleteWorldSave(worldId) {
+  try { localStorage.removeItem(WORLD_SAVE_KEY(worldId)); } catch(e) {}
 }
 
-function listSaves() {
-  const saves = [];
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (k && k.startsWith('totcontrolat_save_')) {
-        try { saves.push(JSON.parse(localStorage.getItem(k))); } catch(e) {}
-      }
-    }
-  } catch(e) {}
-  return saves.sort((a, b) => b.savedAt - a.savedAt);
+function getWorldSave(worldId) {
+  try { return JSON.parse(localStorage.getItem(WORLD_SAVE_KEY(worldId))); } catch(e) { return null; }
 }
 
 function getPendingTokens() {
@@ -140,14 +149,15 @@ function flushPendingTokens() {
 let fromIngame = false;
 
 function openMainMenu() {
-  if (S.countryName && (S.phase === 'playing' || S.phase === 'event')) {
-    S.pausedAt     = Date.now();
+  const activePhase = S.phase === 'playing' || S.phase === 'event';
+  if (S.worldId && activePhase) {
+    S.pausedAt      = Date.now();
     S.prePausePhase = S.phase;
-    S.phase        = 'paused';
+    S.phase         = 'paused';
     clearInterval(S.tickTimer);
     render();
   }
-  fromIngame = !!S.countryName;
+  fromIngame = !!S.worldId && (activePhase || S.phase === 'paused');
   $('btn-reprendre').classList.toggle('hidden', !fromIngame);
   showOnly('menu-screen');
 }
@@ -175,7 +185,9 @@ function resumeActiveTimer() {
   }
 }
 
-const MENU_SCREENS = ['menu-screen','nova-screen','carregar-screen','botiga-screen','config-screen','badges-screen'];
+const MENU_SCREENS = [
+  'menu-screen', 'world-map-screen', 'botiga-screen', 'config-screen', 'badges-screen',
+];
 
 function showSub(id) {
   MENU_SCREENS.forEach(hide);
@@ -186,67 +198,113 @@ function showOnly(id) {
   MENU_SCREENS.forEach(x => x === id ? show(x) : hide(x));
 }
 
-// ── Nova partida ────────────────────────────────────────────────────────────────
-function openNova() {
-  $('country-input').value = '';
-  hide('name-error');
-  showSub('nova-screen');
-  setTimeout(() => $('country-input').focus(), 100);
+// ── World map ──────────────────────────────────────────────────────────────────
+function openWorldMap() {
+  renderWorldMap();
+  showSub('world-map-screen');
 }
 
-function confirmNova() {
-  const name = $('country-input').value.trim();
-  if (!name) { show('name-error'); return; }
-  hide('name-error');
-  startSession(name);
-}
-
-// ── Carregar partida ────────────────────────────────────────────────────────────
-function openCarregar() {
-  renderSaves();
-  showSub('carregar-screen');
-}
-
-function renderSaves() {
-  const saves = listSaves();
-  const list  = $('saves-list');
+function renderWorldMap() {
+  const progress = getProgress();
+  const list = $('worlds-list');
   list.innerHTML = '';
-  if (!saves.length) { show('no-saves-msg'); return; }
-  hide('no-saves-msg');
-  saves.forEach(sv => {
-    const date = new Date(sv.savedAt).toLocaleDateString('ca-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    const row  = document.createElement('div');
-    row.className = 'save-item';
-    row.innerHTML = `
-      <div class="save-info">
-        <div class="save-name">🏛️ ${sv.countryName}</div>
-        <div class="save-meta">Setm. ${sv.week}/26 · Felicitat: ${sv.happiness} · ${date}</div>
+
+  WORLDS.forEach((world, i) => {
+    const levelsCompleted = progress[world.id] || 0;
+    const isUnlocked = i === 0 || (progress[WORLDS[i - 1].id] || 0) >= 1;
+    const save = isUnlocked ? getWorldSave(world.id) : null;
+    const isComplete = levelsCompleted >= MAX_LEVELS;
+
+    const item = document.createElement('div');
+    item.className = 'world-item' + (isUnlocked ? '' : ' world-item-locked');
+    item.style.setProperty('--world-color', world.color);
+
+    let progressHTML = '';
+    if (isUnlocked) {
+      const pct = Math.min(100, (levelsCompleted / MAX_LEVELS) * 100);
+      progressHTML = `
+        <div class="world-progress-row">
+          <div class="world-prog-bar-bg"><div class="world-prog-bar-fill" style="width:${pct}%"></div></div>
+          <span class="world-prog-label">${levelsCompleted}/${MAX_LEVELS}</span>
+        </div>`;
+    }
+
+    let btnLabel, btnClass;
+    if (!isUnlocked) {
+      btnLabel = '🔒 Blocat';
+      btnClass = 'world-play-btn world-play-locked';
+    } else if (isComplete) {
+      btnLabel = '✓ Completat · Juga de Nou';
+      btnClass = 'world-play-btn world-play-done';
+    } else if (save) {
+      btnLabel = `Continua Niv ${save.levelNum} →`;
+      btnClass = 'world-play-btn world-play-active';
+    } else {
+      const startLv = levelsCompleted + 1;
+      btnLabel = levelsCompleted > 0 ? `Comença Niv ${startLv} →` : 'Comença →';
+      btnClass = 'world-play-btn world-play-new';
+    }
+
+    item.innerHTML = `
+      <div class="world-item-header">
+        <span class="world-item-icon">${world.icon}</span>
+        <div class="world-item-info">
+          <div class="world-item-name">${world.name}</div>
+          <div class="world-item-desc">${world.description}</div>
+        </div>
       </div>
-      <button class="save-load-btn">Carrega</button>
-      <button class="save-del-btn" title="Suprimeix">✕</button>
+      ${progressHTML}
+      <button class="${btnClass}"${isUnlocked ? '' : ' disabled'}>${btnLabel}</button>
     `;
-    row.querySelector('.save-load-btn').addEventListener('click', () => loadSession(sv));
-    row.querySelector('.save-del-btn').addEventListener('click', (e) => {
-      e.stopPropagation();
-      deleteSave(sv.countryName);
-      row.remove();
-      if (!$('saves-list').children.length) show('no-saves-msg');
-    });
-    list.appendChild(row);
+
+    if (isUnlocked) {
+      item.querySelector('button').addEventListener('click', () => {
+        if (isComplete) {
+          // Reset progress for this world and restart
+          const p = getProgress();
+          p[world.id] = 0;
+          try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(p)); } catch(e) {}
+          deleteWorldSave(world.id);
+        }
+        startWorld(world.id);
+      });
+    }
+
+    list.appendChild(item);
   });
 }
 
-function loadSession(sv) {
-  hide('overlay-won'); hide('overlay-lost');
+// ── Start / load world ─────────────────────────────────────────────────────────
+function startWorld(worldId) {
+  hide('overlay-won'); hide('overlay-lost'); hide('overlay-world-done');
   hide('event-card');
+  MENU_SCREENS.forEach(hide);
+
+  const save = getWorldSave(worldId);
+  if (save) {
+    loadWorldSession(save);
+  } else {
+    const progress = getProgress();
+    const levelNum = (progress[worldId] || 0) + 1;
+    initState(worldId, levelNum);
+    render();
+    showIdle();
+    setTimeout(() => { if (S.phase === 'playing') showEvent(nextEvent()); }, 800);
+  }
+}
+
+function loadWorldSession(sv) {
+  const world = WORLDS.find(w => w.id === sv.worldId);
   S = {
-    countryName:     sv.countryName,
+    worldId:         sv.worldId,
+    levelNum:        sv.levelNum || 1,
+    worldConfig:     world,
+    countryName:     world.name,
     week:            sv.week,
     money:           sv.money,
     factions:        { ...sv.factions },
     tokens:          sv.tokens,
     dangerWeeks:     sv.dangerWeeks,
-    mandate:         sv.mandate         || 1,
     conjunctureMods: sv.conjunctureMods || { incomeMod: 0, driftMod: {} },
     phase:           'playing',
     tickTimer:       null,
@@ -254,17 +312,20 @@ function loadSession(sv) {
     pausedAt:        0,
     prePausePhase:   null,
     currentEvent:    null,
-    pool:            shuffle([...EVENTS]),
+    pool:            shuffle([...world.events, ...EVENTS]),
     poolIdx:         0,
     tax:             sv.tax      || 'mid',
     services:        sv.services || false,
     comms:           sv.comms    || false,
   };
   flushPendingTokens();
-  ['menu-screen','carregar-screen'].forEach(hide);
   render();
   showIdle();
   startTick();
+}
+
+function retrySession() {
+  if (S.worldId) startWorld(S.worldId);
 }
 
 // ── Botiga ─────────────────────────────────────────────────────────────────────
@@ -282,11 +343,11 @@ function updatePendingInfo() {
 }
 
 function buyTokens(n) {
-  if (S.countryName) {
+  if (S.worldId) {
     S.tokens += n;
     saveGame();
     render();
-    showShopConfirm(`✓ +${n} tokens afegits a ${S.countryName}!`);
+    showShopConfirm(`✓ +${n} tokens afegits a ${S.worldConfig.name}!`);
   } else {
     addPendingTokens(n);
     updatePendingInfo();
@@ -327,9 +388,10 @@ function advanceWeek() {
   if (S.comms)    income -= POLICY_COSTS.comms;
   S.money += income;
 
+  const worldDrift = S.worldConfig.drift || DRIFT;
   Object.keys(S.factions).forEach(k => {
     const noise = Math.random() * 1.6 - 0.8;
-    let delta = DRIFT[k] + noise;
+    let delta = (worldDrift[k] !== undefined ? worldDrift[k] : DRIFT[k]) + noise;
     if (S.services && POLICY_FX.services[k]) delta += POLICY_FX.services[k];
     if (S.comms    && POLICY_FX.comms[k])    delta += POLICY_FX.comms[k];
     if (TAX_FX[S.tax]?.[k]) delta += TAX_FX[S.tax][k];
@@ -358,7 +420,10 @@ function advanceWeek() {
 
 // ── Events ─────────────────────────────────────────────────────────────────────
 function nextEvent() {
-  if (S.poolIdx >= S.pool.length) { S.pool = shuffle([...EVENTS]); S.poolIdx = 0; }
+  if (S.poolIdx >= S.pool.length) {
+    S.pool = shuffle([...S.worldConfig.events, ...EVENTS]);
+    S.poolIdx = 0;
+  }
   const remaining = S.pool.slice(S.poolIdx);
   const weights   = remaining.map(eventWeight);
   const total     = weights.reduce((a, b) => a + b, 0);
@@ -378,14 +443,12 @@ function eventWeight(evt) {
       if      (v < 35) w += 3.0;
       else if (v < 50) w += 1.5;
       else if (v < 65) w += 0.2;
-      // happy faction → crisis suppressed (adds nothing)
     } else if (tone === 'opportunity') {
       if      (v > 70) w += 2.5;
       else if (v > 55) w += 1.2;
       else if (v > 40) w += 0.2;
-      // unhappy faction → opportunity suppressed (adds nothing)
     } else {
-      w += 0.4; // neutral events get a slight flat boost
+      w += 0.4;
     }
   });
   return w;
@@ -490,7 +553,6 @@ function autoResolveEvent() {
   }, 280);
 }
 
-
 function flyOff(direction, opt) {
   if (S.phase !== 'event') return;
   clearInterval(S.tickTimer);
@@ -576,9 +638,12 @@ function shakeEl(id) {
 function showResolveFeedback(fx) {
   const s = v => v > 0 ? '+' : '';
   const c = v => v > 0 ? 'var(--ok)' : 'var(--bad)';
-  if (fx.veins)      spawnFloat(`🏘️ ${s(fx.veins)}${fx.veins}`,             'bar-veins',      c(fx.veins));
-  if (fx.mercat)     spawnFloat(`🏪 ${s(fx.mercat)}${fx.mercat}`,            'bar-mercat',     c(fx.mercat));
-  if (fx.activistes) spawnFloat(`✊ ${s(fx.activistes)}${fx.activistes}`,     'bar-activistes', c(fx.activistes));
+  const fc = S.worldConfig ? S.worldConfig.factionConfig : {
+    veins: { icon: '🏘️' }, mercat: { icon: '🏪' }, activistes: { icon: '✊' },
+  };
+  if (fx.veins)      spawnFloat(`${fc.veins.icon} ${s(fx.veins)}${fx.veins}`,             'bar-veins',      c(fx.veins));
+  if (fx.mercat)     spawnFloat(`${fc.mercat.icon} ${s(fx.mercat)}${fx.mercat}`,           'bar-mercat',     c(fx.mercat));
+  if (fx.activistes) spawnFloat(`${fc.activistes.icon} ${s(fx.activistes)}${fx.activistes}`, 'bar-activistes', c(fx.activistes));
   if (fx.money) {
     spawnFloat(`💰 ${s(fx.money)}${fx.money}€`, 'money-val', fx.money > 0 ? 'var(--gold)' : 'var(--bad)');
     if (fx.money < 0) shakeEl('money-display');
@@ -588,17 +653,33 @@ function showResolveFeedback(fx) {
 // ── End game ───────────────────────────────────────────────────────────────────
 function endGame(win) {
   clearInterval(S.tickTimer);
-  deleteSave(S.countryName);
+  deleteWorldSave(S.worldId);
 
   if (win) {
-    S.phase = 'between';
-    endMandate();
+    incrementWorldProgress(S.worldId, S.levelNum);
+    if (S.levelNum >= MAX_LEVELS) {
+      S.phase = 'world-won';
+      showWorldComplete();
+    } else {
+      S.phase = 'between';
+      endMandate();
+    }
   } else {
     S.phase = 'lost';
-    $('survive-weeks').textContent =
-      `Mandat ${S.mandate} · Setmana ${S.week - 1} de ${MAX_WEEKS}`;
+    $('survive-weeks').textContent = `${S.worldConfig.name} · Niv ${S.levelNum} · S${S.week - 1}/${MAX_WEEKS}`;
     show('overlay-lost');
   }
+}
+
+function showWorldComplete() {
+  const h = happiness();
+  const score = h * MAX_WEEKS * MAX_LEVELS + S.tokens * 60;
+  const face  = h > 75 ? '😄' : h > 55 ? '😐' : h > 35 ? '😟' : '😱';
+  $('world-done-title').textContent = `${S.worldConfig.icon} ${S.worldConfig.name} Completat!`;
+  $('world-done-text').textContent  =
+    `Has superat els ${MAX_LEVELS} nivells sense col·lapse visible. El poble et recordarà. Probablement.`;
+  $('world-done-score').textContent = `Puntuació: ${score} · Niv ${MAX_LEVELS}/${MAX_LEVELS}`;
+  show('overlay-world-done');
 }
 
 // ── Mandate chain ──────────────────────────────────────────────────────────────
@@ -620,23 +701,23 @@ function showConjunctureScreen(conj) {
   const h     = happiness();
   const face  = h > 75 ? '😄' : h > 55 ? '😐' : h > 35 ? '😟' : '😱';
 
-  $('conj-mandate-done-num').textContent  = S.mandate;
-  $('conj-score-line').textContent        = `Puntuació: ${score}`;
+  $('conj-mandate-done-num').textContent  = S.levelNum;
+  $('conj-score-line').textContent        = `${S.worldConfig.icon} ${S.worldConfig.name} · ${score} pts`;
   $('conj-icon').textContent              = conj.icon;
   $('conj-title').textContent             = conj.title;
   $('conj-text').textContent              = conj.text;
   $('conj-carry-money').textContent       = S.money;
   $('conj-carry-happ').textContent        = `${face} ${h}`;
   $('conj-carry-tokens').textContent      = S.tokens;
-  $('conj-mandate-next-num').textContent  = S.mandate + 1;
+  $('conj-mandate-next-num').textContent  = S.levelNum + 1;
 
   const fx   = conj.startFx || {};
   const parts = [];
   if (fx.money)         parts.push(`💰 ${fx.money > 0 ? '+' : ''}${fx.money}€`);
   if (conj.incomeMod)   parts.push(`📈 ${conj.incomeMod > 0 ? '+' : ''}${conj.incomeMod}€/setm.`);
-  if (fx.veins)         parts.push(`🏘️ ${fx.veins > 0 ? '+' : ''}${fx.veins}`);
-  if (fx.mercat)        parts.push(`🏪 ${fx.mercat > 0 ? '+' : ''}${fx.mercat}`);
-  if (fx.activistes)    parts.push(`✊ ${fx.activistes > 0 ? '+' : ''}${fx.activistes}`);
+  if (fx.veins)         parts.push(`${S.worldConfig.factionConfig.veins.icon} ${fx.veins > 0 ? '+' : ''}${fx.veins}`);
+  if (fx.mercat)        parts.push(`${S.worldConfig.factionConfig.mercat.icon} ${fx.mercat > 0 ? '+' : ''}${fx.mercat}`);
+  if (fx.activistes)    parts.push(`${S.worldConfig.factionConfig.activistes.icon} ${fx.activistes > 0 ? '+' : ''}${fx.activistes}`);
   $('conj-effects').textContent = parts.join('  ·  ');
 
   $('btn-start-mandate')._conj = conj;
@@ -653,11 +734,11 @@ function startNextMandate() {
   if (fx.mercat)     S.factions.mercat     = clamp(S.factions.mercat     + fx.mercat,     5, 96);
   if (fx.activistes) S.factions.activistes = clamp(S.factions.activistes + fx.activistes, 5, 96);
 
-  S.mandate++;
+  S.levelNum++;
   S.week          = 1;
   S.dangerWeeks   = 0;
   S.phase         = 'playing';
-  S.pool          = shuffle([...EVENTS]);
+  S.pool          = shuffle([...S.worldConfig.events, ...EVENTS]);
   S.poolIdx       = 0;
   S.currentEvent  = null;
   S.conjunctureMods = { incomeMod: conj.incomeMod || 0, driftMod: conj.driftMod || {} };
@@ -699,12 +780,24 @@ function render() {
 
   $('happiness-val').textContent  = h;
   $('happiness-face').textContent = h > 75 ? '😄' : h > 55 ? '😐' : h > 35 ? '😟' : '😱';
-  $('week-display').innerHTML = S.mandate > 1
-    ? `M${S.mandate} · S<span id="week-val">${S.week}</span>/26`
-    : `Setm. <span id="week-val">${S.week}</span> / 26`;
-  $('money-val').textContent      = S.money;
-  $('token-val').textContent      = S.tokens;
-  $('ring-country').textContent   = S.countryName || '';
+
+  if (S.worldConfig) {
+    $('week-display').innerHTML =
+      `Niv ${S.levelNum} · S<span id="week-val">${S.week}</span>/${MAX_WEEKS}`;
+    $('ring-country').textContent = `${S.worldConfig.icon} ${S.worldConfig.name}`;
+    const fc = S.worldConfig.factionConfig;
+    ['veins', 'mercat', 'activistes'].forEach(k => {
+      const iconEl = $(`icon-${k}`), nameEl = $(`name-${k}`);
+      if (iconEl) iconEl.textContent = fc[k].icon;
+      if (nameEl) nameEl.textContent = fc[k].name;
+    });
+  } else {
+    $('week-display').innerHTML = `S<span id="week-val">${S.week}</span>/${MAX_WEEKS}`;
+    $('ring-country').textContent = '';
+  }
+
+  $('money-val').textContent = S.money;
+  $('token-val').textContent = S.tokens;
 
   const ringColor = h > 60 ? 'var(--ok)' : h > 35 ? 'var(--warn)' : 'var(--bad)';
   const ringGlow  = h > 60 ? 'rgba(52,211,153,0.42)'  : h > 35 ? 'rgba(251,146,60,0.42)'  : 'rgba(244,63,94,0.42)';
@@ -788,22 +881,6 @@ function togglePause() {
   render();
 }
 
-// ── Start session ──────────────────────────────────────────────────────────────
-function startSession(countryName) {
-  hide('overlay-won'); hide('overlay-lost');
-  hide('event-card');
-  ['menu-screen','nova-screen','carregar-screen','botiga-screen','config-screen']
-    .forEach(hide);
-  initState(countryName);
-  render();
-  showIdle();
-  setTimeout(() => { if (S.phase === 'playing') showEvent(nextEvent()); }, 800);
-}
-
-function retrySession() {
-  startSession(S.countryName);
-}
-
 // ── Utils ──────────────────────────────────────────────────────────────────────
 const $     = id => document.getElementById(id);
 const show  = id => $(id).classList.remove('hidden');
@@ -819,49 +896,45 @@ function shuffle(arr) {
 }
 
 // ── Event listeners ────────────────────────────────────────────────────────────
-// Game controls
-$('btn-retry').addEventListener('click',      retrySession);
-$('btn-retry-lost').addEventListener('click', retrySession);
-$('pause-btn').addEventListener('click',      togglePause);
-$('spend-tokens').addEventListener('click',   spendTokens);
-$('reveal-btn').addEventListener('click',     revealInsight);
+$('btn-retry').addEventListener('click', () => {
+  hide('overlay-won');
+  retrySession();
+});
+$('btn-retry-lost').addEventListener('click', () => {
+  hide('overlay-lost');
+  retrySession();
+});
+$('pause-btn').addEventListener('click',    togglePause);
+$('spend-tokens').addEventListener('click', spendTokens);
+$('reveal-btn').addEventListener('click',   revealInsight);
 ['low', 'mid', 'high'].forEach(t =>
   $(`tax-${t}`).addEventListener('click', () => setTax(t)));
 $('toggle-services').addEventListener('click', () => togglePolicy('services'));
 $('toggle-comms').addEventListener('click',    () => togglePolicy('comms'));
 
-// Win/lose → menu
-$('btn-menu-won').addEventListener('click',  openMainMenu);
-$('btn-menu-lost').addEventListener('click', openMainMenu);
+$('btn-menu-won').addEventListener('click',       openMainMenu);
+$('btn-menu-lost').addEventListener('click',      openMainMenu);
+$('btn-world-map-done').addEventListener('click', () => { hide('overlay-world-done'); openWorldMap(); });
+$('btn-menu-world-done').addEventListener('click', openMainMenu);
 
-// In-game menu button
 $('menu-ingame-btn').addEventListener('click', openMainMenu);
 
-// Main menu
-$('btn-nova').addEventListener('click',     openNova);
-$('btn-carregar').addEventListener('click', openCarregar);
-$('btn-botiga').addEventListener('click',   openBotiga);
-$('btn-badges').addEventListener('click',   openBadges);
-$('btn-config').addEventListener('click',   openConfig);
+$('btn-nova').addEventListener('click',      openWorldMap);
+$('btn-carregar').addEventListener('click',  openWorldMap);
+$('btn-botiga').addEventListener('click',    openBotiga);
+$('btn-badges').addEventListener('click',    openBadges);
+$('btn-config').addEventListener('click',    openConfig);
 $('btn-reprendre').addEventListener('click', closeMainMenu);
 $('btn-start-mandate').addEventListener('click', startNextMandate);
 
-// Nova partida
-$('btn-back-nova').addEventListener('click',  () => showOnly('menu-screen'));
-$('btn-start-new').addEventListener('click',  confirmNova);
-$('country-input').addEventListener('keydown', e => { if (e.key === 'Enter') confirmNova(); });
+$('btn-back-worldmap').addEventListener('click',  () => showOnly('menu-screen'));
+$('btn-back-botiga').addEventListener('click',    () => showOnly('menu-screen'));
+$('btn-back-config').addEventListener('click',    () => showOnly('menu-screen'));
+$('btn-back-badges').addEventListener('click',    () => showOnly('menu-screen'));
 
-// Carregar partida
-$('btn-back-carregar').addEventListener('click', () => showOnly('menu-screen'));
-
-// Botiga
-$('btn-back-botiga').addEventListener('click', () => showOnly('menu-screen'));
 $('btn-buy-10').addEventListener('click',  () => buyTokens(10));
 $('btn-buy-100').addEventListener('click', () => buyTokens(100));
 
-// Configuració
-$('btn-back-config').addEventListener('click',  () => showOnly('menu-screen'));
-$('btn-back-badges').addEventListener('click',  () => showOnly('menu-screen'));
 document.querySelectorAll('.lang-pill').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.lang-pill').forEach(b => b.classList.remove('active'));

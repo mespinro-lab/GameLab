@@ -70,20 +70,20 @@
     <!-- ── Faction bars ── -->
     <div id="factions">
       <div class="faction">
-        <span class="faction-icon">🏘️</span>
-        <span class="faction-name">Veïns</span>
+        <span class="faction-icon" id="icon-veins">🏘️</span>
+        <span class="faction-name" id="name-veins">Veïns</span>
         <div class="faction-bar-bg"><div class="faction-bar-fill" id="bar-veins"></div></div>
         <span class="faction-val" id="val-veins">62</span>
       </div>
       <div class="faction">
-        <span class="faction-icon">🏪</span>
-        <span class="faction-name">Mercat</span>
+        <span class="faction-icon" id="icon-mercat">🏪</span>
+        <span class="faction-name" id="name-mercat">Mercat</span>
         <div class="faction-bar-bg"><div class="faction-bar-fill" id="bar-mercat"></div></div>
         <span class="faction-val" id="val-mercat">60</span>
       </div>
       <div class="faction">
-        <span class="faction-icon">✊</span>
-        <span class="faction-name">Activ.</span>
+        <span class="faction-icon" id="icon-activistes">✊</span>
+        <span class="faction-name" id="name-activistes">Activ.</span>
         <div class="faction-bar-bg"><div class="faction-bar-fill" id="bar-activistes"></div></div>
         <span class="faction-val" id="val-activistes">58</span>
       </div>
@@ -121,6 +121,18 @@
 
   </div><!-- /#app -->
 
+  <!-- ── Overlay: world complete ── -->
+  <div id="overlay-world-done" class="overlay hidden">
+    <div class="overlay-card">
+      <div class="overlay-icon">🌍</div>
+      <h2 id="world-done-title">Món Completat!</h2>
+      <p id="world-done-text"></p>
+      <p id="world-done-score" class="overlay-score"></p>
+      <button id="btn-world-map-done">🗺️ Torna al Mapa</button>
+      <button id="btn-menu-world-done" class="overlay-btn-sec">Menu Principal</button>
+    </div>
+  </div>
+
   <!-- ── Overlay: win ── -->
   <div id="overlay-won" class="overlay hidden">
     <div class="overlay-card">
@@ -149,7 +161,7 @@
   <div id="conjuncture-screen" class="overlay hidden">
     <div class="overlay-card conj-card">
       <div class="conj-mandate-done">
-        <span class="conj-mandate-label">Mandat <span id="conj-mandate-done-num">1</span> Completat</span>
+        <span class="conj-mandate-label">Nivell <span id="conj-mandate-done-num">1</span> Completat</span>
         <span id="conj-score-line" class="conj-score-val"></span>
       </div>
       <div class="conj-sep"></div>
@@ -163,7 +175,7 @@
         <span id="conj-carry-happ">😐 60</span>
         <span>🪙 <span id="conj-carry-tokens">0</span></span>
       </div>
-      <button id="btn-start-mandate">Inicia el Mandat <span id="conj-mandate-next-num">2</span> →</button>
+      <button id="btn-start-mandate">Inicia el Nivell <span id="conj-mandate-next-num">2</span> →</button>
     </div>
   </div>
 
@@ -178,12 +190,21 @@
       <p class="menu-subtitle">Simulador absurd de gestió municipal</p>
     </div>
     <div class="menu-buttons">
-      <button class="menu-btn primary" id="btn-nova">🎮 Nova Partida</button>
-      <button class="menu-btn" id="btn-carregar">📂 Carregar Partida</button>
+      <button class="menu-btn primary" id="btn-nova">🗺️ Mapa de Mons</button>
+      <button class="menu-btn" id="btn-carregar">▶ Continua</button>
       <button class="menu-btn" id="btn-botiga">🛒 Botiga</button>
       <button class="menu-btn" id="btn-badges">🏅 Historial</button>
       <button class="menu-btn" id="btn-config">⚙️ Configuració</button>
       <button class="menu-btn reprendre hidden" id="btn-reprendre">▶ Reprendre</button>
+    </div>
+  </div>
+
+  <div id="world-map-screen" class="menu-overlay hidden">
+    <div class="sub-card world-map-card">
+      <button class="back-btn" id="btn-back-worldmap">← Enrere</button>
+      <h2>🗺️ Mapa de Mons</h2>
+      <p class="sub-desc">Completa un món per descobrir el següent.</p>
+      <div id="worlds-list"></div>
     </div>
   </div>
 
