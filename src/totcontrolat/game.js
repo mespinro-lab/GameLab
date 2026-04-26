@@ -54,6 +54,7 @@ function initState(countryName) {
     tickStart:      0,
     pausedAt:       0,
     prePausePhase:  null,
+    currentEvent:   null,
     pool:           shuffle([...EVENTS]),
     poolIdx:        0,
     tax:            'mid',
@@ -352,20 +353,29 @@ function nextEvent() {
 
 function eventWeight(evt) {
   let w = 1.0;
-  const factionKeys = evt.options
-    .flatMap(o => Object.keys(o.fx || {}))
-    .filter(k => k !== 'money');
-  [...new Set(factionKeys)].forEach(k => {
+  const tone = evt.tone || 'neutral';
+  (evt.factions || []).forEach(k => {
     const v = S.factions[k] || 50;
-    if      (v < 35) w += 2.0;
-    else if (v < 50) w += 0.9;
-    else if (v > 70) w += 0.5;
+    if (tone === 'crisis') {
+      if      (v < 35) w += 3.0;
+      else if (v < 50) w += 1.5;
+      else if (v < 65) w += 0.2;
+      // happy faction → crisis suppressed (adds nothing)
+    } else if (tone === 'opportunity') {
+      if      (v > 70) w += 2.5;
+      else if (v > 55) w += 1.2;
+      else if (v > 40) w += 0.2;
+      // unhappy faction → opportunity suppressed (adds nothing)
+    } else {
+      w += 0.4; // neutral events get a slight flat boost
+    }
   });
   return w;
 }
 
 function showEvent(evt) {
   S.phase = 'event';
+  S.currentEvent = evt;
   clearInterval(S.tickTimer);
   $('tick-bar').style.width      = '100%';
   $('tick-bar').style.background = 'var(--warn)';
@@ -435,9 +445,12 @@ function autoResolveEvent() {
     $('choice-left').classList.remove('choice-disabled');
     $('choice-right').classList.remove('choice-disabled');
     resetTickBar();
-    Object.keys(S.factions).forEach(k => {
-      S.factions[k] = clamp(S.factions[k] - 5, 5, 96);
-    });
+    const fx = (S.currentEvent && S.currentEvent.ignore && S.currentEvent.ignore.fx) || {};
+    if (fx.veins)      S.factions.veins      = clamp(S.factions.veins      + fx.veins,      5, 96);
+    if (fx.mercat)     S.factions.mercat     = clamp(S.factions.mercat     + fx.mercat,     5, 96);
+    if (fx.activistes) S.factions.activistes = clamp(S.factions.activistes + fx.activistes, 5, 96);
+    if (fx.money)      S.money = Math.max(0, S.money + fx.money);
+    S.currentEvent = null;
     const h = happiness();
     if (h < DANGER_LEVEL) {
       S.dangerWeeks++;
@@ -471,6 +484,7 @@ function flyOff(direction, opt) {
     card.style.transform  = '';
     card.style.opacity    = '';
     hide('event-card');
+    S.currentEvent = null;
     resetTickBar();
     resolve(opt);
   }, 300);
