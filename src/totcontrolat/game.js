@@ -209,58 +209,90 @@ function renderWorldMap() {
   const list = $('worlds-list');
   list.innerHTML = '';
 
+  // Bubble centers (px) within 300×460 container
+  const centers = [
+    { x: 66,  y: 340 },  // Vilaturisme  (bottom-left)
+    { x: 216, y: 215 },  // Sleeptown    (middle-right)
+    { x: 84,  y: 80  },  // Technoburg   (top-left)
+  ];
+  const segs = [
+    { from: 0, to: 1, cp: { x: 216, y: 340 } },
+    { from: 1, to: 2, cp: { x: 84,  y: 215 } },
+  ];
+
+  const container = document.createElement('div');
+  container.className = 'wmap-container';
+
+  // ── SVG path ──
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('class', 'wmap-svg');
+  svg.setAttribute('viewBox', '0 0 300 460');
+
+  segs.forEach(seg => {
+    const p1 = centers[seg.from], p2 = centers[seg.to], cp = seg.cp;
+    const d = `M ${p1.x} ${p1.y} Q ${cp.x} ${cp.y} ${p2.x} ${p2.y}`;
+    const isDone = (progress[WORLDS[seg.from].id] || 0) >= 1;
+
+    const base = document.createElementNS(NS, 'path');
+    base.setAttribute('d', d);
+    base.setAttribute('class', 'wmap-path-base');
+    svg.appendChild(base);
+
+    if (isDone) {
+      const glow = document.createElementNS(NS, 'path');
+      glow.setAttribute('d', d);
+      glow.setAttribute('class', 'wmap-path-done');
+      glow.style.stroke = WORLDS[seg.from].color;
+      svg.appendChild(glow);
+    }
+  });
+  container.appendChild(svg);
+
+  // ── Nodes ──
   WORLDS.forEach((world, i) => {
     const levelsCompleted = progress[world.id] || 0;
     const isUnlocked = i === 0 || (progress[WORLDS[i - 1].id] || 0) >= 1;
-    const save = isUnlocked ? getWorldSave(world.id) : null;
-    const isComplete = levelsCompleted >= MAX_LEVELS;
+    const isComplete  = levelsCompleted >= MAX_LEVELS;
+    const hasSave     = isUnlocked && !!getWorldSave(world.id);
+    const c           = centers[i];
+    const stars       = Math.round((levelsCompleted / MAX_LEVELS) * 3);
 
-    const item = document.createElement('div');
-    item.className = 'world-item' + (isUnlocked ? '' : ' world-item-locked');
-    item.style.setProperty('--world-color', world.color);
+    const node = document.createElement('div');
+    node.className = [
+      'wmap-node',
+      isUnlocked ? 'wmap-unlocked' : 'wmap-locked',
+      isComplete ? 'wmap-done' : hasSave ? 'wmap-resume' : isUnlocked ? 'wmap-new' : '',
+    ].join(' ').trim();
+    node.style.left = (c.x - 44) + 'px';
+    node.style.top  = (c.y - 44) + 'px';
+    node.style.setProperty('--wc', world.color);
 
-    let progressHTML = '';
+    const starsHTML = isUnlocked
+      ? `<div class="wmap-stars">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</div>` : '';
+
+    let actionTxt = '';
     if (isUnlocked) {
-      const pct = Math.min(100, (levelsCompleted / MAX_LEVELS) * 100);
-      progressHTML = `
-        <div class="world-progress-row">
-          <div class="world-prog-bar-bg"><div class="world-prog-bar-fill" style="width:${pct}%"></div></div>
-          <span class="world-prog-label">${levelsCompleted}/${MAX_LEVELS}</span>
-        </div>`;
+      if (isComplete) {
+        actionTxt = `<div class="wmap-action wmap-action-done">✓ completat</div>`;
+      } else if (hasSave) {
+        const sv = getWorldSave(world.id);
+        actionTxt = `<div class="wmap-action wmap-action-cont">Niv ${sv.levelNum} →</div>`;
+      } else {
+        actionTxt = `<div class="wmap-action wmap-action-new">Comença →</div>`;
+      }
     }
 
-    let btnLabel, btnClass;
-    if (!isUnlocked) {
-      btnLabel = '🔒 Blocat';
-      btnClass = 'world-play-btn world-play-locked';
-    } else if (isComplete) {
-      btnLabel = '✓ Completat · Juga de Nou';
-      btnClass = 'world-play-btn world-play-done';
-    } else if (save) {
-      btnLabel = `Continua Niv ${save.levelNum} →`;
-      btnClass = 'world-play-btn world-play-active';
-    } else {
-      const startLv = levelsCompleted + 1;
-      btnLabel = levelsCompleted > 0 ? `Comença Niv ${startLv} →` : 'Comença →';
-      btnClass = 'world-play-btn world-play-new';
-    }
-
-    item.innerHTML = `
-      <div class="world-item-header">
-        <span class="world-item-icon">${world.icon}</span>
-        <div class="world-item-info">
-          <div class="world-item-name">${world.name}</div>
-          <div class="world-item-desc">${world.description}</div>
-        </div>
-      </div>
-      ${progressHTML}
-      <button class="${btnClass}"${isUnlocked ? '' : ' disabled'}>${btnLabel}</button>
+    node.innerHTML = `
+      <div class="wmap-bubble"><span class="wmap-icon">${isUnlocked ? world.icon : '🔒'}</span></div>
+      ${starsHTML}
+      <div class="wmap-label">${world.name}</div>
+      ${actionTxt}
     `;
 
     if (isUnlocked) {
-      item.querySelector('button').addEventListener('click', () => {
+      node.addEventListener('click', () => {
         if (isComplete) {
-          // Reset progress for this world and restart
           const p = getProgress();
           p[world.id] = 0;
           try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(p)); } catch(e) {}
@@ -268,10 +300,17 @@ function renderWorldMap() {
         }
         startWorld(world.id);
       });
+    } else {
+      node.addEventListener('click', () => {
+        node.classList.add('wmap-shake');
+        setTimeout(() => node.classList.remove('wmap-shake'), 380);
+      });
     }
 
-    list.appendChild(item);
+    container.appendChild(node);
   });
+
+  list.appendChild(container);
 }
 
 // ── Start / load world ─────────────────────────────────────────────────────────
