@@ -370,50 +370,59 @@ function initMapPan(canvas, viewport) {
   const CANVAS_H = 680;
   let isDragging = false, wasDrag = false;
   let pointerId = null;
-  let startY = 0, downClientY = 0, currentY = 0;
-  let velY = 0, lastY = 0, lastT = 0;
+  let startY = 0, startX = 0, downClientY = 0, downClientX = 0;
+  let currentY = 0, currentX = 0;
+  let velY = 0, velX = 0, lastY = 0, lastX = 0, lastT = 0;
   let rafId = null;
 
   function getMinY() { return Math.min(0, viewport.clientHeight - CANVAS_H); }
+  function getMinX() { return Math.min(0, viewport.clientWidth - canvas.offsetWidth); }
+  function getMaxX() { return Math.max(0, viewport.clientWidth - canvas.offsetWidth); }
 
-  function rubberClamp(v) {
-    const min = getMinY();
-    if (v > 0)   return v * 0.28;
+  function rubberClamp(v, min, max) {
+    if (v > max) return max + (v - max) * 0.28;
     if (v < min) return min + (v - min) * 0.28;
     return v;
   }
 
-  function setY(y, animate) {
+  function clampY(v) { return rubberClamp(v, getMinY(), 0); }
+  function clampX(v) { return rubberClamp(v, getMinX(), getMaxX()); }
+
+  function setPos(x, y, animate) {
     canvas.style.transition = animate ? 'transform 0.42s cubic-bezier(0.25,0.46,0.45,0.94)' : 'none';
-    canvas.style.transform  = `translateY(${y}px)`;
+    canvas.style.transform  = `translateX(${x}px) translateY(${y}px)`;
   }
 
   function snapToEdge() {
-    const min = getMinY(), snapped = Math.max(min, Math.min(0, currentY));
-    if (snapped !== currentY) { currentY = snapped; setY(currentY, true); }
+    const minY = getMinY(), minX = getMinX(), maxX = getMaxX();
+    const sy = Math.max(minY, Math.min(0, currentY));
+    const sx = Math.max(minX, Math.min(maxX, currentX));
+    if (sy !== currentY || sx !== currentX) {
+      currentY = sy; currentX = sx; setPos(currentX, currentY, true);
+    }
   }
 
   canvas.addEventListener('pointerdown', e => {
-    isDragging = true;
-    wasDrag    = false;
+    isDragging = true; wasDrag = false;
     pointerId  = e.pointerId;
     canvas.setPointerCapture(e.pointerId);
-    downClientY = e.clientY;
-    startY  = e.clientY - currentY;
-    lastY   = e.clientY;
+    downClientY = e.clientY; downClientX = e.clientX;
+    startY  = e.clientY - currentY; startX  = e.clientX - currentX;
+    lastY   = e.clientY; lastX   = e.clientX;
     lastT   = Date.now();
-    velY    = 0;
+    velY = 0; velX = 0;
     canvas.style.transition = 'none';
   });
 
   canvas.addEventListener('pointermove', e => {
     if (!isDragging || e.pointerId !== pointerId) return;
-    if (Math.abs(e.clientY - downClientY) > 6) wasDrag = true;
-    currentY = rubberClamp(e.clientY - startY);
+    if (Math.abs(e.clientY - downClientY) > 6 || Math.abs(e.clientX - downClientX) > 6) wasDrag = true;
+    currentY = clampY(e.clientY - startY);
+    currentX = clampX(e.clientX - startX);
     const now = Date.now(), dt = Math.max(1, now - lastT);
-    velY = (e.clientY - lastY) / dt;
-    lastY = e.clientY; lastT = now;
-    setY(currentY, false);
+    velY = (e.clientY - lastY) / dt; velX = (e.clientX - lastX) / dt;
+    lastY = e.clientY; lastX = e.clientX; lastT = now;
+    setPos(currentX, currentY, false);
   });
 
   canvas.addEventListener('pointerup', e => {
@@ -422,13 +431,14 @@ function initMapPan(canvas, viewport) {
     cancelAnimationFrame(rafId);
     const FRICTION = 0.91;
     function momentum() {
-      velY *= FRICTION;
-      currentY = rubberClamp(currentY + velY * 16);
-      setY(currentY, false);
-      if (Math.abs(velY) > 0.15) rafId = requestAnimationFrame(momentum);
+      velY *= FRICTION; velX *= FRICTION;
+      currentY = clampY(currentY + velY * 16);
+      currentX = clampX(currentX + velX * 16);
+      setPos(currentX, currentY, false);
+      if (Math.abs(velY) > 0.15 || Math.abs(velX) > 0.15) rafId = requestAnimationFrame(momentum);
       else snapToEdge();
     }
-    if (Math.abs(velY) > 0.2) momentum(); else snapToEdge();
+    if (Math.abs(velY) > 0.2 || Math.abs(velX) > 0.2) momentum(); else snapToEdge();
   });
 
   canvas.addEventListener('pointercancel', () => { isDragging = false; snapToEdge(); });
@@ -437,7 +447,7 @@ function initMapPan(canvas, viewport) {
   canvas.addEventListener('click', e => { if (wasDrag) e.stopPropagation(); }, true);
 
   // Start showing Vilaturisme (bottom of canvas)
-  requestAnimationFrame(() => { currentY = getMinY(); setY(currentY, false); });
+  requestAnimationFrame(() => { currentY = getMinY(); setPos(currentX, currentY, false); });
 }
 
 // ── Start / load world ─────────────────────────────────────────────────────────
