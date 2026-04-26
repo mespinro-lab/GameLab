@@ -158,12 +158,11 @@ function openMainMenu() {
     render();
   }
   fromIngame = !!S.worldId && (activePhase || S.phase === 'paused');
-  $('btn-reprendre').classList.toggle('hidden', !fromIngame);
-  showOnly('menu-screen');
+  openWorldMap();
 }
 
 function closeMainMenu() {
-  hide('menu-screen');
+  hide('world-map-screen');
   if (fromIngame && S.phase === 'paused') {
     S.tickStart += Date.now() - S.pausedAt;
     S.phase = S.prePausePhase || 'playing';
@@ -186,7 +185,7 @@ function resumeActiveTimer() {
 }
 
 const MENU_SCREENS = [
-  'menu-screen', 'world-map-screen', 'botiga-screen', 'config-screen', 'badges-screen',
+  'world-map-screen', 'botiga-screen', 'config-screen', 'badges-screen',
 ];
 
 function showSub(id) {
@@ -200,8 +199,10 @@ function showOnly(id) {
 
 // ── World map ──────────────────────────────────────────────────────────────────
 function openWorldMap() {
+  $('wmap-token-val').textContent = S.worldId ? S.tokens : getPendingTokens();
+  $('btn-reprendre').classList.toggle('hidden', !fromIngame);
   renderWorldMap();
-  showSub('world-map-screen');
+  showOnly('world-map-screen');
 }
 
 function renderWorldMap() {
@@ -694,6 +695,8 @@ function endGame(win) {
   clearInterval(S.tickTimer);
   deleteWorldSave(S.worldId);
 
+  fromIngame = false;
+
   if (win) {
     incrementWorldProgress(S.worldId, S.levelNum);
     if (S.levelNum >= MAX_LEVELS) {
@@ -958,18 +961,15 @@ $('btn-menu-world-done').addEventListener('click', openMainMenu);
 
 $('menu-ingame-btn').addEventListener('click', openMainMenu);
 
-$('btn-nova').addEventListener('click',      openWorldMap);
-$('btn-carregar').addEventListener('click',  openWorldMap);
-$('btn-botiga').addEventListener('click',    openBotiga);
-$('btn-badges').addEventListener('click',    openBadges);
-$('btn-config').addEventListener('click',    openConfig);
-$('btn-reprendre').addEventListener('click', closeMainMenu);
+$('btn-wmap-botiga').addEventListener('click', openBotiga);
+$('btn-wmap-badges').addEventListener('click', openBadges);
+$('btn-wmap-config').addEventListener('click', openConfig);
+$('btn-reprendre').addEventListener('click',   closeMainMenu);
 $('btn-start-mandate').addEventListener('click', startNextMandate);
 
-$('btn-back-worldmap').addEventListener('click',  () => showOnly('menu-screen'));
-$('btn-back-botiga').addEventListener('click',    () => showOnly('menu-screen'));
-$('btn-back-config').addEventListener('click',    () => showOnly('menu-screen'));
-$('btn-back-badges').addEventListener('click',    () => showOnly('menu-screen'));
+$('btn-back-botiga').addEventListener('click', openWorldMap);
+$('btn-back-config').addEventListener('click', openWorldMap);
+$('btn-back-badges').addEventListener('click', openWorldMap);
 
 $('btn-buy-10').addEventListener('click',  () => buyTokens(10));
 $('btn-buy-100').addEventListener('click', () => buyTokens(100));
@@ -982,4 +982,4 @@ document.querySelectorAll('.lang-pill').forEach(btn => {
 });
 
 // ── Init ───────────────────────────────────────────────────────────────────────
-openMainMenu();
+openWorldMap();
