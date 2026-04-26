@@ -599,3 +599,93 @@ const EVENTS = [
     ignore: { fx: { money: -180 }, idleMsg: 'El forat pressupostari s\'ha cobert amb reserves. Les reserves eren per a una altra cosa.' },
   },
 ];
+
+// ── Global conjuncture events (shown between mandates) ──────────────────────
+// Each sets the political/economic context for the next mandate.
+// startFx: applied once at mandate start
+// incomeMod: flat modifier to weekly income for the whole mandate
+// driftMod: per-faction drift modifier for the whole mandate
+// badge: unlocked permanently when first encountered
+
+const CONJUNCTURES = [
+  {
+    id: 'crisi_eco', icon: '📉', title: 'CRISI ECONÒMICA GLOBAL',
+    text: 'Els mercats internacionals han entrat en recessió. El comerç local nota la pressió i el Mercat ja parla de "mesures d\'ajust necessàries i doloroses".',
+    badge: { icon: '📉', name: 'Mà Ferma en Crisi', desc: 'Has governat durant una crisi econòmica global' },
+    startFx: { money: -200, mercat: -8 },
+    incomeMod: -15,
+    driftMod: { mercat: -0.6 },
+  },
+  {
+    id: 'boom_tec', icon: '💻', title: 'BOOM TECNOLÒGIC',
+    text: 'La comarca ha atret inversió tecnològica. El Mercat és optimista, els joves parlen de "startups" i els ingressos municipals creixen inesperadament.',
+    badge: { icon: '💻', name: 'Vila Digital', desc: 'Has governat durant el boom tecnològic de la comarca' },
+    startFx: { money: 250, mercat: 10 },
+    incomeMod: 20,
+    driftMod: { mercat: 0.5 },
+  },
+  {
+    id: 'turisme_mas', icon: '✈️', title: 'TURISME MASSIU',
+    text: 'Un influencer ha publicat una foto del poble amb 2M de visualitzacions. El turisme arriba en onades. El Mercat és feliç. Els Veïns, progressivament menys.',
+    badge: { icon: '✈️', name: 'Destinació Viral', desc: 'Has gestionat l\'afluència turística massiva del poble' },
+    startFx: { money: 180, mercat: 12, veins: -8 },
+    incomeMod: 25,
+    driftMod: { veins: -0.8, mercat: 0.4 },
+  },
+  {
+    id: 'calor_ext', icon: '🌡️', title: 'ONADA DE CALOR EXTREMA',
+    text: 'Temperatures rècord, talls de llum i tensions socials. Els Activistes demanen accions climàtiques immediates. El jardiner ha demanat una samarreta nova amb refrigeració integrada.',
+    badge: { icon: '🌡️', name: 'Resistència Tèrmica', desc: 'Has governat durant una onada de calor extrema' },
+    startFx: { money: -100, activistes: -10, veins: -6 },
+    incomeMod: -10,
+    driftMod: { veins: -0.5, activistes: -0.7 },
+  },
+  {
+    id: 'eleccions_reg', icon: '🗳️', title: 'ELECCIONS REGIONALS',
+    text: 'Eleccions autonòmiques. Tothom promet coses al poble. Els Activistes estan particularment actius. Les promeses no inclouen cap partida del pressupost local.',
+    badge: { icon: '🗳️', name: 'Polític de Carrera', desc: 'Has governat durant un any electoral regional' },
+    startFx: { activistes: 10, veins: 5 },
+    incomeMod: 0,
+    driftMod: { activistes: 0.5, veins: -0.3 },
+  },
+  {
+    id: 'grip_muni', icon: '🤒', title: 'GRIP MUNICIPAL',
+    text: 'Una grip atípica circula pel poble. El metge ha demanat reforços. Els actes públics se suspenen. La factura sanitària és el tema del trimestre.',
+    badge: { icon: '🤒', name: 'Gestió Sanitària', desc: 'Has governat durant una epidèmia local de grip' },
+    startFx: { money: -250, veins: -8 },
+    incomeMod: -20,
+    driftMod: { veins: -0.6 },
+  },
+  {
+    id: 'subv_ext', icon: '🏛️', title: 'SUBVENCIÓ EXTRAORDINÀRIA',
+    text: 'L\'administració central ha aprovat una subvenció extraordinària per a municipis amb "trajectòria de gestió exemplar". Sou vosaltres. Per fi uns diners que ningú esperava.',
+    badge: { icon: '🏛️', name: 'Gestió Exemplar', desc: 'Has rebut una subvenció extraordinària entre mandats' },
+    startFx: { money: 500 },
+    incomeMod: 10,
+    driftMod: {},
+  },
+  {
+    id: 'escandol_reg', icon: '📰', title: 'ESCÀNDOL REGIONAL',
+    text: 'Un escàndol a la capital regional salpica tots els ajuntaments per proximitat mediàtica. No heu fet res dolent. Però el neguit és general i tothom mira amb ull crític.',
+    badge: { icon: '📰', name: 'Dany Col·lateral', desc: 'Has governat enmig d\'un escàndol polític regional' },
+    startFx: { veins: -12, mercat: -8, activistes: 8 },
+    incomeMod: 0,
+    driftMod: { veins: -0.4, mercat: -0.3, activistes: 0.4 },
+  },
+  {
+    id: 'industria_com', icon: '🏭', title: 'NOVA INDÚSTRIA COMARCAL',
+    text: 'Una gran empresa s\'ha instal·lat a la comarca. Feina i dinamisme, però també pressió sobre l\'habitatge i noves cares al poble. Els Veïns estan dividits.',
+    badge: { icon: '🏭', name: 'Transformació Comarcal', desc: 'Has gestionat l\'impacte d\'una gran indústria a la comarca' },
+    startFx: { money: 150, mercat: 10, veins: -6, activistes: -8 },
+    incomeMod: 15,
+    driftMod: { mercat: 0.4, veins: -0.5, activistes: -0.4 },
+  },
+  {
+    id: 'sequera_ext', icon: '☀️', title: 'SEQUERA PROLONGADA',
+    text: 'La sequera s\'allarga de mandat en mandat. Les restriccions d\'aigua afecten tothom. El jardiner ha presentat la seva quarta queixa formal de l\'any.',
+    badge: { icon: '☀️', name: 'Governança en Sequera', desc: 'Has governat durant una sequera prolongada i persistent' },
+    startFx: { money: -150, veins: -8, mercat: -6 },
+    incomeMod: -10,
+    driftMod: { veins: -0.5, mercat: -0.3 },
+  },
+];

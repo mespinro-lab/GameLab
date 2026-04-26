@@ -48,6 +48,7 @@ function initState(countryName) {
     money:       450,
     factions:    { veins: 62, mercat: 60, activistes: 58 },
     tokens:      0,
+    mandate:        1,
     dangerWeeks:    0,
     phase:          'playing',
     tickTimer:      null,
@@ -60,6 +61,7 @@ function initState(countryName) {
     tax:            'mid',
     services:       false,
     comms:          false,
+    conjunctureMods: { incomeMod: 0, driftMod: {} },
   };
   flushPendingTokens();
 }
@@ -73,22 +75,33 @@ function happiness() {
 // ── Save system ────────────────────────────────────────────────────────────────
 const SAVE_KEY     = name => `totcontrolat_save_${name}`;
 const TOKEN_BANK   = 'totcontrolat_tokens';
+const BADGES_KEY   = 'totcontrolat_badges';
+
+function getBadges() {
+  try { return JSON.parse(localStorage.getItem(BADGES_KEY) || '[]'); } catch(e) { return []; }
+}
+function addBadge(id) {
+  const b = getBadges();
+  if (!b.includes(id)) { b.push(id); try { localStorage.setItem(BADGES_KEY, JSON.stringify(b)); } catch(e) {} }
+}
 
 function saveGame() {
   if (!S.countryName) return;
   try {
     localStorage.setItem(SAVE_KEY(S.countryName), JSON.stringify({
-      countryName: S.countryName,
-      week:        S.week,
-      money:       S.money,
-      factions:    { ...S.factions },
-      tokens:      S.tokens,
-      dangerWeeks: S.dangerWeeks,
-      tax:         S.tax,
-      services:    S.services,
-      comms:       S.comms,
-      happiness:   happiness(),
-      savedAt:     Date.now(),
+      countryName:     S.countryName,
+      week:            S.week,
+      money:           S.money,
+      factions:        { ...S.factions },
+      tokens:          S.tokens,
+      dangerWeeks:     S.dangerWeeks,
+      mandate:         S.mandate,
+      conjunctureMods: S.conjunctureMods,
+      tax:             S.tax,
+      services:        S.services,
+      comms:           S.comms,
+      happiness:       happiness(),
+      savedAt:         Date.now(),
     }));
   } catch(e) {}
 }
@@ -162,15 +175,15 @@ function resumeActiveTimer() {
   }
 }
 
+const MENU_SCREENS = ['menu-screen','nova-screen','carregar-screen','botiga-screen','config-screen','badges-screen'];
+
 function showSub(id) {
-  ['menu-screen','nova-screen','carregar-screen','botiga-screen','config-screen']
-    .forEach(hide);
+  MENU_SCREENS.forEach(hide);
   show(id);
 }
 
 function showOnly(id) {
-  ['menu-screen','nova-screen','carregar-screen','botiga-screen','config-screen']
-    .forEach(x => x === id ? show(x) : hide(x));
+  MENU_SCREENS.forEach(x => x === id ? show(x) : hide(x));
 }
 
 // ── Nova partida ────────────────────────────────────────────────────────────────
@@ -227,21 +240,25 @@ function loadSession(sv) {
   hide('overlay-won'); hide('overlay-lost');
   hide('event-card');
   S = {
-    countryName: sv.countryName,
-    week:        sv.week,
-    money:       sv.money,
-    factions:    { ...sv.factions },
-    tokens:      sv.tokens,
-    dangerWeeks: sv.dangerWeeks,
-    phase:       'playing',
-    tickTimer:   null,
-    tickStart:   0,
-    pausedAt:    0,
-    pool:        shuffle([...EVENTS]),
-    poolIdx:     0,
-    tax:         sv.tax   || 'mid',
-    services:    sv.services || false,
-    comms:       sv.comms    || false,
+    countryName:     sv.countryName,
+    week:            sv.week,
+    money:           sv.money,
+    factions:        { ...sv.factions },
+    tokens:          sv.tokens,
+    dangerWeeks:     sv.dangerWeeks,
+    mandate:         sv.mandate         || 1,
+    conjunctureMods: sv.conjunctureMods || { incomeMod: 0, driftMod: {} },
+    phase:           'playing',
+    tickTimer:       null,
+    tickStart:       0,
+    pausedAt:        0,
+    prePausePhase:   null,
+    currentEvent:    null,
+    pool:            shuffle([...EVENTS]),
+    poolIdx:         0,
+    tax:             sv.tax      || 'mid',
+    services:        sv.services || false,
+    comms:           sv.comms    || false,
   };
   flushPendingTokens();
   ['menu-screen','carregar-screen'].forEach(hide);
@@ -305,7 +322,7 @@ function startTick() {
 function advanceWeek() {
   S.week++;
 
-  let income = TAX_INCOME[S.tax];
+  let income = TAX_INCOME[S.tax] + (S.conjunctureMods.incomeMod || 0);
   if (S.services) income -= POLICY_COSTS.services;
   if (S.comms)    income -= POLICY_COSTS.comms;
   S.money += income;
@@ -316,6 +333,7 @@ function advanceWeek() {
     if (S.services && POLICY_FX.services[k]) delta += POLICY_FX.services[k];
     if (S.comms    && POLICY_FX.comms[k])    delta += POLICY_FX.comms[k];
     if (TAX_FX[S.tax]?.[k]) delta += TAX_FX[S.tax][k];
+    if (S.conjunctureMods.driftMod[k]) delta += S.conjunctureMods.driftMod[k];
     S.factions[k] = clamp(S.factions[k] + delta, 5, 96);
   });
 
@@ -531,19 +549,109 @@ function showIdle(msg) {
 // ── End game ───────────────────────────────────────────────────────────────────
 function endGame(win) {
   clearInterval(S.tickTimer);
-  S.phase = win ? 'won' : 'lost';
   deleteSave(S.countryName);
 
   if (win) {
-    const score = happiness() * MAX_WEEKS + S.tokens * 60;
-    $('final-score').textContent =
-      `Puntuació: ${score}  ·  Tokens: ${S.tokens}  ·  Diners finals: ${S.money}€`;
-    show('overlay-won');
+    S.phase = 'between';
+    endMandate();
   } else {
+    S.phase = 'lost';
     $('survive-weeks').textContent =
-      `Has aguantat ${S.week - 1} de ${MAX_WEEKS} setmanes.`;
+      `Mandat ${S.mandate} · Setmana ${S.week - 1} de ${MAX_WEEKS}`;
     show('overlay-lost');
   }
+}
+
+// ── Mandate chain ──────────────────────────────────────────────────────────────
+function endMandate() {
+  const conj = pickConjuncture();
+  addBadge(conj.id);
+  showConjunctureScreen(conj);
+}
+
+function pickConjuncture() {
+  const seen   = getBadges();
+  const unseen = CONJUNCTURES.filter(c => !seen.includes(c.id));
+  const pool   = unseen.length > 0 ? unseen : CONJUNCTURES;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function showConjunctureScreen(conj) {
+  const score = happiness() * MAX_WEEKS + S.tokens * 60;
+  const h     = happiness();
+  const face  = h > 75 ? '😄' : h > 55 ? '😐' : h > 35 ? '😟' : '😱';
+
+  $('conj-mandate-done-num').textContent  = S.mandate;
+  $('conj-score-line').textContent        = `Puntuació: ${score}`;
+  $('conj-icon').textContent              = conj.icon;
+  $('conj-title').textContent             = conj.title;
+  $('conj-text').textContent              = conj.text;
+  $('conj-carry-money').textContent       = S.money;
+  $('conj-carry-happ').textContent        = `${face} ${h}`;
+  $('conj-carry-tokens').textContent      = S.tokens;
+  $('conj-mandate-next-num').textContent  = S.mandate + 1;
+
+  const fx   = conj.startFx || {};
+  const parts = [];
+  if (fx.money)         parts.push(`💰 ${fx.money > 0 ? '+' : ''}${fx.money}€`);
+  if (conj.incomeMod)   parts.push(`📈 ${conj.incomeMod > 0 ? '+' : ''}${conj.incomeMod}€/setm.`);
+  if (fx.veins)         parts.push(`🏘️ ${fx.veins > 0 ? '+' : ''}${fx.veins}`);
+  if (fx.mercat)        parts.push(`🏪 ${fx.mercat > 0 ? '+' : ''}${fx.mercat}`);
+  if (fx.activistes)    parts.push(`✊ ${fx.activistes > 0 ? '+' : ''}${fx.activistes}`);
+  $('conj-effects').textContent = parts.join('  ·  ');
+
+  $('btn-start-mandate')._conj = conj;
+  show('conjuncture-screen');
+}
+
+function startNextMandate() {
+  const conj = $('btn-start-mandate')._conj;
+  hide('conjuncture-screen');
+
+  const fx = conj.startFx || {};
+  if (fx.money)      S.money = Math.max(0, S.money + fx.money);
+  if (fx.veins)      S.factions.veins      = clamp(S.factions.veins      + fx.veins,      5, 96);
+  if (fx.mercat)     S.factions.mercat     = clamp(S.factions.mercat     + fx.mercat,     5, 96);
+  if (fx.activistes) S.factions.activistes = clamp(S.factions.activistes + fx.activistes, 5, 96);
+
+  S.mandate++;
+  S.week          = 1;
+  S.dangerWeeks   = 0;
+  S.phase         = 'playing';
+  S.pool          = shuffle([...EVENTS]);
+  S.poolIdx       = 0;
+  S.currentEvent  = null;
+  S.conjunctureMods = { incomeMod: conj.incomeMod || 0, driftMod: conj.driftMod || {} };
+
+  hide('event-card');
+  $('event-card').classList.remove('insight-active');
+  saveGame();
+  render();
+  showIdle();
+  setTimeout(() => { if (S.phase === 'playing') showEvent(nextEvent()); }, 800);
+}
+
+// ── Badges screen ──────────────────────────────────────────────────────────────
+function openBadges() {
+  renderBadges();
+  showSub('badges-screen');
+}
+
+function renderBadges() {
+  const earned = getBadges();
+  const grid   = $('badges-grid');
+  grid.innerHTML = '';
+  CONJUNCTURES.forEach(conj => {
+    const unlocked = earned.includes(conj.id);
+    const div = document.createElement('div');
+    div.className = 'badge-item' + (unlocked ? '' : ' badge-locked');
+    div.innerHTML = `
+      <span class="badge-icon">${unlocked ? conj.badge.icon : '🔒'}</span>
+      <div class="badge-name">${unlocked ? conj.badge.name : '???'}</div>
+      <div class="badge-desc">${unlocked ? conj.badge.desc : 'Encara per descobrir'}</div>
+    `;
+    grid.appendChild(div);
+  });
 }
 
 // ── Render ─────────────────────────────────────────────────────────────────────
@@ -552,7 +660,9 @@ function render() {
 
   $('happiness-val').textContent  = h;
   $('happiness-face').textContent = h > 75 ? '😄' : h > 55 ? '😐' : h > 35 ? '😟' : '😱';
-  $('week-val').textContent       = S.week;
+  $('week-display').innerHTML = S.mandate > 1
+    ? `M${S.mandate} · S<span id="week-val">${S.week}</span>/26`
+    : `Setm. <span id="week-val">${S.week}</span> / 26`;
   $('money-val').textContent      = S.money;
   $('token-val').textContent      = S.tokens;
   $('ring-country').textContent   = S.countryName || '';
@@ -692,8 +802,10 @@ $('menu-ingame-btn').addEventListener('click', openMainMenu);
 $('btn-nova').addEventListener('click',     openNova);
 $('btn-carregar').addEventListener('click', openCarregar);
 $('btn-botiga').addEventListener('click',   openBotiga);
+$('btn-badges').addEventListener('click',   openBadges);
 $('btn-config').addEventListener('click',   openConfig);
 $('btn-reprendre').addEventListener('click', closeMainMenu);
+$('btn-start-mandate').addEventListener('click', startNextMandate);
 
 // Nova partida
 $('btn-back-nova').addEventListener('click',  () => showOnly('menu-screen'));
@@ -709,7 +821,8 @@ $('btn-buy-10').addEventListener('click',  () => buyTokens(10));
 $('btn-buy-100').addEventListener('click', () => buyTokens(100));
 
 // Configuració
-$('btn-back-config').addEventListener('click', () => showOnly('menu-screen'));
+$('btn-back-config').addEventListener('click',  () => showOnly('menu-screen'));
+$('btn-back-badges').addEventListener('click',  () => showOnly('menu-screen'));
 document.querySelectorAll('.lang-pill').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.lang-pill').forEach(b => b.classList.remove('active'));

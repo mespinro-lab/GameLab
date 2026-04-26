@@ -145,6 +145,28 @@
     </div>
   </div>
 
+  <!-- ── Overlay: conjuncture (between mandates, z-index 100) ── -->
+  <div id="conjuncture-screen" class="overlay hidden">
+    <div class="overlay-card conj-card">
+      <div class="conj-mandate-done">
+        <span class="conj-mandate-label">Mandat <span id="conj-mandate-done-num">1</span> Completat</span>
+        <span id="conj-score-line" class="conj-score-val"></span>
+      </div>
+      <div class="conj-sep"></div>
+      <p class="conj-next-label">A Continuació</p>
+      <div class="conj-icon" id="conj-icon">📉</div>
+      <h3 id="conj-title" class="conj-title"></h3>
+      <p id="conj-text" class="conj-text"></p>
+      <div id="conj-effects" class="conj-effects-row"></div>
+      <div class="conj-carry-row">
+        <span>💰 <span id="conj-carry-money">0</span>€</span>
+        <span id="conj-carry-happ">😐 60</span>
+        <span>🪙 <span id="conj-carry-tokens">0</span></span>
+      </div>
+      <button id="btn-start-mandate">Inicia el Mandat <span id="conj-mandate-next-num">2</span> →</button>
+    </div>
+  </div>
+
   <!-- ════════════════════════════════════════════
        MENU SCREENS  (z-index: 200)
   ════════════════════════════════════════════ -->
@@ -159,6 +181,7 @@
       <button class="menu-btn primary" id="btn-nova">🎮 Nova Partida</button>
       <button class="menu-btn" id="btn-carregar">📂 Carregar Partida</button>
       <button class="menu-btn" id="btn-botiga">🛒 Botiga</button>
+      <button class="menu-btn" id="btn-badges">🏅 Historial</button>
       <button class="menu-btn" id="btn-config">⚙️ Configuració</button>
       <button class="menu-btn reprendre hidden" id="btn-reprendre">▶ Reprendre</button>
     </div>
@@ -225,6 +248,15 @@
         </div>
         <p class="config-note">Tots els dialectes de la nostra estimada llengua funcionen exactament igual de bé.</p>
       </div>
+    </div>
+  </div>
+
+  <div id="badges-screen" class="menu-overlay hidden">
+    <div class="sub-card badges-sub-card">
+      <button class="back-btn" id="btn-back-badges">← Enrere</button>
+      <h2>🏅 Historial</h2>
+      <p class="sub-desc">Un badge per cada conjuntura global viscuda.</p>
+      <div id="badges-grid" class="badges-grid"></div>
     </div>
   </div>
 
