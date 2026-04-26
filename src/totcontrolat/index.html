@@ -184,17 +184,21 @@
   ════════════════════════════════════════════ -->
 
   <div id="world-map-screen" class="menu-overlay hidden">
-    <div id="wmap-topbar">
-      <div id="wmap-tokens">🪙 <span id="wmap-token-val">0</span></div>
-      <span id="wmap-title">TOT CONTROLAT</span>
-      <div id="wmap-fab-row">
-        <button class="wmap-fab" id="btn-wmap-badges">🏅</button>
-        <button class="wmap-fab" id="btn-wmap-botiga">🛒</button>
-        <button class="wmap-fab" id="btn-wmap-config">⚙️</button>
-      </div>
-    </div>
+    <!-- mapa (fons, panning) -->
     <div id="wmap-scroll">
       <div id="worlds-list"></div>
+    </div>
+    <!-- HUD flotant per sobre del mapa -->
+    <div id="wmap-hud">
+      <div id="wmap-hud-top">
+        <div id="wmap-tokens">🪙 <span id="wmap-token-val">0</span></div>
+        <div id="wmap-fab-row">
+          <button class="wmap-fab" id="btn-wmap-badges">🏅</button>
+          <button class="wmap-fab" id="btn-wmap-botiga">🛒</button>
+          <button class="wmap-fab" id="btn-wmap-config">⚙️</button>
+        </div>
+      </div>
+      <div id="wmap-title">TOT CONTROLAT</div>
     </div>
     <div id="wmap-footer">
       <button id="btn-reprendre" class="hidden">▶ Reprendre partida</button>
