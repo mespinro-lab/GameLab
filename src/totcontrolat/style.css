@@ -1257,28 +1257,37 @@ html, body {
 #btn-reprendre:hover  { background: rgba(255,196,62,0.2); }
 #btn-reprendre:active { transform: scale(0.97); }
 
+#world-map-screen { background: #1e1c36; }
+
 #wmap-scroll {
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden;
+  touch-action: none;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 1.5rem 0 3rem;
+  cursor: grab;
+  -webkit-user-select: none;
+  user-select: none;
 }
+#wmap-scroll:active { cursor: grabbing; }
 
-#worlds-list {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+#worlds-list { line-height: 0; }
 
-/* ── Container + SVG ── */
+/* ── Canvas + SVG ── */
 
-.wmap-container {
+.wmap-canvas {
   position: relative;
-  width: 300px;
-  height: 460px;
+  width: 340px;
+  height: 680px;
   flex-shrink: 0;
+  will-change: transform;
+  background:
+    radial-gradient(ellipse 200px 220px at 24% 84%, rgba(255,159,67,0.14) 0%, transparent 100%),
+    radial-gradient(ellipse 180px 200px at 74% 61%, rgba(167,139,250,0.11) 0%, transparent 100%),
+    radial-gradient(ellipse 180px 200px at 28% 36%, rgba(56,189,248,0.11) 0%, transparent 100%),
+    radial-gradient(ellipse 140px 140px at 68% 13%, rgba(200,210,255,0.05) 0%, transparent 100%),
+    linear-gradient(180deg, #222040 0%, #282548 32%, #252244 64%, #211f3c 100%);
 }
 
 .wmap-svg {
@@ -1309,6 +1318,24 @@ html, body {
 
 @keyframes wmapDash {
   to { stroke-dashoffset: -36; }
+}
+
+.wmap-path-soon {
+  fill: none;
+  stroke: rgba(255,196,62,0.22);
+  stroke-width: 6;
+  stroke-dasharray: 12 11;
+  stroke-linecap: round;
+}
+
+/* ── Decorations ── */
+
+.wmap-deco {
+  position: absolute;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 /* ── Nodes ── */
@@ -1443,6 +1470,18 @@ html, body {
 .wmap-action-new  { color: color-mix(in srgb, var(--wc) 90%, white); }
 .wmap-action-cont { color: var(--gold); }
 .wmap-action-done { color: rgba(52,211,153,0.8); }
+.wmap-action-soon { color: rgba(255,196,62,0.45); font-style: italic; }
+
+/* ── Coming soon node ── */
+
+.wmap-soon .wmap-bubble {
+  border: 2px dashed rgba(255,196,62,0.28);
+  background: rgba(255,196,62,0.04);
+  box-shadow: none;
+  opacity: 0.55;
+}
+
+.wmap-soon .wmap-label { color: rgba(255,255,255,0.35); }
 
 @keyframes wmapShake {
   0%, 100% { transform: translateX(0); }

@@ -210,34 +210,36 @@ function renderWorldMap() {
   const list = $('worlds-list');
   list.innerHTML = '';
 
-  // Bubble centers (px) within 300×460 container
+  const CANVAS_W = 340, CANVAS_H = 680;
   const centers = [
-    { x: 66,  y: 340 },  // Vilaturisme  (bottom-left)
-    { x: 216, y: 215 },  // Sleeptown    (middle-right)
-    { x: 84,  y: 80  },  // Technoburg   (top-left)
+    { x: 80,  y: 572 },  // Vilaturisme  (bottom-left)
+    { x: 252, y: 418 },  // Sleeptown    (middle-right)
+    { x: 95,  y: 242 },  // Technoburg   (top-left)
+    { x: 232, y: 90  },  // Coming soon  (top-right)
   ];
   const segs = [
-    { from: 0, to: 1, cp: { x: 216, y: 340 } },
-    { from: 1, to: 2, cp: { x: 84,  y: 215 } },
+    { from: 0, to: 1, cp: { x: 252, y: 572 } },
+    { from: 1, to: 2, cp: { x: 95,  y: 418 } },
+    { from: 2, to: 3, cp: { x: 232, y: 242 }, soon: true },
   ];
 
-  const container = document.createElement('div');
-  container.className = 'wmap-container';
+  const canvas = document.createElement('div');
+  canvas.className = 'wmap-canvas';
 
   // ── SVG path ──
   const NS = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(NS, 'svg');
   svg.setAttribute('class', 'wmap-svg');
-  svg.setAttribute('viewBox', '0 0 300 460');
+  svg.setAttribute('viewBox', `0 0 ${CANVAS_W} ${CANVAS_H}`);
 
   segs.forEach(seg => {
     const p1 = centers[seg.from], p2 = centers[seg.to], cp = seg.cp;
     const d = `M ${p1.x} ${p1.y} Q ${cp.x} ${cp.y} ${p2.x} ${p2.y}`;
-    const isDone = (progress[WORLDS[seg.from].id] || 0) >= 1;
+    const isDone = !seg.soon && (progress[WORLDS[seg.from].id] || 0) >= 1;
 
     const base = document.createElementNS(NS, 'path');
     base.setAttribute('d', d);
-    base.setAttribute('class', 'wmap-path-base');
+    base.setAttribute('class', seg.soon ? 'wmap-path-soon' : 'wmap-path-base');
     svg.appendChild(base);
 
     if (isDone) {
@@ -248,9 +250,45 @@ function renderWorldMap() {
       svg.appendChild(glow);
     }
   });
-  container.appendChild(svg);
+  canvas.appendChild(svg);
 
-  // ── Nodes ──
+  // ── Decorations ──
+  const DECO = [
+    // Vilaturisme
+    { e: '🏖️', x: 12,  y: 515, s: 1.5, o: 0.38 },
+    { e: '☀️',  x: 170, y: 610, s: 1.9, o: 0.28 },
+    { e: '🌊',  x: 275, y: 542, s: 1.4, o: 0.3  },
+    { e: '📸',  x: 28,  y: 634, s: 1.1, o: 0.22 },
+    { e: '🍹',  x: 294, y: 616, s: 1.1, o: 0.2  },
+    { e: '⛵',  x: 188, y: 635, s: 1.2, o: 0.18 },
+    // Sleeptown
+    { e: '🌳',  x: 18,  y: 355, s: 1.6, o: 0.32 },
+    { e: '🏠',  x: 300, y: 368, s: 1.4, o: 0.28 },
+    { e: '🌻',  x: 178, y: 458, s: 1.2, o: 0.25 },
+    { e: '🐕',  x: 302, y: 456, s: 1.1, o: 0.28 },
+    { e: '🚲',  x: 14,  y: 450, s: 1.3, o: 0.22 },
+    { e: '🌙',  x: 188, y: 370, s: 1.3, o: 0.2  },
+    // Technoburg
+    { e: '💡',  x: 14,  y: 185, s: 1.5, o: 0.3  },
+    { e: '🤖',  x: 298, y: 200, s: 1.5, o: 0.28 },
+    { e: '📡',  x: 195, y: 174, s: 1.3, o: 0.25 },
+    { e: '⚡',  x: 18,  y: 294, s: 1.3, o: 0.22 },
+    { e: '🖥️',  x: 288, y: 288, s: 1.4, o: 0.25 },
+    { e: '🔋',  x: 178, y: 288, s: 1.1, o: 0.2  },
+    // Coming soon
+    { e: '🏗️',  x: 28,  y: 44,  s: 1.6, o: 0.2  },
+    { e: '⚙️',  x: 290, y: 52,  s: 1.4, o: 0.18 },
+    { e: '🔨',  x: 162, y: 38,  s: 1.3, o: 0.18 },
+  ];
+  DECO.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'wmap-deco';
+    el.textContent = d.e;
+    el.style.cssText = `left:${d.x}px;top:${d.y}px;font-size:${d.s}rem;opacity:${d.o}`;
+    canvas.appendChild(el);
+  });
+
+  // ── World nodes ──
   WORLDS.forEach((world, i) => {
     const levelsCompleted = progress[world.id] || 0;
     const isUnlocked = i === 0 || (progress[WORLDS[i - 1].id] || 0) >= 1;
@@ -308,10 +346,98 @@ function renderWorldMap() {
       });
     }
 
-    container.appendChild(node);
+    canvas.appendChild(node);
   });
 
-  list.appendChild(container);
+  // ── Coming soon node ──
+  const cs = centers[3];
+  const soonNode = document.createElement('div');
+  soonNode.className = 'wmap-node wmap-soon';
+  soonNode.style.left = (cs.x - 44) + 'px';
+  soonNode.style.top  = (cs.y - 44) + 'px';
+  soonNode.innerHTML = `
+    <div class="wmap-bubble"><span class="wmap-icon">🏗️</span></div>
+    <div class="wmap-label">???</div>
+    <div class="wmap-action wmap-action-soon">Aviat...</div>
+  `;
+  canvas.appendChild(soonNode);
+
+  list.appendChild(canvas);
+  initMapPan(canvas, $('wmap-scroll'));
+}
+
+function initMapPan(canvas, viewport) {
+  const CANVAS_H = 680;
+  let isDragging = false, wasDrag = false;
+  let pointerId = null;
+  let startY = 0, downClientY = 0, currentY = 0;
+  let velY = 0, lastY = 0, lastT = 0;
+  let rafId = null;
+
+  function getMinY() { return Math.min(0, viewport.clientHeight - CANVAS_H); }
+
+  function rubberClamp(v) {
+    const min = getMinY();
+    if (v > 0)   return v * 0.28;
+    if (v < min) return min + (v - min) * 0.28;
+    return v;
+  }
+
+  function setY(y, animate) {
+    canvas.style.transition = animate ? 'transform 0.42s cubic-bezier(0.25,0.46,0.45,0.94)' : 'none';
+    canvas.style.transform  = `translateY(${y}px)`;
+  }
+
+  function snapToEdge() {
+    const min = getMinY(), snapped = Math.max(min, Math.min(0, currentY));
+    if (snapped !== currentY) { currentY = snapped; setY(currentY, true); }
+  }
+
+  canvas.addEventListener('pointerdown', e => {
+    isDragging = true;
+    wasDrag    = false;
+    pointerId  = e.pointerId;
+    canvas.setPointerCapture(e.pointerId);
+    downClientY = e.clientY;
+    startY  = e.clientY - currentY;
+    lastY   = e.clientY;
+    lastT   = Date.now();
+    velY    = 0;
+    canvas.style.transition = 'none';
+  });
+
+  canvas.addEventListener('pointermove', e => {
+    if (!isDragging || e.pointerId !== pointerId) return;
+    if (Math.abs(e.clientY - downClientY) > 6) wasDrag = true;
+    currentY = rubberClamp(e.clientY - startY);
+    const now = Date.now(), dt = Math.max(1, now - lastT);
+    velY = (e.clientY - lastY) / dt;
+    lastY = e.clientY; lastT = now;
+    setY(currentY, false);
+  });
+
+  canvas.addEventListener('pointerup', e => {
+    if (e.pointerId !== pointerId) return;
+    isDragging = false;
+    cancelAnimationFrame(rafId);
+    const FRICTION = 0.91;
+    function momentum() {
+      velY *= FRICTION;
+      currentY = rubberClamp(currentY + velY * 16);
+      setY(currentY, false);
+      if (Math.abs(velY) > 0.15) rafId = requestAnimationFrame(momentum);
+      else snapToEdge();
+    }
+    if (Math.abs(velY) > 0.2) momentum(); else snapToEdge();
+  });
+
+  canvas.addEventListener('pointercancel', () => { isDragging = false; snapToEdge(); });
+
+  // Prevent click events that follow a drag gesture
+  canvas.addEventListener('click', e => { if (wasDrag) e.stopPropagation(); }, true);
+
+  // Start showing Vilaturisme (bottom of canvas)
+  requestAnimationFrame(() => { currentY = getMinY(); setY(currentY, false); });
 }
 
 // ── Start / load world ─────────────────────────────────────────────────────────
