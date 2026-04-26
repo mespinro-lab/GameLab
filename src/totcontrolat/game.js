@@ -401,6 +401,7 @@ function showEvent(evt) {
   $('choice-right').classList.toggle('choice-disabled', !rOk);
 
   $('event-card').classList.remove('insight-active');
+  $('reveal-btn').disabled = S.tokens < 1;
   hide('idle-state');
   show('event-card');
 

@@ -469,6 +469,126 @@ const EVENTS = [
     ignore: { fx: {}, idleMsg: 'Els tres pobles no diuen res. L\'escultor del 1931 segueix sent tema de conversa.' },
   },
   {
+    id: 'gegants', icon: '🎭', title: 'GEGANTS EN CRISI',
+    factions: ['veins'], tone: 'opportunity',
+    text: 'La colla de gegants vol sortir per la Festa Major però "en Jaume el Gros" té el braç esquerre despenjat i "la Margarida" ha perdut la cabellera. Surten en 12 dies.',
+    options: [
+      { label: 'Restauració urgent', preview: '+Veïns  −240€', fx: { veins: 14, money: -240 }, idleMsg: 'En Jaume i la Margarida surten impecables. La colla ha ballat tres passes de més per alegria.' },
+      { label: 'Sortir amb els desperfectes', preview: '+Activistes (autenticitat)', fx: { activistes: 8, veins: -8 }, idleMsg: 'En Jaume ha sortit amb el braç despenjat. Uns han dit "art", els altres "vergonya".' },
+    ],
+    ignore: { fx: { veins: -10 }, idleMsg: 'La colla no ha sortit. La Festa Major ha quedat com una cerimònia d\'abandó municipal.' },
+  },
+  {
+    id: 'llums_nadal', icon: '🎄', title: 'LLUMS DE NADAL',
+    factions: ['mercat', 'veins'], tone: 'opportunity',
+    text: 'L\'empresa funerària vol patrocinar les llums de Nadal. A canvi: "Bon Nadal de Pompes Fúnebres Torrents" a totes les estrelles lluminoses. Cobreix el 90% del cost.',
+    options: [
+      { label: 'Acceptar el patrocini', preview: '+Mercat  −Veïns  estalvia', fx: { mercat: 10, veins: -12 }, idleMsg: 'Les llums estan precioses. L\'eslògan ha generat 23 queixes i 80 selfies irònics.' },
+      { label: 'Pagar-ho nosaltres', preview: '+Veïns  −360€', fx: { veins: 12, money: -360 }, idleMsg: 'Les llums no mencionen ningú. El carrer és festiu i lleugerament menys inquietant.' },
+    ],
+    ignore: { fx: { mercat: -6, veins: -6 }, idleMsg: 'Les llums no s\'han penjat. La funerària ha decorat la seva façana. Molt elaboradament.' },
+  },
+  {
+    id: 'bus_nocturn', icon: '🚌', title: 'BUS DE MITJANIT',
+    factions: ['activistes'], tone: 'crisis',
+    text: 'Els Activistes exigeixen bus nocturn fins les 3h els caps de setmana. L\'empresa de transport diu que valdria 680€ per trajecte. "Però som nosaltres qui ho paguem", responen els Activistes.',
+    options: [
+      { label: 'Negociar fins a la 1h', preview: '+Activistes parcial  −280€/mes', fx: { activistes: 8, money: -280 }, idleMsg: 'El bus de la 1h funciona. Sempre hi ha una persona sola que el pren. Va feliç.' },
+      { label: 'Rebutjar (pressupost limitat)', preview: '−Activistes  estalvia', fx: { activistes: -12 }, idleMsg: 'Els Activistes han organitzat una xarxa de cotxes compartits. No han dit gràcies.' },
+    ],
+    ignore: { fx: { activistes: -14 }, idleMsg: 'Els Activistes han pintat "BUS NOCTURN O MOBILITAT ZERO" a l\'entrada de l\'ajuntament.' },
+  },
+  {
+    id: 'sequera', icon: '🏜️', title: 'RESTRICCIONS HÍDIQUES',
+    factions: ['veins', 'mercat'], tone: 'crisis',
+    text: 'La sequera obliga a regar els jardins públics de matinada. El jardiner diu que "de matinada no és la seva franja horària". Ha presentat una queixa formal de tres pàgines.',
+    options: [
+      { label: 'Sistema de degoteig automàtic', preview: '+Veïns  −480€', fx: { veins: 12, money: -480 }, idleMsg: 'El sistema funciona sol. El jardiner ha demanat una reassignació de funcions.' },
+      { label: 'Horari de matinada obligatori', preview: '+Activistes  −Veïns', fx: { activistes: 10, veins: -8 }, risk: 'La queixa formal seguirà activa', idleMsg: 'El jardiner fa la feina a les 4h. No saluda ningú. Ho fa igualment bé.' },
+    ],
+    ignore: { fx: { veins: -10, mercat: -8, money: -300 }, idleMsg: 'La multa hídrica ha arribat. L\'inspector ha fotografiat els gespes regats de dia.' },
+  },
+  {
+    id: 'revetlla', icon: '🎆', title: 'NOCHE DE SANT JOAN',
+    factions: ['veins', 'activistes'], tone: 'opportunity',
+    text: 'La Revetlla: els Activistes volen fogueres simbòliques amb papers de protesta. Els Veïns volen petards fins les 3h. El bomber ha demanat vacances precisament aquell cap de setmana.',
+    options: [
+      { label: 'Revetlla tradicional (petards)', preview: '+Veïns  −Activistes', fx: { veins: 14, activistes: -10 }, risk: 'El bomber torna dimarts', idleMsg: 'La revetlla ha sigut ruidosa i festiva. El bomber ha trucat des de vacances dues vegades.' },
+      { label: 'Fogueres simbòliques', preview: '+Activistes  −Veïns', fx: { activistes: 12, veins: -10 }, idleMsg: 'La foguera simbòlica ha durat 20 minuts. Algú ha cremat els documents equivocats.' },
+    ],
+    ignore: { fx: { veins: -6, activistes: -6 }, idleMsg: 'Ningú ha organitzat res oficial. La gent ha comprat petards a la comarca veïna.' },
+  },
+  {
+    id: 'bicicletes', icon: '🚴', title: 'BICICLETES COMPARTIDES',
+    factions: ['activistes', 'mercat', 'veins'], tone: 'opportunity',
+    text: 'Una empresa proposa 30 bicicletes compartides. Sistema GPS, app i un color "que inspiri moviment" (taronja fluorescent). La moció porta el nom "Pedalem cap al Futur, Ja!".',
+    options: [
+      { label: 'Aprovar el projecte', preview: '+Activistes  +Mercat  −Veïns  −400€', fx: { activistes: 12, mercat: 8, veins: -8, money: -400 }, idleMsg: '22 de les 30 bicicletes funcionen. Les 8 restants "inspiren igualment", diu l\'empresa.' },
+      { label: 'Pilot de 5 bicicletes', preview: '+Activistes parcial  −80€', fx: { activistes: 6, money: -80 }, risk: 'Les fa servir sempre la mateixa persona', idleMsg: 'El pilot l\'ha avaluat la mateixa persona que les fa servir. 10/10.' },
+    ],
+    ignore: { fx: { activistes: -10 }, idleMsg: 'L\'empresa ha anat a Rocalba. El seu carrer principal és ara taronja fluorescent.' },
+  },
+  {
+    id: 'pont', icon: '🌉', title: 'PONT PROBLEMÀTIC',
+    factions: ['veins', 'mercat'], tone: 'crisis',
+    text: 'El pont del barri vell té una esquerda. El primer informe: "estètica". El segon: "estructural". El tercer consultor ha demanat un 10% per "decidir quin criteri adoptar".',
+    options: [
+      { label: 'Tancament i reparació', preview: '+Veïns  −820€', fx: { veins: 10, money: -820 }, risk: 'El barri queda aïllat 3 setmanes', idleMsg: 'El pont reparat ha passat tres inspeccions. El tercer consultor ha desaparegut.' },
+      { label: 'Apuntalament provisional', preview: '−Veïns  −Mercat  −200€', fx: { veins: -8, mercat: -8, money: -200 }, risk: '"Provisional" és un concepte molt elàstic', idleMsg: 'L\'apuntalament aguanta. El segon informe segueix sobre la taula, sense resposta.' },
+    ],
+    ignore: { fx: { veins: -14, mercat: -12, money: -500 }, idleMsg: 'L\'esquerda ha crescut. L\'ajuntament rep la primera demanda. De moment.' },
+  },
+  {
+    id: 'ploms', icon: '🔧', title: 'CANONADES DE PLOM',
+    factions: ['veins', 'activistes'], tone: 'crisis',
+    text: 'Canonades de plom dels anys 50 afecten 14 carrers. L\'empresa no pot començar fins d\'aquí a 3 mesos i ha enviat un fulletó titulat "Tranquil·litat és una Qüestió d\'Actitud".',
+    options: [
+      { label: 'Finançar la substitució urgent', preview: '+Veïns  +Activistes  −720€', fx: { veins: 16, activistes: 12, money: -720 }, idleMsg: 'Les canonades noves instal·lades. El fulletó tranquil·litzador ha quedat obsolet.' },
+      { label: 'Filtres temporals (60% d\'eficàcia)', preview: '+Veïns parcial  −150€', fx: { veins: 4, money: -150 }, risk: 'El 40% és motiu de conversa al mercat', idleMsg: 'Els filtres funcionen al 60%. L\'altre 40% és motiu de conversa al mercat cada dia.' },
+    ],
+    ignore: { fx: { veins: -18, activistes: -12 }, idleMsg: 'L\'Agència de Salut Pública ha obert un expedient. La premsa ja ho ha publicat.' },
+  },
+  {
+    id: 'heliport', icon: '🚁', title: 'HELIPORT VISIONARI',
+    factions: ['mercat'], tone: 'opportunity',
+    text: 'Un inversor proposa un heliport municipal. "Posarem el poble al mapa executiu", assegura mentre assenyala un camp de girasols. El camp pertany a la senyora Pujol, que no n\'ha sigut informada.',
+    options: [
+      { label: 'Estudi de viabilitat', preview: '+Mercat  −80€', fx: { mercat: 6, money: -80 }, risk: 'La senyora Pujol ja ha contractat advocat', idleMsg: 'L\'estudi conclou que el camp és necessari. La senyora Pujol ha presentat al·legacions.' },
+      { label: 'Rebutjar la proposta', preview: '+Veïns  −Mercat', fx: { veins: 6, mercat: -12 }, idleMsg: 'L\'inversor ha anat a Riudornes. Diuen que els girasols de la seva senyora són infinits.' },
+    ],
+    ignore: { fx: { mercat: -8 }, idleMsg: 'L\'inversor ha marxat sense resposta. Ha tweejat que "la visió requereix audàcia".' },
+  },
+  {
+    id: 'pla_mobilitat', icon: '🛣️', title: 'PLA DE MOBILITAT',
+    factions: ['mercat', 'veins', 'activistes'], tone: 'neutral',
+    text: 'El Pla de Mobilitat Sostenible té 340 pàgines i 12 accions. L\'acció 1: un semàfor nou. L\'acció 12: "repensar el vehicle privat de forma holística". Ningú ha llegit les accions 2 a 11.',
+    options: [
+      { label: 'Implementar accions 1-6', preview: '+Veïns  +Mercat  −320€', fx: { veins: 8, mercat: 8, money: -320 }, idleMsg: 'Les accions 1-6 s\'han implementat. El semàfor funciona. Les 7-12 esperen dignament.' },
+      { label: 'Aprovar en bloc (simbòlic)', preview: '+Activistes  −Mercat  −Veïns', fx: { activistes: 10, mercat: -6, veins: -6 }, risk: 'Aprovar no és implementar', idleMsg: 'El Pla és aprovat. Cap acció implementada. El document descansa en pau.' },
+    ],
+    ignore: { fx: { activistes: -8 }, idleMsg: 'El Pla porta 3 mesos sense resposta oficial. S\'ha iniciat la versió 2.0.' },
+  },
+  {
+    id: 'subvencio', icon: '💸', title: 'SUBVENCIÓ EUROPEA',
+    factions: ['mercat', 'activistes'], tone: 'opportunity',
+    text: 'Hi ha una subvenció europea de 50.000€ per a "projectes de cohesió territorial innovadors amb impacte mesurable". Termini: 12 dies. Formulari: 48 pàgines. La secretaria mira el sostre.',
+    options: [
+      { label: 'Contractar gestora externa', preview: '+Mercat  −480€  (gestió)', fx: { mercat: 14, money: -480 }, risk: 'Si guanyem, recuperem amb escreix', idleMsg: 'La gestora ha presentat la sol·licitud. Esperem resolució en 6 mesos.' },
+      { label: 'Presentar internament', preview: '+Activistes  −Mercat (si es perd)', fx: { activistes: 8, mercat: -4 }, risk: 'La secretaria ha comptat les pàgines dues vegades', idleMsg: 'La sol·licitud s\'ha presentat. La secretaria s\'ha agafat 2 dies de vacances tot seguit.' },
+    ],
+    ignore: { fx: { mercat: -10 }, idleMsg: 'El termini ha passat. El municipi veí ha guanyat la subvenció. Envien postals.' },
+  },
+  {
+    id: 'edifici_abandonat', icon: '🏚️', title: 'EDIFICI EN RUNES',
+    factions: ['veins', 'activistes', 'mercat'], tone: 'crisis',
+    text: 'L\'edifici dels antics jutjats (buit des del 1994) s\'ensorra parcialment. El carrer s\'ha tallat. Pertany a una herència amb 14 hereus a 6 països. Cap respon el telèfon.',
+    options: [
+      { label: 'Enderroc d\'urgència (nosaltres)', preview: '+Veïns  −680€', fx: { veins: 12, money: -680 }, risk: 'Reclamarem als hereus. Probablement mai.', idleMsg: 'L\'edifici ja no existeix. El carrer ha obert. Cap hereu ha trucat. Tampoc s\'esperava.' },
+      { label: 'Apuntalament i reclamació legal', preview: '−Veïns  −Mercat  −200€', fx: { veins: -8, mercat: -8, money: -200 }, risk: 'Els advocats cobren per hora. Moltes hores.', idleMsg: 'L\'apuntalament aguanta. Els advocats han facturat la primera hora de moltes.' },
+    ],
+    ignore: { fx: { veins: -16, mercat: -10, money: -400 }, idleMsg: 'Una part addicional s\'ha ensortit. L\'assegurança demana l\'historial de manteniment del 1994.' },
+  },
+  {
     id: 'subhasta', icon: '🔨', title: 'SUBHASTA MUNICIPAL',
     factions: ['veins', 'mercat'], tone: 'opportunity',
     text: 'Per quadrar el pressupost, s\'han inventariat béns subhastables: 400 cadires de plàstic, un fax en perfecte estat, i el nom de la sala de plens per un any. La sala s\'anomena "Sala Glòria".',
