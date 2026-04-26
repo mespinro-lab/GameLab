@@ -400,6 +400,7 @@ function showEvent(evt) {
   $('choice-left').classList.toggle('choice-disabled',  !lOk);
   $('choice-right').classList.toggle('choice-disabled', !rOk);
 
+  $('event-card').classList.remove('insight-active');
   hide('idle-state');
   show('event-card');
 
@@ -445,12 +446,15 @@ function autoResolveEvent() {
     $('choice-left').classList.remove('choice-disabled');
     $('choice-right').classList.remove('choice-disabled');
     resetTickBar();
-    const fx = (S.currentEvent && S.currentEvent.ignore && S.currentEvent.ignore.fx) || {};
+    const ignore   = S.currentEvent && S.currentEvent.ignore || {};
+    const fx       = ignore.fx || {};
+    const idleMsg  = ignore.idleMsg || null;
     if (fx.veins)      S.factions.veins      = clamp(S.factions.veins      + fx.veins,      5, 96);
     if (fx.mercat)     S.factions.mercat     = clamp(S.factions.mercat     + fx.mercat,     5, 96);
     if (fx.activistes) S.factions.activistes = clamp(S.factions.activistes + fx.activistes, 5, 96);
     if (fx.money)      S.money = Math.max(0, S.money + fx.money);
     S.currentEvent = null;
+    $('event-card').classList.remove('insight-active');
     const h = happiness();
     if (h < DANGER_LEVEL) {
       S.dangerWeeks++;
@@ -460,7 +464,7 @@ function autoResolveEvent() {
     }
     saveGame();
     render();
-    showIdle();
+    showIdle(idleMsg);
     S.phase = 'playing';
     startTick();
   }, 280);
@@ -483,6 +487,7 @@ function flyOff(direction, opt) {
     card.style.transition = '';
     card.style.transform  = '';
     card.style.opacity    = '';
+    card.classList.remove('insight-active');
     hide('event-card');
     S.currentEvent = null;
     resetTickBar();
@@ -512,13 +517,13 @@ function resolve(opt) {
 
   saveGame();
   render();
-  showIdle();
+  showIdle(opt.idleMsg);
   S.phase = 'playing';
   startTick();
 }
 
-function showIdle() {
-  $('idle-message').textContent = IDLE_MSGS[Math.floor(Math.random() * IDLE_MSGS.length)];
+function showIdle(msg) {
+  $('idle-message').textContent = msg || IDLE_MSGS[Math.floor(Math.random() * IDLE_MSGS.length)];
   show('idle-state');
 }
 
@@ -583,6 +588,8 @@ function render() {
 
   $('pause-btn').textContent = S.phase === 'paused' ? '▶' : '⏸';
   $('spend-tokens').disabled = S.tokens < 3;
+  $('reveal-btn').disabled   = S.phase !== 'event' || S.tokens < 1 ||
+    $('event-card').classList.contains('insight-active');
 
   renderControls();
 }
@@ -606,6 +613,13 @@ function spendTokens() {
   S.factions.veins      = clamp(S.factions.veins      + 8, 5, 96);
   S.factions.mercat     = clamp(S.factions.mercat     + 6, 5, 96);
   S.factions.activistes = clamp(S.factions.activistes + 6, 5, 96);
+  render();
+}
+
+function revealInsight() {
+  if (S.phase !== 'event' || S.tokens < 1) return;
+  S.tokens--;
+  $('event-card').classList.add('insight-active');
   render();
 }
 
@@ -660,6 +674,7 @@ $('btn-retry').addEventListener('click',      retrySession);
 $('btn-retry-lost').addEventListener('click', retrySession);
 $('pause-btn').addEventListener('click',      togglePause);
 $('spend-tokens').addEventListener('click',   spendTokens);
+$('reveal-btn').addEventListener('click',     revealInsight);
 ['low', 'mid', 'high'].forEach(t =>
   $(`tax-${t}`).addEventListener('click', () => setTax(t)));
 $('toggle-services').addEventListener('click', () => togglePolicy('services'));

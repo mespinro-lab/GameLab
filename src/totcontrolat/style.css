@@ -49,7 +49,7 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: max(1.5rem, env(safe-area-inset-top)) 1rem 0.4rem;
+  padding: max(2.4rem, env(safe-area-inset-top)) 1rem 0.4rem;
   font-size: 0.82rem;
   font-weight: 700;
   color: rgba(255,255,255,0.7);
@@ -179,9 +179,13 @@ html, body {
 .choice-preview {
   font-size: 0.66rem;
   color: rgba(255,255,255,0.45);
-  display: block;
+  display: none;
   margin-top: 0.12rem;
   letter-spacing: 0.02em;
+}
+
+#event-card.insight-active .choice-preview {
+  display: block;
 }
 
 .choice-risk {
