@@ -468,6 +468,7 @@ function autoResolveEvent() {
     const ignore   = S.currentEvent && S.currentEvent.ignore || {};
     const fx       = ignore.fx || {};
     const idleMsg  = ignore.idleMsg || null;
+    showResolveFeedback(fx);
     if (fx.veins)      S.factions.veins      = clamp(S.factions.veins      + fx.veins,      5, 96);
     if (fx.mercat)     S.factions.mercat     = clamp(S.factions.mercat     + fx.mercat,     5, 96);
     if (fx.activistes) S.factions.activistes = clamp(S.factions.activistes + fx.activistes, 5, 96);
@@ -521,6 +522,7 @@ function resetTickBar() {
 
 function resolve(opt) {
   const fx = opt.fx || {};
+  showResolveFeedback(fx);
   if (fx.veins)      S.factions.veins      = clamp(S.factions.veins      + fx.veins,      5, 96);
   if (fx.mercat)     S.factions.mercat     = clamp(S.factions.mercat     + fx.mercat,     5, 96);
   if (fx.activistes) S.factions.activistes = clamp(S.factions.activistes + fx.activistes, 5, 96);
@@ -544,6 +546,43 @@ function resolve(opt) {
 function showIdle(msg) {
   $('idle-message').textContent = msg || IDLE_MSGS[Math.floor(Math.random() * IDLE_MSGS.length)];
   show('idle-state');
+}
+
+// ── Feedback juice ─────────────────────────────────────────────────────────────
+function spawnFloat(text, anchorId, color) {
+  const anchor = $(anchorId);
+  if (!anchor) return;
+  const rect   = anchor.getBoundingClientRect();
+  const jitter = (Math.random() - 0.5) * 28;
+  const el     = document.createElement('div');
+  el.className = 'float-feedback';
+  el.textContent = text;
+  el.style.left  = (rect.left + rect.width / 2 + jitter) + 'px';
+  el.style.top   = (rect.top  + rect.height / 2) + 'px';
+  el.style.color = color;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1300);
+}
+
+function shakeEl(id) {
+  const el = $(id);
+  if (!el) return;
+  el.classList.remove('shake');
+  void el.offsetWidth;
+  el.classList.add('shake');
+  setTimeout(() => el.classList.remove('shake'), 400);
+}
+
+function showResolveFeedback(fx) {
+  const s = v => v > 0 ? '+' : '';
+  const c = v => v > 0 ? 'var(--ok)' : 'var(--bad)';
+  if (fx.veins)      spawnFloat(`🏘️ ${s(fx.veins)}${fx.veins}`,             'bar-veins',      c(fx.veins));
+  if (fx.mercat)     spawnFloat(`🏪 ${s(fx.mercat)}${fx.mercat}`,            'bar-mercat',     c(fx.mercat));
+  if (fx.activistes) spawnFloat(`✊ ${s(fx.activistes)}${fx.activistes}`,     'bar-activistes', c(fx.activistes));
+  if (fx.money) {
+    spawnFloat(`💰 ${s(fx.money)}${fx.money}€`, 'money-val', fx.money > 0 ? 'var(--gold)' : 'var(--bad)');
+    if (fx.money < 0) shakeEl('money-display');
+  }
 }
 
 // ── End game ───────────────────────────────────────────────────────────────────
@@ -668,18 +707,18 @@ function render() {
   $('ring-country').textContent   = S.countryName || '';
 
   const ringColor = h > 60 ? 'var(--ok)' : h > 35 ? 'var(--warn)' : 'var(--bad)';
-  const ringGlow  = h > 60 ? 'rgba(76,175,128,0.38)'  : h > 35 ? 'rgba(224,160,48,0.38)'  : 'rgba(224,64,64,0.38)';
+  const ringGlow  = h > 60 ? 'rgba(52,211,153,0.42)'  : h > 35 ? 'rgba(251,146,60,0.42)'  : 'rgba(244,63,94,0.42)';
   document.documentElement.style.setProperty('--hring',      ringColor);
   document.documentElement.style.setProperty('--hring-glow', ringGlow);
 
-  const skyH = h > 50 ? 30 + (h - 50) * 0.8  : h * 0.4;
-  const skyS = h > 50 ? 18 + (h - 50) * 0.5  : 15;
-  const skyL = h > 50 ? 10 + (h - 50) * 0.15 : 6 + h * 0.08;
+  const skyH = h > 50 ? 260 + (h - 50) * 1.4  : 245 + h * 0.3;
+  const skyS = h > 50 ? 38  + (h - 50) * 1.0  : 30  + h * 0.16;
+  const skyL = h > 50 ? 10  + (h - 50) * 0.18 : 6   + h * 0.08;
   document.documentElement.style.setProperty('--sky-h', skyH);
   document.documentElement.style.setProperty('--sky-s', skyS + '%');
   document.documentElement.style.setProperty('--sky-l', skyL + '%');
 
-  const bldAlpha = (0.08 + (h / 100) * 0.18).toFixed(3);
+  const bldAlpha = (0.1 + (h / 100) * 0.22).toFixed(3);
   document.documentElement.style.setProperty('--bld-alpha', bldAlpha);
 
   ['veins', 'mercat', 'activistes'].forEach(k => {
