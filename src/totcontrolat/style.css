@@ -1339,7 +1339,7 @@ html, body {
 .wmap-canvas {
   position: relative;
   width: 700px;
-  height: 1000px;
+  height: 1100px;
   flex-shrink: 0;
   will-change: transform;
   background: transparent;
@@ -1397,7 +1397,7 @@ html, body {
 
 .wmap-node {
   position: absolute;
-  width: 120px;
+  width: 156px;
   text-align: center;
   cursor: pointer;
   user-select: none;
@@ -1405,12 +1405,15 @@ html, body {
 }
 
 .wmap-world-circle {
-  width: 120px;
-  height: 120px;
+  width: 156px;
+  height: 156px;
   border-radius: 50%;
   overflow: hidden;
   border: none;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.55);
+  box-shadow:
+    0 6px 20px rgba(0,0,0,0.55),
+    0 10px 32px rgba(0,0,0,0.4);
+  filter: drop-shadow(0 8px 18px rgba(0,0,0,0.65));
   transition: transform 0.13s ease;
 }
 
@@ -1421,12 +1424,14 @@ html, body {
   display: block;
 }
 
-/* Current world — ring + glow pulse */
+/* Current world — semi-transparent ring + glow pulse */
 .wmap-current .wmap-world-circle {
-  border: 3px solid color-mix(in srgb, var(--wc) 72%, transparent);
+  border: 3px solid color-mix(in srgb, var(--wc) 42%, transparent);
   box-shadow:
     0 6px 20px rgba(0,0,0,0.55),
-    0 0 22px color-mix(in srgb, var(--wc) 42%, transparent);
+    0 10px 32px rgba(0,0,0,0.4),
+    0 0 22px color-mix(in srgb, var(--wc) 32%, transparent);
+  filter: drop-shadow(0 8px 18px rgba(0,0,0,0.65));
   animation: bubblePulse 2.3s ease-in-out infinite;
 }
 
@@ -1434,12 +1439,14 @@ html, body {
   0%, 100% {
     box-shadow:
       0 6px 20px rgba(0,0,0,0.55),
-      0 0 22px color-mix(in srgb, var(--wc) 42%, transparent);
+      0 10px 32px rgba(0,0,0,0.4),
+      0 0 22px color-mix(in srgb, var(--wc) 32%, transparent);
   }
   50% {
     box-shadow:
       0 6px 28px rgba(0,0,0,0.55),
-      0 0 42px color-mix(in srgb, var(--wc) 70%, transparent);
+      0 10px 32px rgba(0,0,0,0.4),
+      0 0 38px color-mix(in srgb, var(--wc) 55%, transparent);
   }
 }
 

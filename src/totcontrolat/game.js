@@ -210,18 +210,18 @@ function renderWorldMap() {
   const list = $('worlds-list');
   list.innerHTML = '';
 
-  const CANVAS_W = 700, CANVAS_H = 1000;
+  const CANVAS_W = 700, CANVAS_H = 1100;
+  // Nodes clustered 20% closer vertically, 250px breathing room at top & bottom
   const centers = [
-    { x: 148, y: 878 },  // Vilaturisme  (bottom-left)
-    { x: 548, y: 648 },  // Sleeptown    (middle-right)
-    { x: 158, y: 372 },  // Technoburg   (top-left)
-    { x: 532, y: 128 },  // Coming soon  (top-right)
+    { x: 148, y: 850 },  // Vilaturisme  (bottom-left)
+    { x: 548, y: 666 },  // Sleeptown    (middle-right)
+    { x: 158, y: 445 },  // Technoburg   (top-left)
+    { x: 532, y: 250 },  // Coming soon  (top-right)
   ];
-  // Cubic bezier paths (two control points) for irregular organic feel
   const segs = [
-    { from: 0, to: 1, cp1: { x: 268, y: 918 }, cp2: { x: 472, y: 705 } },
-    { from: 1, to: 2, cp1: { x: 518, y: 535 }, cp2: { x: 228, y: 435 } },
-    { from: 2, to: 3, cp1: { x: 108, y: 258 }, cp2: { x: 462, y: 182 }, soon: true },
+    { from: 0, to: 1, cp1: { x: 268, y: 890 }, cp2: { x: 472, y: 720 } },
+    { from: 1, to: 2, cp1: { x: 518, y: 558 }, cp2: { x: 228, y: 504 } },
+    { from: 2, to: 3, cp1: { x: 108, y: 335 }, cp2: { x: 462, y: 295 }, soon: true },
   ];
 
   const canvas = document.createElement('div');
@@ -275,18 +275,9 @@ function renderWorldMap() {
       isUnlocked ? 'wmap-unlocked' : 'wmap-locked',
       isComplete ? 'wmap-done' : isCurrent ? 'wmap-current' : '',
     ].join(' ').trim();
-    node.style.left = (c.x - 60) + 'px';
-    node.style.top  = (c.y - 60) + 'px';
+    node.style.left = (c.x - 78) + 'px';
+    node.style.top  = (c.y - 78) + 'px';
     node.style.setProperty('--wc', world.color);
-
-    const starsHTML = isUnlocked
-      ? `<div class="wmap-stars">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</div>` : '';
-
-    let actionTxt = '';
-    if (hasSave && !isComplete) {
-      const sv = getWorldSave(world.id);
-      actionTxt = `<div class="wmap-action wmap-action-cont">Niv ${sv.levelNum} →</div>`;
-    }
 
     const imgSrc = isUnlocked ? `${world.id}.png` : 'unavailable.png';
 
@@ -294,9 +285,7 @@ function renderWorldMap() {
       <div class="wmap-world-circle">
         <img src="${imgSrc}" alt="${world.name}">
       </div>
-      ${starsHTML}
-      <div class="wmap-label">${isUnlocked ? world.name : ''}</div>
-      ${actionTxt}
+      ${isUnlocked ? `<div class="wmap-label">${world.name}</div>` : ''}
     `;
 
     if (isUnlocked) {
@@ -323,8 +312,8 @@ function renderWorldMap() {
   const cs = centers[3];
   const soonNode = document.createElement('div');
   soonNode.className = 'wmap-node wmap-soon';
-  soonNode.style.left = (cs.x - 60) + 'px';
-  soonNode.style.top  = (cs.y - 60) + 'px';
+  soonNode.style.left = (cs.x - 78) + 'px';
+  soonNode.style.top  = (cs.y - 78) + 'px';
   soonNode.innerHTML = `<div class="wmap-world-circle wmap-circle-soon">
     <img src="coming_soon.png" alt="Coming Soon">
   </div>`;
@@ -341,7 +330,8 @@ function renderWorldMap() {
 }
 
 function initMapPan(canvas, viewport, focus) {
-  const CANVAS_H = 1000, CANVAS_W = 700;
+  const CANVAS_H = 1100, CANVAS_W = 700;
+  const HUD_BOTTOM = 90;
   let isDragging = false, wasDrag = false;
   let pointerId = null;
   let startY = 0, startX = 0, downClientY = 0, downClientX = 0;
@@ -349,7 +339,7 @@ function initMapPan(canvas, viewport, focus) {
   let velY = 0, velX = 0, lastY = 0, lastX = 0, lastT = 0;
   let rafId = null;
 
-  function getMinY() { return Math.min(0, viewport.clientHeight - CANVAS_H); }
+  function getMinY() { return Math.min(0, viewport.clientHeight - HUD_BOTTOM - CANVAS_H); }
   function getMinX() { return -Math.max(0, canvas.offsetWidth - viewport.clientWidth) / 2; }
   function getMaxX() { return  Math.max(0, canvas.offsetWidth - viewport.clientWidth) / 2; }
 
