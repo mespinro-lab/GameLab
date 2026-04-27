@@ -143,7 +143,7 @@ function buyBuilding(bldgId) {
   updateBuildingDriftMods();
   checkBuildingQuota();
   saveGame();
-  renderInvestPanel();
+  renderBuildingsRow();
   renderLive();
   spawnFloat(`🏗️ ${nextDef.name}`, 'money-display', 'var(--ok)');
 }
@@ -691,7 +691,7 @@ function initMapPan(canvas, viewport, focus) {
 function startWorld(worldId) {
   stopSim();
   hide('overlay-won'); hide('overlay-lost'); hide('overlay-world-done');
-  hide('event-card');
+  hide('event-pane'); show('controls-pane');
   MENU_SCREENS.forEach(hide);
 
   const save = getWorldSave(worldId);
@@ -796,71 +796,57 @@ function showShopConfirm(msg) {
 // ── Configuració ───────────────────────────────────────────────────────────────
 function openConfig() { showSub('config-screen'); }
 
-// ── Invest panel ───────────────────────────────────────────────────────────────
-function openInvestPanel() {
-  const wasSpeed = S.speed;
-  S._investPrevSpeed = wasSpeed;
-  if (S.phase === 'playing') S.speed = 0;
-  renderInvestPanel();
-  $('invest-overlay').classList.remove('hidden');
-}
-
-function closeInvestPanel() {
-  $('invest-overlay').classList.add('hidden');
-  if (S.phase === 'playing' && S._investPrevSpeed !== undefined) {
-    S.speed = S._investPrevSpeed;
-  }
-}
-
-function renderInvestPanel() {
-  if (!S.worldConfig) return;
-  const bldg      = getWorldBuildings(S.worldId);
+// ── Buildings row (inline in controls pane) ────────────────────────────────────
+function renderBuildingsRow() {
+  const row = $('buildings-row');
+  if (!S.worldConfig) { row.innerHTML = ''; return; }
   const buildings = S.worldConfig.buildings || [];
-  const score     = buildingScore();
-  const quota     = S.levelQuota;
+  if (!buildings.length) { row.innerHTML = ''; return; }
 
-  $('invest-score').textContent = `Inversions: ${score}/${quota}${score >= quota ? ' ✓' : ''}`;
+  const bldg  = getWorldBuildings(S.worldId);
+  const score = buildingScore();
+  const quota = S.levelQuota;
 
-  const grid = $('invest-grid');
-  grid.innerHTML = '';
+  row.innerHTML = '';
+
+  const header = document.createElement('div');
+  header.className = 'bldg-row-header';
+  header.innerHTML = `<span class="ctrl-label">Inversions</span><span class="bldg-quota">${score}/${quota}${score >= quota ? ' ✓' : ''}</span>`;
+  row.appendChild(header);
+
+  const cards = document.createElement('div');
+  cards.className = 'bldg-cards';
 
   buildings.forEach(b => {
     const currentLevel = bldg[b.id] || 0;
-    const maxLevel     = b.chain.length;
-    const isMaxed      = currentLevel >= maxLevel;
+    const isMaxed      = currentLevel >= b.chain.length;
     const nextDef      = isMaxed ? null : b.chain[currentLevel];
     const canAfford    = nextDef && S.money >= nextDef.cost;
-
-    const el = document.createElement('div');
-    el.className = 'invest-item' + (isMaxed ? ' invest-maxed' : '');
-
-    const levelDots = b.chain.map((_, i) =>
+    const currentDef   = currentLevel > 0 ? b.chain[currentLevel - 1] : null;
+    const icon         = currentDef ? currentDef.icon : b.chain[0].icon;
+    const name         = currentDef ? currentDef.name : (b.chain[0].baseName || b.chain[0].name);
+    const levelDots    = b.chain.map((_, i) =>
       `<span class="invest-dot ${i < currentLevel ? 'invest-dot-filled' : ''}"></span>`
     ).join('');
 
-    const currentDef = currentLevel > 0 ? b.chain[currentLevel - 1] : null;
-
-    el.innerHTML = `
-      <div class="invest-item-left">
-        <span class="invest-icon">${currentDef ? currentDef.icon : b.chain[0].icon}</span>
-        <div class="invest-info">
-          <div class="invest-name">${currentDef ? currentDef.name : b.chain[0].baseName || b.chain[0].name}</div>
-          <div class="invest-levels">${levelDots}</div>
-        </div>
-      </div>
-      <button class="invest-buy-btn ${canAfford ? '' : 'invest-cant-afford'}"
-              ${isMaxed || !nextDef ? 'disabled' : ''}
+    const card = document.createElement('div');
+    card.className = 'bldg-card' + (isMaxed ? ' bldg-maxed' : '');
+    card.innerHTML = `
+      <span class="bldg-icon">${icon}</span>
+      <span class="bldg-name">${name}</span>
+      <div class="bldg-levels">${levelDots}</div>
+      <button class="bldg-btn${canAfford ? '' : ' bldg-cant-afford'}"
+              ${isMaxed ? 'disabled' : ''}
               data-bldg="${b.id}">
-        ${isMaxed ? '✓ Màxim' : `${nextDef.icon} ${nextDef.name}<br><span class="invest-cost">${nextDef.cost}€</span>`}
+        ${isMaxed ? '✓' : nextDef ? `${nextDef.cost}€` : ''}
       </button>
     `;
-
-    const btn = el.querySelector('.invest-buy-btn');
-    if (btn && !isMaxed) {
-      btn.addEventListener('click', () => { buyBuilding(b.id); });
-    }
-    grid.appendChild(el);
+    const btn = card.querySelector('.bldg-btn');
+    if (btn && !isMaxed) btn.addEventListener('click', () => buyBuilding(b.id));
+    cards.appendChild(card);
   });
+
+  row.appendChild(cards);
 }
 
 // ── Events ─────────────────────────────────────────────────────────────────────
@@ -925,10 +911,10 @@ function showEvent(evt) {
   $('opt-right-risk').textContent = rOk ? (oR.risk || '') : '⚠ Sense fons';
   $('choice-left').classList.toggle('choice-disabled',  !lOk);
   $('choice-right').classList.toggle('choice-disabled', !rOk);
-  $('event-card').classList.remove('insight-active');
+  $('event-pane').classList.remove('insight-active');
   $('reveal-btn').disabled = S.tokens < 1;
 
-  hide('idle-state'); show('event-card');
+  hide('controls-pane'); show('event-pane');
 
   const onClickL = () => { if (!$('choice-left').classList.contains('choice-disabled'))  flyOff('left',  oL); };
   const onClickR = () => { if (!$('choice-right').classList.contains('choice-disabled')) flyOff('right', oR); };
@@ -950,12 +936,12 @@ function showEvent(evt) {
 function autoResolveEvent() {
   if (S.phase !== 'event') return;
   cardCleanup();
-  const card = $('event-card');
+  const card = $('event-pane');
   card.style.transition = 'opacity 0.25s ease-out';
   card.style.opacity    = '0';
   setTimeout(() => {
     card.style.transition = ''; card.style.opacity = '';
-    hide('event-card');
+    hide('event-pane'); show('controls-pane');
     $('choice-left').classList.remove('choice-disabled');
     $('choice-right').classList.remove('choice-disabled');
     const ignore  = (S.currentEvent && S.currentEvent.ignore) || {};
@@ -964,7 +950,7 @@ function autoResolveEvent() {
     applyFx(fx);
     showResolveFeedback(fx);
     S.currentEvent = null;
-    $('event-card').classList.remove('insight-active');
+    $('event-pane').classList.remove('insight-active');
     checkDangerAfterFx();
     if (S.phase !== 'lost') {
       saveGame(); render(); showIdle(idleMsg);
@@ -978,16 +964,16 @@ function flyOff(direction, opt) {
   cardCleanup();
   $('choice-left').classList.remove('choice-disabled');
   $('choice-right').classList.remove('choice-disabled');
-  const card = $('event-card');
+  const card = $('event-pane');
   const tx   = direction === 'right' ? window.innerWidth * 1.2 : -window.innerWidth * 1.2;
-  const rot  = direction === 'right' ? 25 : -25;
+  const rot  = direction === 'right' ? 15 : -15;
   card.style.transition = 'transform 0.28s ease-in, opacity 0.28s ease-in';
   card.style.transform  = `translateX(${tx}px) rotate(${rot}deg)`;
   card.style.opacity    = '0';
   setTimeout(() => {
     card.style.transition = ''; card.style.transform = ''; card.style.opacity = '';
     card.classList.remove('insight-active');
-    hide('event-card');
+    hide('event-pane'); show('controls-pane');
     S.currentEvent = null;
     $('tick-bar').style.background = '';
     resolve(opt);
@@ -1026,7 +1012,6 @@ function checkDangerAfterFx() {
 
 function showIdle(msg) {
   $('idle-message').textContent = msg || IDLE_MSGS[Math.floor(Math.random() * IDLE_MSGS.length)];
-  show('idle-state');
 }
 
 // ── Feedback ───────────────────────────────────────────────────────────────────
@@ -1164,8 +1149,8 @@ function startNextMandate() {
   S.levelQuota  = quotas[Math.min(S.levelNum - 1, quotas.length - 1)];
   S.quotaMet    = buildingScore() >= S.levelQuota;
 
-  hide('event-card');
-  $('event-card').classList.remove('insight-active');
+  hide('event-pane'); show('controls-pane');
+  $('event-pane').classList.remove('insight-active');
   generateWeekNoise();
   updateBuildingDriftMods();
   saveGame(); render(); showIdle();
@@ -1253,9 +1238,10 @@ function render() {
 
   $('spend-tokens').disabled = S.tokens < 3;
   $('reveal-btn').disabled   = S.phase !== 'event' || S.tokens < 1 ||
-    $('event-card').classList.contains('insight-active');
+    $('event-pane').classList.contains('insight-active');
 
   renderControls();
+  renderBuildingsRow();
 }
 
 function renderControls() {
@@ -1294,7 +1280,7 @@ function spendTokens() {
 function revealInsight() {
   if (S.phase !== 'event' || S.tokens < 1) return;
   S.tokens--;
-  $('event-card').classList.add('insight-active');
+  $('event-pane').classList.add('insight-active');
   render();
 }
 
@@ -1346,10 +1332,6 @@ $('btn-back-config').addEventListener('click', openWorldMap);
 $('btn-back-badges').addEventListener('click', openWorldMap);
 $('btn-buy-10').addEventListener('click',  () => buyTokens(10));
 $('btn-buy-100').addEventListener('click', () => buyTokens(100));
-
-$('invest-btn').addEventListener('click',      openInvestPanel);
-$('invest-close').addEventListener('click',   closeInvestPanel);
-$('invest-backdrop').addEventListener('click', closeInvestPanel);
 
 document.querySelectorAll('.lang-pill').forEach(btn => {
   btn.addEventListener('click', () => {

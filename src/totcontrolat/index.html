@@ -15,32 +15,91 @@
     <!-- ── Top bar ── -->
     <div id="top-bar">
       <div id="money-display">💰 <span id="money-val">450</span>€</div>
-      <div id="week-display">S<span id="week-val">1</span></div>
+      <div id="top-center">
+        <div id="week-display">S<span id="week-val">1</span></div>
+        <div id="ring-country"></div>
+      </div>
       <div id="top-right">
         <div id="token-display">🪙 <span id="token-val">0</span></div>
         <button id="menu-ingame-btn">☰</button>
       </div>
     </div>
 
-    <!-- ── Event area (top) ── -->
-    <div id="event-area">
-      <div id="idle-state">
+    <!-- ── Week progress bar ── -->
+    <div id="tick-track"><div id="tick-bar"></div></div>
+
+    <!-- ── Game center: happiness + factions ── -->
+    <div id="game-center">
+      <div id="happiness-area">
+        <div id="happiness-ring">
+          <div id="happiness-face">😐</div>
+          <div id="happiness-val">60</div>
+        </div>
         <p id="idle-message">Setmana tranquil·la... de moment.</p>
       </div>
+      <div id="factions">
+        <div class="faction">
+          <span class="faction-icon" id="icon-veins">🏘️</span>
+          <div class="faction-mid">
+            <span class="faction-name" id="name-veins">Veïns</span>
+            <div class="faction-bar-bg"><div class="faction-bar-fill" id="bar-veins"></div></div>
+          </div>
+          <span class="faction-val" id="val-veins">62</span>
+        </div>
+        <div class="faction">
+          <span class="faction-icon" id="icon-mercat">🏪</span>
+          <div class="faction-mid">
+            <span class="faction-name" id="name-mercat">Mercat</span>
+            <div class="faction-bar-bg"><div class="faction-bar-fill" id="bar-mercat"></div></div>
+          </div>
+          <span class="faction-val" id="val-mercat">60</span>
+        </div>
+        <div class="faction">
+          <span class="faction-icon" id="icon-activistes">✊</span>
+          <div class="faction-mid">
+            <span class="faction-name" id="name-activistes">Activ.</span>
+            <div class="faction-bar-bg"><div class="faction-bar-fill" id="bar-activistes"></div></div>
+          </div>
+          <span class="faction-val" id="val-activistes">58</span>
+        </div>
+      </div>
+    </div>
 
-      <div id="event-card" class="hidden">
+    <!-- ── Action panel: controls OR event (mutually exclusive) ── -->
+    <div id="action-panel">
+      <div id="controls-pane">
+        <div class="ctrl-row">
+          <span class="ctrl-label">Impostos</span>
+          <div class="ctrl-pills">
+            <button class="pill" id="tax-low"  data-tax="low">Baix<span class="pill-sub">+30€</span></button>
+            <button class="pill active" id="tax-mid" data-tax="mid">Mig<span class="pill-sub">+55€</span></button>
+            <button class="pill" id="tax-high" data-tax="high">Alt<span class="pill-sub">+85€</span></button>
+          </div>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">Polítiques</span>
+          <div class="ctrl-pills ctrl-pills-policies">
+            <button class="pill toggle" id="toggle-services">🏥<span class="pill-sub">−35€</span></button>
+            <button class="pill toggle" id="toggle-comms">📢<span class="pill-sub">−25€</span></button>
+            <button class="pill toggle" id="toggle-security">🚔<span class="pill-sub">−30€</span></button>
+            <button class="pill toggle" id="toggle-subsidies">💼<span class="pill-sub">−40€</span></button>
+          </div>
+        </div>
+        <div id="buildings-row"></div>
+      </div>
+      <div id="event-pane" class="hidden">
         <div id="event-header">
           <span id="event-icon"></span>
           <span id="event-title"></span>
         </div>
         <p id="event-text"></p>
-        <div id="choice-indicators">
-          <div id="choice-left" class="choice-label">
+        <div id="event-choices">
+          <div id="choice-left" class="choice-btn">
             <span class="choice-name" id="opt-left-name"></span>
             <span class="choice-preview" id="opt-left-preview"></span>
             <span class="choice-risk" id="opt-left-risk"></span>
           </div>
-          <div id="choice-right" class="choice-label">
+          <div id="choice-right" class="choice-btn">
             <span class="choice-name" id="opt-right-name"></span>
             <span class="choice-preview" id="opt-right-preview"></span>
             <span class="choice-risk" id="opt-right-risk"></span>
@@ -49,101 +108,24 @@
       </div>
     </div>
 
-    <!-- ── Happiness (centre) + skyline ── -->
-    <div id="center-area">
-      <div id="ring-country"></div>
-      <div id="ring-row">
-        <div class="skyline-side skyline-l">
-          <div class="bldg bl-1"></div>
-          <div class="bldg bl-2"></div>
-          <div class="bldg bl-3"></div>
-        </div>
-        <div id="happiness-ring">
-          <div id="happiness-face">😐</div>
-          <div id="happiness-val">60</div>
-        </div>
-        <div class="skyline-side skyline-r">
-          <div class="bldg br-1"></div>
-          <div class="bldg br-2"></div>
-          <div class="bldg br-3"></div>
-        </div>
+    <!-- ── Speed bar (always visible) ── -->
+    <div id="speed-bar">
+      <div id="danger-indicator" class="hidden">
+        ⚠️ <span id="danger-weeks-val">0</span>/3
       </div>
-    </div>
-
-    <!-- ── Faction bars ── -->
-    <div id="factions">
-      <div class="faction">
-        <span class="faction-icon" id="icon-veins">🏘️</span>
-        <span class="faction-name" id="name-veins">Veïns</span>
-        <div class="faction-bar-bg"><div class="faction-bar-fill" id="bar-veins"></div></div>
-        <span class="faction-val" id="val-veins">62</span>
+      <div class="speed-controls">
+        <button class="speed-btn" id="speed-0">⏸</button>
+        <button class="speed-btn active" id="speed-1">×1</button>
+        <button class="speed-btn" id="speed-2">×2</button>
+        <button class="speed-btn" id="speed-3">×3</button>
       </div>
-      <div class="faction">
-        <span class="faction-icon" id="icon-mercat">🏪</span>
-        <span class="faction-name" id="name-mercat">Mercat</span>
-        <div class="faction-bar-bg"><div class="faction-bar-fill" id="bar-mercat"></div></div>
-        <span class="faction-val" id="val-mercat">60</span>
-      </div>
-      <div class="faction">
-        <span class="faction-icon" id="icon-activistes">✊</span>
-        <span class="faction-name" id="name-activistes">Activ.</span>
-        <div class="faction-bar-bg"><div class="faction-bar-fill" id="bar-activistes"></div></div>
-        <span class="faction-val" id="val-activistes">58</span>
-      </div>
-    </div>
-
-    <!-- ── Week progress bar ── -->
-    <div id="tick-track"><div id="tick-bar"></div></div>
-
-    <!-- ── Controls (bottom) ── -->
-    <div id="controls-area">
-      <div class="ctrl-row">
-        <span class="ctrl-label">Impostos</span>
-        <div class="ctrl-pills">
-          <button class="pill" id="tax-low"  data-tax="low">Baix<span class="pill-sub">+30€</span></button>
-          <button class="pill active" id="tax-mid" data-tax="mid">Mig<span class="pill-sub">+55€</span></button>
-          <button class="pill" id="tax-high" data-tax="high">Alt<span class="pill-sub">+85€</span></button>
-        </div>
-      </div>
-      <div class="ctrl-row">
-        <span class="ctrl-label">Polítiques</span>
-        <div class="ctrl-pills ctrl-pills-policies">
-          <button class="pill toggle" id="toggle-services">🏥<span class="pill-sub">−35€</span></button>
-          <button class="pill toggle" id="toggle-comms">📢<span class="pill-sub">−25€</span></button>
-          <button class="pill toggle" id="toggle-security">🚔<span class="pill-sub">−30€</span></button>
-          <button class="pill toggle" id="toggle-subsidies">💼<span class="pill-sub">−40€</span></button>
-        </div>
-      </div>
-      <div class="ctrl-row ctrl-row-bottom">
-        <div id="danger-indicator" class="hidden">
-          ⚠️ <span id="danger-weeks-val">0</span>/3
-        </div>
-        <div class="speed-controls">
-          <button class="speed-btn" id="speed-0">⏸</button>
-          <button class="speed-btn active" id="speed-1">×1</button>
-          <button class="speed-btn" id="speed-2">×2</button>
-          <button class="speed-btn" id="speed-3">×3</button>
-        </div>
+      <div id="token-actions">
         <button class="pill token-pill" id="spend-tokens" disabled>🪙×3 → +Moral</button>
         <button class="pill token-pill" id="reveal-btn" disabled>🔍×1</button>
-        <button class="pill invest-pill" id="invest-btn">📦 Invertir</button>
       </div>
     </div>
 
   </div><!-- /#app -->
-
-  <!-- ── Invest overlay (bottom sheet) ── -->
-  <div id="invest-overlay" class="hidden">
-    <div id="invest-backdrop"></div>
-    <div id="invest-sheet">
-      <div id="invest-handle"></div>
-      <div id="invest-header">
-        <span id="invest-score">Inversions: 0/2</span>
-        <button id="invest-close">✕</button>
-      </div>
-      <div id="invest-grid"></div>
-    </div>
-  </div>
 
   <!-- ── Overlay: world complete ── -->
   <div id="overlay-world-done" class="overlay hidden">
