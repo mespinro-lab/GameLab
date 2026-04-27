@@ -1264,12 +1264,17 @@ html, body {
   transition: transform 0.1s, box-shadow 0.1s;
 }
 
-.wmap-fab img {
-  width: 1.94rem;
-  height: 1.94rem;
-  object-fit: contain;
-  display: block;
+#btn-wmap-badges,
+#btn-wmap-botiga,
+#btn-wmap-config {
+  background-size: 1.94rem 1.94rem, auto;
+  background-position: center;
+  background-repeat: no-repeat;
 }
+
+#btn-wmap-badges { background-image: url('badges.png'),  linear-gradient(160deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.03) 100%); }
+#btn-wmap-botiga { background-image: url('shop.png'),    linear-gradient(160deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.03) 100%); }
+#btn-wmap-config { background-image: url('settings.png'),linear-gradient(160deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.03) 100%); }
 
 .wmap-fab:hover {
   box-shadow:
