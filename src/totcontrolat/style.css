@@ -1267,7 +1267,7 @@ html, body {
 #btn-wmap-badges,
 #btn-wmap-botiga,
 #btn-wmap-config {
-  background-size: 1.94rem 1.94rem, auto;
+  background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
 }
