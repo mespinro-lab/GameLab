@@ -333,7 +333,7 @@ function initMapPan(canvas, viewport, focus) {
   const CANVAS_H = 1400, CANVAS_W = 1200;
   const HUD_BOTTOM = 90;
   const MIN_SCALE = 0.7, MAX_SCALE = 1.8;
-  let scale = 1.0;
+  let scale = 0.7;
 
   let isDragging = false, wasDrag = false;
   let pointerId = null;
@@ -464,8 +464,8 @@ function initMapPan(canvas, viewport, focus) {
   requestAnimationFrame(() => {
     const fx = focus ? focus.x : CANVAS_W / 2;
     const fy = focus ? focus.y : CANVAS_H;
-    currentX = Math.max(getMinX(), Math.min(getMaxX(), CANVAS_W / 2 - fx));
-    currentY = Math.max(getMinY(), Math.min(0, viewport.clientHeight * 0.72 - fy));
+    currentX = Math.max(getMinX(), Math.min(getMaxX(), (CANVAS_W / 2 - fx) * scale));
+    currentY = Math.max(getMinY(), Math.min(0, viewport.clientHeight * 0.72 - fy * scale));
     setPos(currentX, currentY, false);
   });
 }
