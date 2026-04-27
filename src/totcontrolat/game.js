@@ -600,7 +600,6 @@ function initMapPan(canvas, viewport, focus) {
 
   canvas.addEventListener('pointerdown', e => {
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    canvas.setPointerCapture(e.pointerId);
     cancelAnimationFrame(rafId);
     canvas.style.transition = 'none';
     if (pointers.size === 1) {
@@ -612,6 +611,7 @@ function initMapPan(canvas, viewport, focus) {
       velY = 0; velX = 0;
     } else if (pointers.size === 2) {
       isDragging = false;
+      canvas.setPointerCapture(e.pointerId); // capture only for pinch
       const [p1, p2] = [...pointers.values()];
       pinchDist0  = Math.hypot(p2.x - p1.x, p2.y - p1.y) || 1;
       pinchScale0 = scale;
@@ -636,7 +636,7 @@ function initMapPan(canvas, viewport, focus) {
       currentY = Math.max(getMinY(), Math.min(0, currentY));
       setPos(currentX, currentY, false);
     } else if (pointers.size === 1 && isDragging && e.pointerId === pointerId) {
-      if (Math.abs(e.clientY - downClientY) > 6 || Math.abs(e.clientX - downClientX) > 6) wasDrag = true;
+      if (Math.abs(e.clientY - downClientY) > 10 || Math.abs(e.clientX - downClientX) > 10) wasDrag = true;
       currentY = clampY(e.clientY - startY);
       currentX = clampX(e.clientX - startX);
       const now = Date.now(), dt = Math.max(1, now - lastT);
