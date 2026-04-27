@@ -1213,26 +1213,20 @@ html, body {
   pointer-events: none;
 }
 
-/* Title — big, top-center, 3D relief */
+/* Title logo — top-center */
 
 #wmap-title {
   position: absolute;
-  top: calc(env(safe-area-inset-top, 0px) + 1rem);
+  top: calc(env(safe-area-inset-top, 0px) + 0.5rem);
   left: 0; right: 0;
   text-align: center;
-  font-size: 1.75rem;
-  font-weight: 900;
-  letter-spacing: 0.22em;
-  color: rgba(255,255,255,0.92);
-  text-transform: uppercase;
-  text-shadow:
-    0 1px 0 rgba(255,255,255,0.18),
-    0 2px 0 rgba(80,60,160,0.7),
-    0 4px 0 rgba(40,30,100,0.6),
-    0 6px 0 rgba(20,15,60,0.5),
-    0 8px 24px rgba(0,0,0,0.65),
-    0 0 48px rgba(140,100,255,0.45);
   pointer-events: none;
+}
+
+#wmap-logo {
+  width: 220px;
+  max-width: 65vw;
+  filter: drop-shadow(0 4px 16px rgba(0,0,0,0.6));
 }
 
 /* Left action buttons — vertical stack, 3D raised */
