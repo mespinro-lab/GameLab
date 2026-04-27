@@ -1343,7 +1343,7 @@ html, body {
 
 .wmap-canvas {
   position: relative;
-  width: max(340px, 100%);
+  width: 500px;
   height: 680px;
   flex-shrink: 0;
   will-change: transform;

@@ -210,17 +210,17 @@ function renderWorldMap() {
   const list = $('worlds-list');
   list.innerHTML = '';
 
-  const CANVAS_W = 340, CANVAS_H = 680;
+  const CANVAS_W = 500, CANVAS_H = 680;
   const centers = [
-    { x: 80,  y: 572 },  // Vilaturisme  (bottom-left)
-    { x: 252, y: 418 },  // Sleeptown    (middle-right)
-    { x: 95,  y: 242 },  // Technoburg   (top-left)
-    { x: 232, y: 90  },  // Coming soon  (top-right)
+    { x: 110, y: 572 },  // Vilaturisme  (bottom-left)
+    { x: 390, y: 418 },  // Sleeptown    (middle-right)
+    { x: 110, y: 242 },  // Technoburg   (top-left)
+    { x: 370, y: 90  },  // Coming soon  (top-right)
   ];
   const segs = [
-    { from: 0, to: 1, cp: { x: 252, y: 572 } },
-    { from: 1, to: 2, cp: { x: 95,  y: 418 } },
-    { from: 2, to: 3, cp: { x: 232, y: 242 }, soon: true },
+    { from: 0, to: 1, cp: { x: 390, y: 572 } },
+    { from: 1, to: 2, cp: { x: 110, y: 418 } },
+    { from: 2, to: 3, cp: { x: 370, y: 242 }, soon: true },
   ];
 
   const canvas = document.createElement('div');
@@ -255,30 +255,30 @@ function renderWorldMap() {
   // ── Decorations ──
   const DECO = [
     // Vilaturisme
-    { e: '🏖️', x: 12,  y: 515, s: 1.5, o: 0.38 },
-    { e: '☀️',  x: 170, y: 610, s: 1.9, o: 0.28 },
-    { e: '🌊',  x: 275, y: 542, s: 1.4, o: 0.3  },
-    { e: '📸',  x: 28,  y: 634, s: 1.1, o: 0.22 },
-    { e: '🍹',  x: 294, y: 616, s: 1.1, o: 0.2  },
-    { e: '⛵',  x: 188, y: 635, s: 1.2, o: 0.18 },
+    { e: '🏖️', x: 18,  y: 515, s: 1.5, o: 0.38 },
+    { e: '☀️',  x: 258, y: 608, s: 1.9, o: 0.28 },
+    { e: '🌊',  x: 428, y: 540, s: 1.4, o: 0.3  },
+    { e: '📸',  x: 36,  y: 638, s: 1.1, o: 0.22 },
+    { e: '🍹',  x: 444, y: 618, s: 1.1, o: 0.2  },
+    { e: '⛵',  x: 260, y: 640, s: 1.2, o: 0.18 },
     // Sleeptown
-    { e: '🌳',  x: 18,  y: 355, s: 1.6, o: 0.32 },
-    { e: '🏠',  x: 300, y: 368, s: 1.4, o: 0.28 },
-    { e: '🌻',  x: 178, y: 458, s: 1.2, o: 0.25 },
-    { e: '🐕',  x: 302, y: 456, s: 1.1, o: 0.28 },
-    { e: '🚲',  x: 14,  y: 450, s: 1.3, o: 0.22 },
-    { e: '🌙',  x: 188, y: 370, s: 1.3, o: 0.2  },
+    { e: '🌳',  x: 16,  y: 355, s: 1.6, o: 0.32 },
+    { e: '🏠',  x: 422, y: 364, s: 1.4, o: 0.28 },
+    { e: '🌻',  x: 248, y: 460, s: 1.2, o: 0.25 },
+    { e: '🐕',  x: 434, y: 452, s: 1.1, o: 0.28 },
+    { e: '🚲',  x: 12,  y: 452, s: 1.3, o: 0.22 },
+    { e: '🌙',  x: 252, y: 372, s: 1.3, o: 0.2  },
     // Technoburg
-    { e: '💡',  x: 14,  y: 185, s: 1.5, o: 0.3  },
-    { e: '🤖',  x: 298, y: 200, s: 1.5, o: 0.28 },
-    { e: '📡',  x: 195, y: 174, s: 1.3, o: 0.25 },
-    { e: '⚡',  x: 18,  y: 294, s: 1.3, o: 0.22 },
-    { e: '🖥️',  x: 288, y: 288, s: 1.4, o: 0.25 },
-    { e: '🔋',  x: 178, y: 288, s: 1.1, o: 0.2  },
+    { e: '💡',  x: 12,  y: 183, s: 1.5, o: 0.3  },
+    { e: '🤖',  x: 422, y: 196, s: 1.5, o: 0.28 },
+    { e: '📡',  x: 262, y: 172, s: 1.3, o: 0.25 },
+    { e: '⚡',  x: 14,  y: 294, s: 1.3, o: 0.22 },
+    { e: '🖥️',  x: 420, y: 288, s: 1.4, o: 0.25 },
+    { e: '🔋',  x: 250, y: 286, s: 1.1, o: 0.2  },
     // Coming soon
-    { e: '🏗️',  x: 28,  y: 44,  s: 1.6, o: 0.2  },
-    { e: '⚙️',  x: 290, y: 52,  s: 1.4, o: 0.18 },
-    { e: '🔨',  x: 162, y: 38,  s: 1.3, o: 0.18 },
+    { e: '🏗️',  x: 26,  y: 40,  s: 1.6, o: 0.2  },
+    { e: '⚙️',  x: 432, y: 48,  s: 1.4, o: 0.18 },
+    { e: '🔨',  x: 218, y: 36,  s: 1.3, o: 0.18 },
   ];
   DECO.forEach(d => {
     const el = document.createElement('div');
@@ -376,8 +376,8 @@ function initMapPan(canvas, viewport) {
   let rafId = null;
 
   function getMinY() { return Math.min(0, viewport.clientHeight - CANVAS_H); }
-  function getMinX() { return Math.min(0, viewport.clientWidth - canvas.offsetWidth); }
-  function getMaxX() { return Math.max(0, viewport.clientWidth - canvas.offsetWidth); }
+  function getMinX() { return -Math.max(0, canvas.offsetWidth - viewport.clientWidth) / 2; }
+  function getMaxX() { return  Math.max(0, canvas.offsetWidth - viewport.clientWidth) / 2; }
 
   function rubberClamp(v, min, max) {
     if (v > max) return max + (v - max) * 0.28;
