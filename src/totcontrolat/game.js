@@ -460,11 +460,13 @@ function initMapPan(canvas, viewport, focus) {
   // Suppress clicks that follow a drag or pinch
   canvas.addEventListener('click', e => { if (wasDrag) { e.stopPropagation(); wasDrag = false; } }, true);
 
-  // Initial position: focus node centered horizontally, ~72% down screen vertically
+  // Initial position: world group centered between icon sidebar and right edge; focus node at 72% height
   requestAnimationFrame(() => {
-    const fx = focus ? focus.x : CANVAS_W / 2;
     const fy = focus ? focus.y : CANVAS_H;
-    currentX = Math.max(getMinX(), Math.min(getMaxX(), (CANVAS_W / 2 - fx) * scale));
+    // Icons take ~12px left margin + 73px width → sidebar right edge ≈ 85px.
+    // To center canvas-center between sidebar and viewport right: tx = sidebarRightPx / 2
+    const sidebarRightPx = 85;
+    currentX = Math.max(getMinX(), Math.min(getMaxX(), sidebarRightPx / 2));
     currentY = Math.max(getMinY(), Math.min(0, viewport.clientHeight * 0.72 - fy * scale));
     setPos(currentX, currentY, false);
   });
