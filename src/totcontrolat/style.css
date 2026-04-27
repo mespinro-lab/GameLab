@@ -1226,7 +1226,6 @@ html, body {
 #wmap-logo {
   width: 220px;
   max-width: 65vw;
-  mix-blend-mode: screen;
   filter: drop-shadow(0 4px 16px rgba(0,0,0,0.6));
 }
 
