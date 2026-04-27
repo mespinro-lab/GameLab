@@ -178,6 +178,7 @@ function calcFactionDrift(k) {
 }
 
 // ── Save system ────────────────────────────────────────────────────────────────
+const SAVE_VERSION   = 2;
 const WORLD_SAVE_KEY = id => `totcontrolat_world_${id}`;
 const PROGRESS_KEY   = 'totcontrolat_progress';
 const TOKEN_BANK     = 'totcontrolat_tokens';
@@ -208,6 +209,7 @@ function saveGame() {
   if (!S.worldId) return;
   try {
     localStorage.setItem(WORLD_SAVE_KEY(S.worldId), JSON.stringify({
+      version:          SAVE_VERSION,
       worldId:          S.worldId,
       levelNum:         S.levelNum,
       week:             S.week,
@@ -235,7 +237,14 @@ function deleteWorldSave(worldId) {
 }
 
 function getWorldSave(worldId) {
-  try { return JSON.parse(localStorage.getItem(WORLD_SAVE_KEY(worldId))); } catch(e) { return null; }
+  try {
+    const sv = JSON.parse(localStorage.getItem(WORLD_SAVE_KEY(worldId)));
+    if (!sv || sv.version !== SAVE_VERSION) {
+      if (sv) localStorage.removeItem(WORLD_SAVE_KEY(worldId));
+      return null;
+    }
+    return sv;
+  } catch(e) { return null; }
 }
 
 function getPendingTokens() {
@@ -700,6 +709,11 @@ function startWorld(worldId) {
 
 function loadWorldSession(sv) {
   const world = WORLDS.find(w => w.id === sv.worldId);
+  if (!world) {
+    deleteWorldSave(sv.worldId);
+    openWorldMap();
+    return;
+  }
   const quotas = world.levelQuota || [2, 4, 6, 8, 10];
   const levelQuota = quotas[Math.min((sv.levelNum || 1) - 1, quotas.length - 1)];
 
@@ -1333,8 +1347,9 @@ $('btn-back-badges').addEventListener('click', openWorldMap);
 $('btn-buy-10').addEventListener('click',  () => buyTokens(10));
 $('btn-buy-100').addEventListener('click', () => buyTokens(100));
 
-$('invest-btn').addEventListener('click',   openInvestPanel);
-$('invest-close').addEventListener('click', closeInvestPanel);
+$('invest-btn').addEventListener('click',      openInvestPanel);
+$('invest-close').addEventListener('click',   closeInvestPanel);
+$('invest-backdrop').addEventListener('click', closeInvestPanel);
 
 document.querySelectorAll('.lang-pill').forEach(btn => {
   btn.addEventListener('click', () => {
