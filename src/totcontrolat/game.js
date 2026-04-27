@@ -210,17 +210,18 @@ function renderWorldMap() {
   const list = $('worlds-list');
   list.innerHTML = '';
 
-  const CANVAS_W = 700, CANVAS_H = 900;
+  const CANVAS_W = 700, CANVAS_H = 1000;
   const centers = [
-    { x: 145, y: 790 },  // Vilaturisme  (bottom-left)
-    { x: 545, y: 590 },  // Sleeptown    (middle-right)
-    { x: 155, y: 340 },  // Technoburg   (top-left)
-    { x: 530, y: 120 },  // Coming soon  (top-right)
+    { x: 148, y: 878 },  // Vilaturisme  (bottom-left)
+    { x: 548, y: 648 },  // Sleeptown    (middle-right)
+    { x: 158, y: 372 },  // Technoburg   (top-left)
+    { x: 532, y: 128 },  // Coming soon  (top-right)
   ];
+  // Cubic bezier paths (two control points) for irregular organic feel
   const segs = [
-    { from: 0, to: 1, cp: { x: 545, y: 790 } },
-    { from: 1, to: 2, cp: { x: 155, y: 590 } },
-    { from: 2, to: 3, cp: { x: 530, y: 340 }, soon: true },
+    { from: 0, to: 1, cp1: { x: 268, y: 918 }, cp2: { x: 472, y: 705 } },
+    { from: 1, to: 2, cp1: { x: 518, y: 535 }, cp2: { x: 228, y: 435 } },
+    { from: 2, to: 3, cp1: { x: 108, y: 258 }, cp2: { x: 462, y: 182 }, soon: true },
   ];
 
   const canvas = document.createElement('div');
@@ -233,8 +234,8 @@ function renderWorldMap() {
   svg.setAttribute('viewBox', `0 0 ${CANVAS_W} ${CANVAS_H}`);
 
   segs.forEach(seg => {
-    const p1 = centers[seg.from], p2 = centers[seg.to], cp = seg.cp;
-    const d = `M ${p1.x} ${p1.y} Q ${cp.x} ${cp.y} ${p2.x} ${p2.y}`;
+    const p1 = centers[seg.from], p2 = centers[seg.to];
+    const d = `M ${p1.x} ${p1.y} C ${seg.cp1.x} ${seg.cp1.y} ${seg.cp2.x} ${seg.cp2.y} ${p2.x} ${p2.y}`;
     const isDone = !seg.soon && (progress[WORLDS[seg.from].id] || 0) >= 1;
 
     const base = document.createElementNS(NS, 'path');
@@ -253,10 +254,17 @@ function renderWorldMap() {
   canvas.appendChild(svg);
 
   // ── World nodes ──
+  // Current world = most advanced unlocked+incomplete world
+  const currentWorldIdx = WORLDS.reduce((best, w, i) => {
+    const unlocked = i === 0 || (progress[WORLDS[i - 1].id] || 0) >= 1;
+    return (unlocked && (progress[w.id] || 0) < MAX_LEVELS) ? i : best;
+  }, -1);
+
   WORLDS.forEach((world, i) => {
     const levelsCompleted = progress[world.id] || 0;
     const isUnlocked = i === 0 || (progress[WORLDS[i - 1].id] || 0) >= 1;
     const isComplete = levelsCompleted >= MAX_LEVELS;
+    const isCurrent  = i === currentWorldIdx;
     const hasSave    = isUnlocked && !!getWorldSave(world.id);
     const c          = centers[i];
     const stars      = Math.round((levelsCompleted / MAX_LEVELS) * 3);
@@ -265,21 +273,19 @@ function renderWorldMap() {
     node.className = [
       'wmap-node',
       isUnlocked ? 'wmap-unlocked' : 'wmap-locked',
-      isComplete ? 'wmap-done' : hasSave ? 'wmap-resume' : isUnlocked ? 'wmap-new' : '',
+      isComplete ? 'wmap-done' : isCurrent ? 'wmap-current' : '',
     ].join(' ').trim();
-    node.style.left = (c.x - 55) + 'px';
-    node.style.top  = (c.y - 55) + 'px';
+    node.style.left = (c.x - 60) + 'px';
+    node.style.top  = (c.y - 60) + 'px';
     node.style.setProperty('--wc', world.color);
 
     const starsHTML = isUnlocked
       ? `<div class="wmap-stars">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</div>` : '';
 
     let actionTxt = '';
-    if (isUnlocked && hasSave && !isComplete) {
+    if (hasSave && !isComplete) {
       const sv = getWorldSave(world.id);
       actionTxt = `<div class="wmap-action wmap-action-cont">Niv ${sv.levelNum} →</div>`;
-    } else if (isUnlocked && isComplete) {
-      actionTxt = `<div class="wmap-action wmap-action-done">✓ completat</div>`;
     }
 
     const imgSrc = isUnlocked ? `${world.id}.png` : 'unavailable.png';
@@ -317,8 +323,8 @@ function renderWorldMap() {
   const cs = centers[3];
   const soonNode = document.createElement('div');
   soonNode.className = 'wmap-node wmap-soon';
-  soonNode.style.left = (cs.x - 55) + 'px';
-  soonNode.style.top  = (cs.y - 55) + 'px';
+  soonNode.style.left = (cs.x - 60) + 'px';
+  soonNode.style.top  = (cs.y - 60) + 'px';
   soonNode.innerHTML = `<div class="wmap-world-circle wmap-circle-soon">
     <img src="coming_soon.png" alt="Coming Soon">
   </div>`;
@@ -335,7 +341,7 @@ function renderWorldMap() {
 }
 
 function initMapPan(canvas, viewport, focus) {
-  const CANVAS_H = 900, CANVAS_W = 700;
+  const CANVAS_H = 1000, CANVAS_W = 700;
   let isDragging = false, wasDrag = false;
   let pointerId = null;
   let startY = 0, startX = 0, downClientY = 0, downClientX = 0;
