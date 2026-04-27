@@ -1243,53 +1243,26 @@ html, body {
 }
 
 .wmap-fab {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+  display: block;
+  transition: transform 0.1s;
+}
+
+.wmap-fab img {
   width: 56px;
   height: 56px;
-  border-radius: 18px;
-  background: linear-gradient(160deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.03) 100%);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255,255,255,0.18);
-  box-shadow:
-    0 8px 24px rgba(0,0,0,0.55),
-    0 2px 6px rgba(0,0,0,0.4),
-    inset 0 1px 0 rgba(255,255,255,0.25),
-    inset 0 -1px 0 rgba(0,0,0,0.3);
-  line-height: 1;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  touch-action: manipulation;
-  transition: transform 0.1s, box-shadow 0.1s;
-}
-
-#btn-wmap-badges,
-#btn-wmap-botiga,
-#btn-wmap-config {
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
-#btn-wmap-badges { background-image: url('badges.png'),  linear-gradient(160deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.03) 100%); }
-#btn-wmap-botiga { background-image: url('shop.png'),    linear-gradient(160deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.03) 100%); }
-#btn-wmap-config { background-image: url('settings.png'),linear-gradient(160deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.03) 100%); }
-
-.wmap-fab:hover {
-  box-shadow:
-    0 10px 28px rgba(0,0,0,0.6),
-    0 2px 6px rgba(0,0,0,0.4),
-    inset 0 1px 0 rgba(255,255,255,0.28),
-    inset 0 -1px 0 rgba(0,0,0,0.3);
+  display: block;
+  object-fit: cover;
+  border-radius: 16px;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.7)) drop-shadow(0 2px 4px rgba(0,0,0,0.5));
 }
 
 .wmap-fab:active {
   transform: scale(0.88) translateY(2px);
-  box-shadow:
-    0 4px 12px rgba(0,0,0,0.5),
-    inset 0 1px 0 rgba(255,255,255,0.18),
-    inset 0 -1px 0 rgba(0,0,0,0.25);
 }
 
 /* Bottom bar — resume button + token counter */

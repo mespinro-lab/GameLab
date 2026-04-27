@@ -332,7 +332,7 @@ function renderWorldMap() {
 function initMapPan(canvas, viewport, focus) {
   const CANVAS_H = 1400, CANVAS_W = 1200;
   const HUD_BOTTOM = 90;
-  const MIN_SCALE = 0.7, MAX_SCALE = 1.8;
+  const MIN_SCALE = 0.4, MAX_SCALE = 1.2;
   let scale = 0.7;
 
   let isDragging = false, wasDrag = false;
