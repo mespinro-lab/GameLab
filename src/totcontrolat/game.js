@@ -332,6 +332,9 @@ function renderWorldMap() {
 function initMapPan(canvas, viewport, focus) {
   const CANVAS_H = 1100, CANVAS_W = 900;
   const HUD_BOTTOM = 90;
+  const MIN_SCALE = 0.6, MAX_SCALE = 1.6;
+  let scale = 1.0;
+
   let isDragging = false, wasDrag = false;
   let pointerId = null;
   let startY = 0, startX = 0, downClientY = 0, downClientX = 0;
@@ -339,9 +342,13 @@ function initMapPan(canvas, viewport, focus) {
   let velY = 0, velX = 0, lastY = 0, lastX = 0, lastT = 0;
   let rafId = null;
 
-  function getMinY() { return Math.min(0, viewport.clientHeight - HUD_BOTTOM - CANVAS_H); }
-  function getMinX() { return -Math.max(0, canvas.offsetWidth - viewport.clientWidth) / 2; }
-  function getMaxX() { return  Math.max(0, canvas.offsetWidth - viewport.clientWidth) / 2; }
+  // Pinch state
+  const pointers = new Map();
+  let pinchDist0 = 1, pinchScale0 = 1;
+
+  function getMinY() { return Math.min(0, viewport.clientHeight - HUD_BOTTOM - CANVAS_H * scale); }
+  function getMinX() { return -Math.max(0, CANVAS_W * scale - viewport.clientWidth) / 2; }
+  function getMaxX() { return  Math.max(0, CANVAS_W * scale - viewport.clientWidth) / 2; }
 
   function rubberClamp(v, min, max) {
     if (v > max) return max + (v - max) * 0.28;
@@ -354,69 +361,111 @@ function initMapPan(canvas, viewport, focus) {
 
   function setPos(x, y, animate) {
     canvas.style.transition = animate ? 'transform 0.42s cubic-bezier(0.25,0.46,0.45,0.94)' : 'none';
-    canvas.style.transform  = `translateX(${x}px) translateY(${y}px)`;
+    canvas.style.transform  = `translateX(${x}px) translateY(${y}px) scale(${scale})`;
   }
 
   function snapToEdge() {
-    const minY = getMinY(), minX = getMinX(), maxX = getMaxX();
-    const sy = Math.max(minY, Math.min(0, currentY));
-    const sx = Math.max(minX, Math.min(maxX, currentX));
+    const sy = Math.max(getMinY(), Math.min(0, currentY));
+    const sx = Math.max(getMinX(), Math.min(getMaxX(), currentX));
     if (sy !== currentY || sx !== currentX) {
       currentY = sy; currentX = sx; setPos(currentX, currentY, true);
     }
   }
 
   canvas.addEventListener('pointerdown', e => {
-    isDragging = true; wasDrag = false;
-    pointerId  = e.pointerId;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     canvas.setPointerCapture(e.pointerId);
-    downClientY = e.clientY; downClientX = e.clientX;
-    startY  = e.clientY - currentY; startX  = e.clientX - currentX;
-    lastY   = e.clientY; lastX   = e.clientX;
-    lastT   = Date.now();
-    velY = 0; velX = 0;
+    cancelAnimationFrame(rafId);
     canvas.style.transition = 'none';
+
+    if (pointers.size === 1) {
+      isDragging = true; wasDrag = false;
+      pointerId   = e.pointerId;
+      downClientY = e.clientY; downClientX = e.clientX;
+      startY = e.clientY - currentY; startX = e.clientX - currentX;
+      lastY  = e.clientY; lastX  = e.clientX; lastT = Date.now();
+      velY = 0; velX = 0;
+    } else if (pointers.size === 2) {
+      isDragging = false;
+      const [p1, p2] = [...pointers.values()];
+      pinchDist0  = Math.hypot(p2.x - p1.x, p2.y - p1.y) || 1;
+      pinchScale0 = scale;
+    }
   });
 
   canvas.addEventListener('pointermove', e => {
-    if (!isDragging || e.pointerId !== pointerId) return;
-    if (Math.abs(e.clientY - downClientY) > 6 || Math.abs(e.clientX - downClientX) > 6) wasDrag = true;
-    currentY = clampY(e.clientY - startY);
-    currentX = clampX(e.clientX - startX);
-    const now = Date.now(), dt = Math.max(1, now - lastT);
-    velY = (e.clientY - lastY) / dt; velX = (e.clientX - lastX) / dt;
-    lastY = e.clientY; lastX = e.clientX; lastT = now;
-    setPos(currentX, currentY, false);
+    if (!pointers.has(e.pointerId)) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (pointers.size === 2) {
+      wasDrag = true;
+      const [p1, p2] = [...pointers.values()];
+      const dist     = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+      const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, pinchScale0 * dist / pinchDist0));
+      const ratio    = newScale / scale;
+      scale = newScale;
+
+      // Zoom toward pinch midpoint (transform-origin is 50% 0, so Y origin is canvas top)
+      const midX = (p1.x + p2.x) / 2;
+      const midY = (p1.y + p2.y) / 2;
+      currentX = (midX - viewport.clientWidth / 2) + (currentX - (midX - viewport.clientWidth / 2)) * ratio;
+      currentY = midY + (currentY - midY) * ratio;
+      currentX = Math.max(getMinX(), Math.min(getMaxX(), currentX));
+      currentY = Math.max(getMinY(), Math.min(0, currentY));
+      setPos(currentX, currentY, false);
+    } else if (pointers.size === 1 && isDragging && e.pointerId === pointerId) {
+      if (Math.abs(e.clientY - downClientY) > 6 || Math.abs(e.clientX - downClientX) > 6) wasDrag = true;
+      currentY = clampY(e.clientY - startY);
+      currentX = clampX(e.clientX - startX);
+      const now = Date.now(), dt = Math.max(1, now - lastT);
+      velY = (e.clientY - lastY) / dt; velX = (e.clientX - lastX) / dt;
+      lastY = e.clientY; lastX = e.clientX; lastT = now;
+      setPos(currentX, currentY, false);
+    }
   });
 
   canvas.addEventListener('pointerup', e => {
-    if (e.pointerId !== pointerId) return;
-    isDragging = false;
-    cancelAnimationFrame(rafId);
-    const FRICTION = 0.91;
-    function momentum() {
-      velY *= FRICTION; velX *= FRICTION;
-      currentY = clampY(currentY + velY * 16);
-      currentX = clampX(currentX + velX * 16);
-      setPos(currentX, currentY, false);
-      if (Math.abs(velY) > 0.15 || Math.abs(velX) > 0.15) rafId = requestAnimationFrame(momentum);
-      else snapToEdge();
+    pointers.delete(e.pointerId);
+
+    if (pointers.size === 0) {
+      isDragging = false;
+      cancelAnimationFrame(rafId);
+      const FRICTION = 0.91;
+      function momentum() {
+        velY *= FRICTION; velX *= FRICTION;
+        currentY = clampY(currentY + velY * 16);
+        currentX = clampX(currentX + velX * 16);
+        setPos(currentX, currentY, false);
+        if (Math.abs(velY) > 0.15 || Math.abs(velX) > 0.15) rafId = requestAnimationFrame(momentum);
+        else snapToEdge();
+      }
+      if (Math.abs(velY) > 0.2 || Math.abs(velX) > 0.2) momentum(); else snapToEdge();
+    } else if (pointers.size === 1) {
+      // Lift one finger: smoothly resume single-finger pan
+      const [remId, remPos] = [...pointers.entries()][0];
+      isDragging  = true;
+      pointerId   = remId;
+      downClientY = remPos.y; downClientX = remPos.x;
+      startY = remPos.y - currentY; startX = remPos.x - currentX;
+      lastY  = remPos.y; lastX  = remPos.x; lastT = Date.now();
+      velY = 0; velX = 0;
     }
-    if (Math.abs(velY) > 0.2 || Math.abs(velX) > 0.2) momentum(); else snapToEdge();
   });
 
-  canvas.addEventListener('pointercancel', () => { isDragging = false; snapToEdge(); });
+  canvas.addEventListener('pointercancel', e => {
+    pointers.delete(e.pointerId);
+    if (pointers.size === 0) { isDragging = false; snapToEdge(); }
+  });
 
-  // Prevent click events that follow a drag gesture
-  canvas.addEventListener('click', e => { if (wasDrag) e.stopPropagation(); }, true);
+  // Suppress clicks that follow a drag or pinch
+  canvas.addEventListener('click', e => { if (wasDrag) { e.stopPropagation(); wasDrag = false; } }, true);
 
-  // Start with focus node centered horizontally, at 4/5 of screen vertically
+  // Initial position: focus node centered horizontally, ~72% down screen vertically
   requestAnimationFrame(() => {
-    const overhang = Math.max(0, canvas.offsetWidth - viewport.clientWidth) / 2;
     const fx = focus ? focus.x : CANVAS_W / 2;
     const fy = focus ? focus.y : CANVAS_H;
-    currentX = Math.max(-overhang, Math.min(overhang, CANVAS_W / 2 - fx));
-    currentY = Math.max(getMinY(), Math.min(0, viewport.clientHeight * 0.8 - fy));
+    currentX = Math.max(getMinX(), Math.min(getMaxX(), CANVAS_W / 2 - fx));
+    currentY = Math.max(getMinY(), Math.min(0, viewport.clientHeight * 0.72 - fy));
     setPos(currentX, currentY, false);
   });
 }

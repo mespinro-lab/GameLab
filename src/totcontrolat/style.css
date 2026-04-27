@@ -1343,6 +1343,7 @@ html, body {
   flex-shrink: 0;
   will-change: transform;
   background: transparent;
+  transform-origin: 50% 0;
 }
 
 .wmap-svg {
@@ -1421,8 +1422,9 @@ html, body {
   display: block;
 }
 
-/* Current world — faint colored glow pulse (no ring border) */
+/* Current world — semi-transparent ring + colored glow pulse */
 .wmap-current .wmap-world-circle {
+  border: 3px solid color-mix(in srgb, var(--wc) 55%, transparent);
   animation: bubblePulse 2.3s ease-in-out infinite;
 }
 
@@ -1433,7 +1435,7 @@ html, body {
   }
   50% {
     filter: drop-shadow(0 14px 8px rgba(0,0,0,0.7))
-            drop-shadow(0 0 30px color-mix(in srgb, var(--wc) 55%, transparent));
+            drop-shadow(0 0 32px color-mix(in srgb, var(--wc) 58%, transparent));
   }
 }
 
@@ -1486,11 +1488,12 @@ html, body {
 }
 
 .wmap-label {
-  margin-top: 0.25rem;
-  font-size: 0.68rem;
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
   font-weight: 800;
-  letter-spacing: 0.05em;
-  color: rgba(255,255,255,0.72);
+  letter-spacing: 0.04em;
+  color: rgba(255,255,255,0.9);
+  text-shadow: 0 2px 8px rgba(0,0,0,0.8);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
