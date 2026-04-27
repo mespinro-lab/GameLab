@@ -210,18 +210,17 @@ function renderWorldMap() {
   const list = $('worlds-list');
   list.innerHTML = '';
 
-  const CANVAS_W = 700, CANVAS_H = 1100;
-  // Nodes clustered 20% closer vertically, 250px breathing room at top & bottom
+  const CANVAS_W = 900, CANVAS_H = 1100;
   const centers = [
-    { x: 148, y: 850 },  // Vilaturisme  (bottom-left)
-    { x: 548, y: 666 },  // Sleeptown    (middle-right)
-    { x: 158, y: 445 },  // Technoburg   (top-left)
-    { x: 532, y: 250 },  // Coming soon  (top-right)
+    { x: 248, y: 850 },  // Vilaturisme  (bottom-left)
+    { x: 648, y: 666 },  // Sleeptown    (middle-right)
+    { x: 258, y: 445 },  // Technoburg   (top-left)
+    { x: 632, y: 250 },  // Coming soon  (top-right)
   ];
   const segs = [
-    { from: 0, to: 1, cp1: { x: 268, y: 890 }, cp2: { x: 472, y: 720 } },
-    { from: 1, to: 2, cp1: { x: 518, y: 558 }, cp2: { x: 228, y: 504 } },
-    { from: 2, to: 3, cp1: { x: 108, y: 335 }, cp2: { x: 462, y: 295 }, soon: true },
+    { from: 0, to: 1, cp1: { x: 368, y: 890 }, cp2: { x: 572, y: 720 } },
+    { from: 1, to: 2, cp1: { x: 618, y: 558 }, cp2: { x: 328, y: 504 } },
+    { from: 2, to: 3, cp1: { x: 208, y: 335 }, cp2: { x: 562, y: 295 }, soon: true },
   ];
 
   const canvas = document.createElement('div');
@@ -281,11 +280,12 @@ function renderWorldMap() {
 
     const imgSrc = isUnlocked ? `${world.id}.png` : 'unavailable.png';
 
+    const showLabel = isComplete || isCurrent || levelsCompleted >= 1;
     node.innerHTML = `
       <div class="wmap-world-circle">
         <img src="${imgSrc}" alt="${world.name}">
       </div>
-      ${isUnlocked ? `<div class="wmap-label">${world.name}</div>` : ''}
+      ${showLabel ? `<div class="wmap-label">${world.name}</div>` : ''}
     `;
 
     if (isUnlocked) {
@@ -330,7 +330,7 @@ function renderWorldMap() {
 }
 
 function initMapPan(canvas, viewport, focus) {
-  const CANVAS_H = 1100, CANVAS_W = 700;
+  const CANVAS_H = 1100, CANVAS_W = 900;
   const HUD_BOTTOM = 90;
   let isDragging = false, wasDrag = false;
   let pointerId = null;
