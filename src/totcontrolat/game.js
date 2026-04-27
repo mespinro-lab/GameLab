@@ -362,12 +362,18 @@ function renderWorldMap() {
   `;
   canvas.appendChild(soonNode);
 
+  // Focus on the most advanced unlocked world
+  const focusIdx = WORLDS.reduce((best, w, i) => {
+    const unlocked = i === 0 || (progress[WORLDS[i - 1].id] || 0) >= 1;
+    return unlocked ? i : best;
+  }, 0);
+
   list.appendChild(canvas);
-  initMapPan(canvas, $('wmap-scroll'));
+  initMapPan(canvas, $('wmap-scroll'), centers[focusIdx]);
 }
 
-function initMapPan(canvas, viewport) {
-  const CANVAS_H = 680;
+function initMapPan(canvas, viewport, focus) {
+  const CANVAS_H = 680, CANVAS_W = 500;
   let isDragging = false, wasDrag = false;
   let pointerId = null;
   let startY = 0, startX = 0, downClientY = 0, downClientX = 0;
@@ -446,8 +452,15 @@ function initMapPan(canvas, viewport) {
   // Prevent click events that follow a drag gesture
   canvas.addEventListener('click', e => { if (wasDrag) e.stopPropagation(); }, true);
 
-  // Start showing Vilaturisme (bottom of canvas)
-  requestAnimationFrame(() => { currentY = getMinY(); setPos(currentX, currentY, false); });
+  // Start with focus node centered horizontally, at 4/5 of screen vertically
+  requestAnimationFrame(() => {
+    const overhang = Math.max(0, canvas.offsetWidth - viewport.clientWidth) / 2;
+    const fx = focus ? focus.x : CANVAS_W / 2;
+    const fy = focus ? focus.y : CANVAS_H;
+    currentX = Math.max(-overhang, Math.min(overhang, CANVAS_W / 2 - fx));
+    currentY = Math.max(getMinY(), Math.min(0, viewport.clientHeight * 0.8 - fy));
+    setPos(currentX, currentY, false);
+  });
 }
 
 // ── Start / load world ─────────────────────────────────────────────────────────

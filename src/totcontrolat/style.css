@@ -22,6 +22,7 @@ html, body {
   height: 100%;
   overflow: hidden;
   font-family: 'Segoe UI', system-ui, sans-serif;
+  background-color: #222040;
   background: radial-gradient(
     ellipse at 50% -10%,
     hsl(var(--sky-h), calc(var(--sky-s) + 18%), calc(var(--sky-l) + 10%)),
