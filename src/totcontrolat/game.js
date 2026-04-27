@@ -212,15 +212,15 @@ function renderWorldMap() {
 
   const CANVAS_W = 1200, CANVAS_H = 1400;
   const centers = [
-    { x: 398, y: 1000 },  // Vilaturisme  (bottom-left)
-    { x: 798, y: 816  },  // Sleeptown    (middle-right)
-    { x: 408, y: 595  },  // Technoburg   (top-left)
-    { x: 782, y: 400  },  // Coming soon  (top-right)
+    { x: 498, y: 941 },  // Vilaturisme  (bottom-left)
+    { x: 698, y: 793 },  // Sleeptown    (middle-right)
+    { x: 503, y: 617 },  // Technoburg   (top-left)
+    { x: 690, y: 461 },  // Coming soon  (top-right)
   ];
   const segs = [
-    { from: 0, to: 1, cp1: { x: 518, y: 1040 }, cp2: { x: 722, y: 870 } },
-    { from: 1, to: 2, cp1: { x: 768, y: 708  }, cp2: { x: 478, y: 654 } },
-    { from: 2, to: 3, cp1: { x: 358, y: 485  }, cp2: { x: 712, y: 445 }, soon: true },
+    { from: 0, to: 1, cp1: { x: 558, y: 973 }, cp2: { x: 660, y: 837 } },
+    { from: 1, to: 2, cp1: { x: 683, y: 707 }, cp2: { x: 538, y: 664 } },
+    { from: 2, to: 3, cp1: { x: 478, y: 529 }, cp2: { x: 655, y: 497 }, soon: true },
   ];
 
   const canvas = document.createElement('div');
