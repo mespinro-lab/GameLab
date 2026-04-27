@@ -15,7 +15,7 @@
     <!-- ── Top bar ── -->
     <div id="top-bar">
       <div id="money-display">💰 <span id="money-val">450</span>€</div>
-      <div id="week-display">Setm. <span id="week-val">1</span> / 26</div>
+      <div id="week-display">S<span id="week-val">1</span></div>
       <div id="top-right">
         <div id="token-display">🪙 <span id="token-val">0</span></div>
         <button id="menu-ingame-btn">☰</button>
@@ -92,7 +92,7 @@
       </div>
     </div>
 
-    <!-- ── Tick progress ── -->
+    <!-- ── Week progress bar ── -->
     <div id="tick-track"><div id="tick-bar"></div></div>
 
     <!-- ── Controls (bottom) ── -->
@@ -101,28 +101,49 @@
         <span class="ctrl-label">Impostos</span>
         <div class="ctrl-pills">
           <button class="pill" id="tax-low"  data-tax="low">Baix<span class="pill-sub">+30€</span></button>
-          <button class="pill active" id="tax-mid"  data-tax="mid">Mig<span class="pill-sub">+55€</span></button>
+          <button class="pill active" id="tax-mid" data-tax="mid">Mig<span class="pill-sub">+55€</span></button>
           <button class="pill" id="tax-high" data-tax="high">Alt<span class="pill-sub">+85€</span></button>
         </div>
       </div>
       <div class="ctrl-row">
         <span class="ctrl-label">Polítiques</span>
-        <div class="ctrl-pills">
-          <button class="pill toggle" id="toggle-services">🏥 Serveis<span class="pill-sub">−35€</span></button>
-          <button class="pill toggle" id="toggle-comms">📢 Comunicació<span class="pill-sub">−25€</span></button>
+        <div class="ctrl-pills ctrl-pills-policies">
+          <button class="pill toggle" id="toggle-services">🏥<span class="pill-sub">−35€</span></button>
+          <button class="pill toggle" id="toggle-comms">📢<span class="pill-sub">−25€</span></button>
+          <button class="pill toggle" id="toggle-security">🚔<span class="pill-sub">−30€</span></button>
+          <button class="pill toggle" id="toggle-subsidies">💼<span class="pill-sub">−40€</span></button>
         </div>
       </div>
       <div class="ctrl-row ctrl-row-bottom">
         <div id="danger-indicator" class="hidden">
-          ⚠️ Perill: <span id="danger-weeks-val">0</span>/3 setm.
+          ⚠️ <span id="danger-weeks-val">0</span>/3
+        </div>
+        <div class="speed-controls">
+          <button class="speed-btn" id="speed-0">⏸</button>
+          <button class="speed-btn active" id="speed-1">×1</button>
+          <button class="speed-btn" id="speed-2">×2</button>
+          <button class="speed-btn" id="speed-3">×3</button>
         </div>
         <button class="pill token-pill" id="spend-tokens" disabled>🪙×3 → +Moral</button>
-        <button class="pill token-pill" id="reveal-btn" disabled>🔍×1 → Efectes</button>
-        <button id="pause-btn">⏸</button>
+        <button class="pill token-pill" id="reveal-btn" disabled>🔍×1</button>
+        <button class="pill invest-pill" id="invest-btn">📦 Invertir</button>
       </div>
     </div>
 
   </div><!-- /#app -->
+
+  <!-- ── Invest overlay (bottom sheet) ── -->
+  <div id="invest-overlay" class="hidden">
+    <div id="invest-backdrop"></div>
+    <div id="invest-sheet">
+      <div id="invest-handle"></div>
+      <div id="invest-header">
+        <span id="invest-score">Inversions: 0/2</span>
+        <button id="invest-close">✕</button>
+      </div>
+      <div id="invest-grid"></div>
+    </div>
+  </div>
 
   <!-- ── Overlay: world complete ── -->
   <div id="overlay-world-done" class="overlay hidden">
@@ -141,7 +162,7 @@
     <div class="overlay-card">
       <div class="overlay-icon">🏆</div>
       <h2>Mandat Completat</h2>
-      <p>Has aguantat 26 setmanes sense catàstrofe visible.<br>El poble et recordarà. En general.</p>
+      <p>Has assolit els objectius d'inversió i mantingut la pau social.<br>El poble et recordarà. En general.</p>
       <p id="final-score" class="overlay-score"></p>
       <button id="btn-retry">Tornar a Intentar</button>
       <button id="btn-menu-won" class="overlay-btn-sec">Menu Principal</button>
@@ -153,14 +174,14 @@
     <div class="overlay-card">
       <div class="overlay-icon">💥</div>
       <h2>Col·lapse</h2>
-      <p>La felicitat ha quedat per sota del llindar durant massa temps.<br>El poble ha pres decisions pròpies.</p>
+      <p>La felicitat ha caigut massa temps per sota del llindar.<br>El poble ha pres decisions pròpies.</p>
       <p id="survive-weeks" class="overlay-score"></p>
       <button id="btn-retry-lost">Tornar a Intentar</button>
       <button id="btn-menu-lost" class="overlay-btn-sec">Menu Principal</button>
     </div>
   </div>
 
-  <!-- ── Overlay: conjuncture (between mandates, z-index 100) ── -->
+  <!-- ── Overlay: conjuncture ── -->
   <div id="conjuncture-screen" class="overlay hidden">
     <div class="overlay-card conj-card">
       <div class="conj-mandate-done">
@@ -187,11 +208,9 @@
   ════════════════════════════════════════════ -->
 
   <div id="world-map-screen" class="menu-overlay hidden">
-    <!-- mapa (fons, panning) -->
     <div id="wmap-scroll">
       <div id="worlds-list"></div>
     </div>
-    <!-- HUD flotant per sobre del mapa -->
     <div id="wmap-hud">
       <div id="wmap-title">
         <img src="logo.png" alt="President" id="wmap-logo">
