@@ -1397,101 +1397,105 @@ html, body {
 
 .wmap-node {
   position: absolute;
-  width: 88px;
+  width: 96px;
   text-align: center;
   cursor: pointer;
   user-select: none;
+  -webkit-user-select: none;
 }
 
-.wmap-bubble {
-  width: 88px;
-  height: 88px;
+.wmap-world-circle {
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 3px solid rgba(255,255,255,0.1);
-  background: rgba(10, 12, 26, 0.88);
-  position: relative;
-  transition: transform 0.13s ease;
+  overflow: hidden;
+  border: 3px solid rgba(255,255,255,0.18);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.55);
+  transition: transform 0.13s ease, box-shadow 0.13s ease;
 }
 
-.wmap-bubble::before {
-  content: '';
-  position: absolute;
-  top: 10px; left: 16px;
-  width: 38%; height: 26%;
-  background: rgba(255,255,255,0.14);
-  border-radius: 50%;
-  filter: blur(3px);
-  pointer-events: none;
+.wmap-world-circle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
-.wmap-unlocked .wmap-bubble {
-  border-color: color-mix(in srgb, var(--wc) 55%, transparent);
-  background: color-mix(in srgb, var(--wc) 11%, rgba(8, 10, 22, 0.92));
+/* Unlocked world */
+.wmap-unlocked .wmap-world-circle {
+  border-color: color-mix(in srgb, var(--wc) 70%, transparent);
   box-shadow:
-    0 0 0 5px color-mix(in srgb, var(--wc) 12%, transparent),
-    0 6px 22px color-mix(in srgb, var(--wc) 24%, transparent),
-    inset 0 1px 0 rgba(255,255,255,0.1);
+    0 6px 20px rgba(0,0,0,0.55),
+    0 0 18px color-mix(in srgb, var(--wc) 38%, transparent);
 }
 
-.wmap-new .wmap-bubble,
-.wmap-resume .wmap-bubble {
+/* Pulse for new / resume */
+.wmap-new .wmap-world-circle,
+.wmap-resume .wmap-world-circle {
   animation: bubblePulse 2.3s ease-in-out infinite;
 }
 
 @keyframes bubblePulse {
   0%, 100% {
     box-shadow:
-      0 0 0 5px color-mix(in srgb, var(--wc) 12%, transparent),
-      0 6px 22px color-mix(in srgb, var(--wc) 24%, transparent),
-      inset 0 1px 0 rgba(255,255,255,0.1);
+      0 6px 20px rgba(0,0,0,0.55),
+      0 0 18px color-mix(in srgb, var(--wc) 38%, transparent);
   }
   50% {
     box-shadow:
-      0 0 0 12px color-mix(in srgb, var(--wc) 20%, transparent),
-      0 6px 38px color-mix(in srgb, var(--wc) 45%, transparent),
-      inset 0 1px 0 rgba(255,255,255,0.1);
+      0 6px 28px rgba(0,0,0,0.55),
+      0 0 36px color-mix(in srgb, var(--wc) 65%, transparent);
   }
 }
 
-.wmap-done .wmap-bubble {
-  border-color: rgba(52,211,153,0.5);
-  background: rgba(52,211,153,0.07);
+/* Completed world — green glow + checkmark badge */
+.wmap-done .wmap-world-circle {
+  border-color: rgba(52,211,153,0.6);
   box-shadow:
-    0 0 0 5px rgba(52,211,153,0.1),
-    0 6px 20px rgba(52,211,153,0.2),
-    inset 0 1px 0 rgba(255,255,255,0.1);
+    0 6px 20px rgba(0,0,0,0.55),
+    0 0 18px rgba(52,211,153,0.35);
 }
 
-.wmap-done .wmap-bubble::after {
+.wmap-done::after {
   content: '✓';
   position: absolute;
-  top: 5px; right: 5px;
-  background: rgba(52,211,153,0.9);
-  color: #071318;
-  font-size: 0.52rem;
-  font-weight: 900;
-  width: 16px; height: 16px;
+  top: 2px; right: 2px;
+  width: 20px; height: 20px;
   border-radius: 50%;
+  background: rgba(52,211,153,0.92);
+  color: #071318;
+  font-size: 0.6rem;
+  font-weight: 900;
   display: flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
+  pointer-events: none;
 }
 
-.wmap-locked .wmap-bubble {
-  opacity: 0.28;
+/* Next-up: world visible but grayed */
+.wmap-nextup .wmap-world-circle {
+  filter: grayscale(80%) brightness(0.55);
+  opacity: 0.72;
+  border-color: rgba(255,255,255,0.12);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 }
 
-.wmap-unlocked:hover  .wmap-bubble { transform: scale(1.1); }
-.wmap-unlocked:active .wmap-bubble { transform: scale(0.92); }
+/* Deep locked */
+.wmap-locked .wmap-world-circle {
+  opacity: 0.45;
+  border-color: rgba(255,255,255,0.08);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
 
-.wmap-icon {
-  font-size: 2.4rem;
-  line-height: 1;
-  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
+.wmap-unlocked:hover  .wmap-world-circle { transform: scale(1.1); }
+.wmap-unlocked:active .wmap-world-circle { transform: scale(0.92); }
+
+/* Coming soon node */
+.wmap-circle-soon {
+  border: none;
+  box-shadow: none;
+  opacity: 0.82;
 }
 
 .wmap-stars {
@@ -1525,18 +1529,6 @@ html, body {
 .wmap-action-new  { color: color-mix(in srgb, var(--wc) 90%, white); }
 .wmap-action-cont { color: var(--gold); }
 .wmap-action-done { color: rgba(52,211,153,0.8); }
-.wmap-action-soon { color: rgba(255,196,62,0.45); font-style: italic; }
-
-/* ── Coming soon node ── */
-
-.wmap-soon .wmap-bubble {
-  border: 2px dashed rgba(255,196,62,0.28);
-  background: rgba(255,196,62,0.04);
-  box-shadow: none;
-  opacity: 0.55;
-}
-
-.wmap-soon .wmap-label { color: rgba(255,255,255,0.35); }
 
 @keyframes wmapShake {
   0%, 100% { transform: translateX(0); }

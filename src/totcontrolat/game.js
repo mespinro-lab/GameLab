@@ -289,22 +289,27 @@ function renderWorldMap() {
   });
 
   // ── World nodes ──
+  const firstLockedIdx = WORLDS.findIndex((w, i) =>
+    !(i === 0 || (progress[WORLDS[i - 1].id] || 0) >= 1)
+  );
+
   WORLDS.forEach((world, i) => {
     const levelsCompleted = progress[world.id] || 0;
     const isUnlocked = i === 0 || (progress[WORLDS[i - 1].id] || 0) >= 1;
-    const isComplete  = levelsCompleted >= MAX_LEVELS;
-    const hasSave     = isUnlocked && !!getWorldSave(world.id);
-    const c           = centers[i];
-    const stars       = Math.round((levelsCompleted / MAX_LEVELS) * 3);
+    const isNextUp   = !isUnlocked && i === firstLockedIdx;
+    const isComplete = levelsCompleted >= MAX_LEVELS;
+    const hasSave    = isUnlocked && !!getWorldSave(world.id);
+    const c          = centers[i];
+    const stars      = Math.round((levelsCompleted / MAX_LEVELS) * 3);
 
     const node = document.createElement('div');
     node.className = [
       'wmap-node',
-      isUnlocked ? 'wmap-unlocked' : 'wmap-locked',
+      isUnlocked ? 'wmap-unlocked' : isNextUp ? 'wmap-nextup' : 'wmap-locked',
       isComplete ? 'wmap-done' : hasSave ? 'wmap-resume' : isUnlocked ? 'wmap-new' : '',
     ].join(' ').trim();
-    node.style.left = (c.x - 44) + 'px';
-    node.style.top  = (c.y - 44) + 'px';
+    node.style.left = (c.x - 48) + 'px';
+    node.style.top  = (c.y - 48) + 'px';
     node.style.setProperty('--wc', world.color);
 
     const starsHTML = isUnlocked
@@ -322,10 +327,15 @@ function renderWorldMap() {
       }
     }
 
+    const imgSrc = (isUnlocked || isNextUp) ? `${world.id}.png` : 'unavailable.png';
+    const label  = isUnlocked ? world.name : isNextUp ? '???' : '';
+
     node.innerHTML = `
-      <div class="wmap-bubble"><span class="wmap-icon">${isUnlocked ? world.icon : '🔒'}</span></div>
+      <div class="wmap-world-circle">
+        <img src="${imgSrc}" alt="${label || '???'}">
+      </div>
       ${starsHTML}
-      <div class="wmap-label">${world.name}</div>
+      ${label ? `<div class="wmap-label">${label}</div>` : ''}
       ${actionTxt}
     `;
 
@@ -353,13 +363,11 @@ function renderWorldMap() {
   const cs = centers[3];
   const soonNode = document.createElement('div');
   soonNode.className = 'wmap-node wmap-soon';
-  soonNode.style.left = (cs.x - 44) + 'px';
-  soonNode.style.top  = (cs.y - 44) + 'px';
-  soonNode.innerHTML = `
-    <div class="wmap-bubble"><span class="wmap-icon">🏗️</span></div>
-    <div class="wmap-label">???</div>
-    <div class="wmap-action wmap-action-soon">Aviat...</div>
-  `;
+  soonNode.style.left = (cs.x - 48) + 'px';
+  soonNode.style.top  = (cs.y - 48) + 'px';
+  soonNode.innerHTML = `<div class="wmap-world-circle wmap-circle-soon">
+    <img src="coming_soon.png" alt="Coming Soon">
+  </div>`;
   canvas.appendChild(soonNode);
 
   // Focus on the most advanced unlocked world
