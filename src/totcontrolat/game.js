@@ -210,17 +210,17 @@ function renderWorldMap() {
   const list = $('worlds-list');
   list.innerHTML = '';
 
-  const CANVAS_W = 500, CANVAS_H = 680;
+  const CANVAS_W = 700, CANVAS_H = 900;
   const centers = [
-    { x: 110, y: 572 },  // Vilaturisme  (bottom-left)
-    { x: 390, y: 418 },  // Sleeptown    (middle-right)
-    { x: 110, y: 242 },  // Technoburg   (top-left)
-    { x: 370, y: 90  },  // Coming soon  (top-right)
+    { x: 145, y: 790 },  // Vilaturisme  (bottom-left)
+    { x: 545, y: 590 },  // Sleeptown    (middle-right)
+    { x: 155, y: 340 },  // Technoburg   (top-left)
+    { x: 530, y: 120 },  // Coming soon  (top-right)
   ];
   const segs = [
-    { from: 0, to: 1, cp: { x: 390, y: 572 } },
-    { from: 1, to: 2, cp: { x: 110, y: 418 } },
-    { from: 2, to: 3, cp: { x: 370, y: 242 }, soon: true },
+    { from: 0, to: 1, cp: { x: 545, y: 790 } },
+    { from: 1, to: 2, cp: { x: 155, y: 590 } },
+    { from: 2, to: 3, cp: { x: 530, y: 340 }, soon: true },
   ];
 
   const canvas = document.createElement('div');
@@ -252,51 +252,10 @@ function renderWorldMap() {
   });
   canvas.appendChild(svg);
 
-  // ── Decorations ──
-  const DECO = [
-    // Vilaturisme
-    { e: '🏖️', x: 18,  y: 515, s: 1.5, o: 0.38 },
-    { e: '☀️',  x: 258, y: 608, s: 1.9, o: 0.28 },
-    { e: '🌊',  x: 428, y: 540, s: 1.4, o: 0.3  },
-    { e: '📸',  x: 36,  y: 638, s: 1.1, o: 0.22 },
-    { e: '🍹',  x: 444, y: 618, s: 1.1, o: 0.2  },
-    { e: '⛵',  x: 260, y: 640, s: 1.2, o: 0.18 },
-    // Sleeptown
-    { e: '🌳',  x: 16,  y: 355, s: 1.6, o: 0.32 },
-    { e: '🏠',  x: 422, y: 364, s: 1.4, o: 0.28 },
-    { e: '🌻',  x: 248, y: 460, s: 1.2, o: 0.25 },
-    { e: '🐕',  x: 434, y: 452, s: 1.1, o: 0.28 },
-    { e: '🚲',  x: 12,  y: 452, s: 1.3, o: 0.22 },
-    { e: '🌙',  x: 252, y: 372, s: 1.3, o: 0.2  },
-    // Technoburg
-    { e: '💡',  x: 12,  y: 183, s: 1.5, o: 0.3  },
-    { e: '🤖',  x: 422, y: 196, s: 1.5, o: 0.28 },
-    { e: '📡',  x: 262, y: 172, s: 1.3, o: 0.25 },
-    { e: '⚡',  x: 14,  y: 294, s: 1.3, o: 0.22 },
-    { e: '🖥️',  x: 420, y: 288, s: 1.4, o: 0.25 },
-    { e: '🔋',  x: 250, y: 286, s: 1.1, o: 0.2  },
-    // Coming soon
-    { e: '🏗️',  x: 26,  y: 40,  s: 1.6, o: 0.2  },
-    { e: '⚙️',  x: 432, y: 48,  s: 1.4, o: 0.18 },
-    { e: '🔨',  x: 218, y: 36,  s: 1.3, o: 0.18 },
-  ];
-  DECO.forEach(d => {
-    const el = document.createElement('div');
-    el.className = 'wmap-deco';
-    el.textContent = d.e;
-    el.style.cssText = `left:${d.x}px;top:${d.y}px;font-size:${d.s}rem;opacity:${d.o}`;
-    canvas.appendChild(el);
-  });
-
   // ── World nodes ──
-  const firstLockedIdx = WORLDS.findIndex((w, i) =>
-    !(i === 0 || (progress[WORLDS[i - 1].id] || 0) >= 1)
-  );
-
   WORLDS.forEach((world, i) => {
     const levelsCompleted = progress[world.id] || 0;
     const isUnlocked = i === 0 || (progress[WORLDS[i - 1].id] || 0) >= 1;
-    const isNextUp   = !isUnlocked && i === firstLockedIdx;
     const isComplete = levelsCompleted >= MAX_LEVELS;
     const hasSave    = isUnlocked && !!getWorldSave(world.id);
     const c          = centers[i];
@@ -305,37 +264,32 @@ function renderWorldMap() {
     const node = document.createElement('div');
     node.className = [
       'wmap-node',
-      isUnlocked ? 'wmap-unlocked' : isNextUp ? 'wmap-nextup' : 'wmap-locked',
+      isUnlocked ? 'wmap-unlocked' : 'wmap-locked',
       isComplete ? 'wmap-done' : hasSave ? 'wmap-resume' : isUnlocked ? 'wmap-new' : '',
     ].join(' ').trim();
-    node.style.left = (c.x - 48) + 'px';
-    node.style.top  = (c.y - 48) + 'px';
+    node.style.left = (c.x - 55) + 'px';
+    node.style.top  = (c.y - 55) + 'px';
     node.style.setProperty('--wc', world.color);
 
     const starsHTML = isUnlocked
       ? `<div class="wmap-stars">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</div>` : '';
 
     let actionTxt = '';
-    if (isUnlocked) {
-      if (isComplete) {
-        actionTxt = `<div class="wmap-action wmap-action-done">✓ completat</div>`;
-      } else if (hasSave) {
-        const sv = getWorldSave(world.id);
-        actionTxt = `<div class="wmap-action wmap-action-cont">Niv ${sv.levelNum} →</div>`;
-      } else {
-        actionTxt = `<div class="wmap-action wmap-action-new">Comença →</div>`;
-      }
+    if (isUnlocked && hasSave && !isComplete) {
+      const sv = getWorldSave(world.id);
+      actionTxt = `<div class="wmap-action wmap-action-cont">Niv ${sv.levelNum} →</div>`;
+    } else if (isUnlocked && isComplete) {
+      actionTxt = `<div class="wmap-action wmap-action-done">✓ completat</div>`;
     }
 
-    const imgSrc = (isUnlocked || isNextUp) ? `${world.id}.png` : 'unavailable.png';
-    const label  = isUnlocked ? world.name : isNextUp ? '???' : '';
+    const imgSrc = isUnlocked ? `${world.id}.png` : 'unavailable.png';
 
     node.innerHTML = `
       <div class="wmap-world-circle">
-        <img src="${imgSrc}" alt="${label || '???'}">
+        <img src="${imgSrc}" alt="${world.name}">
       </div>
       ${starsHTML}
-      ${label ? `<div class="wmap-label">${label}</div>` : ''}
+      <div class="wmap-label">${isUnlocked ? world.name : ''}</div>
       ${actionTxt}
     `;
 
@@ -363,8 +317,8 @@ function renderWorldMap() {
   const cs = centers[3];
   const soonNode = document.createElement('div');
   soonNode.className = 'wmap-node wmap-soon';
-  soonNode.style.left = (cs.x - 48) + 'px';
-  soonNode.style.top  = (cs.y - 48) + 'px';
+  soonNode.style.left = (cs.x - 55) + 'px';
+  soonNode.style.top  = (cs.y - 55) + 'px';
   soonNode.innerHTML = `<div class="wmap-world-circle wmap-circle-soon">
     <img src="coming_soon.png" alt="Coming Soon">
   </div>`;
@@ -381,7 +335,7 @@ function renderWorldMap() {
 }
 
 function initMapPan(canvas, viewport, focus) {
-  const CANVAS_H = 680, CANVAS_W = 500;
+  const CANVAS_H = 900, CANVAS_W = 700;
   let isDragging = false, wasDrag = false;
   let pointerId = null;
   let startY = 0, startX = 0, downClientY = 0, downClientX = 0;

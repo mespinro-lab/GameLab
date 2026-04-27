@@ -1338,8 +1338,8 @@ html, body {
 
 .wmap-canvas {
   position: relative;
-  width: 500px;
-  height: 680px;
+  width: 700px;
+  height: 900px;
   flex-shrink: 0;
   will-change: transform;
   background: transparent;
@@ -1397,7 +1397,7 @@ html, body {
 
 .wmap-node {
   position: absolute;
-  width: 96px;
+  width: 110px;
   text-align: center;
   cursor: pointer;
   user-select: none;
@@ -1405,8 +1405,8 @@ html, body {
 }
 
 .wmap-world-circle {
-  width: 96px;
-  height: 96px;
+  width: 110px;
+  height: 110px;
   border-radius: 50%;
   overflow: hidden;
   border: 3px solid rgba(255,255,255,0.18);
@@ -1473,15 +1473,7 @@ html, body {
   pointer-events: none;
 }
 
-/* Next-up: world visible but grayed */
-.wmap-nextup .wmap-world-circle {
-  filter: grayscale(80%) brightness(0.55);
-  opacity: 0.72;
-  border-color: rgba(255,255,255,0.12);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-}
-
-/* Deep locked */
+/* Locked */
 .wmap-locked .wmap-world-circle {
   opacity: 0.45;
   border-color: rgba(255,255,255,0.08);
