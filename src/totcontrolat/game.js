@@ -210,17 +210,17 @@ function renderWorldMap() {
   const list = $('worlds-list');
   list.innerHTML = '';
 
-  const CANVAS_W = 900, CANVAS_H = 1100;
+  const CANVAS_W = 1200, CANVAS_H = 1400;
   const centers = [
-    { x: 248, y: 850 },  // Vilaturisme  (bottom-left)
-    { x: 648, y: 666 },  // Sleeptown    (middle-right)
-    { x: 258, y: 445 },  // Technoburg   (top-left)
-    { x: 632, y: 250 },  // Coming soon  (top-right)
+    { x: 398, y: 1000 },  // Vilaturisme  (bottom-left)
+    { x: 798, y: 816  },  // Sleeptown    (middle-right)
+    { x: 408, y: 595  },  // Technoburg   (top-left)
+    { x: 782, y: 400  },  // Coming soon  (top-right)
   ];
   const segs = [
-    { from: 0, to: 1, cp1: { x: 368, y: 890 }, cp2: { x: 572, y: 720 } },
-    { from: 1, to: 2, cp1: { x: 618, y: 558 }, cp2: { x: 328, y: 504 } },
-    { from: 2, to: 3, cp1: { x: 208, y: 335 }, cp2: { x: 562, y: 295 }, soon: true },
+    { from: 0, to: 1, cp1: { x: 518, y: 1040 }, cp2: { x: 722, y: 870 } },
+    { from: 1, to: 2, cp1: { x: 768, y: 708  }, cp2: { x: 478, y: 654 } },
+    { from: 2, to: 3, cp1: { x: 358, y: 485  }, cp2: { x: 712, y: 445 }, soon: true },
   ];
 
   const canvas = document.createElement('div');
@@ -280,7 +280,7 @@ function renderWorldMap() {
 
     const imgSrc = isUnlocked ? `${world.id}.png` : 'unavailable.png';
 
-    const showLabel = isComplete || isCurrent || levelsCompleted >= 1;
+    const showLabel = isUnlocked;
     node.innerHTML = `
       <div class="wmap-world-circle">
         <img src="${imgSrc}" alt="${world.name}">
@@ -330,9 +330,9 @@ function renderWorldMap() {
 }
 
 function initMapPan(canvas, viewport, focus) {
-  const CANVAS_H = 1100, CANVAS_W = 900;
+  const CANVAS_H = 1400, CANVAS_W = 1200;
   const HUD_BOTTOM = 90;
-  const MIN_SCALE = 0.6, MAX_SCALE = 1.6;
+  const MIN_SCALE = 0.7, MAX_SCALE = 1.8;
   let scale = 1.0;
 
   let isDragging = false, wasDrag = false;

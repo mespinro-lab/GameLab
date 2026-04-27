@@ -1338,8 +1338,8 @@ html, body {
 
 .wmap-canvas {
   position: relative;
-  width: 900px;
-  height: 1100px;
+  width: 1200px;
+  height: 1400px;
   flex-shrink: 0;
   will-change: transform;
   background: transparent;
@@ -1422,9 +1422,10 @@ html, body {
   display: block;
 }
 
-/* Current world — semi-transparent ring + colored glow pulse */
+/* Current world — outline avoids WebKit overflow:hidden + border-radius square bug */
 .wmap-current .wmap-world-circle {
-  border: 3px solid color-mix(in srgb, var(--wc) 55%, transparent);
+  outline: 3px solid color-mix(in srgb, var(--wc) 55%, transparent);
+  outline-offset: 2px;
   animation: bubblePulse 2.3s ease-in-out infinite;
 }
 
