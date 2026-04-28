@@ -91,8 +91,8 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0 0.2rem;
+  gap: 0.25rem;
+  padding: 0.3rem 0 0.1rem;
   overflow: hidden;
 }
 
@@ -100,7 +100,7 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.35rem;
+  flex-shrink: 0;
 }
 
 #happiness-ring {
@@ -151,74 +151,66 @@ html, body {
 }
 
 /* ═══════════════════════════════════════════════
-   FACTION BARS
+   PERSONATGES DE FACCIONS
 ═══════════════════════════════════════════════ */
 
-#factions {
-  width: 100%;
-  background: rgba(255,255,255,0.06);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-top: 1px solid rgba(255,255,255,0.08);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  padding: 0.42rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  flex-shrink: 0;
-}
-
-.faction {
+#char-ring-row {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  font-size: 0.72rem;
+  justify-content: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0 0.5rem;
 }
 
-.faction-icon { font-size: 1.4rem; flex-shrink: 0; }
-
-.faction-mid {
-  flex: 1;
-  min-width: 0;
+.char-slot {
+  position: relative;
   display: flex;
-  flex-direction: column;
-  gap: 0.22rem;
-}
-
-.faction-name {
-  font-weight: 700;
-  color: rgba(255,255,255,0.75);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.75rem;
-}
-
-.faction-bar-bg {
-  height: 7px;
-  background: rgba(255,255,255,0.07);
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.faction-bar-fill {
-  height: 100%;
-  border-radius: 6px;
-  transition: width 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.5s ease;
-}
-
-.bar-ok   { background: linear-gradient(90deg, #34D399, #6EE7B7); }
-.bar-warn { background: linear-gradient(90deg, #FB923C, #FCD34D); }
-.bar-bad  { background: linear-gradient(90deg, #F43F5E, #FB7185); }
-
-.faction-val {
-  width: 26px;
-  text-align: right;
-  font-weight: 700;
-  font-size: 0.82rem;
-  color: rgba(255,255,255,0.65);
+  align-items: flex-end;
+  justify-content: center;
   flex-shrink: 0;
 }
+
+.char-bottom-slot {
+  margin-top: 0.1rem;
+}
+
+.char-img {
+  width: 80px;
+  height: 100px;
+  object-fit: contain;
+  object-position: bottom;
+  display: block;
+  transition: opacity 0.25s ease;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45));
+}
+
+.char-bottom-slot .char-img {
+  width: 70px;
+  height: 88px;
+}
+
+.char-val-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: rgba(0,0,0,0.68);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 6px;
+  padding: 0.08rem 0.28rem;
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--text);
+  min-width: 22px;
+  text-align: center;
+  line-height: 1.3;
+  pointer-events: none;
+  transition: color 0.4s ease, border-color 0.4s ease;
+}
+
+.char-val-badge.badge-ok   { color: var(--ok);   border-color: rgba(52,211,153,0.4); }
+.char-val-badge.badge-warn { color: var(--warn);  border-color: rgba(251,146,60,0.4); }
+.char-val-badge.badge-bad  { color: var(--bad);   border-color: rgba(244,63,94,0.4); }
 
 /* ═══════════════════════════════════════════════
    TICK PROGRESS
@@ -660,10 +652,10 @@ html, body {
   #happiness-ring  { width: 96px; height: 96px; }
   #happiness-val   { font-size: 1.8rem; }
   #happiness-face  { font-size: 1.5rem; }
-  #game-center     { gap: 0.3rem; padding: 0.25rem 0 0.1rem; }
-  #factions        { padding: 0.3rem 1rem; gap: 0.2rem; }
-  .faction-bar-bg  { height: 5px; }
-  .faction-icon    { font-size: 1.15rem; }
+  #game-center     { gap: 0.15rem; padding: 0.2rem 0 0.05rem; }
+  .char-img        { width: 66px; height: 82px; }
+  .char-bottom-slot .char-img { width: 58px; height: 72px; }
+  #char-ring-row   { gap: 0.4rem; }
   #action-panel    { padding: 0.45rem 0.9rem 0.35rem; }
   #controls-pane   { gap: 0.32rem; }
   .pill            { min-height: 32px; padding: 0.22rem 0.5rem; font-size: 0.7rem; }

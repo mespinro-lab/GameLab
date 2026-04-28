@@ -28,41 +28,29 @@
     <!-- ── Week progress bar ── -->
     <div id="tick-track"><div id="tick-bar"></div></div>
 
-    <!-- ── Game center: happiness + factions ── -->
+    <!-- ── Game center: personatges + anell felicitat ── -->
     <div id="game-center">
-      <div id="happiness-area">
-        <div id="happiness-ring">
-          <div id="happiness-face">😐</div>
-          <div id="happiness-val">60</div>
+      <div id="char-ring-row">
+        <div class="char-slot" id="char-veins">
+          <img class="char-img" id="char-img-veins" src="char_residents_3.png" alt="">
+          <span class="char-val-badge" id="val-veins">62</span>
         </div>
-        <p id="idle-message">Setmana tranquil·la... de moment.</p>
-      </div>
-      <div id="factions">
-        <div class="faction">
-          <span class="faction-icon" id="icon-veins">🏘️</span>
-          <div class="faction-mid">
-            <span class="faction-name" id="name-veins">Veïns</span>
-            <div class="faction-bar-bg"><div class="faction-bar-fill" id="bar-veins"></div></div>
+        <div id="happiness-area">
+          <div id="happiness-ring">
+            <div id="happiness-face">😐</div>
+            <div id="happiness-val">60</div>
           </div>
-          <span class="faction-val" id="val-veins">62</span>
         </div>
-        <div class="faction">
-          <span class="faction-icon" id="icon-mercat">🏪</span>
-          <div class="faction-mid">
-            <span class="faction-name" id="name-mercat">Mercat</span>
-            <div class="faction-bar-bg"><div class="faction-bar-fill" id="bar-mercat"></div></div>
-          </div>
-          <span class="faction-val" id="val-mercat">60</span>
-        </div>
-        <div class="faction">
-          <span class="faction-icon" id="icon-activistes">✊</span>
-          <div class="faction-mid">
-            <span class="faction-name" id="name-activistes">Activ.</span>
-            <div class="faction-bar-bg"><div class="faction-bar-fill" id="bar-activistes"></div></div>
-          </div>
-          <span class="faction-val" id="val-activistes">58</span>
+        <div class="char-slot" id="char-mercat">
+          <img class="char-img" id="char-img-mercat" src="char_hostalers_3.png" alt="">
+          <span class="char-val-badge" id="val-mercat">60</span>
         </div>
       </div>
+      <div class="char-slot char-bottom-slot" id="char-activistes">
+        <img class="char-img" id="char-img-activistes" src="char_ecologistes_3.png" alt="">
+        <span class="char-val-badge" id="val-activistes">58</span>
+      </div>
+      <p id="idle-message">Setmana tranquil·la... de moment.</p>
     </div>
 
     <!-- ── Action panel: controls OR event (mutually exclusive) ── -->

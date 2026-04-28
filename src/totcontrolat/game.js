@@ -1043,9 +1043,9 @@ function showResolveFeedback(fx) {
   const fc = S.worldConfig ? S.worldConfig.factionConfig : {
     veins: { icon: '🏘️' }, mercat: { icon: '🏪' }, activistes: { icon: '✊' },
   };
-  if (fx.veins)      spawnFloat(`${fc.veins.icon} ${s(fx.veins)}${fx.veins}`,             'bar-veins',      c(fx.veins));
-  if (fx.mercat)     spawnFloat(`${fc.mercat.icon} ${s(fx.mercat)}${fx.mercat}`,           'bar-mercat',     c(fx.mercat));
-  if (fx.activistes) spawnFloat(`${fc.activistes.icon} ${s(fx.activistes)}${fx.activistes}`, 'bar-activistes', c(fx.activistes));
+  if (fx.veins)      spawnFloat(`${fc.veins.icon} ${s(fx.veins)}${fx.veins}`,               'char-veins',      c(fx.veins));
+  if (fx.mercat)     spawnFloat(`${fc.mercat.icon} ${s(fx.mercat)}${fx.mercat}`,             'char-mercat',     c(fx.mercat));
+  if (fx.activistes) spawnFloat(`${fc.activistes.icon} ${s(fx.activistes)}${fx.activistes}`, 'char-activistes', c(fx.activistes));
   if (fx.money) {
     spawnFloat(`💰 ${s(fx.money)}${Math.round(fx.money)}€`, 'money-display', fx.money > 0 ? 'var(--gold)' : 'var(--bad)');
     if (fx.money < 0) shakeEl('money-display');
@@ -1177,6 +1177,28 @@ function renderBadges() {
   });
 }
 
+// ── Character images ───────────────────────────────────────────────────────────
+// Hardcoded for now — all worlds use residents/hostalers/ecologistes.
+// When per-world images are ready, derive from S.worldConfig.factionConfig.charBase.
+const CHAR_BASES = { veins: 'char_residents', mercat: 'char_hostalers', activistes: 'char_ecologistes' };
+
+function charMoodState(v) {
+  if (v <= 20) return 1;
+  if (v <= 40) return 2;
+  if (v <= 60) return 3;
+  if (v <= 80) return 4;
+  return 5;
+}
+
+function updateCharImages() {
+  ['veins', 'mercat', 'activistes'].forEach(k => {
+    const img = $(`char-img-${k}`);
+    if (!img) return;
+    const state = charMoodState(S.factions[k] || 50);
+    img.src = `${CHAR_BASES[k]}_${state}.png`;
+  });
+}
+
 // ── Render ─────────────────────────────────────────────────────────────────────
 function renderLive() {
   const h = happiness();
@@ -1202,12 +1224,14 @@ function renderLive() {
   document.documentElement.style.setProperty('--bld-alpha', bldAlpha);
 
   ['veins', 'mercat', 'activistes'].forEach(k => {
-    const v  = S.factions[k];
-    const vi = Math.round(v);
-    $(`val-${k}`).textContent     = vi;
-    $(`bar-${k}`).style.width     = v + '%';
-    $(`bar-${k}`).className       = 'faction-bar-fill ' + (v > 60 ? 'bar-ok' : v > 35 ? 'bar-warn' : 'bar-bad');
+    const v     = S.factions[k];
+    const badge = $(`val-${k}`);
+    if (badge) {
+      badge.textContent = Math.round(v);
+      badge.className   = 'char-val-badge ' + (v > 60 ? 'badge-ok' : v > 35 ? 'badge-warn' : 'badge-bad');
+    }
   });
+  updateCharImages();
 
   if (S.dangerProgress > 0.08) {
     $('danger-weeks-val').textContent = S.dangerProgress.toFixed(1);
