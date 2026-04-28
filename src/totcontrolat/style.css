@@ -90,7 +90,7 @@ html, body {
   flex-direction: column;
   align-items: center;
   gap: 0.12rem;
-  padding: 1.1rem 0.75rem 0.1rem;
+  padding: 1.5rem 0.75rem 0.1rem;
 }
 
 #happiness-face { display: none; }
@@ -244,7 +244,7 @@ html, body {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border-top: 1px solid rgba(255,255,255,0.1);
-  border-radius: 16px 16px 0 0;
+  border-radius: 16px;
   padding: 0.85rem 0.9rem 0.65rem;
   overflow: hidden;
 }
@@ -341,7 +341,7 @@ html, body {
   font-weight: 700;
   color: rgba(255,255,255,0.68);
   line-height: 1.2;
-  min-height: 1.4em;
+  min-height: 2.4em;
 }
 
 .bldg-levels {
@@ -547,16 +547,6 @@ html, body {
 /* ═══════════════════════════════════════════════
    TOKEN BAR + SPEED BAR (baix)
 ═══════════════════════════════════════════════ */
-
-#invest-progress {
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: var(--ok);
-  margin-left: 0.3rem;
-  opacity: 0.9;
-}
-
-#invest-progress.invest-done { color: var(--gold); }
 
 #token-bar {
   flex-shrink: 0;
