@@ -1194,8 +1194,11 @@ function updateCharImages() {
   ['veins', 'mercat', 'activistes'].forEach(k => {
     const img = $(`char-img-${k}`);
     if (!img) return;
-    const state = charMoodState(S.factions[k] || 50);
-    img.src = `${CHAR_BASES[k]}_${state}.png`;
+    const newSrc = `${CHAR_BASES[k]}_${charMoodState(S.factions[k] || 50)}.png`;
+    if (img.src.endsWith(newSrc)) return;
+    img.style.opacity = '';
+    img.onerror = () => { img.style.opacity = '0'; };
+    img.src = newSrc;
   });
 }
 

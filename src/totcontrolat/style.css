@@ -175,12 +175,26 @@ html, body {
   margin-top: 0.1rem;
 }
 
+.char-fallback {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 3rem;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
+  pointer-events: none;
+  z-index: 0;
+  line-height: 1;
+}
+
 .char-img {
   width: 80px;
   height: 100px;
   object-fit: contain;
   object-position: bottom;
   display: block;
+  position: relative;
+  z-index: 1;
   transition: opacity 0.25s ease;
   filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45));
 }
