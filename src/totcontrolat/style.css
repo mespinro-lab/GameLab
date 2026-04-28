@@ -90,8 +90,9 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  padding: 0.55rem 0.75rem 0;
+  justify-content: flex-start;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem 0;
   overflow: hidden;
 }
 
@@ -99,35 +100,35 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.06rem;
+  gap: 0.04rem;
   flex-shrink: 0;
 }
 
 #happiness-face {
-  font-size: 2rem;
+  font-size: 1.6rem;
   line-height: 1;
   filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
 }
 
 #happiness-val {
-  font-size: 3.2rem;
+  font-size: 2.4rem;
   font-weight: 900;
   color: var(--hring);
   line-height: 1;
   letter-spacing: -0.04em;
   transition: color 0.6s ease;
-  text-shadow: 0 0 36px var(--hring-glow);
+  text-shadow: 0 0 30px var(--hring-glow);
 }
 
 #idle-message {
-  font-size: 0.66rem;
+  font-size: 0.64rem;
   color: var(--muted);
   font-style: italic;
   text-align: center;
   max-width: 220px;
-  line-height: 1.4;
+  line-height: 1.35;
   min-height: 1em;
-  margin-top: 0.1rem;
+  margin-top: 0.05rem;
 }
 
 /* ═══════════════════════════════════════════════
