@@ -28,32 +28,36 @@
     <!-- ── Week progress bar ── -->
     <div id="tick-track"><div id="tick-bar"></div></div>
 
-    <!-- ── Game center: personatges + anell felicitat ── -->
+    <!-- ── Game center: felicitat + 3 personatges ── -->
     <div id="game-center">
-      <div id="char-ring-row">
-        <div class="char-slot" id="char-veins">
-          <span class="char-fallback">🏠</span>
-          <img class="char-img" id="char-img-veins" src="char_residents_01_3.png" alt="" onerror="this.style.opacity='0'">
-          <span class="char-val-badge" id="val-veins">62</span>
-        </div>
-        <div id="happiness-area">
-          <div id="happiness-ring">
-            <div id="happiness-face">😐</div>
-            <div id="happiness-val">60</div>
+      <div id="happiness-hero">
+        <span id="happiness-face">😐</span>
+        <span id="happiness-val">60</span>
+        <p id="idle-message">Setmana tranquil·la... de moment.</p>
+      </div>
+      <div id="stage">
+        <div class="stage-char" id="char-veins">
+          <div class="stage-img-wrap">
+            <img class="char-img" id="char-img-veins" src="char_residents_01_3.png" alt="" onerror="this.style.opacity='0'">
+            <span class="char-val-badge" id="val-veins">62</span>
           </div>
+          <span class="char-name" id="name-veins">Residents</span>
         </div>
-        <div class="char-slot" id="char-mercat">
-          <span class="char-fallback">🏨</span>
-          <img class="char-img" id="char-img-mercat" src="char_hostalers_01_3.png" alt="" onerror="this.style.opacity='0'">
-          <span class="char-val-badge" id="val-mercat">60</span>
+        <div class="stage-char stage-center" id="char-mercat">
+          <div class="stage-img-wrap">
+            <img class="char-img" id="char-img-mercat" src="char_hostalers_01_3.png" alt="" onerror="this.style.opacity='0'">
+            <span class="char-val-badge" id="val-mercat">60</span>
+          </div>
+          <span class="char-name" id="name-mercat">Hostalers</span>
+        </div>
+        <div class="stage-char" id="char-activistes">
+          <div class="stage-img-wrap">
+            <img class="char-img" id="char-img-activistes" src="char_ecologistes_01_3.png" alt="" onerror="this.style.opacity='0'">
+            <span class="char-val-badge" id="val-activistes">58</span>
+          </div>
+          <span class="char-name" id="name-activistes">Ecologistes</span>
         </div>
       </div>
-      <div class="char-slot char-bottom-slot" id="char-activistes">
-        <span class="char-fallback">🌿</span>
-        <img class="char-img" id="char-img-activistes" src="char_ecologistes_01_3.png" alt="" onerror="this.style.opacity='0'">
-        <span class="char-val-badge" id="val-activistes">58</span>
-      </div>
-      <p id="idle-message">Setmana tranquil·la... de moment.</p>
     </div>
 
     <!-- ── Action panel: controls OR event (mutually exclusive) ── -->

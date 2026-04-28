@@ -90,119 +90,91 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 0.25rem;
-  padding: 0.3rem 0 0.1rem;
+  justify-content: space-between;
+  padding: 0.55rem 0.75rem 0;
   overflow: hidden;
 }
 
-#happiness-area {
+#happiness-hero {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 0.06rem;
   flex-shrink: 0;
 }
 
-#happiness-ring {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  border: 4px solid var(--hring);
-  box-shadow: 0 0 28px var(--hring-glow), 0 0 56px var(--hring-glow);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0;
-  background: rgba(0,0,0,0.35);
-  transition: border-color 0.6s ease, box-shadow 0.6s ease;
-  animation: ring-pulse 2.8s ease-in-out infinite;
-}
-
-@keyframes ring-pulse {
-  0%, 100% { box-shadow: 0 0 28px var(--hring-glow), 0 0 52px var(--hring-glow); }
-  50%       { box-shadow: 0 0 44px var(--hring-glow), 0 0 80px var(--hring-glow); }
-}
-
 #happiness-face {
-  font-size: 1.8rem;
+  font-size: 2rem;
   line-height: 1;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
 }
 
 #happiness-val {
-  font-size: 2.2rem;
+  font-size: 3.2rem;
   font-weight: 900;
-  color: #fff;
+  color: var(--hring);
   line-height: 1;
-  letter-spacing: -0.02em;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  letter-spacing: -0.04em;
+  transition: color 0.6s ease;
+  text-shadow: 0 0 36px var(--hring-glow);
 }
 
 #idle-message {
-  font-size: 0.72rem;
+  font-size: 0.66rem;
   color: var(--muted);
   font-style: italic;
   text-align: center;
-  max-width: 260px;
+  max-width: 220px;
   line-height: 1.4;
   min-height: 1em;
-  padding: 0 1rem;
+  margin-top: 0.1rem;
 }
 
 /* ═══════════════════════════════════════════════
    PERSONATGES DE FACCIONS
 ═══════════════════════════════════════════════ */
 
-#char-ring-row {
+#stage {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  gap: 0.6rem;
   width: 100%;
-  padding: 0 0.5rem;
+  flex: 1 1 0;
+  min-height: 0;
+  gap: 0.25rem;
 }
 
-.char-slot {
+.stage-char {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.18rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.stage-center { transform: translateY(-16px); }
+
+.stage-img-wrap {
   position: relative;
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  flex-shrink: 0;
-}
-
-.char-bottom-slot {
-  margin-top: 0.1rem;
-}
-
-.char-fallback {
-  position: absolute;
-  bottom: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 3rem;
-  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
-  pointer-events: none;
-  z-index: 0;
-  line-height: 1;
 }
 
 .char-img {
-  width: 80px;
-  height: 100px;
+  width: 72px;
+  height: 90px;
   object-fit: contain;
   object-position: bottom;
   display: block;
   position: relative;
   z-index: 1;
   transition: opacity 0.25s ease;
-  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45));
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
 }
 
-.char-bottom-slot .char-img {
-  width: 70px;
-  height: 88px;
-}
+.stage-center .char-img { width: 86px; height: 108px; }
 
 .char-val-badge {
   position: absolute;
@@ -225,6 +197,19 @@ html, body {
 .char-val-badge.badge-ok   { color: var(--ok);   border-color: rgba(52,211,153,0.4); }
 .char-val-badge.badge-warn { color: var(--warn);  border-color: rgba(251,146,60,0.4); }
 .char-val-badge.badge-bad  { color: var(--bad);   border-color: rgba(244,63,94,0.4); }
+
+.char-name {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: rgba(255,255,255,0.45);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
 
 /* ═══════════════════════════════════════════════
    TICK PROGRESS
@@ -663,23 +648,22 @@ html, body {
 
 /* ── Small height (iPhone SE, compact phones) ── */
 @media (max-height: 640px) {
-  #happiness-ring  { width: 96px; height: 96px; }
-  #happiness-val   { font-size: 1.8rem; }
-  #happiness-face  { font-size: 1.5rem; }
-  #game-center     { gap: 0.15rem; padding: 0.2rem 0 0.05rem; }
-  .char-img        { width: 66px; height: 82px; }
-  .char-bottom-slot .char-img { width: 58px; height: 72px; }
-  #char-ring-row   { gap: 0.4rem; }
-  #action-panel    { padding: 0.45rem 0.9rem 0.35rem; }
-  #controls-pane   { gap: 0.32rem; }
-  .pill            { min-height: 32px; padding: 0.22rem 0.5rem; font-size: 0.7rem; }
-  #event-text      { font-size: 0.72rem; }
-  #event-choices   { gap: 0.3rem; }
-  .choice-btn      { padding: 0.35rem 0.45rem; }
-  #speed-bar       { padding: 0.28rem 0.9rem; }
-  .speed-btn       { min-height: 30px; }
-  .bldg-card       { width: 72px; }
-  .bldg-icon       { font-size: 1.2rem; }
+  #happiness-val             { font-size: 2.4rem; }
+  #happiness-face            { font-size: 1.6rem; }
+  #game-center               { padding: 0.35rem 0.75rem 0; }
+  .char-img                  { width: 58px; height: 72px; }
+  .stage-center .char-img    { width: 70px; height: 86px; }
+  .stage-center              { transform: translateY(-10px); }
+  #action-panel              { padding: 0.45rem 0.9rem 0.35rem; }
+  #controls-pane             { gap: 0.32rem; }
+  .pill                      { min-height: 32px; padding: 0.22rem 0.5rem; font-size: 0.7rem; }
+  #event-text                { font-size: 0.72rem; }
+  #event-choices             { gap: 0.3rem; }
+  .choice-btn                { padding: 0.35rem 0.45rem; }
+  #speed-bar                 { padding: 0.28rem 0.9rem; }
+  .speed-btn                 { min-height: 30px; }
+  .bldg-card                 { width: 72px; }
+  .bldg-icon                 { font-size: 1.2rem; }
 }
 
 /* ── Narrow screens ── */
