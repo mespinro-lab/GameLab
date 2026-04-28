@@ -87,48 +87,59 @@ html, body {
 #game-center {
   flex: 1 1 0;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 0.35rem;
-  padding: 0.4rem 0.75rem 0;
   overflow: hidden;
 }
 
-#happiness-hero {
+#happiness-badge {
+  position: absolute;
+  top: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.04rem;
-  flex-shrink: 0;
+  gap: 0.3rem;
+  background: rgba(0,0,0,0.32);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 999px;
+  padding: 0.22rem 0.75rem 0.22rem 0.48rem;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 10;
+  box-shadow: 0 0 18px var(--hring-glow);
+  transition: box-shadow 0.6s ease;
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: calc(100% - 1.5rem);
 }
 
 #happiness-face {
-  font-size: 1.6rem;
+  font-size: 1.1rem;
   line-height: 1;
-  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+  flex-shrink: 0;
 }
 
 #happiness-val {
-  font-size: 2.4rem;
+  font-size: 1.35rem;
   font-weight: 900;
   color: var(--hring);
   line-height: 1;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.02em;
   transition: color 0.6s ease;
-  text-shadow: 0 0 30px var(--hring-glow);
+  text-shadow: 0 0 18px var(--hring-glow);
+  flex-shrink: 0;
+  min-width: 2ch;
 }
 
 #idle-message {
-  font-size: 0.64rem;
-  color: var(--muted);
+  font-size: 0.6rem;
+  color: rgba(255,255,255,0.35);
   font-style: italic;
-  text-align: center;
-  max-width: 220px;
-  line-height: 1.35;
-  min-height: 1em;
-  margin-top: 0.05rem;
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
 }
 
 /* ═══════════════════════════════════════════════
@@ -136,13 +147,14 @@ html, body {
 ═══════════════════════════════════════════════ */
 
 #stage {
+  position: relative;
   display: flex;
   align-items: flex-end;
   justify-content: center;
   width: 100%;
-  flex: 1 1 0;
-  min-height: 0;
-  gap: 0.25rem;
+  height: 100%;
+  gap: 0.4rem;
+  padding: 0.4rem 0.75rem 0.3rem;
 }
 
 .stage-char {
@@ -154,7 +166,10 @@ html, body {
   min-width: 0;
 }
 
-.stage-center { transform: translateY(-16px); }
+.stage-center {
+  transform: scale(1.13);
+  transform-origin: bottom center;
+}
 
 .stage-img-wrap {
   position: relative;
@@ -649,12 +664,9 @@ html, body {
 
 /* ── Small height (iPhone SE, compact phones) ── */
 @media (max-height: 640px) {
-  #happiness-val             { font-size: 2.4rem; }
-  #happiness-face            { font-size: 1.6rem; }
-  #game-center               { padding: 0.35rem 0.75rem 0; }
+  #happiness-val             { font-size: 1.15rem; }
+  #happiness-face            { font-size: 0.95rem; }
   .char-img                  { width: 58px; height: 72px; }
-  .stage-center .char-img    { width: 70px; height: 86px; }
-  .stage-center              { transform: translateY(-10px); }
   #action-panel              { padding: 0.45rem 0.9rem 0.35rem; }
   #controls-pane             { gap: 0.32rem; }
   .pill                      { min-height: 32px; padding: 0.22rem 0.5rem; font-size: 0.7rem; }
