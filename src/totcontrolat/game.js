@@ -1180,7 +1180,8 @@ function renderBadges() {
 // ── Character images ───────────────────────────────────────────────────────────
 // Hardcoded for now — all worlds use residents/hostalers/ecologistes.
 // When per-world images are ready, derive from S.worldConfig.factionConfig.charBase.
-const CHAR_BASES = { veins: 'char_residents', mercat: 'char_hostalers', activistes: 'char_ecologistes' };
+// Version suffix allows per-world character variants (01 = default)
+const CHAR_BASES = { veins: 'char_residents_01', mercat: 'char_hostalers_01', activistes: 'char_ecologistes_01' };
 
 function charMoodState(v) {
   if (v <= 20) return 1;
