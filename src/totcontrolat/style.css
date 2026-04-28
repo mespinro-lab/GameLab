@@ -81,7 +81,46 @@ html, body {
 }
 
 /* ═══════════════════════════════════════════════
-   GAME CENTER (happiness + factions)
+   HAPPINESS STRIP (sota tick-track)
+═══════════════════════════════════════════════ */
+
+#hap-strip {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.12rem;
+  padding: 0.5rem 0.75rem 0.1rem;
+}
+
+#happiness-face { display: none; }
+
+#happiness-val {
+  font-size: 2.4rem;
+  font-weight: 900;
+  color: var(--hring);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  transition: color 0.6s ease;
+  text-shadow: 0 0 30px var(--hring-glow);
+}
+
+#hap-sep { display: none; }
+
+#idle-message {
+  font-size: 0.62rem;
+  color: var(--muted);
+  font-style: italic;
+  line-height: 1;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 260px;
+}
+
+/* ═══════════════════════════════════════════════
+   GAME CENTER (personatges)
 ═══════════════════════════════════════════════ */
 
 #game-center {
@@ -90,55 +129,9 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 0.55rem;
-  padding: 0.5rem 0.75rem 0.3rem;
+  justify-content: flex-end;
+  padding: 0 0.75rem 0.5rem;
   overflow: hidden;
-}
-
-#hap-strip {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.32rem;
-  width: 100%;
-}
-
-#happiness-face {
-  font-size: 1.4rem;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-#happiness-val {
-  font-size: 1.6rem;
-  font-weight: 900;
-  color: var(--hring);
-  line-height: 1;
-  letter-spacing: -0.02em;
-  transition: color 0.6s ease;
-  text-shadow: 0 0 20px var(--hring-glow);
-  flex-shrink: 0;
-  min-width: 2ch;
-}
-
-#hap-sep {
-  width: 1px;
-  height: 1rem;
-  background: rgba(255,255,255,0.18);
-  flex-shrink: 0;
-}
-
-#idle-message {
-  font-size: 0.64rem;
-  color: var(--muted);
-  font-style: italic;
-  line-height: 1;
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* ═══════════════════════════════════════════════
@@ -250,24 +243,26 @@ html, body {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border-top: 1px solid rgba(255,255,255,0.1);
-  padding: 0.65rem 0.9rem 0.5rem;
+  border-radius: 16px 16px 0 0;
+  padding: 0.85rem 0.9rem 0.65rem;
 }
 
 /* ── Controls pane ── */
 #controls-pane {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: 0.55rem;
 }
 
 .ctrl-row {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.28rem;
 }
 
 .ctrl-pills-policies {
-  flex: 1;
+  justify-content: center;
 }
 
 .ctrl-label {
@@ -276,14 +271,13 @@ html, body {
   color: rgba(255,255,255,0.4);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  width: 72px;
-  flex-shrink: 0;
 }
 
 .ctrl-pills {
   display: flex;
   gap: 0.32rem;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 /* ── Buildings row ── */
@@ -291,8 +285,9 @@ html, body {
 
 .bldg-row-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
+  gap: 0.5rem;
   margin-bottom: 0.3rem;
 }
 
@@ -522,16 +517,25 @@ html, body {
 .token-pill:disabled { opacity: 0.35; cursor: not-allowed; }
 
 /* ═══════════════════════════════════════════════
-   SPEED BAR (always visible, below action panel)
+   TOKEN BAR + SPEED BAR (baix)
 ═══════════════════════════════════════════════ */
 
-#speed-bar {
+#invest-progress {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--ok);
+  margin-left: 0.3rem;
+  opacity: 0.9;
+}
+
+#invest-progress.invest-done { color: var(--gold); }
+
+#token-bar {
   flex-shrink: 0;
   display: flex;
+  justify-content: center;
   align-items: center;
-  justify-content: flex-end;
-  gap: 0.3rem;
-  padding: 0.38rem 0.9rem;
+  padding: 0.3rem 0.9rem 0.25rem;
   border-top: 1px solid rgba(255,255,255,0.06);
 }
 
@@ -540,10 +544,19 @@ html, body {
   gap: 0.28rem;
 }
 
+#speed-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.9rem;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
 .speed-controls {
   display: flex;
   gap: 0.22rem;
-  margin-right: auto;
 }
 
 .speed-btn {
@@ -659,10 +672,10 @@ html, body {
 
 /* ── Small height (iPhone SE, compact phones) ── */
 @media (max-height: 640px) {
-  #happiness-val  { font-size: 1.3rem; }
-  #happiness-face { font-size: 1.15rem; }
-  #game-center    { gap: 0.2rem; padding: 0.3rem 0.75rem 0.15rem; }
-  #action-panel              { padding: 0.45rem 0.9rem 0.35rem; }
+  #happiness-val  { font-size: 2rem; }
+  #hap-strip      { padding: 0.3rem 0.75rem 0.05rem; }
+  #game-center    { padding: 0 0.75rem 0.3rem; }
+  #action-panel   { padding: 0.6rem 0.9rem 0.45rem; }
   #controls-pane             { gap: 0.32rem; }
   .pill                      { min-height: 32px; padding: 0.22rem 0.5rem; font-size: 0.7rem; }
   #event-text                { font-size: 0.72rem; }

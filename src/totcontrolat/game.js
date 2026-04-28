@@ -799,13 +799,20 @@ function openConfig() { showSub('config-screen'); }
 // ── Buildings row (inline in controls pane) ────────────────────────────────────
 function renderBuildingsRow() {
   const row = $('buildings-row');
-  if (!S.worldConfig) { row.innerHTML = ''; return; }
+  const ipEl = $('invest-progress');
+  if (!S.worldConfig) { row.innerHTML = ''; if (ipEl) ipEl.classList.add('hidden'); return; }
   const buildings = S.worldConfig.buildings || [];
-  if (!buildings.length) { row.innerHTML = ''; return; }
+  if (!buildings.length) { row.innerHTML = ''; if (ipEl) ipEl.classList.add('hidden'); return; }
 
   const bldg  = getWorldBuildings(S.worldId);
   const score = buildingScore();
   const quota = S.levelQuota;
+
+  if (ipEl) {
+    ipEl.textContent = `${score}/${quota}${score >= quota ? ' ✓' : ''}`;
+    ipEl.classList.remove('hidden');
+    ipEl.classList.toggle('invest-done', score >= quota);
+  }
 
   row.innerHTML = '';
 
