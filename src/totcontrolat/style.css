@@ -90,7 +90,7 @@ html, body {
   flex-direction: column;
   align-items: center;
   gap: 0.12rem;
-  padding: 0.5rem 0.75rem 0.1rem;
+  padding: 1.1rem 0.75rem 0.1rem;
 }
 
 #happiness-face { display: none; }
@@ -238,6 +238,7 @@ html, body {
 ═══════════════════════════════════════════════ */
 
 #action-panel {
+  position: relative;
   flex-shrink: 0;
   background: rgba(255,255,255,0.06);
   backdrop-filter: blur(14px);
@@ -245,6 +246,11 @@ html, body {
   border-top: 1px solid rgba(255,255,255,0.1);
   border-radius: 16px 16px 0 0;
   padding: 0.85rem 0.9rem 0.65rem;
+}
+
+/* Controls queden en espai quan surt la targeta (evita el salt de layout) */
+#action-panel:has(#event-pane:not(.hidden)) > #controls-pane {
+  visibility: hidden;
 }
 
 /* ── Controls pane ── */
@@ -369,20 +375,42 @@ html, body {
   cursor: default;
 }
 
-/* ── Event pane ── */
+/* ── Event pane (overlay bottom-sheet) ── */
 #event-pane {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  z-index: 20;
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  animation: card-in 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-  will-change: transform;
+  gap: 0.5rem;
+  padding: 1.1rem 1rem 1rem;
+  background: hsl(38, 40%, 93%);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.45);
+  color: #2c1e0a;
+  animation: slide-up-card 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-@keyframes card-in {
-  0%   { opacity: 0; transform: translateY(14px) scale(0.96); }
-  60%  { opacity: 1; transform: translateY(-3px) scale(1.01); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
+@keyframes slide-up-card {
+  from { transform: translateY(110%); opacity: 0.4; }
+  to   { transform: translateY(0);    opacity: 1; }
 }
+
+/* Text i botons dins la targeta crema */
+#event-pane #event-title    { color: #7a4d08; }
+#event-pane #event-text     { color: rgba(44, 30, 10, 0.84); }
+#event-pane .choice-btn {
+  background: rgba(44, 30, 10, 0.05);
+  border-color: rgba(44, 30, 10, 0.15);
+}
+#event-pane .choice-btn:not(.choice-disabled):hover {
+  background: rgba(44, 30, 10, 0.11);
+  border-color: rgba(44, 30, 10, 0.28);
+  transform: scale(1.025);
+}
+#event-pane .choice-name    { color: #2c1e0a; }
+#event-pane .choice-preview { color: rgba(44, 30, 10, 0.48); }
+#event-pane .choice-risk    { color: #b85200; }
 
 #event-header {
   display: flex;
@@ -673,7 +701,7 @@ html, body {
 /* ── Small height (iPhone SE, compact phones) ── */
 @media (max-height: 640px) {
   #happiness-val  { font-size: 2rem; }
-  #hap-strip      { padding: 0.3rem 0.75rem 0.05rem; }
+  #hap-strip      { padding: 0.65rem 0.75rem 0.05rem; }
   #game-center    { padding: 0 0.75rem 0.3rem; }
   #action-panel   { padding: 0.6rem 0.9rem 0.45rem; }
   #controls-pane             { gap: 0.32rem; }
