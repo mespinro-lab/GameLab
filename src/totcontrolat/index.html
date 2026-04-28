@@ -28,14 +28,15 @@
     <!-- ── Week progress bar ── -->
     <div id="tick-track"><div id="tick-bar"></div></div>
 
-    <!-- ── Game center: personatges + badge felicitat flotant ── -->
+    <!-- ── Game center: felicitat + personatges ── -->
     <div id="game-center">
-      <div id="stage">
-        <div id="happiness-badge">
-          <span id="happiness-face">😐</span>
-          <span id="happiness-val">60</span>
-          <span id="idle-message">Setmana tranquil·la... de moment.</span>
-        </div>
+      <div id="hap-strip">
+        <span id="happiness-face">😐</span>
+        <span id="happiness-val">60</span>
+        <div id="hap-sep"></div>
+        <span id="idle-message">Setmana tranquil·la... de moment.</span>
+      </div>
+      <div id="chars-stage">
         <div class="stage-char" id="char-veins">
           <div class="stage-img-wrap">
             <img class="char-img" id="char-img-veins" src="char_residents_01_3.png" alt="" onerror="this.style.opacity='0'">
