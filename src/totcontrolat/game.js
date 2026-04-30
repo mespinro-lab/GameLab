@@ -792,7 +792,7 @@ function startWorld(worldId) {
     initState(worldId, levelNum);
     render();
     showIdle();
-    if (levelNum === 1 && !isTutorialDone()) showTutorial();
+    if (worldId === WORLDS[0].id && levelNum === 1 && !isTutorialDone()) showTutorial();
     else startSim();
   }
 }
