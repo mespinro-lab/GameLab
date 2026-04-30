@@ -708,6 +708,75 @@ function initMapPan(canvas, viewport, focus) {
 }
 
 // ── Start / load world ─────────────────────────────────────────────────────────
+// ── Tutorial ───────────────────────────────────────────────────────────────────
+const TUTORIAL_KEY = 'totcontrolat_tutorial_done';
+
+const TUTORIAL_STEPS = [
+  {
+    icon: '🏛️',
+    title: 'El teu mandat',
+    body: 'Ets el nou alcalde o alcaldessa. L\'objectiu: complir una quota d\'inversions en edificis municipals sense que la ciutadania et perdi la confiança.',
+  },
+  {
+    icon: '😐',
+    title: 'Les faccions i la felicitat',
+    body: 'Tres grups jutgen el teu govern cada setmana. La felicitat global és la seva mitjana. Si cau per sota del 40% durant massa temps, has perdut el mandat.',
+  },
+  {
+    icon: '💰',
+    title: 'Impostos i polítiques',
+    body: 'Cada setmana ingreses diners. Pujar impostos dona més ingressos però les faccions s\'enfaden. Les polítiques contenten grups concrets però costen diners setmanals.',
+  },
+  {
+    icon: '📋',
+    title: 'Events inesperats',
+    body: 'Cada poques setmanes apareix una targeta. Tries entre dues opcions — si no tries, s\'aplica el pitjor resultat. Usa 🔍 per veure l\'impacte real abans de decidir.',
+  },
+  {
+    icon: '🏗️',
+    title: 'Edificis i quota',
+    body: 'A la part inferior hi ha els edificis municipals. Inverteix per millorar-los i complir la quota del mandat. Quan ho aconsegueixes i porten prou setmanes, podràs tancar el mandat.',
+  },
+];
+
+let _tutStep = 0;
+
+function isTutorialDone() {
+  try { return !!localStorage.getItem(TUTORIAL_KEY); } catch(e) { return true; }
+}
+
+function markTutorialDone() {
+  try { localStorage.setItem(TUTORIAL_KEY, '1'); } catch(e) {}
+}
+
+function showTutorial() {
+  _tutStep = 0;
+  _renderTutStep();
+  show('tutorial-overlay');
+}
+
+function _renderTutStep() {
+  const s = TUTORIAL_STEPS[_tutStep];
+  $('tut-icon').textContent  = s.icon;
+  $('tut-title').textContent = s.title;
+  $('tut-body').textContent  = s.body;
+  $('tut-step').textContent  = _tutStep + 1;
+  $('tut-total').textContent = TUTORIAL_STEPS.length;
+  $('tut-next').textContent  = _tutStep < TUTORIAL_STEPS.length - 1 ? 'Endavant →' : 'Comencem! →';
+}
+
+function tutNext() {
+  _tutStep++;
+  if (_tutStep >= TUTORIAL_STEPS.length) endTutorial();
+  else _renderTutStep();
+}
+
+function endTutorial() {
+  markTutorialDone();
+  hide('tutorial-overlay');
+  startSim();
+}
+
 function startWorld(worldId) {
   stopSim();
   hide('overlay-won'); hide('overlay-lost'); hide('overlay-world-done');
@@ -723,7 +792,8 @@ function startWorld(worldId) {
     initState(worldId, levelNum);
     render();
     showIdle();
-    startSim();
+    if (levelNum === 1 && !isTutorialDone()) showTutorial();
+    else startSim();
   }
 }
 
@@ -1389,6 +1459,8 @@ function shuffle(arr) {
 }
 
 // ── Event listeners ────────────────────────────────────────────────────────────
+$('tut-next').addEventListener('click', tutNext);
+$('tut-skip').addEventListener('click', endTutorial);
 $('btn-retry').addEventListener('click',      () => { hide('overlay-won');  retrySession(); });
 $('btn-retry-lost').addEventListener('click', () => { hide('overlay-lost'); retrySession(); });
 $('btn-fi-mandat').addEventListener('click',  () => { if (S.quotaMet) endGame(true); });

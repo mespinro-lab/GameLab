@@ -720,6 +720,80 @@ html, body {
 .overlay-card button:hover  { opacity: 0.88; transform: scale(1.02); }
 .overlay-card button:active { transform: scale(0.97); }
 
+/* ── Tutorial ── */
+
+.tutorial-card {
+  background: rgba(20, 25, 40, 0.97);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 18px;
+  padding: 1.75rem 1.75rem 1.25rem;
+  max-width: 320px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.7);
+}
+
+.tut-progress {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  margin-bottom: 0.9rem;
+}
+
+.tut-icon {
+  font-size: 2.2rem;
+  margin-bottom: 0.65rem;
+  line-height: 1;
+}
+
+.tut-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 0.65rem;
+}
+
+.tut-body {
+  font-size: 0.84rem;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-bottom: 1.25rem;
+}
+
+.tut-btn-next {
+  display: block;
+  width: 100%;
+  background: var(--gold);
+  color: #0d0d1a;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  border: none;
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+  min-height: 44px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: opacity 0.12s, transform 0.1s;
+  margin-bottom: 0.55rem;
+}
+
+.tut-btn-next:hover  { opacity: 0.88; transform: scale(1.02); }
+.tut-btn-next:active { transform: scale(0.97); }
+
+.tut-btn-skip {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.3);
+  font-size: 0.72rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  touch-action: manipulation;
+}
+
+.tut-btn-skip:hover { color: rgba(255,255,255,0.55); }
+
 /* ═══════════════════════════════════════════════
    UTILS
 ═══════════════════════════════════════════════ */
