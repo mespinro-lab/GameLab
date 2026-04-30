@@ -1542,11 +1542,25 @@ html, body {
   display: block;
 }
 
-/* Current world — outline avoids WebKit overflow:hidden + border-radius square bug */
 .wmap-current .wmap-world-circle {
-  outline: 3px solid color-mix(in srgb, var(--wc) 55%, transparent);
-  outline-offset: 2px;
   animation: bubblePulse 2.3s ease-in-out infinite;
+}
+
+.wmap-current::after {
+  content: '';
+  position: absolute;
+  top: -5px; left: -5px;
+  width: 166px; height: 166px;
+  border-radius: 50%;
+  border: 3px solid color-mix(in srgb, var(--wc) 60%, transparent);
+  pointer-events: none;
+  animation: ringPulse 2.3s ease-in-out infinite;
+  z-index: 2;
+}
+
+@keyframes ringPulse {
+  0%, 100% { opacity: 0.45; }
+  50%       { opacity: 1; }
 }
 
 @keyframes bubblePulse {
@@ -1613,6 +1627,7 @@ html, body {
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.04em;
+  line-height: 1.2;
   color: rgba(255,255,255,0.9);
   text-shadow: 0 2px 8px rgba(0,0,0,0.8);
   white-space: nowrap;
