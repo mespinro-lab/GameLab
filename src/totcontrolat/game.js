@@ -1251,8 +1251,8 @@ function renderLive() {
     const arrow = $(`trend-${k}`);
     if (arrow) {
       const hist = S.factionHistory;
-      if (!hist || hist.length === 0) { arrow.textContent = ''; return; }
-      const delta = v - hist[hist.length - 1][k];
+      if (!hist || hist.length < 2) { arrow.textContent = ''; return; }
+      const delta = hist[hist.length - 1][k] - hist[hist.length - 2][k];
       const abs   = Math.abs(delta);
       if (abs < 1) { arrow.textContent = ''; arrow.className = 'trend-arrow'; return; }
       const ch  = delta > 0 ? '▲' : '▼';
