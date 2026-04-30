@@ -708,6 +708,35 @@ function initMapPan(canvas, viewport, focus) {
 }
 
 // ── Start / load world ─────────────────────────────────────────────────────────
+// ── World intro ────────────────────────────────────────────────────────────────
+function showWorldIntro(world, onDone) {
+  if (!world.intro) { onDone(); return; }
+  const intro = world.intro;
+  const card  = document.querySelector('.wintro-card');
+  if (card) card.style.setProperty('--wc', world.color);
+  $('wintro-icon').textContent     = world.icon;
+  $('wintro-title').textContent    = world.name;
+  $('wintro-subtitle').textContent = intro.subtitle || '';
+  $('wintro-body').textContent     = intro.body     || '';
+
+  const factionsEl = $('wintro-factions');
+  factionsEl.innerHTML = '';
+  const fc = world.factionConfig;
+  ['veins', 'mercat', 'activistes'].forEach(k => {
+    if (!intro.factions?.[k]) return;
+    const row = document.createElement('div');
+    row.className = 'wintro-faction-row';
+    row.innerHTML =
+      `<span class="wintro-f-icon">${fc[k].icon}</span>` +
+      `<div><strong class="wintro-f-name">${fc[k].name}</strong>` +
+      `<span class="wintro-f-desc"> — ${intro.factions[k]}</span></div>`;
+    factionsEl.appendChild(row);
+  });
+
+  $('btn-wintro-start').onclick = () => { hide('world-intro-overlay'); onDone(); };
+  show('world-intro-overlay');
+}
+
 // ── Tutorial ───────────────────────────────────────────────────────────────────
 const TUTORIAL_KEY = 'totcontrolat_tutorial_done';
 
@@ -789,11 +818,17 @@ function startWorld(worldId) {
   } else {
     const progress = getProgress();
     const levelNum = (progress[worldId] || 0) + 1;
+    const world    = WORLDS.find(w => w.id === worldId);
     initState(worldId, levelNum);
     render();
     showIdle();
-    if (worldId === WORLDS[0].id && levelNum === 1 && !isTutorialDone()) showTutorial();
-    else startSim();
+    if (worldId === WORLDS[0].id && levelNum === 1 && !isTutorialDone()) {
+      showTutorial();
+    } else if (levelNum === 1) {
+      showWorldIntro(world, startSim);
+    } else {
+      startSim();
+    }
   }
 }
 

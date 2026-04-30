@@ -8,6 +8,15 @@ const WORLDS = [
     color: '#FF9F43',
     description: 'Poble turístic en plena transformació. Gestiona l\'equilibri entre residents i la indústria de l\'hospitalitat.',
     unlockAfter: null,
+    intro: {
+      subtitle: 'Temporada alta permanent',
+      body: 'El turisme ha transformat el municipi en una dècada. Els carrers estan plens, les terrasses desbordades i els pisos buits. Ara ets l\'alcalde/essa. Tens un mandat per fer-ho funcionar per a tothom.',
+      factions: {
+        veins:      'Porten tota la vida aquí. Volen tranquil·litat, serveis i que el barri no es converteixi en un parc temàtic.',
+        mercat:     'Han crescut amb el turisme. Volen clients, llicències i menys restriccions. L\'economia és la seva brúixola.',
+        activistes: 'Vigilen l\'impacte ambiental i social de cada decisió. Difícils de contentar, però necessaris per a la legitimitat.',
+      },
+    },
     factionConfig: {
       veins:      { icon: '🏠', name: 'Residents' },
       mercat:     { icon: '🏨', name: 'Hostalers' },
@@ -44,6 +53,15 @@ const WORLDS = [
     color: '#A78BFA',
     description: 'Barri residencial que valora la tranquil·litat per sobre de tot. Gestiona conflictes entre veïns, propietaris i la generació jove.',
     unlockAfter: 'vilaturisme',
+    intro: {
+      subtitle: 'Aquí ningú vol soroll. Ni tu.',
+      body: 'Un barri que va néixer per descansar i ara no pot. Els preus pugen, els joves marxen i els propietaris especulen. Tu tens el poder de regular — o de deixar-ho anar.',
+      factions: {
+        veins:      'Famílies consolidades que volen carrers tranquils, bona recollida i cap sorpresa. Conservadors però necessaris.',
+        mercat:     'Propietaris d\'immobles i locals. Pensen en rendibilitat, lloguer i valor del sòl. Difícils d\'enfadar, però ho recorden.',
+        activistes: 'La generació jove que no pot pagar el lloguer. Reclamen espais, oportunitats i ser escoltats.',
+      },
+    },
     factionConfig: {
       veins:      { icon: '🏠', name: 'Residents' },
       mercat:     { icon: '🏡', name: 'Propietaris' },
@@ -80,6 +98,15 @@ const WORLDS = [
     color: '#38BDF8',
     description: 'Hub tecnològic en formació. Gestiona l\'equilibri entre innovació, residents tradicionals i els Hacktivistes que ho qüestionen tot.',
     unlockAfter: 'sleeptown',
+    intro: {
+      subtitle: 'La innovació no espera permisos',
+      body: 'Empreses tecnològiques han aterrat al municipi prometent feina i futur. Però els veïns de sempre i els hacktivistes no estan segurs que el futur sigui per a ells. Et toca gestionar el canvi.',
+      factions: {
+        veins:      'Residents de tota la vida, escèptics de la tecnologia i del canvi. Volen que el barri segueixi sent seu.',
+        mercat:     'Startups i empreses tech que han triat aquest lloc per créixer. Necessiten infraestructura i llibertat.',
+        activistes: 'Hacktivistes que qüestionen la privacitat, la vigilància i a qui beneficia realment la "innovació".',
+      },
+    },
     factionConfig: {
       veins:      { icon: '🏘️', name: 'Veïns' },
       mercat:     { icon: '💻', name: 'Startups' },
