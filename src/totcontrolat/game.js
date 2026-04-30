@@ -1347,8 +1347,24 @@ function spendTokens() {
   renderLive(); renderControls();
 }
 
+function buildInsightText(opt) {
+  const fx    = opt.fx || {};
+  const sign  = v => v > 0 ? '+' : '';
+  const parts = [];
+  if (fx.veins)      parts.push(`Veïns ${sign(fx.veins)}${fx.veins}`);
+  if (fx.mercat)     parts.push(`Mercat ${sign(fx.mercat)}${fx.mercat}`);
+  if (fx.activistes) parts.push(`Activistes ${sign(fx.activistes)}${fx.activistes}`);
+  if (fx.money)      parts.push(`${sign(fx.money)}${Math.round(fx.money)}€`);
+  if (opt._endWin)   parts.push('→ Mandat completat');
+  if (opt._endLose)  parts.push('→ Fi (derrota)');
+  return parts.length ? parts.join('  ·  ') : (opt.preview || '');
+}
+
 function revealInsight() {
   if (S.phase !== 'event' || S.tokens < 1) return;
+  const [oL, oR] = S.currentEvent.options;
+  $('opt-left-preview').textContent  = buildInsightText(oL);
+  $('opt-right-preview').textContent = buildInsightText(oR);
   S.tokens--;
   $('event-pane').classList.add('insight-active');
   render();
