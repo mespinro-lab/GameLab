@@ -509,13 +509,13 @@ function renderWorldMap() {
   canvas.appendChild(svg);
 
   const currentWorldIdx = WORLDS.reduce((best, w, i) => {
-    const unlocked = i === 0 || (progress[WORLDS[i - 1].id] || 0) >= 1;
+    const unlocked = i === 0 || (progress[WORLDS[i - 1].id] || 0) >= MAX_LEVELS;
     return (unlocked && (progress[w.id] || 0) < MAX_LEVELS) ? i : best;
   }, -1);
 
   WORLDS.forEach((world, i) => {
     const levelsCompleted = progress[world.id] || 0;
-    const isUnlocked = i === 0 || (progress[WORLDS[i - 1].id] || 0) >= 1;
+    const isUnlocked = i === 0 || (progress[WORLDS[i - 1].id] || 0) >= MAX_LEVELS;
     const isComplete = levelsCompleted >= MAX_LEVELS;
     const isCurrent  = i === currentWorldIdx;
     const c          = centers[i];
