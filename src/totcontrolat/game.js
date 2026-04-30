@@ -1348,12 +1348,15 @@ function spendTokens() {
 }
 
 function buildInsightText(opt) {
-  const fx    = opt.fx || {};
-  const sign  = v => v > 0 ? '+' : '';
+  const fx   = opt.fx || {};
+  const sign = v => v > 0 ? '+' : '';
+  const fc   = S.worldConfig?.factionConfig || {
+    veins: { name: 'Veïns' }, mercat: { name: 'Mercat' }, activistes: { name: 'Activistes' },
+  };
   const parts = [];
-  if (fx.veins)      parts.push(`Veïns ${sign(fx.veins)}${fx.veins}`);
-  if (fx.mercat)     parts.push(`Mercat ${sign(fx.mercat)}${fx.mercat}`);
-  if (fx.activistes) parts.push(`Activistes ${sign(fx.activistes)}${fx.activistes}`);
+  if (fx.veins)      parts.push(`${fc.veins.name} ${sign(fx.veins)}${fx.veins}`);
+  if (fx.mercat)     parts.push(`${fc.mercat.name} ${sign(fx.mercat)}${fx.mercat}`);
+  if (fx.activistes) parts.push(`${fc.activistes.name} ${sign(fx.activistes)}${fx.activistes}`);
   if (fx.money)      parts.push(`${sign(fx.money)}${Math.round(fx.money)}€`);
   if (opt._endWin)   parts.push('→ Mandat completat');
   if (opt._endLose)  parts.push('→ Fi (derrota)');
