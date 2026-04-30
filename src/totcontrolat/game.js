@@ -1251,12 +1251,12 @@ function renderLive() {
     const arrow = $(`trend-${k}`);
     if (arrow) {
       const hist = S.factionHistory;
-      if (!hist || hist.length < 2) { arrow.textContent = ''; return; }
-      const delta = v - hist[0][k];
+      if (!hist || hist.length === 0) { arrow.textContent = ''; return; }
+      const delta = v - hist[hist.length - 1][k];
       const abs   = Math.abs(delta);
-      if (abs < 2) { arrow.textContent = ''; arrow.className = 'trend-arrow'; return; }
+      if (abs < 1) { arrow.textContent = ''; arrow.className = 'trend-arrow'; return; }
       const ch  = delta > 0 ? '▲' : '▼';
-      const cnt = abs < 5 ? 1 : abs < 10 ? 2 : 3;
+      const cnt = abs < 4 ? 1 : abs < 8 ? 2 : 3;
       arrow.textContent = Array(cnt).fill(ch).join('\n');
       arrow.className   = 'trend-arrow ' + (delta > 0 ? 'trend-up' : 'trend-down');
     }
