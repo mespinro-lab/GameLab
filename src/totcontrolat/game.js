@@ -1280,7 +1280,9 @@ function renderLive() {
 
   const fiBtn = $('btn-fi-mandat');
   if (fiBtn) {
-    if (S.quotaMet && S.phase === 'playing') fiBtn.classList.remove('hidden');
+    const mandateVisible = S.quotaMet && S.phase === 'playing' &&
+      S.week >= 20 && (S.week - 20) % 5 === 0;
+    if (mandateVisible) fiBtn.classList.remove('hidden');
     else fiBtn.classList.add('hidden');
   }
 }
