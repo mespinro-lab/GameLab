@@ -27,6 +27,12 @@ const TAX_FX = {
   low:  { mercat:  0.4, veins:  0.3 },
 };
 
+const EVENTS_BY_WORLD = {
+  vilaturisme: EVENTS_VILATURISME,
+  sleeptown:   EVENTS_SLEEPTOWN,
+  technoburg:  EVENTS_TECHNOBURG,
+};
+
 const IDLE_MSGS = [
   'Setmana tranquil·la... de moment.',
   'El gat descansa sobre els expedients urgents.',
@@ -47,20 +53,21 @@ let S = {};
 let cardCleanup = () => {};
 
 function initState(worldId, levelNum) {
-  const world    = WORLDS.find(w => w.id === worldId);
-  const quotas   = world.levelQuota || [2, 4, 6, 8, 10];
-  const levelQuota = quotas[Math.min(levelNum - 1, quotas.length - 1)];
+  const world          = WORLDS.find(w => w.id === worldId);
+  const levelsForWorld = LEVELS[worldId] || [];
+  const levelCfg       = levelsForWorld[Math.min(levelNum - 1, levelsForWorld.length - 1)] || {};
 
   S = {
     worldId,
     levelNum,
     worldConfig:      world,
+    levelConfig:      levelCfg,
     countryName:      world.name,
     week:             1,
     weekProgress:     0,
     weekNoise:        { veins: 0, mercat: 0, activistes: 0 },
-    money:            world.startMoney,
-    factions:         { ...world.startFactions },
+    money:            levelCfg.startMoney ?? world.startMoney ?? 500,
+    factions:         { ...(levelCfg.startFactions || world.startFactions) },
     tokens:           0,
     dangerProgress:   0,
     phase:            'playing',
@@ -69,16 +76,16 @@ function initState(worldId, levelNum) {
     simTimer:         null,
     currentEvent:     null,
     eventTimerStart:  0,
-    pool:             shuffle([...world.events, ...EVENTS]),
+    pool:             shuffle([...(EVENTS_BY_WORLD[worldId] || []), ...EVENTS_GLOBAL]),
     poolIdx:          0,
     lastEventWeek:    -2,
-    tax:              world.startTax || 'mid',
+    tax:              levelCfg.startTax || world.startTax || 'mid',
     services:         false,
     comms:            false,
     security:         false,
     subsidies:        false,
     conjunctureMods:  { incomeMod: 0, driftMod: {} },
-    levelQuota,
+    levelQuota:       levelCfg.quota ?? 2,
     quotaMet:         false,
     lateEventFired:   false,
     buildingDriftMods: { veins: 0, mercat: 0, activistes: 0 },
@@ -164,7 +171,7 @@ function calcWeeklyIncome() {
 }
 
 function calcFactionDrift(k) {
-  const worldDrift = S.worldConfig.drift || DRIFT;
+  const worldDrift = S.levelConfig?.drift || DRIFT;
   let delta = worldDrift[k] !== undefined ? worldDrift[k] : DRIFT[k];
   delta += S.weekNoise[k] || 0;
   if (S.services  && POLICY_FX.services[k])  delta += POLICY_FX.services[k];
@@ -714,13 +721,15 @@ function loadWorldSession(sv) {
     openWorldMap();
     return;
   }
-  const quotas = world.levelQuota || [2, 4, 6, 8, 10];
-  const levelQuota = quotas[Math.min((sv.levelNum || 1) - 1, quotas.length - 1)];
+  const levelNum       = sv.levelNum || 1;
+  const levelsForWorld = LEVELS[sv.worldId] || [];
+  const levelCfg       = levelsForWorld[Math.min(levelNum - 1, levelsForWorld.length - 1)] || {};
 
   S = {
     worldId:          sv.worldId,
-    levelNum:         sv.levelNum || 1,
+    levelNum,
     worldConfig:      world,
+    levelConfig:      levelCfg,
     countryName:      world.name,
     week:             sv.week,
     weekProgress:     sv.weekProgress || 0,
@@ -736,7 +745,7 @@ function loadWorldSession(sv) {
     simTimer:         null,
     currentEvent:     null,
     eventTimerStart:  0,
-    pool:             shuffle([...world.events, ...EVENTS]),
+    pool:             shuffle([...(EVENTS_BY_WORLD[sv.worldId] || []), ...EVENTS_GLOBAL]),
     poolIdx:          0,
     lastEventWeek:    -2,
     tax:              sv.tax      || 'mid',
@@ -744,7 +753,7 @@ function loadWorldSession(sv) {
     comms:            sv.comms     || false,
     security:         sv.security  || false,
     subsidies:        sv.subsidies || false,
-    levelQuota,
+    levelQuota:       levelCfg.quota ?? 2,
     quotaMet:         sv.quotaMet  || false,
     lateEventFired:   sv.lateEventFired || false,
     buildingDriftMods: { veins: 0, mercat: 0, activistes: 0 },
@@ -852,7 +861,7 @@ function renderBuildingsRow() {
 // ── Events ─────────────────────────────────────────────────────────────────────
 function nextEvent() {
   if (S.poolIdx >= S.pool.length) {
-    S.pool   = shuffle([...S.worldConfig.events, ...EVENTS]);
+    S.pool   = shuffle([...(EVENTS_BY_WORLD[S.worldId] || []), ...EVENTS_GLOBAL]);
     S.poolIdx = 0;
   }
   const remaining = S.pool.slice(S.poolIdx);
@@ -1139,14 +1148,15 @@ function startNextMandate() {
   S.dangerProgress = 0;
   S.phase          = 'playing';
   S.speed          = 1;
-  S.pool           = shuffle([...S.worldConfig.events, ...EVENTS]);
+  S.pool           = shuffle([...(EVENTS_BY_WORLD[S.worldId] || []), ...EVENTS_GLOBAL]);
   S.poolIdx        = 0;
   S.currentEvent   = null;
   S.lateEventFired = false;
   S.conjunctureMods = { incomeMod: conj.incomeMod || 0, driftMod: conj.driftMod || {} };
 
-  const quotas  = S.worldConfig.levelQuota || [2, 4, 6, 8, 10];
-  S.levelQuota  = quotas[Math.min(S.levelNum - 1, quotas.length - 1)];
+  const levelsForWorld = LEVELS[S.worldId] || [];
+  S.levelConfig = levelsForWorld[Math.min(S.levelNum - 1, levelsForWorld.length - 1)] || S.levelConfig;
+  S.levelQuota  = S.levelConfig.quota ?? 2;
   S.quotaMet    = buildingScore() >= S.levelQuota;
 
   hide('event-pane'); show('controls-pane');
