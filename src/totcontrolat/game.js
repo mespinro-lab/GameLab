@@ -89,7 +89,6 @@ function initState(worldId, levelNum) {
     quotaMet:         false,
     lateEventFired:   false,
     buildingDriftMods: { veins: 0, mercat: 0, activistes: 0 },
-    factionHistory:   [],
   };
   generateWeekNoise();
   updateBuildingDriftMods();
@@ -175,6 +174,19 @@ function calcFactionDrift(k) {
   const worldDrift = S.levelConfig?.drift || DRIFT;
   let delta = worldDrift[k] !== undefined ? worldDrift[k] : DRIFT[k];
   delta += S.weekNoise[k] || 0;
+  if (S.services  && POLICY_FX.services[k])  delta += POLICY_FX.services[k];
+  if (S.comms     && POLICY_FX.comms[k])     delta += POLICY_FX.comms[k];
+  if (S.security  && POLICY_FX.security[k])  delta += POLICY_FX.security[k];
+  if (S.subsidies && POLICY_FX.subsidies[k]) delta += POLICY_FX.subsidies[k];
+  if (TAX_FX[S.tax]?.[k])              delta += TAX_FX[S.tax][k];
+  if (S.conjunctureMods.driftMod[k])   delta += S.conjunctureMods.driftMod[k];
+  if (S.buildingDriftMods?.[k])        delta += S.buildingDriftMods[k];
+  return delta;
+}
+
+function calcProjectedDrift(k) {
+  const worldDrift = S.levelConfig?.drift || DRIFT;
+  let delta = worldDrift[k] !== undefined ? worldDrift[k] : DRIFT[k];
   if (S.services  && POLICY_FX.services[k])  delta += POLICY_FX.services[k];
   if (S.comms     && POLICY_FX.comms[k])     delta += POLICY_FX.comms[k];
   if (S.security  && POLICY_FX.security[k])  delta += POLICY_FX.security[k];
@@ -336,8 +348,6 @@ function simTick() {
 function onWeekBoundary() {
   if (happiness() > 75) S.tokens++;
   if (S.week % 3 === 0) saveGame();
-  S.factionHistory.push({ veins: S.factions.veins, mercat: S.factions.mercat, activistes: S.factions.activistes });
-  if (S.factionHistory.length > 4) S.factionHistory.shift();
   if (!S.lateEventFired && S.week >= LATE_EVENT_WEEK) {
     tryLateEvent();
   }
@@ -760,7 +770,6 @@ function loadWorldSession(sv) {
     quotaMet:         sv.quotaMet  || false,
     lateEventFired:   sv.lateEventFired || false,
     buildingDriftMods: { veins: 0, mercat: 0, activistes: 0 },
-    factionHistory:   [],
   };
   generateWeekNoise();
   updateBuildingDriftMods();
@@ -1250,15 +1259,14 @@ function renderLive() {
     }
     const arrow = $(`trend-${k}`);
     if (arrow) {
-      const hist = S.factionHistory;
-      if (!hist || hist.length < 2) { arrow.textContent = ''; return; }
-      const delta = hist[hist.length - 1][k] - hist[hist.length - 2][k];
-      const abs   = Math.abs(delta);
-      if (abs < 1) { arrow.textContent = ''; arrow.className = 'trend-arrow'; return; }
-      const ch  = delta > 0 ? '▲' : '▼';
-      const cnt = abs < 4 ? 1 : abs < 8 ? 2 : 3;
+      if (!S.phase || S.phase === 'init') { arrow.textContent = ''; return; }
+      const drift = calcProjectedDrift(k);
+      const abs   = Math.abs(drift);
+      if (abs < 0.3) { arrow.textContent = ''; arrow.className = 'trend-arrow'; return; }
+      const ch  = drift > 0 ? '▲' : '▼';
+      const cnt = abs < 1.5 ? 1 : abs < 3 ? 2 : 3;
       arrow.textContent = Array(cnt).fill(ch).join('\n');
-      arrow.className   = 'trend-arrow ' + (delta > 0 ? 'trend-up' : 'trend-down');
+      arrow.className   = 'trend-arrow ' + (drift > 0 ? 'trend-up' : 'trend-down');
     }
   });
   updateCharImages();
