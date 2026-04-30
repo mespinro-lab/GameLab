@@ -89,6 +89,7 @@ function initState(worldId, levelNum) {
     quotaMet:         false,
     lateEventFired:   false,
     buildingDriftMods: { veins: 0, mercat: 0, activistes: 0 },
+    factionHistory:   [],
   };
   generateWeekNoise();
   updateBuildingDriftMods();
@@ -335,6 +336,8 @@ function simTick() {
 function onWeekBoundary() {
   if (happiness() > 75) S.tokens++;
   if (S.week % 3 === 0) saveGame();
+  S.factionHistory.push({ veins: S.factions.veins, mercat: S.factions.mercat, activistes: S.factions.activistes });
+  if (S.factionHistory.length > 4) S.factionHistory.shift();
   if (!S.lateEventFired && S.week >= LATE_EVENT_WEEK) {
     tryLateEvent();
   }
@@ -757,6 +760,7 @@ function loadWorldSession(sv) {
     quotaMet:         sv.quotaMet  || false,
     lateEventFired:   sv.lateEventFired || false,
     buildingDriftMods: { veins: 0, mercat: 0, activistes: 0 },
+    factionHistory:   [],
   };
   generateWeekNoise();
   updateBuildingDriftMods();
@@ -1244,6 +1248,18 @@ function renderLive() {
       badge.textContent = Math.round(v);
       badge.className   = 'char-val-badge ' + (v > 60 ? 'badge-ok' : v > 35 ? 'badge-warn' : 'badge-bad');
     }
+    const arrow = $(`trend-${k}`);
+    if (arrow) {
+      const hist = S.factionHistory;
+      if (!hist || hist.length < 2) { arrow.textContent = ''; return; }
+      const delta = v - hist[0][k];
+      const abs   = Math.abs(delta);
+      if (abs < 2) { arrow.textContent = ''; arrow.className = 'trend-arrow'; return; }
+      const ch  = delta > 0 ? '▲' : '▼';
+      const cnt = abs < 5 ? 1 : abs < 10 ? 2 : 3;
+      arrow.textContent = Array(cnt).fill(ch).join('\n');
+      arrow.className   = 'trend-arrow ' + (delta > 0 ? 'trend-up' : 'trend-down');
+    }
   });
   updateCharImages();
 
@@ -1252,6 +1268,12 @@ function renderLive() {
     $('danger-indicator').classList.remove('hidden');
   } else {
     $('danger-indicator').classList.add('hidden');
+  }
+
+  const fiBtn = $('btn-fi-mandat');
+  if (fiBtn) {
+    if (S.quotaMet && S.phase === 'playing') fiBtn.classList.remove('hidden');
+    else fiBtn.classList.add('hidden');
   }
 }
 
@@ -1340,6 +1362,7 @@ function shuffle(arr) {
 // ── Event listeners ────────────────────────────────────────────────────────────
 $('btn-retry').addEventListener('click',      () => { hide('overlay-won');  retrySession(); });
 $('btn-retry-lost').addEventListener('click', () => { hide('overlay-lost'); retrySession(); });
+$('btn-fi-mandat').addEventListener('click',  () => { if (S.quotaMet) endGame(true); });
 $('spend-tokens').addEventListener('click', spendTokens);
 $('reveal-btn').addEventListener('click',   revealInsight);
 ['low', 'mid', 'high'].forEach(t => $(`tax-${t}`).addEventListener('click', () => setTax(t)));
