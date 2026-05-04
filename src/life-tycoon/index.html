@@ -36,7 +36,12 @@
       <span id="health-label">❤️ <span id="health-val">80</span></span>
     </div>
 
-    <!-- STATS STRIP -->
+    <!-- FOOD + STATS -->
+    <div id="food-bar-wrap">
+      <div id="food-bar-fill"></div>
+      <span id="food-label">🍖 <span id="food-val">40</span></span>
+      <span id="food-warn" class="hidden">⚠️ Poc aliment!</span>
+    </div>
     <div id="stats-strip">
       <div class="stat-chip">💰<span id="s-wealth">0</span></div>
       <div class="stat-chip">💪<span id="s-phys">1</span></div>
@@ -92,45 +97,20 @@
         <p id="exec-status-text">Executant...</p>
       </div>
 
-      <!-- PHASE: allocate sliders -->
+      <!-- PHASE: intensity -->
       <div id="pane-sliders" class="pane hidden">
         <div id="slider-project-header">
           <button id="btn-back-sliders" style="background:none;border:none;font-size:1rem;padding:0;color:var(--text-dim)">← Enrere</button>
           <span id="sl-proj-icon"></span>
           <span id="sl-proj-name"></span>
         </div>
-        <div id="sliders-area">
-          <div class="slider-row">
-            <span class="sl-icon">💪</span>
-            <span class="sl-name">Físic</span>
-            <button class="sl-btn" data-sl="physical" data-dir="-1">−</button>
-            <span class="sl-val" id="slv-physical">3</span>
-            <button class="sl-btn" data-sl="physical" data-dir="1">+</button>
-          </div>
-          <div class="slider-row">
-            <span class="sl-icon">🧠</span>
-            <span class="sl-name">Intel</span>
-            <button class="sl-btn" data-sl="intelligence" data-dir="-1">−</button>
-            <span class="sl-val" id="slv-intelligence">2</span>
-            <button class="sl-btn" data-sl="intelligence" data-dir="1">+</button>
-          </div>
-          <div class="slider-row">
-            <span class="sl-icon">👥</span>
-            <span class="sl-name">Social</span>
-            <button class="sl-btn" data-sl="social" data-dir="-1">−</button>
-            <span class="sl-val" id="slv-social">3</span>
-            <button class="sl-btn" data-sl="social" data-dir="1">+</button>
-          </div>
-          <div class="slider-row">
-            <span class="sl-icon">🎲</span>
-            <span class="sl-name">Risc</span>
-            <button class="sl-btn" data-sl="risk" data-dir="-1">−</button>
-            <span class="sl-val" id="slv-risk">2</span>
-            <button class="sl-btn" data-sl="risk" data-dir="1">+</button>
-          </div>
+        <div id="intensity-selector">
+          <button class="int-btn" data-int="1">🌱 Suau</button>
+          <button class="int-btn active" data-int="2">⚡ Normal</button>
+          <button class="int-btn" data-int="3">🔥 Intens</button>
         </div>
+        <div id="impact-preview"></div>
         <div id="slider-footer">
-          <span id="sl-remaining-label">Punts restants: <strong id="sl-remaining">0</strong></span>
           <button id="btn-execute">Executar →</button>
         </div>
       </div>

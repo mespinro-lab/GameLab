@@ -51,6 +51,7 @@ function initState() {
       gender: 'M',
       age: 15,
       health: st.health, maxHealth: 100,
+      food: st.food,
       physical: st.physical,
       intelligence: st.intelligence,
       social: st.social,
@@ -62,7 +63,7 @@ function initState() {
       children: [],
       huntCount: 0,
     },
-    sliders: { physical: 3, intelligence: 2, social: 3, risk: 2 },
+    intensity: 2,
     activeProject: null,
     pendingEvent: null,
     lastResult: null,
@@ -124,61 +125,35 @@ function lockedReason(proj) {
 
 // ── Formula ───────────────────────────────────────────────────────────────────
 function calcResult(proj) {
-  const w = proj.sliderWeights;
-  const s = S.sliders;
-
-  // Base weighted score (0-1)
-  let score = (
-    s.physical    * (w.physical    || 0) +
-    s.intelligence * (w.intelligence || 0) +
-    s.social      * (w.social      || 0) +
-    s.risk        * (w.risk        || 0)
-  ) / 10;
-
-  // Stat modifier
-  const statMap = { physical: S.char.physical, intelligence: S.char.intelligence, social: S.char.social, risk: 1 };
-  const dominantStat = statMap[proj.dominantSlider] || 1;
-  const statMod = clamp(0.65 + (dominantStat - 1) * 0.12, 0.5, 1.8);
-
-  // Knowledge bonus
+  const mult     = [0.6, 1.0, 1.5][S.intensity - 1];
+  const riskMult = [0.4, 1.0, 2.2][S.intensity - 1];
+  const statVal  = S.char[proj.statKey] || 1;
+  const statMod  = clamp(0.65 + (statVal - 1) * 0.12, 0.5, 1.8);
   let knowMod = 1.0;
-  for (const kId of (proj.knowledgeBonus || [])) {
-    if (hasKnowledge(kId)) knowMod += 0.15;
+  for (const kId of (proj.knowledgeBonus || [])) { if (hasKnowledge(kId)) knowMod += 0.15; }
+  const finalMult = mult * statMod * knowMod;
+
+  const fx = {};
+  for (const [key, val] of Object.entries(proj.outputs || {})) {
+    fx[key] = Math.round(val * (val < 0 ? mult : finalMult));
   }
 
-  let finalScore = clamp(score * statMod * knowMod, 0, 1);
-
-  // Risk variance
-  let riskTag = '';
-  if (s.risk >= 5) {
-    const failChance = (s.risk - 4) * 0.07;
+  let riskFailed = false;
+  if (proj.healthRisk > 0) {
+    const failChance = [0.15, 0.3, 0.55][S.intensity - 1] / Math.max(1, statMod);
     if (Math.random() < failChance) {
-      riskTag = 'fail';
-    } else if (s.risk >= 7) {
-      riskTag = 'crit';
+      fx.health = (fx.health || 0) - Math.round(proj.healthRisk * riskMult);
+      riskFailed = true;
     }
   }
 
-  // Build fx
-  const fx = {};
-  for (const [key, range] of Object.entries(proj.baseOutput || {})) {
-    let val = Math.round(lerp(range.min, range.max, finalScore));
-    if (riskTag === 'fail' && key === 'wealth') val = Math.round(val * 0.15);
-    if (riskTag === 'fail' && key === 'health')  val = (val || 0) - 12;
-    if (riskTag === 'crit' && key === 'wealth') val = Math.round(val * 1.8);
-    fx[key] = val;
-  }
-
-  // Stat gains
   for (const [stat, gain] of Object.entries(proj.statGain || {})) {
     fx['_gain_' + stat] = gain;
   }
 
-  const quality = finalScore > 0.65 ? 'good' : finalScore > 0.3 ? 'ok' : 'poor';
+  const quality = finalMult > 1.0 ? 'good' : finalMult > 0.6 ? 'ok' : 'poor';
   const texts = quality === 'poor' ? proj.failTexts : proj.successTexts;
-  const narrative = texts && texts.length ? pick(texts) : '';
-
-  return { fx, score: finalScore, riskTag, quality, narrative };
+  return { fx, finalMult, riskFailed, quality, narrative: texts ? pick(texts) : '' };
 }
 
 function applyFx(fx) {
@@ -189,6 +164,8 @@ function applyFx(fx) {
       c[stat] = +(c[stat] + v).toFixed(1);
     } else if (k === 'health') {
       c.health = clamp(c.health + v, 0, c.maxHealth);
+    } else if (k === 'food') {
+      c.food = clamp(c.food + v, 0, 100);
     } else if (k === 'happiness') {
       c.happiness = clamp(c.happiness + v, 0, 100);
     } else if (k === 'familyReputation') {
@@ -320,10 +297,10 @@ function tryTriggerEvent(proj, quality) {
 function endCycle() {
   S.char.age += 2;
 
-  // Subsistence cost
-  const cost = GAME_DATA.era.subsistenceCostPerCycle;
-  S.char.wealth = Math.max(0, S.char.wealth - cost);
-  if (S.char.wealth === 0) S.char.health = clamp(S.char.health - 8, 0, S.char.maxHealth);
+  // Food cost per cycle
+  const foodCost = GAME_DATA.era.foodCostPerCycle;
+  S.char.food = Math.max(0, S.char.food - foodCost);
+  if (S.char.food === 0) S.char.health = clamp(S.char.health - 8, 0, S.char.maxHealth);
 
   // Aging penalty (after 70% of max lifespan)
   const agePct = S.char.age / GAME_DATA.era.lifeExpectancy.max;
@@ -377,6 +354,7 @@ function doSuccession(child) {
     gender: child.gender,
     age: 15,
     health: 80, maxHealth: 100,
+    food: GAME_DATA.era.startingStats.food,
     physical:     child.physical,
     intelligence: child.intelligence,
     social:       child.social,
@@ -453,19 +431,23 @@ function renderStats() {
   el('s-social').textContent = S.char.social.toFixed(1);
   el('s-hap').textContent    = Math.round(S.char.happiness);
   el('s-rep').textContent    = Math.round(S.char.familyReputation);
+
+  const food = S.char.food;
+  el('food-bar-fill').style.width = Math.min(100, food) + '%';
+  el('food-val').textContent = Math.round(food);
+  el('food-bar-wrap').classList.toggle('low', food < 30);
+  el('food-bar-wrap').classList.toggle('critical', food < 15);
+  el('food-warn').classList.toggle('hidden', food >= 15);
 }
 
 function renderScene() {
   const zoneMap = { home: 'zone-home', gather: 'zone-gather', hunt: 'zone-hunt' };
   Object.values(zoneMap).forEach(id => el(id).classList.remove('active'));
 
-  let activeZone = null;
-  if (S.phase === 'sliders' && S.activeProject) {
-    activeZone = zoneMap[S.activeProject.zone];
-  } else if (S.phase === 'result' && S.activeProject) {
-    activeZone = zoneMap[S.activeProject.zone];
+  if ((S.phase === 'intensity' || S.phase === 'executing' || S.phase === 'result') && S.activeProject) {
+    const zone = zoneMap[S.activeProject.zone];
+    if (zone) el(zone).classList.add('active');
   }
-  if (activeZone) el(activeZone).classList.add('active');
 }
 
 function renderKnowledge() {
@@ -504,7 +486,7 @@ function renderPhase() {
 
   switch (S.phase) {
     case 'select':     renderSelectPane(); show('pane-select'); break;
-    case 'sliders':    renderSlidersPane(); show('pane-sliders'); break;
+    case 'intensity':  renderIntensityPane(); show('pane-sliders'); break;
     case 'executing':  renderExecutingPane(); show('pane-executing'); break;
     case 'result':     renderResultPane(); show('pane-result'); break;
     case 'event':      renderEventPane(); show('pane-event'); break;
@@ -527,17 +509,29 @@ function renderSelectPane() {
   const grid = el('projects-grid');
   grid.innerHTML = '';
 
+  const icons = { food: '🍖', wealth: '💰', health: '❤️', happiness: '😊', familyReputation: '🏛️' };
+
   for (const proj of GAME_DATA.projects) {
     const unlocked = isProjectUnlocked(proj);
     const card = document.createElement('div');
     card.className = 'proj-card' + (unlocked ? '' : ' locked');
 
     const reason = unlocked ? '' : lockedReason(proj);
+
+    let bottomHtml = reason ? `<span class="proj-req">${reason}</span>` : '';
+    if (unlocked) {
+      const tags = Object.entries(proj.outputs || {})
+        .filter(([, v]) => v !== 0)
+        .map(([k, v]) => `<span class="impact-tag ${v > 0 ? 'pos' : 'neg'}">${icons[k] || k}${v > 0 ? '+' : ''}${v}</span>`);
+      if (proj.healthRisk > 0) tags.push(`<span class="impact-tag risk">⚠️</span>`);
+      bottomHtml = `<div class="proj-impact">${tags.join('')}</div>`;
+    }
+
     card.innerHTML = `
       <span class="proj-icon">${proj.icon}</span>
       <span class="proj-name">${proj.name}</span>
       <span class="proj-desc">${proj.description}</span>
-      ${reason ? `<span class="proj-req">${reason}</span>` : ''}
+      ${bottomHtml}
     `;
 
     if (unlocked) {
@@ -549,51 +543,62 @@ function renderSelectPane() {
 
 function selectProject(projId) {
   S.activeProject = getProject(projId);
-  S.phase = 'sliders';
+  S.phase = 'intensity';
   renderAll();
 }
 
-// ── Sliders pane ──────────────────────────────────────────────────────────────
-function renderSlidersPane() {
+// ── Intensity pane ────────────────────────────────────────────────────────────
+function renderIntensityPane() {
   const proj = S.activeProject;
   el('sl-proj-icon').textContent = proj.icon;
   el('sl-proj-name').textContent = proj.name;
-  renderSliderValues();
-}
-
-function renderSliderValues() {
-  const keys = ['physical', 'intelligence', 'social', 'risk'];
-  const total = keys.reduce((s, k) => s + S.sliders[k], 0);
-  const remaining = 10 - total;
-
-  for (const k of keys) {
-    el('slv-' + k).textContent = S.sliders[k];
-  }
-  el('sl-remaining').textContent = remaining;
-  el('btn-execute').disabled = remaining !== 0;
-
-  // Highlight dominant slider for active project
-  const dominant = S.activeProject?.dominantSlider;
-  keys.forEach(k => {
-    const row = document.querySelector(`.slider-row:has(#slv-${k})`);
-    if (row) row.style.borderColor = k === dominant ? 'var(--gold)' : '';
+  document.querySelectorAll('.int-btn').forEach(b => {
+    b.classList.toggle('active', +b.dataset.int === S.intensity);
   });
-
-  // Zone highlight based on highest slider
-  const topSlider = keys.reduce((best, k) => S.sliders[k] > S.sliders[best] ? k : best, keys[0]);
-  const zoneForSlider = { physical: 'zone-hunt', intelligence: 'zone-gather', social: 'zone-home', risk: 'zone-hunt' };
-  ['zone-home','zone-gather','zone-hunt'].forEach(z => el(z).classList.remove('active'));
-  el(zoneForSlider[topSlider] || 'zone-gather').classList.add('active');
+  renderImpactPreview(proj);
 }
 
-function adjustSlider(key, dir) {
-  const keys = ['physical','intelligence','social','risk'];
-  const total = keys.reduce((s, k) => s + S.sliders[k], 0);
-  const val = S.sliders[key];
-  if (dir === 1 && total >= 10) return;
-  if (dir === -1 && val <= 0) return;
-  S.sliders[key] = val + dir;
-  renderSliderValues();
+function setIntensity(n) {
+  S.intensity = n;
+  document.querySelectorAll('.int-btn').forEach(b => {
+    b.classList.toggle('active', +b.dataset.int === n);
+  });
+  if (S.activeProject) renderImpactPreview(S.activeProject);
+}
+
+function calcImpactPreview(proj, intensity) {
+  const mult    = [0.6, 1.0, 1.5][intensity - 1];
+  const statVal = S.char[proj.statKey] || 1;
+  const statMod = clamp(0.65 + (statVal - 1) * 0.12, 0.5, 1.8);
+  let knowMod = 1.0;
+  for (const kId of (proj.knowledgeBonus || [])) { if (hasKnowledge(kId)) knowMod += 0.15; }
+  const finalMult = mult * statMod * knowMod;
+  const preview = {};
+  for (const [key, val] of Object.entries(proj.outputs || {})) {
+    preview[key] = Math.round(val * (val < 0 ? mult : finalMult));
+  }
+  return { preview, hasRisk: proj.healthRisk > 0 };
+}
+
+function renderImpactPreview(proj) {
+  const container = el('impact-preview');
+  container.innerHTML = '';
+  const { preview, hasRisk } = calcImpactPreview(proj, S.intensity);
+  const labels = { food: '🍖 Aliment', wealth: '💰 Riquesa', health: '❤️ Salut', happiness: '😊 Felicitat', familyReputation: '🏛️ Reputació' };
+  for (const [key, val] of Object.entries(preview)) {
+    if (val === 0) continue;
+    const row = document.createElement('div');
+    row.className = 'preview-row';
+    row.innerHTML = `<span>${labels[key] || key}</span><span class="preview-val ${val > 0 ? 'pos' : 'neg'}">${val > 0 ? '+' : ''}${val}</span>`;
+    container.appendChild(row);
+  }
+  if (hasRisk) {
+    const chances = ['15%', '30%', '55%'];
+    const row = document.createElement('div');
+    row.className = 'preview-row';
+    row.innerHTML = `<span>⚠️ Risc lesió</span><span class="preview-val risk">${chances[S.intensity - 1]}</span>`;
+    container.appendChild(row);
+  }
 }
 
 // ── Execute ───────────────────────────────────────────────────────────────────
@@ -619,7 +624,7 @@ function executeProject() {
       if (S.char.children.length < maxC) S.char.children.push(generateChild());
     }
 
-    const discovered = tryDiscoverKnowledge(proj, result.score);
+    const discovered = tryDiscoverKnowledge(proj, result.finalMult);
     const event = tryTriggerEvent(proj, result.quality);
     if (event) S.pendingEvent = event;
 
@@ -633,12 +638,13 @@ function executeProject() {
 function renderResultPane() {
   const { proj, result, discovered } = S.lastResult;
   el('result-proj-label').textContent = proj.icon + ' ' + proj.name;
-  el('result-score-fill').style.width = Math.round(result.score * 100) + '%';
+  const barPct = result.quality === 'good' ? 80 : result.quality === 'ok' ? 50 : 20;
+  el('result-score-fill').style.width = barPct + '%';
   el('result-narrative').textContent = result.narrative || '';
 
   const fxList = el('result-fx-list');
   fxList.innerHTML = '';
-  const labels = { wealth: '💰 Riquesa', health: '❤️ Salut', happiness: '😊 Felicitat', familyReputation: '🏛️ Reputació' };
+  const labels = { food: '🍖 Aliment', wealth: '💰 Riquesa', health: '❤️ Salut', happiness: '😊 Felicitat', familyReputation: '🏛️ Reputació' };
   for (const [key, val] of Object.entries(result.fx)) {
     if (key.startsWith('_gain_') || val === 0) continue;
     const label = labels[key] || key;
@@ -662,16 +668,10 @@ function renderResultPane() {
     fxList.appendChild(div);
   }
 
-  // Risk tag
-  if (result.riskTag === 'fail') {
+  if (result.riskFailed) {
     const div = document.createElement('div');
     div.className = 'fx-line';
-    div.innerHTML = `<span class="fx-neg">⚠️ Risc alt — resultat dolent</span>`;
-    fxList.appendChild(div);
-  } else if (result.riskTag === 'crit') {
-    const div = document.createElement('div');
-    div.className = 'fx-line';
-    div.innerHTML = `<span class="fx-pos">🎯 Risc alt — resultat crític!</span>`;
+    div.innerHTML = `<span class="fx-neg">⚠️ Lesió durant l'activitat!</span>`;
     fxList.appendChild(div);
   }
 
@@ -767,7 +767,7 @@ function resolveEvent(ev, optId) {
   el('evr-text').textContent = success ? `${opt.name}: èxit.` : `${opt.name}: ha fallat.`;
   const fxLines = Object.entries(fx).filter(([k]) => !k.startsWith('_gain_'));
   el('evr-fx').innerHTML = fxLines.map(([k, v]) => {
-    const labels = { wealth: '💰', health: '❤️', happiness: '😊', familyReputation: '🏛️' };
+    const labels = { food: '🍖', wealth: '💰', health: '❤️', happiness: '😊', familyReputation: '🏛️' };
     return `<span class="${v > 0 ? 'fx-pos' : 'fx-neg'}">${labels[k] || k} ${v > 0 ? '+' : ''}${v}</span>`;
   }).join('  ');
 
@@ -888,16 +888,16 @@ function bindEvents() {
     }
   });
 
+  // Intensity buttons
+  el('intensity-selector').addEventListener('click', e => {
+    const btn = e.target.closest('.int-btn');
+    if (!btn) return;
+    setIntensity(+btn.dataset.int);
+  });
+
   el('btn-milestones').addEventListener('click', () => { renderMilestonesOverlay(); });
   el('btn-close-milestones').addEventListener('click', () => hide('overlay-milestones'));
   el('btn-restart').addEventListener('click', () => { hide('overlay-end'); startGame(); });
-
-  // Slider +/- buttons (event delegation)
-  document.getElementById('sliders-area').addEventListener('click', e => {
-    const btn = e.target.closest('.sl-btn');
-    if (!btn) return;
-    adjustSlider(btn.dataset.sl, parseInt(btn.dataset.dir, 10));
-  });
 }
 
 // ── Start ─────────────────────────────────────────────────────────────────────
