@@ -127,7 +127,7 @@ function lockedReason(proj) {
 
 // ── Formula ───────────────────────────────────────────────────────────────────
 function calcResult(proj) {
-  const mult     = [0.6, 1.0, 1.5][S.intensity - 1];
+  const mult     = [0.5, 1.1, 1.8][S.intensity - 1];
   const riskMult = [0.4, 1.0, 2.2][S.intensity - 1];
   const statVal  = S.char[proj.statKey] || 1;
   const statMod  = clamp(0.65 + (statVal - 1) * 0.12, 0.5, 1.8);
@@ -597,7 +597,7 @@ function setIntensity(n) {
 }
 
 function calcImpactPreview(proj, intensity) {
-  const mult    = [0.6, 1.0, 1.5][intensity - 1];
+  const mult    = [0.5, 1.1, 1.8][intensity - 1];
   const statVal = S.char[proj.statKey] || 1;
   const statMod = clamp(0.65 + (statVal - 1) * 0.12, 0.5, 1.8);
   let knowMod = 1.0;
