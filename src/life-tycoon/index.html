@@ -22,6 +22,11 @@
         <span id="hdr-gen">Gen. 1</span>
         <span id="hdr-cycle">Cicle <span id="hdr-c">1</span>/<span id="hdr-mc">10</span></span>
       </div>
+      <div id="speed-btns">
+        <button class="speed-btn active" data-speed="1">×1</button>
+        <button class="speed-btn" data-speed="2">×2</button>
+        <button class="speed-btn" id="btn-pause">⏸</button>
+      </div>
       <button id="btn-milestones">🏅</button>
     </div>
 
@@ -78,6 +83,13 @@
       <div id="pane-select" class="pane">
         <p id="select-header"></p>
         <div id="projects-grid"></div>
+      </div>
+
+      <!-- PHASE: executing -->
+      <div id="pane-executing" class="pane hidden">
+        <div id="exec-project-label"></div>
+        <div id="exec-progress-wrap"><div id="exec-progress-fill"></div></div>
+        <p id="exec-status-text">Executant...</p>
       </div>
 
       <!-- PHASE: allocate sliders -->

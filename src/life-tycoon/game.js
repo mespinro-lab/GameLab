@@ -10,6 +10,31 @@ function el(id) { return document.getElementById(id); }
 function show(id) { el(id).classList.remove('hidden'); }
 function hide(id) { el(id).classList.add('hidden'); }
 
+// ── Timer / speed ─────────────────────────────────────────────────────────────
+let _timer = null;
+let _speed = 1;
+let _paused = false;
+
+function gameDelay(ms, fn) {
+  clearTimeout(_timer);
+  if (_paused) { _pendingFn = fn; return; }
+  _timer = setTimeout(fn, ms / _speed);
+}
+let _pendingFn = null;
+
+function setPaused(v) {
+  _paused = v;
+  el('btn-pause').textContent = v ? '▶' : '⏸';
+  if (!v && _pendingFn) { const f = _pendingFn; _pendingFn = null; gameDelay(0, f); }
+}
+
+function setSpeed(n) {
+  _speed = n;
+  document.querySelectorAll('.speed-btn[data-speed]').forEach(b => {
+    b.classList.toggle('active', +b.dataset.speed === n);
+  });
+}
+
 // ── State ─────────────────────────────────────────────────────────────────────
 let S = {};
 
@@ -471,7 +496,7 @@ function renderPartner() {
 }
 
 function renderPhase() {
-  const panes = ['pane-select','pane-sliders','pane-result','pane-event','pane-ev-result'];
+  const panes = ['pane-select','pane-sliders','pane-executing','pane-result','pane-event','pane-ev-result'];
   panes.forEach(p => hide(p));
 
   const overlays = ['overlay-succession','overlay-gameover','overlay-end','overlay-milestones'];
@@ -480,6 +505,7 @@ function renderPhase() {
   switch (S.phase) {
     case 'select':     renderSelectPane(); show('pane-select'); break;
     case 'sliders':    renderSlidersPane(); show('pane-sliders'); break;
+    case 'executing':  renderExecutingPane(); show('pane-executing'); break;
     case 'result':     renderResultPane(); show('pane-result'); break;
     case 'event':      renderEventPane(); show('pane-event'); break;
     case 'succession': renderSuccessionOverlay(); show('overlay-succession'); break;
@@ -489,6 +515,13 @@ function renderPhase() {
 }
 
 // ── Select pane ───────────────────────────────────────────────────────────────
+function renderExecutingPane() {
+  const proj = S.activeProject;
+  el('exec-project-label').textContent = proj.icon + ' ' + proj.name;
+  el('exec-progress-fill').style.width = '0%';
+  el('exec-status-text').textContent = 'Executant...';
+}
+
 function renderSelectPane() {
   el('select-header').textContent = `Cicle ${S.cycle} — Escull una activitat`;
   const grid = el('projects-grid');
@@ -566,41 +599,34 @@ function adjustSlider(key, dir) {
 // ── Execute ───────────────────────────────────────────────────────────────────
 function executeProject() {
   const proj = S.activeProject;
-  const result = calcResult(proj);
-  applyFx(result.fx);
-
-  // Track hunt count
-  if (proj.id === 'hunt' && result.quality !== 'poor') S.char.huntCount++;
-
-  // Generate partner
-  if (proj.generatesPartner && result.quality !== 'poor' && !S.char.partner) {
-    S.char.partner = generatePartner();
-  }
-
-  // Generate child
-  if (proj.generatesChild && result.quality !== 'poor' && S.char.partner) {
-    const maxC = Math.max(1, Math.round(GAME_DATA.era.maxChildren.base + S.char.wealth * GAME_DATA.era.maxChildren.perWealthUnit));
-    if (S.char.children.length < maxC) {
-      const child = generateChild();
-      S.char.children.push(child);
-    }
-  }
-
-  // Discover knowledge
-  const discovered = tryDiscoverKnowledge(proj, result.score);
-
-  S.lastResult = { proj, result, discovered };
-
-  // Try event
-  const event = tryTriggerEvent(proj, result.quality);
-  if (event) {
-    S.pendingEvent = event;
-    S.phase = 'result';
-  } else {
-    S.phase = 'result';
-  }
-
+  S.phase = 'executing';
   renderAll();
+
+  // Animate progress bar
+  const fill = el('exec-progress-fill');
+  const dur = 2200 / _speed;
+  fill.style.transition = `width ${dur}ms linear`;
+  requestAnimationFrame(() => { fill.style.width = '100%'; });
+
+  gameDelay(dur + 100, () => {
+    const result = calcResult(proj);
+    applyFx(result.fx);
+
+    if (proj.id === 'hunt' && result.quality !== 'poor') S.char.huntCount++;
+    if (proj.generatesPartner && result.quality !== 'poor' && !S.char.partner) S.char.partner = generatePartner();
+    if (proj.generatesChild && result.quality !== 'poor' && S.char.partner) {
+      const maxC = Math.max(1, Math.round(GAME_DATA.era.maxChildren.base + S.char.wealth * GAME_DATA.era.maxChildren.perWealthUnit));
+      if (S.char.children.length < maxC) S.char.children.push(generateChild());
+    }
+
+    const discovered = tryDiscoverKnowledge(proj, result.score);
+    const event = tryTriggerEvent(proj, result.quality);
+    if (event) S.pendingEvent = event;
+
+    S.lastResult = { proj, result, discovered };
+    S.phase = 'result';
+    renderAll();
+  });
 }
 
 // ── Result pane ───────────────────────────────────────────────────────────────
@@ -671,6 +697,18 @@ function renderResultPane() {
   discEl.innerHTML = '';
   for (const k of discovered) {
     discEl.innerHTML += `✨ Has descobert: ${k.icon} <strong>${k.name}</strong>! `;
+  }
+
+  // Auto-advance after delay (tap "next" to skip)
+  const nextBtn = el('btn-next-cycle');
+  if (S.pendingEvent) {
+    nextBtn.textContent = 'Event! →';
+    nextBtn.onclick = () => { clearTimeout(_timer); S.phase = 'event'; renderAll(); };
+    gameDelay(4000, () => { S.phase = 'event'; renderAll(); });
+  } else {
+    nextBtn.textContent = 'Cicle següent →';
+    nextBtn.onclick = () => { clearTimeout(_timer); endCycle(); };
+    gameDelay(3500, endCycle);
   }
 }
 
@@ -839,14 +877,17 @@ function bindEvents() {
   el('btn-new-game').addEventListener('click', startGame);
   el('btn-execute').addEventListener('click', executeProject);
   el('btn-back-sliders').addEventListener('click', () => { S.phase = 'select'; renderAll(); });
-  el('btn-next-cycle').addEventListener('click', () => {
-    if (S.pendingEvent) {
-      S.phase = 'event';
-      renderAll();
-    } else {
-      endCycle();
+  // Speed buttons
+  document.getElementById('speed-btns').addEventListener('click', e => {
+    const btn = e.target.closest('.speed-btn');
+    if (!btn) return;
+    if (btn.id === 'btn-pause') {
+      setPaused(!_paused);
+    } else if (btn.dataset.speed) {
+      setSpeed(+btn.dataset.speed);
     }
   });
+
   el('btn-milestones').addEventListener('click', () => { renderMilestonesOverlay(); });
   el('btn-close-milestones').addEventListener('click', () => hide('overlay-milestones'));
   el('btn-restart').addEventListener('click', () => { hide('overlay-end'); startGame(); });
