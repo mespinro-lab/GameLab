@@ -509,12 +509,15 @@ function renderPhase() {
 function renderExecutingPane() {
   const proj = S.activeProject;
   el('exec-project-label').textContent = proj.icon + ' ' + proj.name;
-  el('exec-progress-fill').style.width = '0%';
+  const fill = el('exec-progress-fill');
+  fill.style.transition = 'none';
+  fill.style.width = '0%';
   el('exec-status-text').textContent = 'Executant...';
 }
 
 function renderSelectPane() {
-  const timeStr = S.timeLeft < S.timeTotal ? ` · ⏱ ${S.timeLeft}/${S.timeTotal}` : '';
+  const actionsLeft = S.timeLeft < S.timeTotal ? Math.floor(S.timeLeft / 2) : 0;
+  const timeStr = actionsLeft > 0 ? ` · ${actionsLeft} acció${actionsLeft > 1 ? 'ns' : ''} més` : '';
   el('select-header').textContent = `Cicle ${S.cycle}${timeStr} — Escull una activitat`;
   const grid = el('projects-grid');
   grid.innerHTML = '';
@@ -639,11 +642,13 @@ function executeProject() {
   S.phase = 'executing';
   renderAll();
 
-  // Animate progress bar
+  // Animate progress bar — double-rAF ensures transition applies after the 0% reset
   const fill = el('exec-progress-fill');
   const dur = 2200 / _speed;
-  fill.style.transition = `width ${dur}ms linear`;
-  requestAnimationFrame(() => { fill.style.width = '100%'; });
+  requestAnimationFrame(() => {
+    fill.style.transition = `width ${dur}ms linear`;
+    requestAnimationFrame(() => { fill.style.width = '100%'; });
+  });
 
   gameDelay(dur + 100, () => {
     const result = calcResult(proj);
@@ -745,7 +750,8 @@ function renderResultPane() {
   } else if (S.timeLeft > 0) {
     nextBtn.textContent = 'Tancar cicle';
     nextBtn.onclick = () => { clearTimeout(_timer); endCycle(); };
-    altraBtn.textContent = `Altra acció · ⏱ ${S.timeLeft} restants →`;
+    const moreActions = Math.floor(S.timeLeft / 2);
+    altraBtn.textContent = `Altra acció (${moreActions} disponible${moreActions > 1 ? 's' : ''}) →`;
     altraBtn.classList.remove('hidden');
     altraBtn.onclick = () => { S.phase = 'select'; renderAll(); };
   } else {
