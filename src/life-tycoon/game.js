@@ -838,6 +838,7 @@ function renderMilestonesOverlay() {
 function bindEvents() {
   el('btn-new-game').addEventListener('click', startGame);
   el('btn-execute').addEventListener('click', executeProject);
+  el('btn-back-sliders').addEventListener('click', () => { S.phase = 'select'; renderAll(); });
   el('btn-next-cycle').addEventListener('click', () => {
     if (S.pendingEvent) {
       S.phase = 'event';
