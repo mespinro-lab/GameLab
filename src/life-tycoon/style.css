@@ -372,6 +372,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   background: rgba(232, 168, 40, 0.12);
   color: var(--gold);
 }
+.int-btn.unavail, .int-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-color: var(--border);
+}
 
 #impact-preview {
   background: var(--surface);
@@ -446,13 +451,24 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   color: var(--gold);
   font-weight: 700;
 }
+#btn-altra-accio {
+  align-self: stretch;
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #1c1208;
+  font-weight: 800;
+  padding: 0.7rem 1.2rem;
+  font-size: 0.95rem;
+  margin-top: auto;
+}
 #btn-next-cycle {
   align-self: flex-end;
   background: var(--accent);
-  border-color: var(--gold);
-  font-weight: 700;
-  padding: 0.6rem 1.2rem;
-  margin-top: auto;
+  border-color: var(--border);
+  color: var(--text-dim);
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
 }
 
 /* ── Event ───────────────────────────────────────────────────────────── */

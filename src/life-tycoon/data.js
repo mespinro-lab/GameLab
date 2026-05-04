@@ -14,7 +14,8 @@ const GAME_DATA = {
       physical: 1, intelligence: 1, social: 1,
       wealth: 0, happiness: 60, familyReputation: 0,
     },
-    foodCostPerCycle: 10,
+    timeTotal: 6,
+    foodPerTimePoint: 1.7,
   },
 
   // statKey: which character stat affects this project's output
@@ -40,6 +41,7 @@ const GAME_DATA = {
       statKey: 'physical',
       outputs: { food: 22, wealth: 14 },
       healthRisk: 10,
+      riskReductions: { stone_tools: 0.5 },
       knowledgeBonus: ['stone_tools'], statGain: { physical: 0.4 },
       knowledgeDiscovery: [],
       eventPool: ['rival_hunter', 'injured_companion', 'great_prey'],

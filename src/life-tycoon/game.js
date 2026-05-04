@@ -64,6 +64,8 @@ function initState() {
       huntCount: 0,
     },
     intensity: 2,
+    timeTotal: GAME_DATA.era.timeTotal,
+    timeLeft: GAME_DATA.era.timeTotal,
     activeProject: null,
     pendingEvent: null,
     lastResult: null,
@@ -140,9 +142,13 @@ function calcResult(proj) {
 
   let riskFailed = false;
   if (proj.healthRisk > 0) {
+    let effectiveRisk = proj.healthRisk;
+    for (const [kId, reduction] of Object.entries(proj.riskReductions || {})) {
+      if (hasKnowledge(kId)) effectiveRisk = Math.round(effectiveRisk * (1 - reduction));
+    }
     const failChance = [0.15, 0.3, 0.55][S.intensity - 1] / Math.max(1, statMod);
     if (Math.random() < failChance) {
-      fx.health = (fx.health || 0) - Math.round(proj.healthRisk * riskMult);
+      fx.health = (fx.health || 0) - Math.round(effectiveRisk * riskMult);
       riskFailed = true;
     }
   }
@@ -297,8 +303,9 @@ function tryTriggerEvent(proj, quality) {
 function endCycle() {
   S.char.age += 2;
 
-  // Food cost per cycle
-  const foodCost = GAME_DATA.era.foodCostPerCycle;
+  // Food cost proportional to time used
+  const timeUsed = S.timeTotal - S.timeLeft;
+  const foodCost = Math.round(timeUsed * GAME_DATA.era.foodPerTimePoint);
   S.char.food = Math.max(0, S.char.food - foodCost);
   if (S.char.food === 0) S.char.health = clamp(S.char.health - 8, 0, S.char.maxHealth);
 
@@ -316,6 +323,7 @@ function endCycle() {
     return;
   }
 
+  S.timeLeft = S.timeTotal;
   S.cycle++;
   S.phase = 'select';
   renderAll();
@@ -367,6 +375,7 @@ function doSuccession(child) {
     huntCount: 0,
   };
 
+  S.timeLeft = S.timeTotal;
   S.cycle = 1;
   S.maxCycles = GAME_DATA.era.cyclesPerLife.base + Math.round(S.char.physical * 0.3);
   S.phase = 'select';
@@ -505,7 +514,8 @@ function renderExecutingPane() {
 }
 
 function renderSelectPane() {
-  el('select-header').textContent = `Cicle ${S.cycle} — Escull una activitat`;
+  const timeStr = S.timeLeft < S.timeTotal ? ` · ⏱ ${S.timeLeft}/${S.timeTotal}` : '';
+  el('select-header').textContent = `Cicle ${S.cycle}${timeStr} — Escull una activitat`;
   const grid = el('projects-grid');
   grid.innerHTML = '';
 
@@ -552,13 +562,30 @@ function renderIntensityPane() {
   const proj = S.activeProject;
   el('sl-proj-icon').textContent = proj.icon;
   el('sl-proj-name').textContent = proj.name;
+
+  const costs = [2, 4, 6];
+  const names = ['🌱 Suau', '⚡ Normal', '🔥 Intens'];
+
+  // Auto-downgrade if current intensity not affordable
+  if (costs[S.intensity - 1] > S.timeLeft) {
+    S.intensity = costs.findIndex(c => c <= S.timeLeft) + 1 || 1;
+  }
+
   document.querySelectorAll('.int-btn').forEach(b => {
-    b.classList.toggle('active', +b.dataset.int === S.intensity);
+    const intVal = +b.dataset.int;
+    const cost = costs[intVal - 1];
+    const unavail = cost > S.timeLeft;
+    b.textContent = `${names[intVal - 1]} · ${cost}⏱`;
+    b.disabled = unavail;
+    b.classList.toggle('active', intVal === S.intensity);
+    b.classList.toggle('unavail', unavail);
   });
+
   renderImpactPreview(proj);
 }
 
 function setIntensity(n) {
+  if ([2, 4, 6][n - 1] > S.timeLeft) return;
   S.intensity = n;
   document.querySelectorAll('.int-btn').forEach(b => {
     b.classList.toggle('active', +b.dataset.int === n);
@@ -577,7 +604,11 @@ function calcImpactPreview(proj, intensity) {
   for (const [key, val] of Object.entries(proj.outputs || {})) {
     preview[key] = Math.round(val * (val < 0 ? mult : finalMult));
   }
-  return { preview, hasRisk: proj.healthRisk > 0 };
+  let effectiveRisk = proj.healthRisk;
+  for (const [kId, reduction] of Object.entries(proj.riskReductions || {})) {
+    if (hasKnowledge(kId)) effectiveRisk = Math.round(effectiveRisk * (1 - reduction));
+  }
+  return { preview, hasRisk: effectiveRisk > 0, riskReduced: effectiveRisk < proj.healthRisk };
 }
 
 function renderImpactPreview(proj) {
@@ -596,7 +627,8 @@ function renderImpactPreview(proj) {
     const chances = ['15%', '30%', '55%'];
     const row = document.createElement('div');
     row.className = 'preview-row';
-    row.innerHTML = `<span>⚠️ Risc lesió</span><span class="preview-val risk">${chances[S.intensity - 1]}</span>`;
+    const note = riskReduced ? ' ↓ eines' : '';
+    row.innerHTML = `<span>⚠️ Risc lesió${note}</span><span class="preview-val risk">${chances[S.intensity - 1]}</span>`;
     container.appendChild(row);
   }
 }
@@ -623,6 +655,9 @@ function executeProject() {
       const maxC = Math.max(1, Math.round(GAME_DATA.era.maxChildren.base + S.char.wealth * GAME_DATA.era.maxChildren.perWealthUnit));
       if (S.char.children.length < maxC) S.char.children.push(generateChild());
     }
+
+    const timeCost = [2, 4, 6][S.intensity - 1];
+    S.timeLeft = Math.max(0, S.timeLeft - timeCost);
 
     const discovered = tryDiscoverKnowledge(proj, result.finalMult);
     const event = tryTriggerEvent(proj, result.quality);
@@ -699,15 +734,24 @@ function renderResultPane() {
     discEl.innerHTML += `✨ Has descobert: ${k.icon} <strong>${k.name}</strong>! `;
   }
 
-  // Auto-advance after delay (tap "next" to skip)
   const nextBtn = el('btn-next-cycle');
+  const altraBtn = el('btn-altra-accio');
+
   if (S.pendingEvent) {
     nextBtn.textContent = 'Event! →';
     nextBtn.onclick = () => { clearTimeout(_timer); S.phase = 'event'; renderAll(); };
+    altraBtn.classList.add('hidden');
     gameDelay(4000, () => { S.phase = 'event'; renderAll(); });
+  } else if (S.timeLeft > 0) {
+    nextBtn.textContent = 'Tancar cicle';
+    nextBtn.onclick = () => { clearTimeout(_timer); endCycle(); };
+    altraBtn.textContent = `Altra acció · ⏱ ${S.timeLeft} restants →`;
+    altraBtn.classList.remove('hidden');
+    altraBtn.onclick = () => { S.phase = 'select'; renderAll(); };
   } else {
     nextBtn.textContent = 'Cicle següent →';
     nextBtn.onclick = () => { clearTimeout(_timer); endCycle(); };
+    altraBtn.classList.add('hidden');
     gameDelay(3500, endCycle);
   }
 }
