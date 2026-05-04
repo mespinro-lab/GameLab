@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#1c1208">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Life Tycoon</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- HEADER -->
+    <div id="header">
+      <div id="hdr-left">
+        <span id="hdr-name">Brac</span>
+        <span id="hdr-age">· 15 anys</span>
+      </div>
+      <div id="hdr-center">
+        <span id="hdr-gen">Gen. 1</span>
+        <span id="hdr-cycle">Cicle <span id="hdr-c">1</span>/<span id="hdr-mc">10</span></span>
+      </div>
+      <button id="btn-milestones">🏅</button>
+    </div>
+
+    <!-- HEALTH BAR -->
+    <div id="health-wrap">
+      <div id="health-bar-fill"></div>
+      <span id="health-label">❤️ <span id="health-val">80</span></span>
+    </div>
+
+    <!-- STATS STRIP -->
+    <div id="stats-strip">
+      <div class="stat-chip">💰<span id="s-wealth">0</span></div>
+      <div class="stat-chip">💪<span id="s-phys">1</span></div>
+      <div class="stat-chip">🧠<span id="s-intel">1</span></div>
+      <div class="stat-chip">👥<span id="s-social">1</span></div>
+      <div class="stat-chip">😊<span id="s-hap">60</span></div>
+      <div class="stat-chip">🏛️<span id="s-rep">0</span></div>
+    </div>
+
+    <!-- SCENE -->
+    <div id="scene">
+      <div class="zone" id="zone-home">
+        <div class="zone-inner">
+          <span class="zone-emoji">🏠</span>
+          <span class="zone-label">Llar</span>
+        </div>
+      </div>
+      <div class="zone" id="zone-gather">
+        <div class="zone-inner">
+          <span class="zone-emoji">🌿</span>
+          <span class="zone-label">Camp</span>
+        </div>
+      </div>
+      <div class="zone" id="zone-hunt">
+        <div class="zone-inner">
+          <span class="zone-emoji">🦣</span>
+          <span class="zone-label">Caça</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- KNOWLEDGE PILLS -->
+    <div id="knowledge-row"></div>
+
+    <!-- PARTNER INFO -->
+    <div id="partner-row" class="hidden">
+      <span id="partner-label"></span>
+    </div>
+
+    <!-- ACTION PANEL -->
+    <div id="action-panel">
+
+      <!-- PHASE: select project -->
+      <div id="pane-select" class="pane">
+        <p id="select-header"></p>
+        <div id="projects-grid"></div>
+      </div>
+
+      <!-- PHASE: allocate sliders -->
+      <div id="pane-sliders" class="pane hidden">
+        <div id="slider-project-header">
+          <span id="sl-proj-icon"></span>
+          <span id="sl-proj-name"></span>
+        </div>
+        <div id="sliders-area">
+          <div class="slider-row">
+            <span class="sl-icon">💪</span>
+            <span class="sl-name">Físic</span>
+            <button class="sl-btn" data-sl="physical" data-dir="-1">−</button>
+            <span class="sl-val" id="slv-physical">3</span>
+            <button class="sl-btn" data-sl="physical" data-dir="1">+</button>
+          </div>
+          <div class="slider-row">
+            <span class="sl-icon">🧠</span>
+            <span class="sl-name">Intel</span>
+            <button class="sl-btn" data-sl="intelligence" data-dir="-1">−</button>
+            <span class="sl-val" id="slv-intelligence">2</span>
+            <button class="sl-btn" data-sl="intelligence" data-dir="1">+</button>
+          </div>
+          <div class="slider-row">
+            <span class="sl-icon">👥</span>
+            <span class="sl-name">Social</span>
+            <button class="sl-btn" data-sl="social" data-dir="-1">−</button>
+            <span class="sl-val" id="slv-social">3</span>
+            <button class="sl-btn" data-sl="social" data-dir="1">+</button>
+          </div>
+          <div class="slider-row">
+            <span class="sl-icon">🎲</span>
+            <span class="sl-name">Risc</span>
+            <button class="sl-btn" data-sl="risk" data-dir="-1">−</button>
+            <span class="sl-val" id="slv-risk">2</span>
+            <button class="sl-btn" data-sl="risk" data-dir="1">+</button>
+          </div>
+        </div>
+        <div id="slider-footer">
+          <span id="sl-remaining-label">Punts restants: <strong id="sl-remaining">0</strong></span>
+          <button id="btn-execute">Executar →</button>
+        </div>
+      </div>
+
+      <!-- PHASE: result -->
+      <div id="pane-result" class="pane hidden">
+        <div id="result-proj-label"></div>
+        <div id="result-score-wrap"><div id="result-score-fill"></div></div>
+        <p id="result-narrative"></p>
+        <div id="result-fx-list"></div>
+        <div id="result-discoveries"></div>
+        <button id="btn-next-cycle">Cicle següent →</button>
+      </div>
+
+      <!-- PHASE: event -->
+      <div id="pane-event" class="pane hidden">
+        <div id="ev-header">
+          <span id="ev-icon"></span>
+          <span id="ev-name"></span>
+        </div>
+        <p id="ev-text"></p>
+        <div id="ev-choices"></div>
+      </div>
+
+      <!-- PHASE: event result (brief) -->
+      <div id="pane-ev-result" class="pane hidden">
+        <div id="evr-icon"></div>
+        <p id="evr-text"></p>
+        <div id="evr-fx"></div>
+      </div>
+
+    </div><!-- /#action-panel -->
+  </div><!-- /#app -->
+
+  <!-- OVERLAY: Menu -->
+  <div id="overlay-menu" class="overlay">
+    <div class="overlay-card menu-card">
+      <div class="game-logo">🦴</div>
+      <h1 class="game-title">Life Tycoon</h1>
+      <p class="game-sub">Construeix el millor llinatge de la història</p>
+      <div class="era-badge">Era 1 · Prehistòria</div>
+      <button id="btn-new-game">Comença →</button>
+    </div>
+  </div>
+
+  <!-- OVERLAY: Succession -->
+  <div id="overlay-succession" class="overlay hidden">
+    <div class="overlay-card">
+      <div id="succ-death-msg"></div>
+      <div class="succ-divider"></div>
+      <h3 id="succ-title">El Llinatge Continua</h3>
+      <div id="succ-child-card"></div>
+      <button id="btn-succession">Continuar →</button>
+      <p class="succ-note">La partida s'ha guardat automàticament.</p>
+    </div>
+  </div>
+
+  <!-- OVERLAY: Game Over (no children) -->
+  <div id="overlay-gameover" class="overlay hidden">
+    <div class="overlay-card">
+      <div class="overlay-big-icon">💀</div>
+      <h2>Fi del Llinatge</h2>
+      <p id="go-text"></p>
+      <button id="btn-go-end">Veure resum →</button>
+    </div>
+  </div>
+
+  <!-- OVERLAY: End / Scoring -->
+  <div id="overlay-end" class="overlay hidden">
+    <div class="overlay-card end-card">
+      <h2 id="end-dynasty"></h2>
+      <p id="end-tagline"></p>
+      <div id="end-stats-grid"></div>
+      <div id="end-milestones-row"></div>
+      <div id="end-genealogy-list"></div>
+      <div id="end-score-total"></div>
+      <button id="btn-restart">Jugar de nou</button>
+    </div>
+  </div>
+
+  <!-- OVERLAY: Milestones -->
+  <div id="overlay-milestones" class="overlay hidden">
+    <div class="overlay-card milestones-card">
+      <h3>🏅 Fites</h3>
+      <div id="milestones-list"></div>
+      <button id="btn-close-milestones">Tancar ×</button>
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
