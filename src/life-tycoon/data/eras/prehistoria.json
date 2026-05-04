@@ -1,0 +1,47 @@
+{
+  "id": "prehistoria",
+  "name": "Prehistòria",
+  "icon": "🦴",
+  "dlc": false,
+  "slotAfter": null,
+  "lifeExpectancy": {
+    "base": 30,
+    "max": 45
+  },
+  "dominantSliders": ["physical", "social"],
+  "maxChildren": {
+    "base": 6,
+    "perWealthUnit": -0.3,
+    "minimum": 0
+  },
+  "projectIds": [
+    "gather",
+    "hunt",
+    "craft_tools",
+    "observe_nature",
+    "explore",
+    "lead_tribe"
+  ],
+  "homeCategoryIds": [
+    "find_partner",
+    "have_children",
+    "raise_children",
+    "care_home"
+  ],
+  "knowledgeUnlockIds": ["fire", "stone_tools", "language_basics"],
+  "startingStats": {
+    "health": 80,
+    "intelligence": 1,
+    "social": 1,
+    "wealth": 0,
+    "happiness": 60,
+    "familyReputation": 0
+  },
+  "subsistenceCostPerCycle": 5,
+  "backgroundScene": "prehistoria",
+  "eraGateCondition": {
+    "requiredKnowledgeIds": ["language_basics"],
+    "requiredChildren": 1
+  },
+  "unlockCondition": null
+}
