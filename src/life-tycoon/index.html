@@ -22,55 +22,21 @@
         <span id="hdr-gen">Gen. 1</span>
         <span id="hdr-cycle">Cicle <span id="hdr-c">1</span>/<span id="hdr-mc">10</span></span>
       </div>
-      <div id="speed-btns">
-        <button class="speed-btn active" data-speed="1">×1</button>
-        <button class="speed-btn" data-speed="2">×2</button>
-        <button class="speed-btn" id="btn-pause">⏸</button>
-      </div>
       <button id="btn-milestones">🏅</button>
     </div>
 
-    <!-- HEALTH BAR -->
-    <div id="health-wrap">
-      <div id="health-bar-fill"></div>
-      <span id="health-label">❤️ <span id="health-val">80</span></span>
-    </div>
-
-    <!-- FOOD + STATS -->
-    <div id="food-bar-wrap">
-      <div id="food-bar-fill"></div>
-      <span id="food-label">🍖 <span id="food-val">40</span></span>
-      <span id="food-warn" class="hidden">⚠️ Poc aliment!</span>
-    </div>
-    <div id="stats-strip">
+    <!-- STATS: recursos vitals + habilitats -->
+    <div id="stats-vital">
+      <div class="stat-chip" id="chip-health">❤️ <span id="s-health">80</span></div>
+      <div class="stat-chip" id="chip-food">🍖 <span id="s-food">40</span></div>
       <div class="stat-chip">💰<span id="s-wealth">0</span></div>
-      <div class="stat-chip">💪<span id="s-phys">1</span></div>
-      <div class="stat-chip">🧠<span id="s-intel">1</span></div>
-      <div class="stat-chip">👥<span id="s-social">1</span></div>
       <div class="stat-chip">😊<span id="s-hap">60</span></div>
       <div class="stat-chip">🏛️<span id="s-rep">0</span></div>
     </div>
-
-    <!-- SCENE -->
-    <div id="scene">
-      <div class="zone" id="zone-home">
-        <div class="zone-inner">
-          <span class="zone-emoji">🏠</span>
-          <span class="zone-label">Llar</span>
-        </div>
-      </div>
-      <div class="zone" id="zone-gather">
-        <div class="zone-inner">
-          <span class="zone-emoji">🌿</span>
-          <span class="zone-label">Camp</span>
-        </div>
-      </div>
-      <div class="zone" id="zone-hunt">
-        <div class="zone-inner">
-          <span class="zone-emoji">🦣</span>
-          <span class="zone-label">Caça</span>
-        </div>
-      </div>
+    <div id="stats-skills">
+      <div class="stat-chip">💪<span id="s-phys">1</span></div>
+      <div class="stat-chip">🧠<span id="s-intel">1</span></div>
+      <div class="stat-chip">👥<span id="s-social">1</span></div>
     </div>
 
     <!-- KNOWLEDGE PILLS -->
@@ -86,6 +52,11 @@
 
       <!-- PHASE: select project -->
       <div id="pane-select" class="pane">
+        <div id="zone-tabs">
+          <button class="zone-tab active" data-zone="home">🏠 Llar</button>
+          <button class="zone-tab" data-zone="gather">🌿 Camp</button>
+          <button class="zone-tab" data-zone="hunt">🦣 Caça</button>
+        </div>
         <p id="select-header"></p>
         <div id="projects-grid"></div>
       </div>
@@ -122,7 +93,6 @@
         <p id="result-narrative"></p>
         <div id="result-fx-list"></div>
         <div id="result-discoveries"></div>
-        <button id="btn-altra-accio" class="hidden">Altra acció →</button>
         <button id="btn-next-cycle">Cicle següent →</button>
       </div>
 

@@ -71,13 +71,6 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 #btn-milestones {
   font-size: 1.3rem; background: none; border: none; padding: 0.25rem;
 }
-#speed-btns { display: flex; gap: 3px; align-items: center; }
-.speed-btn {
-  font-size: 0.7rem; padding: 3px 7px; border-radius: 6px;
-  background: var(--surface2); border: 1px solid var(--border);
-}
-.speed-btn.active { background: var(--accent); border-color: var(--gold); font-weight: 700; }
-#btn-pause { font-size: 0.8rem; }
 
 /* ── Executing pane ──────────────────────────────────────────────────── */
 #pane-executing {
@@ -110,130 +103,29 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   50% { opacity: 0.4; }
 }
 
-/* ── Health Bar ──────────────────────────────────────────────────────── */
-#health-wrap {
-  position: relative;
-  height: 20px;
-  background: var(--surface2);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-#health-bar-fill {
-  height: 100%;
-  width: 80%;
-  background: var(--health-hi);
-  transition: width 0.5s ease, background 0.5s ease;
-}
-#health-label {
-  position: absolute;
-  right: 0.5rem;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 0.68rem;
-  font-weight: 600;
-}
-
-/* ── Food Bar ────────────────────────────────────────────────────────── */
-#food-bar-wrap {
-  position: relative;
-  height: 20px;
-  background: var(--surface2);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-#food-bar-fill {
-  height: 100%;
-  width: 80%;
-  background: #8b6914;
-  transition: width 0.5s ease, background 0.5s ease;
-}
-#food-bar-wrap.low  #food-bar-fill { background: #c0571a; }
-#food-bar-wrap.critical #food-bar-fill { background: #e74c3c; animation: foodPulse 0.8s ease-in-out infinite; }
-#food-label {
-  position: absolute;
-  left: 0.5rem;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 0.68rem;
-  font-weight: 600;
-}
-#food-warn {
-  position: absolute;
-  right: 0.5rem;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 0.65rem;
-  color: #e74c3c;
-  font-weight: 700;
-}
-#food-warn.hidden { display: none; }
-@keyframes foodPulse {
-  0%, 100% { opacity: 1; } 50% { opacity: 0.5; }
-}
-
-/* ── Stats Strip ─────────────────────────────────────────────────────── */
-#stats-strip {
+/* ── Stats Rows ──────────────────────────────────────────────────────── */
+#stats-vital, #stats-skills {
   display: flex;
   justify-content: space-around;
-  padding: 0.35rem 0.5rem;
+  align-items: center;
+  padding: 0.28rem 0.5rem;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 .stat-chip {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 1px;
-  font-size: 0.65rem;
-  color: var(--text-dim);
-}
-.stat-chip span {
-  font-size: 0.85rem;
+  gap: 3px;
+  font-size: 0.82rem;
   font-weight: 700;
   color: var(--text);
+  padding: 0 2px;
 }
-
-/* ── Scene ───────────────────────────────────────────────────────────── */
-#scene {
-  display: flex;
-  gap: 0;
-  flex-shrink: 0;
-  height: 100px;
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
-}
-.zone {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-right: 1px solid var(--border);
-  transition: background 0.3s, box-shadow 0.3s;
-  position: relative;
-  overflow: hidden;
-}
-.zone:last-child { border-right: none; }
-.zone-inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  z-index: 1;
-}
-.zone-emoji { font-size: 2.2rem; line-height: 1; }
-.zone-label { font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
-
-.zone.active {
-  background: rgba(200, 120, 32, 0.12);
-  box-shadow: inset 0 0 20px rgba(232, 168, 40, 0.2);
-}
-.zone.active .zone-emoji { animation: zoneFloat 1.5s ease-in-out infinite; }
-.zone.active .zone-label { color: var(--gold); }
-
-@keyframes zoneFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+.stat-chip.low      { color: #e67e22; }
+.stat-chip.critical { color: #e74c3c; animation: chipPulse 0.8s ease-in-out infinite; }
+@keyframes chipPulse {
+  0%, 100% { opacity: 1; } 50% { opacity: 0.6; }
 }
 
 /* ── Knowledge Row ───────────────────────────────────────────────────── */
@@ -288,6 +180,30 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   flex: 1;
 }
 .pane.hidden { display: none; }
+
+/* ── Zone Tabs ───────────────────────────────────────────────────────── */
+#zone-tabs {
+  display: flex;
+  gap: 0.4rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.zone-tab {
+  flex: 1;
+  padding: 0.45rem 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  transition: all 0.15s;
+}
+.zone-tab.active {
+  background: rgba(232, 168, 40, 0.12);
+  border-color: var(--gold);
+  color: var(--gold);
+}
 
 /* ── Project Select ──────────────────────────────────────────────────── */
 #select-header {
@@ -451,24 +367,15 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   color: var(--gold);
   font-weight: 700;
 }
-#btn-altra-accio {
+#btn-next-cycle {
   align-self: stretch;
-  background: var(--gold);
+  background: var(--accent);
   border-color: var(--gold);
-  color: #1c1208;
-  font-weight: 800;
-  padding: 0.7rem 1.2rem;
+  color: var(--text);
+  font-weight: 700;
+  padding: 0.7rem;
   font-size: 0.95rem;
   margin-top: auto;
-}
-#btn-next-cycle {
-  align-self: flex-end;
-  background: var(--accent);
-  border-color: var(--border);
-  color: var(--text-dim);
-  font-weight: 600;
-  padding: 0.5rem 1rem;
-  font-size: 0.85rem;
 }
 
 /* ── Event ───────────────────────────────────────────────────────────── */
@@ -682,11 +589,6 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 }
 .pane:not(.hidden) { animation: fadeInUp 0.2s ease; }
 
-@keyframes pulse-gold {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(232, 168, 40, 0); }
-  50%       { box-shadow: 0 0 12px 4px rgba(232, 168, 40, 0.4); }
-}
-.zone.active { animation: pulse-gold 2s ease-in-out infinite; }
 
 /* ── Floating numbers ────────────────────────────────────────────────── */
 .float-num {

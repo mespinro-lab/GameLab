@@ -10,29 +10,12 @@ function el(id) { return document.getElementById(id); }
 function show(id) { el(id).classList.remove('hidden'); }
 function hide(id) { el(id).classList.add('hidden'); }
 
-// ── Timer / speed ─────────────────────────────────────────────────────────────
+// ── Timer ─────────────────────────────────────────────────────────────────────
 let _timer = null;
-let _speed = 1;
-let _paused = false;
 
 function gameDelay(ms, fn) {
   clearTimeout(_timer);
-  if (_paused) { _pendingFn = fn; return; }
-  _timer = setTimeout(fn, ms / _speed);
-}
-let _pendingFn = null;
-
-function setPaused(v) {
-  _paused = v;
-  el('btn-pause').textContent = v ? '▶' : '⏸';
-  if (!v && _pendingFn) { const f = _pendingFn; _pendingFn = null; gameDelay(0, f); }
-}
-
-function setSpeed(n) {
-  _speed = n;
-  document.querySelectorAll('.speed-btn[data-speed]').forEach(b => {
-    b.classList.toggle('active', +b.dataset.speed === n);
-  });
+  _timer = setTimeout(fn, ms);
 }
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -185,7 +168,7 @@ function applyFx(fx) {
 
 // ── Floating numbers ──────────────────────────────────────────────────────────
 function showFxFloaters(fx) {
-  const fxMap  = { health: 'health-label', food: 'food-label', wealth: 's-wealth', happiness: 's-hap', familyReputation: 's-rep' };
+  const fxMap  = { health: 'chip-health', food: 'chip-food', wealth: 's-wealth', happiness: 's-hap', familyReputation: 's-rep' };
   const gainMap = { physical: 's-phys', intelligence: 's-intel', social: 's-social' };
   for (const [k, v] of Object.entries(fx)) {
     if (v === 0) continue;
@@ -430,9 +413,7 @@ function dynastyTitle() {
 // ── Rendering ─────────────────────────────────────────────────────────────────
 function renderAll() {
   renderHeader();
-  renderHealth();
   renderStats();
-  renderScene();
   renderKnowledge();
   renderPartner();
   renderPhase();
@@ -446,38 +427,23 @@ function renderHeader() {
   el('hdr-mc').textContent = S.maxCycles;
 }
 
-function renderHealth() {
-  const pct = (S.char.health / S.char.maxHealth) * 100;
-  const fill = el('health-bar-fill');
-  fill.style.width = pct + '%';
-  fill.style.background = pct > 50 ? '#27ae60' : pct > 25 ? '#e67e22' : '#e74c3c';
-  el('health-val').textContent = Math.round(S.char.health);
-}
-
 function renderStats() {
+  const hp = S.char.health;
+  el('s-health').textContent = Math.round(hp);
+  el('chip-health').classList.toggle('low',      hp < 40 && hp >= 20);
+  el('chip-health').classList.toggle('critical', hp < 20);
+
+  const food = S.char.food;
+  el('s-food').textContent = Math.round(food);
+  el('chip-food').classList.toggle('low',      food < 30 && food >= 15);
+  el('chip-food').classList.toggle('critical', food < 15);
+
   el('s-wealth').textContent = S.char.wealth;
+  el('s-hap').textContent    = Math.round(S.char.happiness);
+  el('s-rep').textContent    = Math.round(S.char.familyReputation);
   el('s-phys').textContent   = S.char.physical.toFixed(1);
   el('s-intel').textContent  = S.char.intelligence.toFixed(1);
   el('s-social').textContent = S.char.social.toFixed(1);
-  el('s-hap').textContent    = Math.round(S.char.happiness);
-  el('s-rep').textContent    = Math.round(S.char.familyReputation);
-
-  const food = S.char.food;
-  el('food-bar-fill').style.width = Math.min(100, food) + '%';
-  el('food-val').textContent = Math.round(food);
-  el('food-bar-wrap').classList.toggle('low', food < 30);
-  el('food-bar-wrap').classList.toggle('critical', food < 15);
-  el('food-warn').classList.toggle('hidden', food >= 15);
-}
-
-function renderScene() {
-  const zoneMap = { home: 'zone-home', gather: 'zone-gather', hunt: 'zone-hunt' };
-  Object.values(zoneMap).forEach(id => el(id).classList.remove('active'));
-
-  if ((S.phase === 'intensity' || S.phase === 'executing' || S.phase === 'result') && S.activeProject) {
-    const zone = zoneMap[S.activeProject.zone];
-    if (zone) el(zone).classList.add('active');
-  }
 }
 
 function renderKnowledge() {
@@ -526,6 +492,9 @@ function renderPhase() {
   }
 }
 
+// ── Zone tab state ────────────────────────────────────────────────────────────
+let _selectedZone = 'home';
+
 // ── Select pane ───────────────────────────────────────────────────────────────
 function renderExecutingPane() {
   const proj = S.activeProject;
@@ -537,6 +506,11 @@ function renderExecutingPane() {
 }
 
 function renderSelectPane() {
+  // Zone tabs
+  document.querySelectorAll('.zone-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.zone === _selectedZone);
+  });
+
   const actionsLeft = S.timeLeft < S.timeTotal ? Math.floor(S.timeLeft / 2) : 0;
   const timeStr = actionsLeft > 0 ? ` · ${actionsLeft} acció${actionsLeft > 1 ? 'ns' : ''} més` : '';
   el('select-header').textContent = `Cicle ${S.cycle}${timeStr} — Escull una activitat`;
@@ -546,6 +520,7 @@ function renderSelectPane() {
   const icons = { food: '🍖', wealth: '💰', health: '❤️', happiness: '😊', familyReputation: '🏛️' };
 
   for (const proj of GAME_DATA.projects) {
+    if (proj.zone !== _selectedZone) continue;
     const unlocked = isProjectUnlocked(proj);
     const card = document.createElement('div');
     card.className = 'proj-card' + (unlocked ? '' : ' locked');
@@ -638,7 +613,7 @@ function calcImpactPreview(proj, intensity) {
 function renderImpactPreview(proj) {
   const container = el('impact-preview');
   container.innerHTML = '';
-  const { preview, hasRisk } = calcImpactPreview(proj, S.intensity);
+  const { preview, hasRisk, riskReduced } = calcImpactPreview(proj, S.intensity);
   const labels = { food: '🍖 Aliment', wealth: '💰 Riquesa', health: '❤️ Salut', happiness: '😊 Felicitat', familyReputation: '🏛️ Reputació' };
   for (const [key, val] of Object.entries(preview)) {
     if (val === 0) continue;
@@ -665,7 +640,7 @@ function executeProject() {
 
   // Animate progress bar — double-rAF ensures transition applies after the 0% reset
   const fill = el('exec-progress-fill');
-  const dur = 2200 / _speed;
+  const dur = 2200;
   requestAnimationFrame(() => {
     fill.style.transition = `width ${dur}ms linear`;
     requestAnimationFrame(() => { fill.style.width = '100%'; });
@@ -762,25 +737,19 @@ function renderResultPane() {
   }
 
   const nextBtn = el('btn-next-cycle');
-  const altraBtn = el('btn-altra-accio');
 
   if (S.pendingEvent) {
     nextBtn.textContent = 'Event! →';
     nextBtn.onclick = () => { clearTimeout(_timer); S.phase = 'event'; renderAll(); };
-    altraBtn.classList.add('hidden');
     gameDelay(4000, () => { S.phase = 'event'; renderAll(); });
   } else if (S.timeLeft > 0) {
-    nextBtn.textContent = 'Tancar cicle';
-    nextBtn.onclick = () => { clearTimeout(_timer); endCycle(); };
     const moreActions = Math.floor(S.timeLeft / 2);
-    altraBtn.textContent = `Altra acció (${moreActions} disponible${moreActions > 1 ? 's' : ''}) →`;
-    altraBtn.classList.remove('hidden');
-    altraBtn.onclick = () => { clearTimeout(_timer); S.phase = 'select'; renderAll(); };
+    nextBtn.textContent = `Altra acció (${moreActions} disponible${moreActions > 1 ? 's' : ''}) →`;
+    nextBtn.onclick = () => { clearTimeout(_timer); S.phase = 'select'; renderAll(); };
     gameDelay(2500, () => { S.phase = 'select'; renderAll(); });
   } else {
     nextBtn.textContent = 'Cicle següent →';
     nextBtn.onclick = () => { clearTimeout(_timer); endCycle(); };
-    altraBtn.classList.add('hidden');
     gameDelay(3500, endCycle);
   }
 }
@@ -826,7 +795,6 @@ function resolveEvent(ev, optId) {
 
   applyFx(fx);
   showFxFloaters(fx);
-  renderHealth();
   renderStats();
 
   // Show brief result
@@ -949,22 +917,20 @@ function bindEvents() {
   el('btn-new-game').addEventListener('click', startGame);
   el('btn-execute').addEventListener('click', executeProject);
   el('btn-back-sliders').addEventListener('click', () => { S.phase = 'select'; renderAll(); });
-  // Speed buttons
-  document.getElementById('speed-btns').addEventListener('click', e => {
-    const btn = e.target.closest('.speed-btn');
-    if (!btn) return;
-    if (btn.id === 'btn-pause') {
-      setPaused(!_paused);
-    } else if (btn.dataset.speed) {
-      setSpeed(+btn.dataset.speed);
-    }
-  });
 
   // Intensity buttons
   el('intensity-selector').addEventListener('click', e => {
     const btn = e.target.closest('.int-btn');
     if (!btn) return;
     setIntensity(+btn.dataset.int);
+  });
+
+  // Zone tabs
+  el('zone-tabs').addEventListener('click', e => {
+    const btn = e.target.closest('.zone-tab');
+    if (!btn) return;
+    _selectedZone = btn.dataset.zone;
+    renderSelectPane();
   });
 
   el('btn-milestones').addEventListener('click', () => { renderMilestonesOverlay(); });
