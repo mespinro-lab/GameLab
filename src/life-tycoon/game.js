@@ -80,9 +80,11 @@ function getKnowledge(id) { return GAME_DATA.knowledge.find(k => k.id === id); }
 function getTrait(id)     { return GAME_DATA.traits.find(t => t.id === id); }
 function hasKnowledge(id) { return S.char.knowledgeIds.includes(id); }
 
-function generateTrait(statKey) {
-  const pool = GAME_DATA.traits.filter(t => t.statKey === statKey);
-  return pool.length > 0 ? pick(pool).id : pick(GAME_DATA.traits).id;
+function generateTrait(statKey, exclude = null) {
+  const pool = GAME_DATA.traits.filter(t => t.statKey === statKey && t.id !== exclude);
+  if (pool.length > 0) return pick(pool).id;
+  const fallback = GAME_DATA.traits.filter(t => t.id !== exclude);
+  return fallback.length > 0 ? pick(fallback).id : pick(GAME_DATA.traits).id;
 }
 
 function applyTrait(traitId) {
@@ -280,17 +282,20 @@ function generateChild() {
   const virtueKey = diff <= 1 ? 'balanced' : dominantKey;
   const virtueLabel = pick(GAME_DATA.virtueLabels[virtueKey]);
 
-  // Trait: inherit parent's or generate new from dominant stat
+  // Tret 1 (heretat): del pare si l'herència té èxit, si no, aleatori
   const parentTrait = getTrait(S.char.traitIds[0]);
-  const traitId = (parentTrait && Math.random() < parentTrait.inheritChance)
+  const inheritedTraitId = (parentTrait && Math.random() < parentTrait.inheritChance)
     ? parentTrait.id
-    : generateTrait(virtueKey);
+    : generateTrait(pick(['physical', 'intelligence', 'social', 'balanced']));
+
+  // Tret 2 (propi): del stat dominant del fill, sempre diferent del primer
+  const ownTraitId = generateTrait(virtueKey, inheritedTraitId);
 
   return {
     name, gender, physical, intelligence, social, virtueLabel,
     knowledgeIds: inheritedKnowledge,
     familyReputation: S.char.familyReputation,
-    traitIds: [traitId],
+    traitIds: [inheritedTraitId, ownTraitId],
   };
 }
 
@@ -979,7 +984,7 @@ function renderSuccessionOverlay() {
       <span>🧠${child.intelligence}</span>
       <span>👥${child.social}</span>
     </div>
-    ${(() => { const t = getTrait(child.traitIds?.[0]); return t ? `<div class="succ-child-trait">${t.icon} <em>${t.name}</em></div>` : ''; })()}
+    <div class="succ-child-traits">${(child.traitIds || []).map(id => { const t = getTrait(id); return t ? `<span class="trait-pill">${t.icon} ${t.name}</span>` : ''; }).join('')}</div>
     ${child.knowledgeIds.length > 0
       ? `<span class="succ-child-knowledge">Hereta: ${child.knowledgeIds.map(k => getKnowledge(k)?.icon || k).join(' ')}</span>`
       : ''}
@@ -1136,11 +1141,12 @@ function startGame() {
   S.char.gender = gender;
   S.char.name = randomName(gender, '');
   S.dynastyName = dynastyName(S.char.name);
-  // First character: trait from a random stat pool
-  const firstTraitKey = pick(['physical', 'intelligence', 'social', 'balanced']);
-  const firstTraitId  = generateTrait(firstTraitKey);
-  S.char.traitIds = [firstTraitId];
-  applyTrait(firstTraitId);
+  // Primer personatge: 2 trets aleatoris de pools independents
+  const t1 = generateTrait(pick(['physical', 'intelligence', 'social', 'balanced']));
+  const t2 = generateTrait(pick(['physical', 'intelligence', 'social', 'balanced']), t1);
+  S.char.traitIds = [t1, t2];
+  applyTrait(t1);
+  applyTrait(t2);
   S.phase = 'select';
   hide('overlay-menu');
   renderAll();

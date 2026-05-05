@@ -620,6 +620,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 .succ-child-name { font-size: 1.1rem; font-weight: 700; color: var(--gold); }
 .succ-child-virtue { font-size: 0.82rem; color: var(--text-dim); font-style: italic; text-align: center; }
 .succ-child-stats { display: flex; gap: 0.8rem; font-size: 0.78rem; }
+.succ-child-traits { display: flex; gap: 0.3rem; flex-wrap: wrap; justify-content: center; }
 .succ-child-knowledge { font-size: 0.75rem; color: var(--gold); }
 #btn-succession {
   background: var(--accent);
