@@ -38,7 +38,6 @@ function initState() {
       physical: st.physical,
       intelligence: st.intelligence,
       social: st.social,
-      wealth: st.wealth,
       happiness: st.happiness,
       familyReputation: st.familyReputation,
       knowledgeIds: [],
@@ -56,7 +55,6 @@ function initState() {
     lastResult: null,
     genealogy: [],
     milestones: [],
-    totalWealth: 0,
   };
 }
 
@@ -161,16 +159,13 @@ function applyFx(fx) {
       c.happiness = clamp(c.happiness + v, 0, 100);
     } else if (k === 'familyReputation') {
       c.familyReputation = clamp(c.familyReputation + v, 0, 100);
-    } else if (k === 'wealth') {
-      c.wealth = Math.max(0, Math.round(c.wealth + v));
     }
   }
-  if (c.wealth > S.totalWealth) S.totalWealth = c.wealth;
 }
 
 // ── Floating numbers ──────────────────────────────────────────────────────────
 function showFxFloaters(fx) {
-  const fxMap  = { health: 'chip-health', food: 'chip-food', wealth: 's-wealth', happiness: 's-hap', familyReputation: 's-rep' };
+  const fxMap  = { health: 'chip-health', food: 'chip-food', happiness: 's-hap', familyReputation: 's-rep' };
   const gainMap = { physical: 's-phys', intelligence: 's-intel', social: 's-social' };
   for (const [k, v] of Object.entries(fx)) {
     if (v === 0) continue;
@@ -219,7 +214,6 @@ function earnMilestone(id) {
 function checkMilestones() {
   if (S.char.age >= 40) earnMilestone('long_lived');
   if (S.char.familyReputation >= 50) earnMilestone('tribe_respected');
-  if (S.char.wealth >= 100) earnMilestone('wealthy');
   if (S.char.huntCount >= 5) earnMilestone('great_hunter');
   if (S.char.partner && S.char.children.length >= 2) earnMilestone('family_complete');
 }
@@ -267,7 +261,6 @@ function generateChild() {
   return {
     name, gender, physical, intelligence, social, virtueLabel,
     knowledgeIds: inheritedKnowledge,
-    wealth: Math.round(S.char.wealth * 0.4),
     familyReputation: S.char.familyReputation,
   };
 }
@@ -309,9 +302,9 @@ function tryTriggerEvent(proj, quality) {
 function endCycle() {
   S.char.age += 2;
 
-  // Food cost proportional to time used
-  const timeUsed = S.timeTotal - S.timeLeft;
-  const foodCost = Math.round(timeUsed * GAME_DATA.era.foodPerTimePoint);
+  // Food cost: time used + 2 per child
+  const timeUsed   = S.timeTotal - S.timeLeft;
+  const foodCost   = Math.round(timeUsed * GAME_DATA.era.foodPerTimePoint) + S.char.children.length * 2;
   S.char.food = Math.max(0, S.char.food - foodCost);
   if (S.char.food === 0) S.char.health = clamp(S.char.health - 8, 0, S.char.maxHealth);
 
@@ -346,7 +339,6 @@ function triggerDeath() {
     era: GAME_DATA.era.name,
     cause: S.cycle >= S.maxCycles ? 'Mort natural' : 'Salut esgotada',
     knowledgeIds: [...S.char.knowledgeIds],
-    wealth: S.char.wealth,
   });
 
   if (S.char.children.length > 0) {
@@ -372,7 +364,6 @@ function doSuccession(child) {
     physical:     child.physical,
     intelligence: child.intelligence,
     social:       child.social,
-    wealth:       child.wealth,
     happiness: 60,
     familyReputation: child.familyReputation,
     knowledgeIds: child.knowledgeIds,
@@ -392,7 +383,6 @@ function doSuccession(child) {
 function calcScore() {
   let score = 0;
   score += S.generation * 400;
-  score += S.totalWealth * 2;
   score += S.char.familyReputation * 5;
   score += S.char.knowledgeIds.length * 100;
   for (const mId of S.milestones) {
@@ -405,7 +395,7 @@ function calcScore() {
 function dynastyTitle() {
   const m = S.milestones;
   if (m.length >= 5) return 'Llegenda Viva';
-  if (m.includes('dynasty_founded') && m.includes('wealthy')) return 'Constructors d\'Imperis';
+  if (m.includes('dynasty_founded') && m.includes('tribe_respected')) return 'Constructors d\'Imperis';
   if (m.includes('all_knowledge')) return 'La Línia dels Savis';
   if (m.includes('great_hunter')) return 'Guerrers de la Prehistòria';
   if (m.includes('family_complete')) return 'La Família Completa';
@@ -422,16 +412,14 @@ function renderAll() {
 }
 
 function renderCycleForecast() {
-  const timeUsed  = S.timeTotal - S.timeLeft;
-  const foodCost  = Math.round(S.timeTotal * GAME_DATA.era.foodPerTimePoint);
-  const agePct    = S.char.age / GAME_DATA.era.lifeExpectancy.max;
-  const ageLoss   = agePct > 0.7 ? Math.round(agePct * 3) : 0;
+  const projectedFood = Math.round(S.timeTotal * GAME_DATA.era.foodPerTimePoint) + S.char.children.length * 2;
+  const agePct        = S.char.age / GAME_DATA.era.lifeExpectancy.max;
+  const ageLoss       = agePct > 0.7 ? Math.round(agePct * 3) : 0;
 
-  // Food — always show full-cycle projected cost
+  // Food — full-cycle cost + children upkeep, always visible
   const fcFood = el('fc-food');
-  const danger = S.char.food - foodCost < 15;
-  fcFood.textContent = `(-${foodCost})`;
-  fcFood.className = 'fc-delta' + (danger ? ' danger' : '');
+  fcFood.textContent = `(-${projectedFood})`;
+  fcFood.className = 'fc-delta' + (S.char.food - projectedFood < 15 ? ' danger' : '');
 
   // Happiness always -3
   el('fc-hap').textContent = '(-3)';
@@ -439,7 +427,7 @@ function renderCycleForecast() {
 
   // Health: only if aging penalty or starvation risk
   const fcHealth = el('fc-health');
-  const willStarve = S.char.food - foodCost <= 0;
+  const willStarve = S.char.food - projectedFood <= 0;
   const totalHealthLoss = ageLoss + (willStarve ? 8 : 0);
   if (totalHealthLoss > 0) {
     fcHealth.textContent = `(-${totalHealthLoss})`;
@@ -468,7 +456,6 @@ function renderStats() {
   el('chip-food').classList.toggle('low',      food < 30 && food >= 15);
   el('chip-food').classList.toggle('critical', food < 15);
 
-  el('s-wealth').textContent = S.char.wealth;
   el('s-hap').textContent    = Math.round(S.char.happiness);
   el('s-rep').textContent    = Math.round(S.char.familyReputation);
   el('s-phys').textContent   = S.char.physical.toFixed(1);
@@ -664,7 +651,7 @@ function renderImpactPreview(proj) {
   const container = el('impact-preview');
   container.innerHTML = '';
   const { preview, hasRisk, riskReduced } = calcImpactPreview(proj, S.intensity);
-  const labels = { food: '🍖 Aliment', wealth: '💰 Riquesa', health: '❤️ Salut', happiness: '😊 Felicitat', familyReputation: '🏛️ Reputació' };
+  const labels = { food: '🍖 Aliment', health: '❤️ Salut', happiness: '😊 Felicitat', familyReputation: '🏛️ Reputació' };
   for (const [key, val] of Object.entries(preview)) {
     if (val === 0) continue;
     const row = document.createElement('div');
@@ -704,8 +691,7 @@ function executeProject() {
     if (proj.id === 'hunt' && result.quality !== 'poor') S.char.huntCount++;
     if (proj.generatesPartner && result.quality !== 'poor' && !S.char.partner) S.char.partner = generatePartner();
     if (proj.generatesChild && result.quality !== 'poor' && S.char.partner) {
-      const maxC = Math.max(1, Math.round(GAME_DATA.era.maxChildren.base + S.char.wealth * GAME_DATA.era.maxChildren.perWealthUnit));
-      if (S.char.children.length < maxC) S.char.children.push(generateChild());
+      if (S.char.children.length < GAME_DATA.era.maxChildren) S.char.children.push(generateChild());
     }
 
     const timeCost = [2, 4, 6][S.intensity - 1];
@@ -798,7 +784,7 @@ function renderResultPane() {
 
   const fxList = el('result-fx-list');
   fxList.innerHTML = '';
-  const labels = { food: '🍖 Aliment', wealth: '💰 Riquesa', health: '❤️ Salut', happiness: '😊 Felicitat', familyReputation: '🏛️ Reputació' };
+  const labels = { food: '🍖 Aliment', health: '❤️ Salut', happiness: '😊 Felicitat', familyReputation: '🏛️ Reputació' };
   for (const [key, val] of Object.entries(result.fx)) {
     if (key.startsWith('_gain_') || val === 0) continue;
     const label = labels[key] || key;
@@ -929,7 +915,7 @@ function resolveEvent(ev, optId) {
   el('evr-text').textContent = success ? `${opt.name}: èxit.` : `${opt.name}: ha fallat.`;
   const fxLines = Object.entries(fx).filter(([k]) => !k.startsWith('_gain_'));
   el('evr-fx').innerHTML = fxLines.map(([k, v]) => {
-    const labels = { food: '🍖', wealth: '💰', health: '❤️', happiness: '😊', familyReputation: '🏛️' };
+    const labels = { food: '🍖', health: '❤️', happiness: '😊', familyReputation: '🏛️' };
     return `<span class="${v > 0 ? 'fx-pos' : 'fx-neg'}">${labels[k] || k} ${v > 0 ? '+' : ''}${v}</span>`;
   }).join('  ');
 
@@ -990,7 +976,7 @@ function renderEndOverlay() {
   const grid = el('end-stats-grid');
   grid.innerHTML = `
     <div class="end-stat"><span>Generacions</span><span class="end-stat-val">${S.generation}</span></div>
-    <div class="end-stat"><span>Riquesa màx.</span><span class="end-stat-val">${S.totalWealth}</span></div>
+    <div class="end-stat"><span>Fills totals</span><span class="end-stat-val">${S.char.children.length}</span></div>
     <div class="end-stat"><span>Reputació</span><span class="end-stat-val">${Math.round(S.char.familyReputation)}</span></div>
     <div class="end-stat"><span>Coneixements</span><span class="end-stat-val">${S.char.knowledgeIds.length}/3</span></div>
   `;
