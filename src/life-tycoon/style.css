@@ -128,6 +128,23 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   0%, 100% { opacity: 1; } 50% { opacity: 0.6; }
 }
 
+/* ── Cycle Forecast ──────────────────────────────────────────────────── */
+#cycle-forecast {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.22rem 0.6rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  min-height: 24px;
+}
+#cycle-forecast:empty { display: none; }
+.fc-label { color: var(--text-dim); margin-right: 0.1rem; }
+.fc-item   { color: #e67e22; font-weight: 700; }
+.fc-item.danger { color: #e74c3c; }
+
 /* ── Knowledge Row ───────────────────────────────────────────────────── */
 #knowledge-row {
   display: flex;

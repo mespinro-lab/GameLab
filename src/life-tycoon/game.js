@@ -414,9 +414,29 @@ function dynastyTitle() {
 function renderAll() {
   renderHeader();
   renderStats();
+  renderCycleForecast();
   renderKnowledge();
   renderPartner();
   renderPhase();
+}
+
+function renderCycleForecast() {
+  const row = el('cycle-forecast');
+  const timeUsed = S.timeTotal - S.timeLeft;
+  const foodCost = Math.round(timeUsed * GAME_DATA.era.foodPerTimePoint);
+  const agePct   = S.char.age / GAME_DATA.era.lifeExpectancy.max;
+  const ageLoss  = agePct > 0.7 ? Math.round(agePct * 3) : 0;
+
+  const items = [];
+  if (foodCost > 0) {
+    const danger = S.char.food - foodCost < 15;
+    items.push(`<span class="fc-item${danger ? ' danger' : ''}">🍖 -${foodCost}</span>`);
+  }
+  items.push(`<span class="fc-item">😊 -3</span>`);
+  if (ageLoss > 0) items.push(`<span class="fc-item danger">❤️ -${ageLoss}</span>`);
+
+  if (items.length === 0) { row.innerHTML = ''; return; }
+  row.innerHTML = `<span class="fc-label">fi cicle →</span>` + items.join('<span style="color:var(--border)"> · </span>');
 }
 
 function renderHeader() {
@@ -543,26 +563,19 @@ function openZoneSheet(zoneId) {
 
   const grid = el('zone-sheet-grid');
   grid.innerHTML = '';
-  const icons = { food: '🍖', wealth: '💰', health: '❤️', happiness: '😊', familyReputation: '🏛️' };
 
   for (const proj of GAME_DATA.projects.filter(p => p.zone === zoneId)) {
     const unlocked = isProjectUnlocked(proj);
     const card = document.createElement('div');
     card.className = 'proj-card' + (unlocked ? '' : ' locked');
     const reason = unlocked ? '' : lockedReason(proj);
-    let bottomHtml = reason ? `<span class="proj-req">${reason}</span>` : '';
-    if (unlocked) {
-      const tags = Object.entries(proj.outputs || {})
-        .filter(([, v]) => v !== 0)
-        .map(([k, v]) => `<span class="impact-tag ${v > 0 ? 'pos' : 'neg'}">${icons[k] || k}${v > 0 ? '+' : ''}${v}</span>`);
-      if (proj.healthRisk > 0) tags.push(`<span class="impact-tag risk">⚠️</span>`);
-      bottomHtml = `<div class="proj-impact">${tags.join('')}</div>`;
-    }
+    const riskHtml = (unlocked && proj.healthRisk > 0) ? `<div class="proj-impact"><span class="impact-tag risk">⚠️ Risc</span></div>` : '';
+    const reqHtml  = reason ? `<span class="proj-req">${reason}</span>` : '';
     card.innerHTML = `
       <span class="proj-icon">${proj.icon}</span>
       <span class="proj-name">${proj.name}</span>
       <span class="proj-desc">${proj.description}</span>
-      ${bottomHtml}
+      ${riskHtml}${reqHtml}
     `;
     if (unlocked) {
       card.addEventListener('click', () => {
@@ -941,7 +954,11 @@ function renderMilestonesOverlay() {
 function bindEvents() {
   el('btn-new-game').addEventListener('click', startGame);
   el('btn-execute').addEventListener('click', executeProject);
-  el('btn-back-sliders').addEventListener('click', () => { S.phase = 'select'; renderAll(); });
+  el('btn-back-sliders').addEventListener('click', () => {
+    S.phase = 'select';
+    renderAll();
+    openZoneSheet(S.activeProject.zone);
+  });
 
   // Intensity buttons
   el('intensity-selector').addEventListener('click', e => {
