@@ -52,6 +52,7 @@ function initState() {
     activeProject: null,
     pendingEvent: null,
     pendingDiscoveries: [],
+    pendingFloaters: {},
     lastResult: null,
     genealogy: [],
     milestones: [],
@@ -415,7 +416,6 @@ function dynastyTitle() {
 function renderAll() {
   renderHeader();
   renderStats();
-  renderCycleForecast();
   renderKnowledge();
   renderPartner();
   renderPhase();
@@ -478,6 +478,7 @@ function renderStats() {
   el('s-phys').textContent   = S.char.physical.toFixed(1);
   el('s-intel').textContent  = S.char.intelligence.toFixed(1);
   el('s-social').textContent = S.char.social.toFixed(1);
+  renderCycleForecast();
 }
 
 function renderKnowledge() {
@@ -518,7 +519,7 @@ function renderPhase() {
     case 'select':     renderSelectPane(); show('pane-select'); break;
     case 'intensity':  renderIntensityPane(); show('pane-sliders'); break;
     case 'executing':  renderExecutingPane(); show('pane-executing'); break;
-    case 'result':     renderResultPane(); show('pane-result'); break;
+    // 'result' phase retired — go directly to discovery/event/select
     case 'discovery':  renderDiscoveryPane(); show('pane-discovery'); break;
     case 'event':      renderEventPane(); show('pane-event'); break;
     case 'succession': renderSuccessionOverlay(); show('overlay-succession'); break;
@@ -702,7 +703,7 @@ function executeProject() {
   gameDelay(dur + 100, () => {
     const result = calcResult(proj);
     applyFx(result.fx);
-    showFxFloaters(result.fx);
+    accumulateFloaters(result.fx);
 
     if (proj.id === 'hunt' && result.quality !== 'poor') S.char.huntCount++;
     if (proj.generatesPartner && result.quality !== 'poor' && !S.char.partner) S.char.partner = generatePartner();
@@ -719,9 +720,15 @@ function executeProject() {
     if (discovered.length > 0) S.pendingDiscoveries.push(...discovered);
     if (event) S.pendingEvent = event;
 
-    S.lastResult = { proj, result };
-    S.phase = 'result';
-    renderAll();
+    if (S.pendingDiscoveries.length > 0) {
+      S.phase = 'discovery';
+      renderAll();
+    } else if (S.pendingEvent) {
+      S.phase = 'event';
+      renderAll();
+    } else {
+      afterNotifications();
+    }
   });
 }
 
@@ -730,8 +737,20 @@ function afterNotifications() {
   if (S.timeLeft > 0) {
     S.phase = 'select';
     renderAll();
+    const floaters = S.pendingFloaters;
+    S.pendingFloaters = {};
+    requestAnimationFrame(() => showFxFloaters(floaters));
   } else {
+    S.pendingFloaters = {};
     endCycle();
+  }
+}
+
+function accumulateFloaters(fx) {
+  for (const [k, v] of Object.entries(fx)) {
+    if (typeof v === 'number') {
+      S.pendingFloaters[k] = (S.pendingFloaters[k] || 0) + v;
+    }
   }
 }
 
@@ -899,7 +918,7 @@ function resolveEvent(ev, optId) {
   }
 
   applyFx(fx);
-  showFxFloaters(fx);
+  accumulateFloaters(fx);
   renderStats();
 
   // Show brief result
@@ -918,7 +937,7 @@ function resolveEvent(ev, optId) {
     return `<span class="${v > 0 ? 'fx-pos' : 'fx-neg'}">${labels[k] || k} ${v > 0 ? '+' : ''}${v}</span>`;
   }).join('  ');
 
-  el('btn-dismiss-ev-result').onclick = () => afterNotifications();
+  el('btn-dismiss-ev-result').onclick = afterNotifications;
 }
 
 // ── Succession overlay ────────────────────────────────────────────────────────
