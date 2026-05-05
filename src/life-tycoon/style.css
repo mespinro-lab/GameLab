@@ -181,28 +181,80 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 }
 .pane.hidden { display: none; }
 
-/* ── Zone Tabs ───────────────────────────────────────────────────────── */
-#zone-tabs {
+/* ── Zone Cards (main select) ────────────────────────────────────────── */
+#zone-cards {
   display: flex;
-  gap: 0.4rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border);
-}
-.zone-tab {
+  flex-direction: column;
+  gap: 0.6rem;
   flex: 1;
-  padding: 0.45rem 0.3rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  border-radius: 8px;
+}
+.zone-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.1rem 1rem;
   background: var(--surface);
   border: 1px solid var(--border);
-  color: var(--text-dim);
-  transition: all 0.15s;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  text-align: left;
 }
-.zone-tab.active {
-  background: rgba(232, 168, 40, 0.12);
-  border-color: var(--gold);
+.zone-card:active { background: var(--surface2); }
+.zone-card-icon { font-size: 2rem; line-height: 1; flex-shrink: 0; }
+.zone-card-info { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.zone-card-name { font-weight: 700; font-size: 1rem; color: var(--gold); }
+.zone-card-hint { font-size: 0.72rem; color: var(--text-dim); }
+.zone-card-count { font-size: 0.7rem; color: var(--text-dim); flex-shrink: 0; }
+
+/* ── Zone Actions bottom sheet ───────────────────────────────────────── */
+#overlay-zone-actions {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 50;
+}
+#overlay-zone-actions.hidden { display: none; }
+.zone-actions-sheet {
+  width: 100%;
+  max-width: 430px;
+  background: var(--surface);
+  border-radius: 16px 16px 0 0;
+  padding: 1rem;
+  max-height: 75dvh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+#zone-sheet-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 700;
   color: var(--gold);
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+#zone-sheet-icon { font-size: 1.4rem; }
+#btn-close-zone-sheet {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  color: var(--text-dim);
+  padding: 0.1rem 0.4rem;
+  line-height: 1;
+}
+#zone-sheet-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
 }
 
 /* ── Project Select ──────────────────────────────────────────────────── */

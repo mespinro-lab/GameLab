@@ -52,13 +52,8 @@
 
       <!-- PHASE: select project -->
       <div id="pane-select" class="pane">
-        <div id="zone-tabs">
-          <button class="zone-tab active" data-zone="home">🏠 Llar</button>
-          <button class="zone-tab" data-zone="gather">🌿 Camp</button>
-          <button class="zone-tab" data-zone="hunt">🦣 Caça</button>
-        </div>
         <p id="select-header"></p>
-        <div id="projects-grid"></div>
+        <div id="zone-cards"></div>
       </div>
 
       <!-- PHASE: executing -->
@@ -168,6 +163,18 @@
       <h3>🏅 Fites</h3>
       <div id="milestones-list"></div>
       <button id="btn-close-milestones">Tancar ×</button>
+    </div>
+  </div>
+
+  <!-- OVERLAY: Zone actions (bottom sheet) -->
+  <div id="overlay-zone-actions" class="overlay hidden">
+    <div class="zone-actions-sheet">
+      <div id="zone-sheet-header">
+        <span id="zone-sheet-icon"></span>
+        <span id="zone-sheet-name"></span>
+        <button id="btn-close-zone-sheet">×</button>
+      </div>
+      <div id="zone-sheet-grid"></div>
     </div>
   </div>
 

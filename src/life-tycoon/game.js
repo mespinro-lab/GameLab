@@ -492,8 +492,13 @@ function renderPhase() {
   }
 }
 
-// ── Zone tab state ────────────────────────────────────────────────────────────
-let _selectedZone = 'home';
+// ── Zone definitions ──────────────────────────────────────────────────────────
+const ZONE_DEFS = {
+  home:   { icon: '🏠', name: 'Llar',   hint: 'Descansa i cuida la família' },
+  town:   { icon: '🏛️', name: 'Poblat', hint: 'Socialitza i fabrica' },
+  wild:   { icon: '🌿', name: 'Camp',   hint: 'Recol·lecta i observa la natura' },
+  forest: { icon: '🌲', name: 'Bosc',   hint: 'Caça i explora terres llunyanes' },
+};
 
 // ── Select pane ───────────────────────────────────────────────────────────────
 function renderExecutingPane() {
@@ -506,27 +511,45 @@ function renderExecutingPane() {
 }
 
 function renderSelectPane() {
-  // Zone tabs
-  document.querySelectorAll('.zone-tab').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.zone === _selectedZone);
-  });
-
   const actionsLeft = S.timeLeft < S.timeTotal ? Math.floor(S.timeLeft / 2) : 0;
   const timeStr = actionsLeft > 0 ? ` · ${actionsLeft} acció${actionsLeft > 1 ? 'ns' : ''} més` : '';
-  el('select-header').textContent = `Cicle ${S.cycle}${timeStr} — Escull una activitat`;
-  const grid = el('projects-grid');
-  grid.innerHTML = '';
+  el('select-header').textContent = `Cicle ${S.cycle}${timeStr} — On vas?`;
 
+  const container = el('zone-cards');
+  container.innerHTML = '';
+
+  for (const [zoneId, zone] of Object.entries(ZONE_DEFS)) {
+    const zoneProjects = GAME_DATA.projects.filter(p => p.zone === zoneId);
+    const availCount = zoneProjects.filter(p => isProjectUnlocked(p)).length;
+    const card = document.createElement('div');
+    card.className = 'zone-card';
+    card.innerHTML = `
+      <span class="zone-card-icon">${zone.icon}</span>
+      <div class="zone-card-info">
+        <span class="zone-card-name">${zone.name}</span>
+        <span class="zone-card-hint">${zone.hint}</span>
+      </div>
+      <span class="zone-card-count">${availCount} activ.</span>
+    `;
+    card.addEventListener('click', () => openZoneSheet(zoneId));
+    container.appendChild(card);
+  }
+}
+
+function openZoneSheet(zoneId) {
+  const zone = ZONE_DEFS[zoneId];
+  el('zone-sheet-icon').textContent = zone.icon;
+  el('zone-sheet-name').textContent = zone.name;
+
+  const grid = el('zone-sheet-grid');
+  grid.innerHTML = '';
   const icons = { food: '🍖', wealth: '💰', health: '❤️', happiness: '😊', familyReputation: '🏛️' };
 
-  for (const proj of GAME_DATA.projects) {
-    if (proj.zone !== _selectedZone) continue;
+  for (const proj of GAME_DATA.projects.filter(p => p.zone === zoneId)) {
     const unlocked = isProjectUnlocked(proj);
     const card = document.createElement('div');
     card.className = 'proj-card' + (unlocked ? '' : ' locked');
-
     const reason = unlocked ? '' : lockedReason(proj);
-
     let bottomHtml = reason ? `<span class="proj-req">${reason}</span>` : '';
     if (unlocked) {
       const tags = Object.entries(proj.outputs || {})
@@ -535,19 +558,21 @@ function renderSelectPane() {
       if (proj.healthRisk > 0) tags.push(`<span class="impact-tag risk">⚠️</span>`);
       bottomHtml = `<div class="proj-impact">${tags.join('')}</div>`;
     }
-
     card.innerHTML = `
       <span class="proj-icon">${proj.icon}</span>
       <span class="proj-name">${proj.name}</span>
       <span class="proj-desc">${proj.description}</span>
       ${bottomHtml}
     `;
-
     if (unlocked) {
-      card.addEventListener('click', () => selectProject(proj.id));
+      card.addEventListener('click', () => {
+        hide('overlay-zone-actions');
+        selectProject(proj.id);
+      });
     }
     grid.appendChild(card);
   }
+  show('overlay-zone-actions');
 }
 
 function selectProject(projId) {
@@ -925,12 +950,10 @@ function bindEvents() {
     setIntensity(+btn.dataset.int);
   });
 
-  // Zone tabs
-  el('zone-tabs').addEventListener('click', e => {
-    const btn = e.target.closest('.zone-tab');
-    if (!btn) return;
-    _selectedZone = btn.dataset.zone;
-    renderSelectPane();
+  // Zone sheet
+  el('btn-close-zone-sheet').addEventListener('click', () => hide('overlay-zone-actions'));
+  el('overlay-zone-actions').addEventListener('click', e => {
+    if (e.target === el('overlay-zone-actions')) hide('overlay-zone-actions');
   });
 
   el('btn-milestones').addEventListener('click', () => { renderMilestonesOverlay(); });
