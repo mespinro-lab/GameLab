@@ -44,6 +44,7 @@ function initState() {
       partner: null,
       children: [],
       huntCount: 0,
+      learnedSkillIds: [],
       traitIds: [],
       traitAgingResist: false,
       traitDiscoveryBonus: 0,
@@ -78,7 +79,9 @@ function dynastyName(firstName) {
 function getProject(id)   { return GAME_DATA.projects.find(p => p.id === id); }
 function getKnowledge(id) { return GAME_DATA.knowledge.find(k => k.id === id); }
 function getTrait(id)     { return GAME_DATA.traits.find(t => t.id === id); }
+function getSkill(id)     { return GAME_DATA.learnedSkills.find(s => s.id === id); }
 function hasKnowledge(id) { return S.char.knowledgeIds.includes(id); }
+function hasSkill(id)     { return S.char.learnedSkillIds.includes(id); }
 
 function generateTrait(statKey, exclude = null) {
   const pool = GAME_DATA.traits.filter(t => t.statKey === statKey && t.id !== exclude);
@@ -144,6 +147,12 @@ function calcResult(proj) {
   const fx = {};
   for (const [key, val] of Object.entries(proj.outputs || {})) {
     fx[key] = Math.round(val * (val < 0 ? mult : finalMult));
+  }
+
+  // Skill bonuses on outputs
+  if (hasSkill('fishing')  && proj.id === 'gather')  fx.food = (fx.food || 0) + 8;
+  if (hasSkill('tracking') && (proj.id === 'hunt' || proj.id === 'explore')) {
+    for (const k of Object.keys(fx)) { if (fx[k] > 0) fx[k] = Math.round(fx[k] * 1.2); }
   }
 
   let riskFailed = false;
@@ -224,6 +233,20 @@ function tryDiscoverKnowledge(proj, score) {
       discovered.push(k);
       if (kId === 'fire') earnMilestone('first_fire');
       if (S.char.knowledgeIds.length >= 3) earnMilestone('all_knowledge');
+    }
+  }
+  return discovered;
+}
+
+function tryDiscoverSkill(proj, score) {
+  const discovered = [];
+  for (const sId of (proj.skillDiscovery || [])) {
+    if (hasSkill(sId)) continue;
+    const s = getSkill(sId);
+    if (!s || score < 0.3) continue;
+    if (Math.random() < s.discoveryChance) {
+      S.char.learnedSkillIds.push(sId);
+      discovered.push({ ...s, _type: 'skill' });
     }
   }
   return discovered;
@@ -336,16 +359,22 @@ function tryTriggerEvent(proj, quality) {
 function endCycle() {
   S.char.age += 2;
 
-  // Food cost: time used + 2 per child
+  // Medicinal plants: regen before food/aging checks
+  if (hasSkill('medicinal_plants')) S.char.health = clamp(S.char.health + 5, 0, S.char.maxHealth);
+
+  // Food cost: time used + 2 per child, reduced by cooking skill
   const timeUsed   = S.timeTotal - S.timeLeft;
-  const foodCost   = Math.round(timeUsed * GAME_DATA.era.foodPerTimePoint) + S.char.children.length * 2;
+  const baseFoodCost = Math.round(timeUsed * GAME_DATA.era.foodPerTimePoint) + S.char.children.length * 2;
+  const foodCost   = hasSkill('cooking') ? Math.round(baseFoodCost * 0.8) : baseFoodCost;
   S.char.food = Math.max(0, S.char.food - foodCost);
   if (S.char.food === 0) S.char.health = clamp(S.char.health - 8, 0, S.char.maxHealth);
 
-  // Aging penalty (after 70% of max lifespan), halved with agingResist trait
+  // Aging penalty (after 70% of max lifespan), reduced by traits/skills
   const agePct = S.char.age / GAME_DATA.era.lifeExpectancy.max;
   if (agePct > 0.7) {
-    const ageLoss = Math.round(agePct * 3 * (S.char.traitAgingResist ? 0.5 : 1));
+    let ageLoss = Math.round(agePct * 3);
+    if (S.char.traitAgingResist)          ageLoss = Math.round(ageLoss * 0.5);
+    if (hasSkill('weaving'))              ageLoss = Math.round(ageLoss * 0.75);
     S.char.health = clamp(S.char.health - ageLoss, 0, S.char.maxHealth);
   }
 
@@ -407,6 +436,7 @@ function doSuccession(child) {
     partner: null,
     children: [],
     huntCount: 0,
+    learnedSkillIds: [],
     traitIds: child.traitIds || [],
     traitAgingResist: false,
     traitDiscoveryBonus: 0,
@@ -454,7 +484,8 @@ function renderAll() {
 }
 
 function renderCycleForecast() {
-  const projectedFood = Math.round(S.timeTotal * GAME_DATA.era.foodPerTimePoint) + S.char.children.length * 2;
+  const baseProjected = Math.round(S.timeTotal * GAME_DATA.era.foodPerTimePoint) + S.char.children.length * 2;
+  const projectedFood = hasSkill('cooking') ? Math.round(baseProjected * 0.8) : baseProjected;
   const agePct        = S.char.age / GAME_DATA.era.lifeExpectancy.max;
   const ageLoss       = agePct > 0.7 ? Math.round(agePct * 3) : 0;
 
@@ -516,6 +547,15 @@ function renderTraits() {
     pill.className = 'trait-pill';
     pill.title = t.desc;
     pill.textContent = t.icon + ' ' + t.name;
+    row.appendChild(pill);
+  }
+  for (const sId of S.char.learnedSkillIds) {
+    const s = getSkill(sId);
+    if (!s) continue;
+    const pill = document.createElement('div');
+    pill.className = 'skill-pill';
+    pill.title = s.effectDesc;
+    pill.textContent = s.icon + ' ' + s.name;
     row.appendChild(pill);
   }
 }
@@ -736,7 +776,10 @@ function executeProject() {
     const timeCost = [2, 4, 6][S.intensity - 1];
     S.timeLeft = Math.max(0, S.timeLeft - timeCost);
 
-    const discovered = tryDiscoverKnowledge(proj, result.finalMult);
+    const discovered = [
+      ...tryDiscoverKnowledge(proj, result.finalMult).map(k => ({ ...k, _type: 'knowledge' })),
+      ...tryDiscoverSkill(proj, result.finalMult),
+    ];
     const event = tryTriggerEvent(proj, result.quality);
     if (discovered.length > 0) S.pendingDiscoveries.push(...discovered);
     if (event) S.pendingEvent = event;
@@ -776,28 +819,39 @@ function accumulateFloaters(fx) {
 }
 
 function renderDiscoveryPane() {
-  const k = S.pendingDiscoveries[0];
-  el('disc-icon').textContent = k.icon;
-  el('disc-name').textContent = k.name;
-  el('disc-desc').textContent = k.description;
+  const item = S.pendingDiscoveries[0];
+  el('disc-icon').textContent = item.icon;
+  el('disc-name').textContent = item.name;
+  el('disc-desc').textContent = item.description;
+
+  const isSkill = item._type === 'skill';
+  el('disc-badge').textContent = isSkill ? '📚 Nova habilitat apresa' : '✨ Nova tecnologia descoberta';
 
   const efxEl = el('disc-effects');
   efxEl.innerHTML = '';
-  const statLabels = { health: '❤️ Salut', physical: '💪 Físic', intelligence: '🧠 Intel·ligència', social: '👥 Social' };
-  for (const [stat, val] of Object.entries(k.statBonus || {})) {
-    if (!val) continue;
+
+  if (isSkill) {
     const div = document.createElement('div');
     div.className = 'fx-line';
-    div.innerHTML = `<span>${statLabels[stat] || stat}</span><span class="fx-pos">+${val} permanent</span>`;
+    div.innerHTML = `<span>Efecte</span><span class="fx-pos">${item.effectDesc}</span>`;
     efxEl.appendChild(div);
-  }
-  for (const projId of (k.unlocksProjectIds || [])) {
-    const proj = getProject(projId);
-    if (!proj) continue;
-    const div = document.createElement('div');
-    div.className = 'fx-line';
-    div.innerHTML = `<span>🔓 Desbloqueja</span><span class="fx-pos">${proj.icon} ${proj.name}</span>`;
-    efxEl.appendChild(div);
+  } else {
+    const statLabels = { health: '❤️ Salut', physical: '💪 Físic', intelligence: '🧠 Intel·ligència', social: '👥 Social' };
+    for (const [stat, val] of Object.entries(item.statBonus || {})) {
+      if (!val) continue;
+      const div = document.createElement('div');
+      div.className = 'fx-line';
+      div.innerHTML = `<span>${statLabels[stat] || stat}</span><span class="fx-pos">+${val} permanent</span>`;
+      efxEl.appendChild(div);
+    }
+    for (const projId of (item.unlocksProjectIds || [])) {
+      const proj = getProject(projId);
+      if (!proj) continue;
+      const div = document.createElement('div');
+      div.className = 'fx-line';
+      div.innerHTML = `<span>🔓 Desbloqueja</span><span class="fx-pos">${proj.icon} ${proj.name}</span>`;
+      efxEl.appendChild(div);
+    }
   }
 }
 

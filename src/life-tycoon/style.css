@@ -168,6 +168,18 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   color: #81c784;
   cursor: default;
 }
+.skill-pill {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(21, 101, 192, 0.15);
+  border: 1px solid rgba(66, 165, 245, 0.35);
+  border-radius: 20px;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  color: #90caf9;
+  cursor: default;
+}
 .tech-btn {
   background: none;
   border: none;
