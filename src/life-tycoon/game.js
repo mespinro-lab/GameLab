@@ -183,6 +183,27 @@ function applyFx(fx) {
   if (c.wealth > S.totalWealth) S.totalWealth = c.wealth;
 }
 
+// ── Floating numbers ──────────────────────────────────────────────────────────
+function showFxFloaters(fx) {
+  const fxMap  = { health: 'health-label', food: 'food-label', wealth: 's-wealth', happiness: 's-hap', familyReputation: 's-rep' };
+  const gainMap = { physical: 's-phys', intelligence: 's-intel', social: 's-social' };
+  for (const [k, v] of Object.entries(fx)) {
+    if (v === 0) continue;
+    const anchorId = k.startsWith('_gain_') ? gainMap[k.slice(6)] : fxMap[k];
+    if (!anchorId) continue;
+    const anchor = el(anchorId);
+    if (!anchor) continue;
+    const rect = anchor.getBoundingClientRect();
+    const div = document.createElement('div');
+    div.className = `float-num ${v > 0 ? 'pos' : 'neg'}`;
+    div.textContent = (v > 0 ? '+' : '') + (Number.isInteger(v) ? v : v.toFixed(1));
+    div.style.left = (rect.left + rect.width / 2 - 14) + 'px';
+    div.style.top = rect.top + 'px';
+    document.body.appendChild(div);
+    div.addEventListener('animationend', () => div.remove());
+  }
+}
+
 // ── Knowledge discovery ───────────────────────────────────────────────────────
 function tryDiscoverKnowledge(proj, score) {
   const discovered = [];
@@ -653,6 +674,7 @@ function executeProject() {
   gameDelay(dur + 100, () => {
     const result = calcResult(proj);
     applyFx(result.fx);
+    showFxFloaters(result.fx);
 
     if (proj.id === 'hunt' && result.quality !== 'poor') S.char.huntCount++;
     if (proj.generatesPartner && result.quality !== 'poor' && !S.char.partner) S.char.partner = generatePartner();
@@ -753,7 +775,8 @@ function renderResultPane() {
     const moreActions = Math.floor(S.timeLeft / 2);
     altraBtn.textContent = `Altra acció (${moreActions} disponible${moreActions > 1 ? 's' : ''}) →`;
     altraBtn.classList.remove('hidden');
-    altraBtn.onclick = () => { S.phase = 'select'; renderAll(); };
+    altraBtn.onclick = () => { clearTimeout(_timer); S.phase = 'select'; renderAll(); };
+    gameDelay(2500, () => { S.phase = 'select'; renderAll(); });
   } else {
     nextBtn.textContent = 'Cicle següent →';
     nextBtn.onclick = () => { clearTimeout(_timer); endCycle(); };
@@ -802,6 +825,7 @@ function resolveEvent(ev, optId) {
   }
 
   applyFx(fx);
+  showFxFloaters(fx);
   renderHealth();
   renderStats();
 
@@ -821,9 +845,7 @@ function resolveEvent(ev, optId) {
     return `<span class="${v > 0 ? 'fx-pos' : 'fx-neg'}">${labels[k] || k} ${v > 0 ? '+' : ''}${v}</span>`;
   }).join('  ');
 
-  setTimeout(() => {
-    endCycle();
-  }, 1800);
+  gameDelay(1800, endCycle);
 }
 
 // ── Succession overlay ────────────────────────────────────────────────────────
