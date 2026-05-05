@@ -44,6 +44,10 @@ function initState() {
       partner: null,
       children: [],
       huntCount: 0,
+      traitIds: [],
+      traitAgingResist: false,
+      traitDiscoveryBonus: 0,
+      traitStatGainBonus: 0,
     },
     intensity: 2,
     timeTotal: GAME_DATA.era.timeTotal,
@@ -71,9 +75,26 @@ function dynastyName(firstName) {
 }
 
 // ── Project helpers ───────────────────────────────────────────────────────────
-function getProject(id) { return GAME_DATA.projects.find(p => p.id === id); }
+function getProject(id)   { return GAME_DATA.projects.find(p => p.id === id); }
 function getKnowledge(id) { return GAME_DATA.knowledge.find(k => k.id === id); }
+function getTrait(id)     { return GAME_DATA.traits.find(t => t.id === id); }
 function hasKnowledge(id) { return S.char.knowledgeIds.includes(id); }
+
+function generateTrait(statKey) {
+  const pool = GAME_DATA.traits.filter(t => t.statKey === statKey);
+  return pool.length > 0 ? pick(pool).id : pick(GAME_DATA.traits).id;
+}
+
+function applyTrait(traitId) {
+  const t = getTrait(traitId);
+  if (!t) return;
+  const e = t.effect;
+  if (e.maxHealth)      { S.char.maxHealth += e.maxHealth; }
+  if (e.stat)           { S.char[e.stat] = +(S.char[e.stat] + e.value).toFixed(1); }
+  if (e.agingResist)    { S.char.traitAgingResist = true; }
+  if (e.discoveryBonus) { S.char.traitDiscoveryBonus = e.discoveryBonus; }
+  if (e.statGainBonus)  { S.char.traitStatGainBonus = e.statGainBonus; }
+}
 
 function isProjectUnlocked(proj) {
   const r = proj.requirements || {};
@@ -136,8 +157,9 @@ function calcResult(proj) {
     }
   }
 
+  const gainMult = 1 + (S.char.traitStatGainBonus || 0);
   for (const [stat, gain] of Object.entries(proj.statGain || {})) {
-    fx['_gain_' + stat] = gain;
+    fx['_gain_' + stat] = +(gain * gainMult).toFixed(2);
   }
 
   const quality = finalMult > 1.0 ? 'good' : finalMult > 0.6 ? 'ok' : 'poor';
@@ -191,7 +213,7 @@ function tryDiscoverKnowledge(proj, score) {
     if (hasKnowledge(kId)) continue;
     const k = getKnowledge(kId);
     if (!k || score < 0.3) continue;
-    if (Math.random() < k.discoveryChance) {
+    if (Math.random() < k.discoveryChance + (S.char.traitDiscoveryBonus || 0)) {
       S.char.knowledgeIds.push(kId);
       for (const [stat, bonus] of Object.entries(k.statBonus || {})) {
         if (stat === 'health') S.char.health = clamp(S.char.health + bonus, 0, S.char.maxHealth);
@@ -258,10 +280,17 @@ function generateChild() {
   const virtueKey = diff <= 1 ? 'balanced' : dominantKey;
   const virtueLabel = pick(GAME_DATA.virtueLabels[virtueKey]);
 
+  // Trait: inherit parent's or generate new from dominant stat
+  const parentTrait = getTrait(S.char.traitIds[0]);
+  const traitId = (parentTrait && Math.random() < parentTrait.inheritChance)
+    ? parentTrait.id
+    : generateTrait(virtueKey);
+
   return {
     name, gender, physical, intelligence, social, virtueLabel,
     knowledgeIds: inheritedKnowledge,
     familyReputation: S.char.familyReputation,
+    traitIds: [traitId],
   };
 }
 
@@ -308,9 +337,12 @@ function endCycle() {
   S.char.food = Math.max(0, S.char.food - foodCost);
   if (S.char.food === 0) S.char.health = clamp(S.char.health - 8, 0, S.char.maxHealth);
 
-  // Aging penalty (after 70% of max lifespan)
+  // Aging penalty (after 70% of max lifespan), halved with agingResist trait
   const agePct = S.char.age / GAME_DATA.era.lifeExpectancy.max;
-  if (agePct > 0.7) S.char.health = clamp(S.char.health - Math.round(agePct * 3), 0, S.char.maxHealth);
+  if (agePct > 0.7) {
+    const ageLoss = Math.round(agePct * 3 * (S.char.traitAgingResist ? 0.5 : 1));
+    S.char.health = clamp(S.char.health - ageLoss, 0, S.char.maxHealth);
+  }
 
   // Happiness drift
   S.char.happiness = clamp(S.char.happiness - 3, 20, 100);
@@ -370,7 +402,12 @@ function doSuccession(child) {
     partner: null,
     children: [],
     huntCount: 0,
+    traitIds: child.traitIds || [],
+    traitAgingResist: false,
+    traitDiscoveryBonus: 0,
+    traitStatGainBonus: 0,
   };
+  for (const tId of S.char.traitIds) applyTrait(tId);
 
   S.timeLeft = S.timeTotal;
   S.cycle = 1;
@@ -406,7 +443,7 @@ function dynastyTitle() {
 function renderAll() {
   renderHeader();
   renderStats();
-  renderKnowledge();
+  renderTraits();
   renderPartner();
   renderPhase();
 }
@@ -464,19 +501,16 @@ function renderStats() {
   renderCycleForecast();
 }
 
-function renderKnowledge() {
+function renderTraits() {
   const row = el('knowledge-row');
   row.innerHTML = '';
-  if (S.char.knowledgeIds.length === 0) {
-    row.innerHTML = '<span style="font-size:0.7rem;color:var(--text-dim)">Cap coneixement descobert</span>';
-    return;
-  }
-  for (const kId of S.char.knowledgeIds) {
-    const k = getKnowledge(kId);
-    if (!k) continue;
+  for (const tId of S.char.traitIds) {
+    const t = getTrait(tId);
+    if (!t) continue;
     const pill = document.createElement('div');
-    pill.className = 'know-pill';
-    pill.textContent = k.icon + ' ' + k.name;
+    pill.className = 'trait-pill';
+    pill.title = t.desc;
+    pill.textContent = t.icon + ' ' + t.name;
     row.appendChild(pill);
   }
 }
@@ -945,6 +979,7 @@ function renderSuccessionOverlay() {
       <span>🧠${child.intelligence}</span>
       <span>👥${child.social}</span>
     </div>
+    ${(() => { const t = getTrait(child.traitIds?.[0]); return t ? `<div class="succ-child-trait">${t.icon} <em>${t.name}</em></div>` : ''; })()}
     ${child.knowledgeIds.length > 0
       ? `<span class="succ-child-knowledge">Hereta: ${child.knowledgeIds.map(k => getKnowledge(k)?.icon || k).join(' ')}</span>`
       : ''}
@@ -1004,6 +1039,49 @@ function renderEndOverlay() {
   el('end-score-total').textContent = `🏆 ${score.toLocaleString()} pts`;
 }
 
+// ── Technology overlay ────────────────────────────────────────────────────────
+function knowledgeEffectDesc(k) {
+  const parts = [];
+  for (const [stat, val] of Object.entries(k.statBonus || {})) {
+    const labels = { health: 'Salut', social: 'Social', physical: 'Físic', intelligence: 'Intel·ligència' };
+    parts.push(`+${val} ${labels[stat] || stat}`);
+  }
+  for (const projId of (k.unlocksProjectIds || [])) {
+    const p = getProject(projId);
+    parts.push(`Desbloqueja "${p?.name || projId}"`);
+  }
+  for (const proj of GAME_DATA.projects) {
+    if (proj.riskReductions?.[k.id]) {
+      parts.push(`-${Math.round(proj.riskReductions[k.id] * 100)}% risc a ${proj.name}`);
+    }
+  }
+  return parts.join(' · ') || k.description;
+}
+
+function renderTechOverlay() {
+  const list = el('tech-list');
+  list.innerHTML = '';
+  if (S.char.knowledgeIds.length === 0) {
+    list.innerHTML = '<p style="color:var(--text-dim);font-size:0.8rem;padding:0.5rem 0">Cap coneixement descobert encara.</p>';
+  } else {
+    for (const kId of S.char.knowledgeIds) {
+      const k = getKnowledge(kId);
+      if (!k) continue;
+      const row = document.createElement('div');
+      row.className = 'tech-row';
+      row.innerHTML = `
+        <span class="tech-icon">${k.icon}</span>
+        <div class="tech-info">
+          <strong>${k.name}</strong>
+          <small>${knowledgeEffectDesc(k)}</small>
+        </div>
+      `;
+      list.appendChild(row);
+    }
+  }
+  show('overlay-tech');
+}
+
 // ── Milestones overlay ────────────────────────────────────────────────────────
 function renderMilestonesOverlay() {
   const list = el('milestones-list');
@@ -1046,6 +1124,8 @@ function bindEvents() {
 
   el('btn-milestones').addEventListener('click', () => { renderMilestonesOverlay(); });
   el('btn-close-milestones').addEventListener('click', () => hide('overlay-milestones'));
+  el('btn-tech').addEventListener('click', () => { renderTechOverlay(); });
+  el('btn-close-tech').addEventListener('click', () => hide('overlay-tech'));
   el('btn-restart').addEventListener('click', () => { hide('overlay-end'); startGame(); });
 }
 
@@ -1056,6 +1136,11 @@ function startGame() {
   S.char.gender = gender;
   S.char.name = randomName(gender, '');
   S.dynastyName = dynastyName(S.char.name);
+  // First character: trait from a random stat pool
+  const firstTraitKey = pick(['physical', 'intelligence', 'social', 'balanced']);
+  const firstTraitId  = generateTrait(firstTraitKey);
+  S.char.traitIds = [firstTraitId];
+  applyTrait(firstTraitId);
   S.phase = 'select';
   hide('overlay-menu');
   renderAll();

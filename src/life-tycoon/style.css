@@ -139,29 +139,60 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 .fc-delta.danger { color: #e74c3c; }
 .fc-delta:empty    { display: none; }
 
-/* ── Knowledge Row ───────────────────────────────────────────────────── */
-#knowledge-row {
+/* ── Traits + Tech Row ───────────────────────────────────────────────── */
+#traits-tech-row {
   display: flex;
-  gap: 0.4rem;
-  padding: 0.3rem 0.6rem;
+  align-items: center;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   min-height: 32px;
+}
+#knowledge-row {
+  flex: 1;
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.3rem 0.6rem;
   flex-wrap: wrap;
   align-items: center;
 }
-.know-pill {
+.trait-pill {
   display: flex;
   align-items: center;
   gap: 3px;
-  background: var(--surface2);
-  border: 1px solid var(--border);
+  background: rgba(46, 125, 50, 0.15);
+  border: 1px solid rgba(76, 175, 80, 0.35);
   border-radius: 20px;
   padding: 2px 8px;
   font-size: 0.7rem;
-  color: var(--gold);
+  color: #81c784;
+  cursor: default;
 }
+.tech-btn {
+  background: none;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  color: var(--gold);
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+.tech-btn:hover { opacity: 1; }
+
+/* ── Technology Overlay ──────────────────────────────────────────────── */
+.tech-card { max-height: 80dvh; overflow-y: auto; }
+.tech-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.tech-row:last-child { border-bottom: none; }
+.tech-icon { font-size: 1.5rem; line-height: 1; }
+.tech-info strong { font-size: 0.85rem; color: var(--text); display: block; }
+.tech-info small  { font-size: 0.7rem;  color: var(--text-dim); margin-top: 2px; display: block; }
 
 /* ── Partner Row ─────────────────────────────────────────────────────── */
 #partner-row {
