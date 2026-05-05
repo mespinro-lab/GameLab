@@ -141,6 +141,21 @@ const GAME_DATA = {
       successTexts: ['La tribu et recorda.', 'El descans et revitalitza.', 'La llar és font de força.'],
       failTexts: ['Difícil trobar calma avui.'],
     },
+    {
+      id: 'educate_child', name: 'Educar Fills', icon: '📖', category: 'home',
+      description: 'Transmet una de les teves habilitats a un fill.',
+      requirements: { requiresChild: true, requiresLearnedSkill: true },
+      statKey: 'social',
+      outputs: { happiness: 8, familyReputation: 3 },
+      healthRisk: 0,
+      knowledgeBonus: [], statGain: { social: 0.2, intelligence: 0.1 },
+      knowledgeDiscovery: [], skillDiscovery: [],
+      teachesSkill: true,
+      eventPool: [],
+      zone: 'home',
+      successTexts: ['El fill aprèn ràpidament.', 'Un moment inoblidable.', 'Sents com el llinatge creix en saviesa.'],
+      failTexts: [],
+    },
   ],
 
   events: [

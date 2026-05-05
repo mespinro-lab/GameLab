@@ -46,6 +46,8 @@ function initState() {
       huntCount: 0,
       learnedSkillIds: [],
       traitIds: [],
+      teachSkillId: null,
+      teachChildIndex: null,
       traitAgingResist: false,
       traitDiscoveryBonus: 0,
       traitStatGainBonus: 0,
@@ -108,6 +110,13 @@ function isProjectUnlocked(proj) {
   if (r.social && S.char.social < r.social) return false;
   if (r.health && S.char.health < r.health) return false;
   if (r.requiresPartner && !S.char.partner) return false;
+  if (r.requiresChild && S.char.children.length === 0) return false;
+  if (r.requiresLearnedSkill) {
+    const teachable = S.char.learnedSkillIds.filter(sId =>
+      S.char.children.some(c => (c.learnedSkillIds || []).length < 2 && !(c.learnedSkillIds || []).includes(sId))
+    );
+    if (teachable.length === 0) return false;
+  }
   if (r.knowledgeIds) {
     for (const k of r.knowledgeIds) { if (!hasKnowledge(k)) return false; }
   }
@@ -122,6 +131,9 @@ function lockedReason(proj) {
   if (r.social && S.char.social < r.social) return `Social ${r.social}+`;
   if (r.health && S.char.health < r.health) return `Salut ${r.health}+`;
   if (r.requiresPartner && !S.char.partner) return 'Necessites parella';
+  if (r.requiresChild && S.char.children.length === 0) return 'Necessites un fill';
+  if (r.requiresLearnedSkill && S.char.learnedSkillIds.length === 0) return 'No tens habilitats per ensenyar';
+  if (r.requiresLearnedSkill) return 'Els fills ja saben tot el que els pots ensenyar';
   if (r.knowledgeIds) {
     for (const k of r.knowledgeIds) {
       if (!hasKnowledge(k)) {
@@ -318,6 +330,7 @@ function generateChild() {
   return {
     name, gender, physical, intelligence, social, virtueLabel,
     knowledgeIds: inheritedKnowledge,
+    learnedSkillIds: [],
     familyReputation: S.char.familyReputation,
     traitIds: [inheritedTraitId, ownTraitId],
   };
@@ -572,7 +585,7 @@ function renderPartner() {
 }
 
 function renderPhase() {
-  const panes = ['pane-select','pane-sliders','pane-executing','pane-result','pane-discovery','pane-event','pane-ev-result'];
+  const panes = ['pane-select','pane-sliders','pane-executing','pane-result','pane-discovery','pane-event','pane-ev-result','pane-teach'];
   panes.forEach(p => hide(p));
 
   const overlays = ['overlay-succession','overlay-gameover','overlay-end','overlay-milestones'];
@@ -583,6 +596,7 @@ function renderPhase() {
     case 'intensity':  renderIntensityPane(); show('pane-sliders'); break;
     case 'executing':  renderExecutingPane(); show('pane-executing'); break;
     // 'result' phase retired — go directly to discovery/event/select
+    case 'teach':      renderTeachPane();     show('pane-teach');     break;
     case 'discovery':  renderDiscoveryPane(); show('pane-discovery'); break;
     case 'event':      renderEventPane(); show('pane-event'); break;
     case 'succession': renderSuccessionOverlay(); show('overlay-succession'); break;
@@ -669,7 +683,13 @@ function openZoneSheet(zoneId) {
 
 function selectProject(projId) {
   S.activeProject = getProject(projId);
-  S.phase = 'intensity';
+  if (S.activeProject.teachesSkill) {
+    S.char.teachSkillId = null;
+    S.char.teachChildIndex = null;
+    S.phase = 'teach';
+  } else {
+    S.phase = 'intensity';
+  }
   renderAll();
 }
 
@@ -795,6 +815,74 @@ function executeProject() {
       afterNotifications();
     }
   });
+}
+
+// ── Teach pane ────────────────────────────────────────────────────────────────
+function renderTeachPane() {
+  const c = S.char;
+
+  // Skill picker
+  const skillList = el('teach-skill-list');
+  skillList.innerHTML = '';
+  for (const sId of c.learnedSkillIds) {
+    const s = getSkill(sId);
+    if (!s) continue;
+    const teachable = c.children.some(ch => (ch.learnedSkillIds || []).length < 2 && !(ch.learnedSkillIds || []).includes(sId));
+    if (!teachable) continue;
+    const btn = document.createElement('button');
+    btn.className = 'teach-skill-btn' + (c.teachSkillId === sId ? ' active' : '');
+    btn.textContent = s.icon + ' ' + s.name + ' — ' + s.effectDesc;
+    btn.onclick = () => { c.teachSkillId = sId; c.teachChildIndex = null; renderTeachPane(); };
+    skillList.appendChild(btn);
+  }
+
+  // Child picker
+  const childSection = el('teach-child-section');
+  const childList = el('teach-child-list');
+  childList.innerHTML = '';
+  const eligibleChildren = c.children.filter(ch =>
+    c.teachSkillId && (ch.learnedSkillIds || []).length < 2 && !(ch.learnedSkillIds || []).includes(c.teachSkillId)
+  );
+
+  if (!c.teachSkillId) {
+    childSection.style.display = 'none';
+  } else if (eligibleChildren.length === 1) {
+    childSection.style.display = 'block';
+    c.teachChildIndex = c.children.indexOf(eligibleChildren[0]);
+    childList.innerHTML = `<p style="font-size:0.82rem;color:var(--text)">${childAvatar(eligibleChildren[0])} ${eligibleChildren[0].name} aprendrà l'habilitat.</p>`;
+  } else {
+    childSection.style.display = 'block';
+    for (const child of eligibleChildren) {
+      const idx = c.children.indexOf(child);
+      const btn = document.createElement('button');
+      btn.className = 'teach-child-btn' + (c.teachChildIndex === idx ? ' active' : '');
+      btn.textContent = childAvatar(child) + ' ' + child.name;
+      btn.onclick = () => { c.teachChildIndex = idx; renderTeachPane(); };
+      childList.appendChild(btn);
+    }
+  }
+
+  el('btn-confirm-teach').disabled = c.teachSkillId === null || c.teachChildIndex === null;
+}
+
+function executeTeach() {
+  const c = S.char;
+  const skill = getSkill(c.teachSkillId);
+  const child = c.children[c.teachChildIndex];
+  if (!skill || !child) return;
+
+  if (!child.learnedSkillIds) child.learnedSkillIds = [];
+  child.learnedSkillIds.push(c.teachSkillId);
+
+  const fx = { happiness: 8, familyReputation: 3, '_gain_social': 0.2, '_gain_intelligence': 0.1 };
+  applyFx(fx);
+  accumulateFloaters(fx);
+
+  S.timeLeft = Math.max(0, S.timeLeft - 2);
+  c.teachSkillId = null;
+  c.teachChildIndex = null;
+
+  afterNotifications();
 }
 
 // ── Discovery & notification helpers ─────────────────────────────────────────
@@ -1017,19 +1105,15 @@ function resolveEvent(ev, optId) {
 }
 
 // ── Succession overlay ────────────────────────────────────────────────────────
-function renderSuccessionOverlay() {
-  const last = S.genealogy[S.genealogy.length - 1];
-  el('succ-death-msg').innerHTML = `
-    <strong>${last.name}</strong> ha mort als <strong>${last.age} anys</strong>.<br>
-    <em>${last.cause}.</em>
-  `;
-
-  const child = S.char.children[S.char.children.length - 1];
-  el('succ-title').textContent = S.char.children.length > 1
-    ? `El Llinatge Continua (${S.char.children.length} fills)`
-    : 'El Llinatge Continua';
-
-  const card = el('succ-child-card');
+function buildChildCard(child, showChooseBtn) {
+  const skillsHtml = (child.learnedSkillIds || []).map(sId => {
+    const s = getSkill(sId); return s ? `<span class="skill-pill">${s.icon} ${s.name}</span>` : '';
+  }).join('');
+  const knowHtml = child.knowledgeIds.length > 0
+    ? `<span class="succ-child-knowledge">Tecnologia: ${child.knowledgeIds.map(k => getKnowledge(k)?.icon || k).join(' ')}</span>`
+    : '';
+  const card = document.createElement('div');
+  card.className = 'succ-child-card';
   card.innerHTML = `
     <span class="succ-child-avatar">${childAvatar(child)}</span>
     <span class="succ-child-name">${child.name}</span>
@@ -1039,14 +1123,46 @@ function renderSuccessionOverlay() {
       <span>🧠${child.intelligence}</span>
       <span>👥${child.social}</span>
     </div>
-    <div class="succ-child-traits">${(child.traitIds || []).map(id => { const t = getTrait(id); return t ? `<span class="trait-pill">${t.icon} ${t.name}</span>` : ''; }).join('')}</div>
-    ${child.knowledgeIds.length > 0
-      ? `<span class="succ-child-knowledge">Hereta: ${child.knowledgeIds.map(k => getKnowledge(k)?.icon || k).join(' ')}</span>`
-      : ''}
+    <div class="succ-child-traits">
+      ${(child.traitIds || []).map(id => { const t = getTrait(id); return t ? `<span class="trait-pill">${t.icon} ${t.name}</span>` : ''; }).join('')}
+      ${skillsHtml}
+    </div>
+    ${knowHtml}
+    ${showChooseBtn ? `<button class="btn-choose-child">Triar ${child.name} →</button>` : ''}
+  `;
+  if (showChooseBtn) {
+    card.querySelector('.btn-choose-child').onclick = () => doSuccession(child);
+  }
+  return card;
+}
+
+function renderSuccessionOverlay() {
+  const last = S.genealogy[S.genealogy.length - 1];
+  el('succ-death-msg').innerHTML = `
+    <strong>${last.name}</strong> ha mort als <strong>${last.age} anys</strong>.<br>
+    <em>${last.cause}.</em>
   `;
 
-  el('btn-succession').textContent = `Continua amb ${child.name} →`;
-  el('btn-succession').onclick = () => doSuccession(child);
+  const children = S.char.children;
+  const multi = children.length > 1;
+  el('succ-title').textContent = multi
+    ? `Tria el Successor (${children.length} fills)`
+    : 'El Llinatge Continua';
+
+  const list = el('succ-children-list');
+  list.innerHTML = '';
+  for (const child of children) {
+    list.appendChild(buildChildCard(child, multi));
+  }
+
+  const btn = el('btn-succession');
+  if (multi) {
+    btn.classList.add('hidden');
+  } else {
+    btn.classList.remove('hidden');
+    btn.textContent = `Continua amb ${children[0].name} →`;
+    btn.onclick = () => doSuccession(children[0]);
+  }
 }
 
 // ── Game Over overlay ─────────────────────────────────────────────────────────
@@ -1173,6 +1289,11 @@ function bindEvents() {
     setIntensity(+btn.dataset.int);
   });
 
+  el('btn-back-teach').addEventListener('click', () => {
+    S.phase = 'select'; renderAll();
+    openZoneSheet(S.activeProject.zone);
+  });
+  el('btn-confirm-teach').addEventListener('click', () => { if (!el('btn-confirm-teach').disabled) executeTeach(); });
   el('btn-dismiss-discovery').addEventListener('click', advanceFromDiscovery);
   el('btn-dismiss-ev-result').addEventListener('click', () => afterNotifications());
 

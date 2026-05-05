@@ -123,6 +123,21 @@
         <button id="btn-dismiss-ev-result">Continua →</button>
       </div>
 
+      <!-- PHASE: teach skill -->
+      <div id="pane-teach" class="pane hidden">
+        <div class="teach-header">
+          <button id="btn-back-teach">← Enrere</button>
+          <span>📖 Educar Fills</span>
+        </div>
+        <p class="teach-subtitle">Tria l'habilitat que vols transmetre:</p>
+        <div id="teach-skill-list"></div>
+        <div id="teach-child-section">
+          <p class="teach-subtitle">A quin fill?</p>
+          <div id="teach-child-list"></div>
+        </div>
+        <button id="btn-confirm-teach">Ensenyar →</button>
+      </div>
+
     </div><!-- /#action-panel -->
   </div><!-- /#app -->
 
@@ -139,12 +154,12 @@
 
   <!-- OVERLAY: Succession -->
   <div id="overlay-succession" class="overlay hidden">
-    <div class="overlay-card">
+    <div class="overlay-card succ-card">
       <div id="succ-death-msg"></div>
       <div class="succ-divider"></div>
       <h3 id="succ-title">El Llinatge Continua</h3>
-      <div id="succ-child-card"></div>
-      <button id="btn-succession">Continuar →</button>
+      <div id="succ-children-list"></div>
+      <button id="btn-succession" class="hidden">Continuar →</button>
       <p class="succ-note">La partida s'ha guardat automàticament.</p>
     </div>
   </div>

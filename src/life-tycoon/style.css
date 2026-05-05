@@ -618,22 +618,28 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 }
 .succ-divider { height: 1px; background: var(--border); }
 #succ-title { text-align: center; color: var(--gold); }
-#succ-child-card {
+.succ-card { max-height: 90dvh; overflow-y: auto; }
+#succ-children-list { display: flex; flex-direction: column; gap: 0.6rem; }
+.succ-child-card {
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 1rem;
+  padding: 0.8rem 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.35rem;
 }
-.succ-child-avatar { font-size: 3rem; }
+.succ-child-avatar { font-size: 2.5rem; }
 .succ-child-name { font-size: 1.1rem; font-weight: 700; color: var(--gold); }
 .succ-child-virtue { font-size: 0.82rem; color: var(--text-dim); font-style: italic; text-align: center; }
 .succ-child-stats { display: flex; gap: 0.8rem; font-size: 0.78rem; }
 .succ-child-traits { display: flex; gap: 0.3rem; flex-wrap: wrap; justify-content: center; }
 .succ-child-knowledge { font-size: 0.75rem; color: var(--gold); }
+.btn-choose-child {
+  background: var(--accent); border-color: var(--gold);
+  font-weight: 700; font-size: 0.85rem; padding: 0.5rem 1rem; width: 100%;
+}
 #btn-succession {
   background: var(--accent);
   border-color: var(--gold);
@@ -643,6 +649,32 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   text-align: center;
 }
 .succ-note { font-size: 0.68rem; color: var(--text-dim); text-align: center; }
+
+/* ── Teach pane ──────────────────────────────────────────────────────── */
+.teach-header {
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 0.9rem; font-weight: 600; color: var(--gold);
+  padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);
+}
+#btn-back-teach {
+  background: none; border: none; font-size: 0.85rem;
+  color: var(--text-dim); cursor: pointer; padding: 0;
+}
+.teach-subtitle { font-size: 0.78rem; color: var(--text-dim); margin: 0.5rem 0 0.3rem; }
+#teach-skill-list, #teach-child-list { display: flex; flex-direction: column; gap: 0.4rem; }
+.teach-skill-btn, .teach-child-btn {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 0.5rem 0.75rem;
+  font-size: 0.85rem; color: var(--text); cursor: pointer; text-align: left;
+}
+.teach-skill-btn.active, .teach-child-btn.active {
+  border-color: var(--gold); color: var(--gold); background: rgba(212,175,55,0.1);
+}
+#btn-confirm-teach {
+  margin-top: 0.75rem; width: 100%;
+  background: var(--accent); border-color: var(--gold); font-weight: 700;
+}
+#btn-confirm-teach:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* Game Over */
 .overlay-big-icon { font-size: 3rem; text-align: center; }
