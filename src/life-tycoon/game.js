@@ -421,22 +421,35 @@ function renderAll() {
 }
 
 function renderCycleForecast() {
-  const row = el('cycle-forecast');
   const timeUsed = S.timeTotal - S.timeLeft;
   const foodCost = Math.round(timeUsed * GAME_DATA.era.foodPerTimePoint);
   const agePct   = S.char.age / GAME_DATA.era.lifeExpectancy.max;
   const ageLoss  = agePct > 0.7 ? Math.round(agePct * 3) : 0;
 
-  const items = [];
+  // Food delta
+  const fcFood = el('fc-food');
   if (foodCost > 0) {
     const danger = S.char.food - foodCost < 15;
-    items.push(`<span class="fc-item${danger ? ' danger' : ''}">🍖 -${foodCost}</span>`);
+    fcFood.textContent = `(-${foodCost})`;
+    fcFood.className = 'fc-delta' + (danger ? ' danger' : '');
+  } else {
+    fcFood.textContent = '';
   }
-  items.push(`<span class="fc-item">😊 -3</span>`);
-  if (ageLoss > 0) items.push(`<span class="fc-item danger">❤️ -${ageLoss}</span>`);
 
-  if (items.length === 0) { row.innerHTML = ''; return; }
-  row.innerHTML = `<span class="fc-label">fi cicle →</span>` + items.join('<span style="color:var(--border)"> · </span>');
+  // Happiness always -3
+  el('fc-hap').textContent = '(-3)';
+  el('fc-hap').className = 'fc-delta';
+
+  // Health: only if aging penalty or starvation risk
+  const fcHealth = el('fc-health');
+  const willStarve = foodCost > 0 && S.char.food - foodCost <= 0;
+  const totalHealthLoss = ageLoss + (willStarve ? 8 : 0);
+  if (totalHealthLoss > 0) {
+    fcHealth.textContent = `(-${totalHealthLoss})`;
+    fcHealth.className = 'fc-delta danger';
+  } else {
+    fcHealth.textContent = '';
+  }
 }
 
 function renderHeader() {
@@ -678,7 +691,7 @@ function executeProject() {
 
   // Animate progress bar — double-rAF ensures transition applies after the 0% reset
   const fill = el('exec-progress-fill');
-  const dur = 2200;
+  const dur = 1000;
   requestAnimationFrame(() => {
     fill.style.transition = `width ${dur}ms linear`;
     requestAnimationFrame(() => { fill.style.width = '100%'; });
@@ -701,10 +714,16 @@ function executeProject() {
 
     const discovered = tryDiscoverKnowledge(proj, result.finalMult);
     const event = tryTriggerEvent(proj, result.quality);
-    if (event) S.pendingEvent = event;
 
     S.lastResult = { proj, result, discovered };
-    S.phase = 'result';
+
+    if (event) {
+      // Skip result pane — go directly to event (floaters already ran)
+      S.pendingEvent = event;
+      S.phase = 'event';
+    } else {
+      S.phase = 'result';
+    }
     renderAll();
   });
 }
@@ -775,20 +794,13 @@ function renderResultPane() {
   }
 
   const nextBtn = el('btn-next-cycle');
-
-  if (S.pendingEvent) {
-    nextBtn.textContent = 'Event! →';
-    nextBtn.onclick = () => { clearTimeout(_timer); S.phase = 'event'; renderAll(); };
-    gameDelay(4000, () => { S.phase = 'event'; renderAll(); });
-  } else if (S.timeLeft > 0) {
+  if (S.timeLeft > 0) {
     const moreActions = Math.floor(S.timeLeft / 2);
     nextBtn.textContent = `Altra acció (${moreActions} disponible${moreActions > 1 ? 's' : ''}) →`;
-    nextBtn.onclick = () => { clearTimeout(_timer); S.phase = 'select'; renderAll(); };
-    gameDelay(2500, () => { S.phase = 'select'; renderAll(); });
+    nextBtn.onclick = () => { S.phase = 'select'; renderAll(); };
   } else {
     nextBtn.textContent = 'Cicle següent →';
-    nextBtn.onclick = () => { clearTimeout(_timer); endCycle(); };
-    gameDelay(3500, endCycle);
+    nextBtn.onclick = () => endCycle();
   }
 }
 

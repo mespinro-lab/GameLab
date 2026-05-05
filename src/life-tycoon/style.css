@@ -128,22 +128,16 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   0%, 100% { opacity: 1; } 50% { opacity: 0.6; }
 }
 
-/* ── Cycle Forecast ──────────────────────────────────────────────────── */
-#cycle-forecast {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.22rem 0.6rem;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-  font-size: 0.68rem;
-  min-height: 24px;
+/* ── Cycle forecast inline deltas ────────────────────────────────────── */
+.fc-delta {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #e67e22;
+  margin-left: 1px;
+  line-height: 1;
 }
-#cycle-forecast:empty { display: none; }
-.fc-label { color: var(--text-dim); margin-right: 0.1rem; }
-.fc-item   { color: #e67e22; font-weight: 700; }
-.fc-item.danger { color: #e74c3c; }
+.fc-delta.danger { color: #e74c3c; }
+.fc-delta:empty  { display: none; }
 
 /* ── Knowledge Row ───────────────────────────────────────────────────── */
 #knowledge-row {
@@ -656,7 +650,12 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
 .pane:not(.hidden) { animation: fadeInUp 0.2s ease; }
+#pane-event:not(.hidden) { animation: slideInRight 0.25s ease; }
 
 
 /* ── Floating numbers ────────────────────────────────────────────────── */
