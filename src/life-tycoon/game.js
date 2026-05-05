@@ -51,6 +51,7 @@ function initState() {
     timeLeft: GAME_DATA.era.timeTotal,
     activeProject: null,
     pendingEvent: null,
+    pendingDiscoveries: [],
     lastResult: null,
     genealogy: [],
     milestones: [],
@@ -507,7 +508,7 @@ function renderPartner() {
 }
 
 function renderPhase() {
-  const panes = ['pane-select','pane-sliders','pane-executing','pane-result','pane-event','pane-ev-result'];
+  const panes = ['pane-select','pane-sliders','pane-executing','pane-result','pane-discovery','pane-event','pane-ev-result'];
   panes.forEach(p => hide(p));
 
   const overlays = ['overlay-succession','overlay-gameover','overlay-end','overlay-milestones'];
@@ -518,6 +519,7 @@ function renderPhase() {
     case 'intensity':  renderIntensityPane(); show('pane-sliders'); break;
     case 'executing':  renderExecutingPane(); show('pane-executing'); break;
     case 'result':     renderResultPane(); show('pane-result'); break;
+    case 'discovery':  renderDiscoveryPane(); show('pane-discovery'); break;
     case 'event':      renderEventPane(); show('pane-event'); break;
     case 'succession': renderSuccessionOverlay(); show('overlay-succession'); break;
     case 'gameover':   renderGameOverOverlay(); show('overlay-gameover'); break;
@@ -714,23 +716,66 @@ function executeProject() {
 
     const discovered = tryDiscoverKnowledge(proj, result.finalMult);
     const event = tryTriggerEvent(proj, result.quality);
+    if (discovered.length > 0) S.pendingDiscoveries.push(...discovered);
+    if (event) S.pendingEvent = event;
 
-    S.lastResult = { proj, result, discovered };
-
-    if (event) {
-      // Skip result pane — go directly to event (floaters already ran)
-      S.pendingEvent = event;
-      S.phase = 'event';
-    } else {
-      S.phase = 'result';
-    }
+    S.lastResult = { proj, result };
+    S.phase = 'result';
     renderAll();
   });
 }
 
+// ── Discovery & notification helpers ─────────────────────────────────────────
+function afterNotifications() {
+  if (S.timeLeft > 0) {
+    S.phase = 'select';
+    renderAll();
+  } else {
+    endCycle();
+  }
+}
+
+function renderDiscoveryPane() {
+  const k = S.pendingDiscoveries[0];
+  el('disc-icon').textContent = k.icon;
+  el('disc-name').textContent = k.name;
+  el('disc-desc').textContent = k.description;
+
+  const efxEl = el('disc-effects');
+  efxEl.innerHTML = '';
+  const statLabels = { health: '❤️ Salut', physical: '💪 Físic', intelligence: '🧠 Intel·ligència', social: '👥 Social' };
+  for (const [stat, val] of Object.entries(k.statBonus || {})) {
+    if (!val) continue;
+    const div = document.createElement('div');
+    div.className = 'fx-line';
+    div.innerHTML = `<span>${statLabels[stat] || stat}</span><span class="fx-pos">+${val} permanent</span>`;
+    efxEl.appendChild(div);
+  }
+  for (const projId of (k.unlocksProjectIds || [])) {
+    const proj = getProject(projId);
+    if (!proj) continue;
+    const div = document.createElement('div');
+    div.className = 'fx-line';
+    div.innerHTML = `<span>🔓 Desbloqueja</span><span class="fx-pos">${proj.icon} ${proj.name}</span>`;
+    efxEl.appendChild(div);
+  }
+}
+
+function advanceFromDiscovery() {
+  S.pendingDiscoveries.shift();
+  if (S.pendingDiscoveries.length > 0) {
+    renderAll();
+  } else if (S.pendingEvent) {
+    S.phase = 'event';
+    renderAll();
+  } else {
+    afterNotifications();
+  }
+}
+
 // ── Result pane ───────────────────────────────────────────────────────────────
 function renderResultPane() {
-  const { proj, result, discovered } = S.lastResult;
+  const { proj, result } = S.lastResult;
   el('result-proj-label').textContent = proj.icon + ' ' + proj.name;
   const barPct = result.quality === 'good' ? 80 : result.quality === 'ok' ? 50 : 20;
   el('result-score-fill').style.width = barPct + '%';
@@ -786,22 +831,32 @@ function renderResultPane() {
     fxList.appendChild(div);
   }
 
-  // Discoveries
-  const discEl = el('result-discoveries');
-  discEl.innerHTML = '';
-  for (const k of discovered) {
-    discEl.innerHTML += `✨ Has descobert: ${k.icon} <strong>${k.name}</strong>! `;
-  }
+  el('result-discoveries').innerHTML = '';
 
   const nextBtn = el('btn-next-cycle');
-  if (S.timeLeft > 0) {
-    const moreActions = Math.floor(S.timeLeft / 2);
-    nextBtn.textContent = `Altra acció (${moreActions} disponible${moreActions > 1 ? 's' : ''}) →`;
-    nextBtn.onclick = () => { S.phase = 'select'; renderAll(); };
+  const goNext = () => {
+    if (S.pendingDiscoveries.length > 0) {
+      S.phase = 'discovery'; renderAll();
+    } else if (S.pendingEvent) {
+      S.phase = 'event'; renderAll();
+    } else if (S.timeLeft > 0) {
+      S.phase = 'select'; renderAll();
+    } else {
+      endCycle();
+    }
+  };
+
+  if (S.pendingDiscoveries.length > 0) {
+    nextBtn.textContent = '✨ Descobriment! →';
+  } else if (S.pendingEvent) {
+    nextBtn.textContent = '⚡ Event! →';
+  } else if (S.timeLeft > 0) {
+    const n = Math.floor(S.timeLeft / 2);
+    nextBtn.textContent = `Altra acció (${n} disp.) →`;
   } else {
     nextBtn.textContent = 'Cicle següent →';
-    nextBtn.onclick = () => endCycle();
   }
+  nextBtn.onclick = goNext;
 }
 
 // ── Event pane ────────────────────────────────────────────────────────────────
@@ -863,7 +918,7 @@ function resolveEvent(ev, optId) {
     return `<span class="${v > 0 ? 'fx-pos' : 'fx-neg'}">${labels[k] || k} ${v > 0 ? '+' : ''}${v}</span>`;
   }).join('  ');
 
-  gameDelay(1800, endCycle);
+  el('btn-dismiss-ev-result').onclick = () => afterNotifications();
 }
 
 // ── Succession overlay ────────────────────────────────────────────────────────
@@ -978,6 +1033,9 @@ function bindEvents() {
     if (!btn) return;
     setIntensity(+btn.dataset.int);
   });
+
+  el('btn-dismiss-discovery').addEventListener('click', advanceFromDiscovery);
+  el('btn-dismiss-ev-result').addEventListener('click', () => afterNotifications());
 
   // Zone sheet
   el('btn-close-zone-sheet').addEventListener('click', () => hide('overlay-zone-actions'));

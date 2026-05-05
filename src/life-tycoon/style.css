@@ -441,6 +441,44 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   margin-top: auto;
 }
 
+/* ── Discovery pane ──────────────────────────────────────────────────── */
+#disc-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+#disc-icon { font-size: 2rem; }
+.disc-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--gold);
+  opacity: 0.75;
+}
+#disc-desc { font-size: 0.9rem; line-height: 1.5; color: var(--text); }
+#disc-effects { display: flex; flex-direction: column; gap: 0.3rem; }
+#btn-dismiss-discovery {
+  align-self: stretch;
+  background: var(--accent);
+  border-color: var(--gold);
+  font-weight: 700;
+  padding: 0.7rem;
+  font-size: 0.95rem;
+  margin-top: auto;
+}
+#btn-dismiss-ev-result {
+  align-self: stretch;
+  background: var(--surface2);
+  border-color: var(--border);
+  font-weight: 600;
+  padding: 0.6rem;
+  margin-top: auto;
+}
+
 /* ── Event ───────────────────────────────────────────────────────────── */
 #ev-header {
   display: flex;
@@ -654,8 +692,13 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   from { opacity: 0; transform: translateX(24px); }
   to   { opacity: 1; transform: translateX(0); }
 }
+@keyframes discoveryIn {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
 .pane:not(.hidden) { animation: fadeInUp 0.2s ease; }
-#pane-event:not(.hidden) { animation: slideInRight 0.25s ease; }
+#pane-event:not(.hidden)     { animation: slideInRight 0.25s ease; }
+#pane-discovery:not(.hidden) { animation: discoveryIn 0.3s ease; }
 
 
 /* ── Floating numbers ────────────────────────────────────────────────── */
