@@ -216,19 +216,19 @@ const GAME_DATA = {
     {
       id: 'fire', name: 'Foc', icon: '🔥',
       description: 'Dominar el foc canvia les possibilitats de la tribu.',
-      statBonus: { health: 5 }, inheritanceRate: 0.4, discoveryChance: 0.3,
+      statBonus: { health: 5 }, inheritanceRate: 1.0, discoveryChance: 0.3,
       unlocksProjectIds: [],
     },
     {
       id: 'stone_tools', name: 'Eines de Pedra', icon: '🪨',
       description: 'Eines millorades per a la caça i l\'exploració.',
-      statBonus: {}, inheritanceRate: 0.35, discoveryChance: 0.45,
+      statBonus: {}, inheritanceRate: 1.0, discoveryChance: 0.45,
       unlocksProjectIds: ['explore'],
     },
     {
       id: 'language_basics', name: 'Llengua Bàsica', icon: '🗣️',
       description: 'Comunicar-se millor enforteix els llaços tribals.',
-      statBonus: { social: 1 }, inheritanceRate: 0.5, discoveryChance: 0.3,
+      statBonus: { social: 1 }, inheritanceRate: 1.0, discoveryChance: 0.3,
       unlocksProjectIds: [],
     },
   ],

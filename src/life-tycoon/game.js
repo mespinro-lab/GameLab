@@ -427,14 +427,16 @@ function renderCycleForecast() {
   const agePct   = S.char.age / GAME_DATA.era.lifeExpectancy.max;
   const ageLoss  = agePct > 0.7 ? Math.round(agePct * 3) : 0;
 
-  // Food delta
+  // Food delta — show actual cost if actions done, else minimum estimate
   const fcFood = el('fc-food');
+  const minFoodCost = Math.round(2 * GAME_DATA.era.foodPerTimePoint); // cost 1 Suau
   if (foodCost > 0) {
     const danger = S.char.food - foodCost < 15;
     fcFood.textContent = `(-${foodCost})`;
     fcFood.className = 'fc-delta' + (danger ? ' danger' : '');
   } else {
-    fcFood.textContent = '';
+    fcFood.textContent = `(≥${minFoodCost})`;
+    fcFood.className = 'fc-delta projected';
   }
 
   // Happiness always -3
