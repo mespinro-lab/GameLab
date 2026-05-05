@@ -138,7 +138,6 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 }
 .fc-delta.danger { color: #e74c3c; }
 .fc-delta:empty    { display: none; }
-.fc-delta.projected { color: var(--text-dim); font-weight: 400; }
 
 /* ── Knowledge Row ───────────────────────────────────────────────────── */
 #knowledge-row {
