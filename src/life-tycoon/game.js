@@ -333,6 +333,7 @@ function generateChild() {
     learnedSkillIds: [],
     familyReputation: S.char.familyReputation,
     traitIds: [inheritedTraitId, ownTraitId],
+    bornCycle: S.cycle,
   };
 }
 
@@ -369,6 +370,12 @@ function tryTriggerEvent(proj, quality) {
   return null;
 }
 
+// ── Time total (grows with grown children) ────────────────────────────────────
+function calcTimeTotal() {
+  const grownCount = S.char.children.filter(c => S.cycle - (c.bornCycle || 0) >= 3).length;
+  return GAME_DATA.era.timeTotal + Math.min(grownCount, 2) * 2;
+}
+
 // ── End of cycle ──────────────────────────────────────────────────────────────
 function endCycle() {
   S.char.age += 2;
@@ -395,6 +402,9 @@ function endCycle() {
   // Happiness drift
   S.char.happiness = clamp(S.char.happiness - 3, 20, 100);
 
+  // Family reputation bonus for 2+ children
+  if (S.char.children.length >= 2) S.char.familyReputation = clamp(S.char.familyReputation + 2, 0, 100);
+
   checkMilestones();
 
   if (S.char.health <= 0 || S.cycle >= S.maxCycles) {
@@ -402,8 +412,9 @@ function endCycle() {
     return;
   }
 
-  S.timeLeft = S.timeTotal;
   S.cycle++;
+  S.timeTotal = calcTimeTotal();
+  S.timeLeft = S.timeTotal;
   S.phase = 'select';
   renderAll();
 }
@@ -458,8 +469,9 @@ function doSuccession(child) {
   };
   for (const tId of S.char.traitIds) applyTrait(tId);
 
-  S.timeLeft = S.timeTotal;
   S.cycle = 1;
+  S.timeTotal = GAME_DATA.era.timeTotal;
+  S.timeLeft = S.timeTotal;
   S.maxCycles = GAME_DATA.era.cyclesPerLife.base + Math.round(S.char.physical * 0.3);
   S.phase = 'select';
   renderAll();
