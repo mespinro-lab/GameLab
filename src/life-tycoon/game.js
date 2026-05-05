@@ -241,6 +241,7 @@ function tryDiscoverKnowledge(proj, score) {
 function tryDiscoverSkill(proj, score) {
   const discovered = [];
   for (const sId of (proj.skillDiscovery || [])) {
+    if (S.char.learnedSkillIds.length >= 2) break;
     if (hasSkill(sId)) continue;
     const s = getSkill(sId);
     if (!s || score < 0.3) continue;
