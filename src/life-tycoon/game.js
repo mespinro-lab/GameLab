@@ -244,6 +244,8 @@ function tryDiscoverKnowledge(proj, score) {
     if (hasKnowledge(kId)) continue;
     const k = getKnowledge(kId);
     if (!k || score < 0.3) continue;
+    const reqKnowledge = k.requires?.knowledgeIds || [];
+    if (reqKnowledge.some(rId => !hasKnowledge(rId))) continue;
     if (Math.random() < k.discoveryChance + (S.char.traitDiscoveryBonus || 0)) {
       S.char.knowledgeIds.push(kId);
       for (const [stat, bonus] of Object.entries(k.statBonus || {})) {
@@ -407,10 +409,10 @@ function endCycle() {
   // Medicinal plants: regen before food/aging checks
   if (hasSkill('medicinal_plants')) S.char.health = clamp(S.char.health + 5, 0, S.char.maxHealth);
 
-  // Food cost: time used + 2 per child, reduced by cooking skill
+  // Food cost: time used + 2 per child, reduced by cooking technology
   const timeUsed   = S.timeTotal - S.timeLeft;
   const baseFoodCost = Math.round(timeUsed * GAME_DATA.era.foodPerTimePoint) + S.char.children.length * 2;
-  const foodCost   = hasSkill('cooking') ? Math.round(baseFoodCost * 0.8) : baseFoodCost;
+  const foodCost   = hasKnowledge('cooking') ? Math.round(baseFoodCost * 0.8) : baseFoodCost;
   S.char.food = Math.max(0, S.char.food - foodCost);
   if (S.char.food === 0) S.char.health = clamp(S.char.health - 8, 0, S.char.maxHealth);
 
@@ -538,7 +540,7 @@ function renderAll() {
 
 function renderCycleForecast() {
   const baseProjected = Math.round(S.timeTotal * GAME_DATA.era.foodPerTimePoint) + S.char.children.length * 2;
-  const projectedFood = hasSkill('cooking') ? Math.round(baseProjected * 0.8) : baseProjected;
+  const projectedFood = hasKnowledge('cooking') ? Math.round(baseProjected * 0.8) : baseProjected;
   const agePct        = S.char.age / GAME_DATA.era.lifeExpectancy.max;
   const ageLoss       = agePct > 0.7 ? Math.round(agePct * 3) : 0;
 
@@ -974,6 +976,12 @@ function renderDiscoveryPane() {
     div.innerHTML = `<span>Efecte</span><span class="fx-pos">${item.effectDesc}</span>`;
     efxEl.appendChild(div);
   } else {
+    if (item.effectDesc) {
+      const div = document.createElement('div');
+      div.className = 'fx-line';
+      div.innerHTML = `<span>Efecte</span><span class="fx-pos">${item.effectDesc}</span>`;
+      efxEl.appendChild(div);
+    }
     const statLabels = { health: '❤️ Salut', physical: '💪 Físic', intelligence: '🧠 Intel·ligència', social: '👥 Social' };
     for (const [stat, val] of Object.entries(item.statBonus || {})) {
       if (!val) continue;
@@ -1267,6 +1275,7 @@ function renderEndOverlay() {
 // ── Technology overlay ────────────────────────────────────────────────────────
 function knowledgeEffectDesc(k) {
   const parts = [];
+  if (k.effectDesc) parts.push(k.effectDesc);
   for (const [stat, val] of Object.entries(k.statBonus || {})) {
     const labels = { health: 'Salut', social: 'Social', physical: 'Físic', intelligence: 'Intel·ligència' };
     parts.push(`+${val} ${labels[stat] || stat}`);
