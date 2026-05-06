@@ -313,7 +313,9 @@ function generatePartner() {
 // ── Child generation ──────────────────────────────────────────────────────────
 function generateChild() {
   const gender = Math.random() > 0.5 ? 'M' : 'F';
-  const name = randomName(gender, S.char.name);
+  const usedNames = new Set([S.char.name, ...S.char.children.map(c => c.name)]);
+  const pool = (gender === 'M' ? GAME_DATA.namesMasc : GAME_DATA.namesFem).filter(n => !usedNames.has(n));
+  const name = pick(pool.length > 0 ? pool : (gender === 'M' ? GAME_DATA.namesMasc : GAME_DATA.namesFem));
   const ps = S.char.partner?.stats || { physical: 2, intelligence: 2, social: 2 };
 
   const physical     = clamp(Math.round((S.char.physical     + ps.physical)     / 2 + rand(-1, 1)), 1, 8);
@@ -424,8 +426,8 @@ function endCycle() {
   S.char.food = Math.max(0, S.char.food - foodCost);
   if (S.char.food === 0) {
     S.char.health = clamp(S.char.health - 8, 0, S.char.maxHealth);
-    // F5: permanent maxHealth penalty for starvation
     S.char.maxHealth = Math.max(30, S.char.maxHealth - 5);
+    S.pendingDeaths.push({ _isFamine: true }); // always show famine notification
     if (S.char.children.length > 0) {
       const youngest = S.char.children.reduce((a, b) =>
         (b.bornCycle || 0) > (a.bornCycle || 0) ? b : a
@@ -463,6 +465,15 @@ function endCycle() {
   S.timeTotal = calcTimeTotal();
   S.timeLeft = S.timeTotal;
   checkToolUnlock();
+
+  // Cycle bump animation (triggers after renderAll sets the new cycle number)
+  requestAnimationFrame(() => {
+    const hdrC = el('hdr-c');
+    hdrC.classList.remove('cycle-bump');
+    void hdrC.offsetWidth;
+    hdrC.classList.add('cycle-bump');
+  });
+
   if (S.pendingDeaths.length > 0) {
     showNextDeath();
   } else {
@@ -509,7 +520,10 @@ function doSuccession(child) {
     social:       child.social,
     happiness: 60,
     familyReputation: child.familyReputation,
-    knowledgeIds: child.knowledgeIds,
+    knowledgeIds: [...new Set([
+      ...child.knowledgeIds,
+      ...S.char.knowledgeIds.filter(kId => { const k = getKnowledge(kId); return k?.inheritanceRate === 1.0; }),
+    ])],
     partner: null,
     children: [],
     huntCount: 0,
@@ -685,7 +699,8 @@ function renderPhase() {
     case 'select':     renderSelectPane(); show('pane-select'); break;
     case 'intensity':  renderIntensityPane(); show('pane-sliders'); break;
     case 'executing':  renderExecutingPane(); show('pane-executing'); break;
-    // 'result' phase retired — go directly to discovery/event/select
+    case 'result':     renderResultPane();    show('pane-result');    break;
+    case 'ev-result':  show('pane-ev-result'); break;
     case 'teach':      renderTeachPane();     show('pane-teach');     break;
     case 'discovery':  renderDiscoveryPane(); show('pane-discovery'); break;
     case 'event':      renderEventPane(); show('pane-event'); break;
@@ -923,6 +938,8 @@ function renderImpactPreview(proj) {
 // ── Execute ───────────────────────────────────────────────────────────────────
 function executeProject() {
   const proj = S.activeProject;
+  const timeCostCheck = [2, 4, 6][S.intensity - 1];
+  if (S.timeLeft < timeCostCheck) return;
   S.phase = 'executing';
   renderAll();
 
@@ -956,15 +973,13 @@ function executeProject() {
     if (discovered.length > 0) S.pendingDiscoveries.push(...discovered);
     if (event) S.pendingEvent = event;
 
-    if (S.pendingDiscoveries.length > 0) {
-      S.phase = 'discovery';
-      renderAll();
-    } else if (S.pendingEvent) {
-      S.phase = 'event';
-      renderAll();
-    } else {
-      afterNotifications();
-    }
+    S.lastResult = { proj, result };
+    S.phase = 'result';
+    renderAll();
+
+    const floaters = S.pendingFloaters;
+    S.pendingFloaters = {};
+    requestAnimationFrame(() => showFxFloaters(floaters));
   });
 }
 
@@ -1075,10 +1090,19 @@ function executeTeach() {
 
 // ── Discovery & notification helpers ─────────────────────────────────────────
 function showNextDeath() {
-  const dead = S.pendingDeaths.shift();
-  el('evr-icon').textContent = childAvatar(dead);
-  el('evr-text').textContent = `${dead.name} no ha sobreviscut a la fam. La família porta el dol.`;
-  el('evr-fx').innerHTML = '<div class="fx-line"><span>Reputació familiar</span><span class="fx-neg">-5</span></div>';
+  const item = S.pendingDeaths.shift();
+  if (item._isFamine) {
+    el('evr-icon').textContent = '🍖';
+    el('evr-text').textContent = 'La fam arriba al campament. No hi ha prou menjar per a tothom.';
+    el('evr-fx').innerHTML = `
+      <div class="fx-line"><span>Salut</span><span class="fx-neg">-8</span></div>
+      <div class="fx-line"><span>Salut màxima (permanent)</span><span class="fx-neg">-5</span></div>
+    `;
+  } else {
+    el('evr-icon').textContent = childAvatar(item);
+    el('evr-text').textContent = `${item.name} no ha sobreviscut a la fam. La família porta el dol.`;
+    el('evr-fx').innerHTML = '<div class="fx-line"><span>Reputació familiar</span><span class="fx-neg">-5</span></div>';
+  }
   S._showingDeath = true;
   S.phase = 'ev-result';
   renderAll();
