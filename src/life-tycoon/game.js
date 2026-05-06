@@ -540,6 +540,10 @@ function doSuccession(child) {
   S.timeTotal = GAME_DATA.era.timeTotal;
   S.timeLeft = S.timeTotal;
   S.maxCycles = GAME_DATA.era.cyclesPerLife.base + Math.round(S.char.physical * 0.3);
+  S.pendingDeaths = [];
+  S._showingDeath = false;
+  S.pendingDiscoveries = [];
+  S.pendingEvent = null;
   S.phase = 'select';
   renderAll();
 }
