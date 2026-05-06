@@ -489,7 +489,7 @@ function doSuccession(child) {
     partner: null,
     children: [],
     huntCount: 0,
-    learnedSkillIds: [],
+    learnedSkillIds: child.learnedSkillIds || [],
     traitIds: child.traitIds || [],
     traitAgingResist: false,
     traitDiscoveryBonus: 0,
@@ -571,6 +571,7 @@ function renderHeader() {
   el('hdr-gen').textContent = `Gen. ${S.generation}`;
   el('hdr-c').textContent = S.cycle;
   el('hdr-mc').textContent = S.maxCycles;
+  el('hdr-ec').textContent = S.eraCycle;
 }
 
 function renderStats() {
@@ -870,6 +871,7 @@ function executeProject() {
 // ── Teach pane ────────────────────────────────────────────────────────────────
 function renderTeachPane() {
   const c = S.char;
+  el('teach-cost-label').textContent = `Cost: 2 punts de temps · Temps disponible: ${S.timeLeft}`;
 
   // Skill picker
   const skillList = el('teach-skill-list');
@@ -1171,10 +1173,12 @@ function buildChildCard(child, showChooseBtn) {
     : '';
   const card = document.createElement('div');
   card.className = 'succ-child-card';
+  const bornLabel = child.bornEraCycle != null ? `Nascut/da al cicle d'era ${child.bornEraCycle}` : '';
   card.innerHTML = `
     <span class="succ-child-avatar">${childAvatar(child)}</span>
     <span class="succ-child-name">${child.name}</span>
     <span class="succ-child-virtue">"${child.virtueLabel}"</span>
+    ${bornLabel ? `<span class="succ-child-born-era">${bornLabel}</span>` : ''}
     <div class="succ-child-stats">
       <span>💪${child.physical}</span>
       <span>🧠${child.intelligence}</span>

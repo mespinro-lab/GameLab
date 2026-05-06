@@ -119,7 +119,7 @@ const GAME_DATA = {
     },
     {
       id: 'have_children', name: 'Tenir Fills', icon: '👶', category: 'home',
-      description: 'Créixer com a família. El futur del llinatge.',
+      description: 'Créixer com a família. Genera 1 fill si la qualitat és suficient.',
       requirements: { health: 40, requiresPartner: true },
       statKey: 'social',
       outputs: { happiness: 15 },

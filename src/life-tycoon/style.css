@@ -68,6 +68,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 #hdr-center { display: flex; flex-direction: column; align-items: center; gap: 1px; }
 #hdr-gen  { font-size: 0.7rem; color: var(--text-dim); }
 #hdr-cycle { font-size: 0.8rem; }
+#hdr-era-cycle { font-size: 0.65rem; color: var(--text-dim); }
 #btn-milestones {
   font-size: 1.3rem; background: none; border: none; padding: 0.25rem;
 }
@@ -636,6 +637,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 .succ-child-stats { display: flex; gap: 0.8rem; font-size: 0.78rem; }
 .succ-child-traits { display: flex; gap: 0.3rem; flex-wrap: wrap; justify-content: center; }
 .succ-child-knowledge { font-size: 0.75rem; color: var(--gold); }
+.succ-child-born-era { font-size: 0.72rem; color: var(--text-dim); }
 .btn-choose-child {
   background: var(--accent); border-color: var(--gold);
   font-weight: 700; font-size: 0.85rem; padding: 0.5rem 1rem; width: 100%;
@@ -661,6 +663,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   color: var(--text-dim); cursor: pointer; padding: 0;
 }
 .teach-subtitle { font-size: 0.78rem; color: var(--text-dim); margin: 0.5rem 0 0.3rem; }
+.teach-cost { font-size: 0.75rem; color: var(--text-dim); margin: 0.3rem 0 0; padding: 0.25rem 0.5rem; background: var(--surface2); border-radius: 6px; }
 #teach-skill-list, #teach-child-list { display: flex; flex-direction: column; gap: 0.4rem; }
 .teach-skill-btn, .teach-child-btn {
   background: var(--surface2); border: 1px solid var(--border);
