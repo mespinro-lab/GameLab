@@ -16,6 +16,10 @@ const GAME_DATA = {
     },
     timeTotal: 6,
     foodPerTimePoint: 1.7,
+    duration: 60,
+    toolTiers: [
+      { level: 2, knowledgeId: 'stone_tools', earliest: 10, auto: 30, progressThreshold: 15 },
+    ],
   },
 
   // statKey: which character stat affects this project's output
@@ -53,13 +57,14 @@ const GAME_DATA = {
     },
     {
       id: 'craft_tools', name: 'Fabricar Eines', icon: '🪨', category: 'knowledge',
-      description: 'Treballa la pedra. Pot descobrir noves tècniques.',
+      description: 'Treballa la pedra i l\'os. Acumula progrés cap a eines millors.',
       requirements: { intelligence: 1 },
       statKey: 'intelligence',
-      outputs: { happiness: 5 },
+      outputs: {},
+      toolProgressGain: true,
       healthRisk: 0,
       knowledgeBonus: [], statGain: { intelligence: 0.5 },
-      knowledgeDiscovery: ['fire', 'stone_tools'],
+      knowledgeDiscovery: ['fire'],
       skillDiscovery: ['weaving'],
       eventPool: [],
       zone: 'town',

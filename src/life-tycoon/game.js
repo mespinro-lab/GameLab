@@ -51,10 +51,13 @@ function initState() {
       traitAgingResist: false,
       traitDiscoveryBonus: 0,
       traitStatGainBonus: 0,
+      bornEraCycle: 0,
     },
     intensity: 2,
     timeTotal: GAME_DATA.era.timeTotal,
     timeLeft: GAME_DATA.era.timeTotal,
+    eraCycle: 0,
+    toolProgress: 0,
     activeProject: null,
     pendingEvent: null,
     pendingDiscoveries: [],
@@ -161,6 +164,9 @@ function calcResult(proj) {
     fx[key] = Math.round(val * (val < 0 ? mult : finalMult));
   }
 
+  // Tool progress from crafting
+  if (proj.toolProgressGain) fx.toolProgress = S.intensity;
+
   // Skill bonuses on outputs
   if (hasSkill('fishing')  && proj.id === 'gather')  fx.food = (fx.food || 0) + 8;
   if (hasSkill('tracking') && (proj.id === 'hunt' || proj.id === 'explore')) {
@@ -204,6 +210,8 @@ function applyFx(fx) {
       c.happiness = clamp(c.happiness + v, 0, 100);
     } else if (k === 'familyReputation') {
       c.familyReputation = clamp(c.familyReputation + v, 0, 100);
+    } else if (k === 'toolProgress') {
+      S.toolProgress += v;
     }
   }
 }
@@ -334,6 +342,7 @@ function generateChild() {
     familyReputation: S.char.familyReputation,
     traitIds: [inheritedTraitId, ownTraitId],
     bornCycle: S.cycle,
+    bornEraCycle: S.eraCycle,
   };
 }
 
@@ -368,6 +377,19 @@ function tryTriggerEvent(proj, quality) {
     return GAME_DATA.events.find(e => e.id === eId) || null;
   }
   return null;
+}
+
+// ── Tool progression ──────────────────────────────────────────────────────────
+function checkToolUnlock() {
+  for (const tier of (GAME_DATA.era.toolTiers || [])) {
+    if (hasKnowledge(tier.knowledgeId)) continue;
+    if (S.eraCycle < tier.earliest) continue;
+    if (S.toolProgress >= tier.progressThreshold || S.eraCycle >= tier.auto) {
+      S.char.knowledgeIds.push(tier.knowledgeId);
+      const k = getKnowledge(tier.knowledgeId);
+      if (k) S.pendingDiscoveries.push({ ...k, _type: 'technology' });
+    }
+  }
 }
 
 // ── Time total (grows with grown children) ────────────────────────────────────
@@ -413,9 +435,11 @@ function endCycle() {
   }
 
   S.cycle++;
+  S.eraCycle++;
   S.timeTotal = calcTimeTotal();
   S.timeLeft = S.timeTotal;
-  S.phase = 'select';
+  checkToolUnlock();
+  S.phase = S.pendingDiscoveries.length > 0 ? 'discovery' : 'select';
   renderAll();
 }
 
@@ -466,6 +490,7 @@ function doSuccession(child) {
     traitAgingResist: false,
     traitDiscoveryBonus: 0,
     traitStatGainBonus: 0,
+    bornEraCycle: child.bornEraCycle || 0,
   };
   for (const tId of S.char.traitIds) applyTrait(tId);
 
@@ -771,6 +796,15 @@ function renderImpactPreview(proj) {
     row.innerHTML = `<span>${labels[key] || key}</span><span class="preview-val ${val > 0 ? 'pos' : 'neg'}">${val > 0 ? '+' : ''}${val}</span>`;
     container.appendChild(row);
   }
+  if (proj.toolProgressGain) {
+    const gain = S.intensity;
+    const remaining = Math.max(0, (GAME_DATA.era.toolTiers?.[0]?.progressThreshold || 15) - S.toolProgress - gain);
+    const row = document.createElement('div');
+    row.className = 'preview-row';
+    const suffix = hasKnowledge('stone_tools') ? '' : ` (${remaining} per desbloquejar)`;
+    row.innerHTML = `<span>🪨 Progrés eines</span><span class="preview-val pos">+${gain}${suffix}</span>`;
+    container.appendChild(row);
+  }
   if (hasRisk) {
     const chances = ['15%', '30%', '55%'];
     const row = document.createElement('div');
@@ -912,8 +946,9 @@ function afterNotifications() {
 }
 
 function accumulateFloaters(fx) {
+  const noFloat = new Set(['toolProgress']);
   for (const [k, v] of Object.entries(fx)) {
-    if (typeof v === 'number') {
+    if (typeof v === 'number' && !noFloat.has(k)) {
       S.pendingFloaters[k] = (S.pendingFloaters[k] || 0) + v;
     }
   }
