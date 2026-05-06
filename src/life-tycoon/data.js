@@ -279,6 +279,7 @@ const GAME_DATA = {
       description: 'Cuinar els aliments n\'augmenta el valor nutritiu.',
       effectDesc: 'El consum de menjar al final de cicle és un 20% menor.',
       effect: { foodCostReduction: 0.2 },
+      requires: { knowledgeIds: ['fire'] },
       discoveryChance: 0.2 },
     { id: 'weaving', name: 'Teixir', icon: '🧵',
       description: 'Teixeixes roba i abrics que protegeixen del fred i l\'esgotament.',

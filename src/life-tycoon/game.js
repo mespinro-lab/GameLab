@@ -265,6 +265,8 @@ function tryDiscoverSkill(proj, score) {
     if (hasSkill(sId)) continue;
     const s = getSkill(sId);
     if (!s || score < 0.3) continue;
+    const reqKnowledge = s.requires?.knowledgeIds || [];
+    if (reqKnowledge.some(kId => !hasKnowledge(kId))) continue;
     if (Math.random() < s.discoveryChance) {
       S.char.learnedSkillIds.push(sId);
       discovered.push({ ...s, _type: 'skill' });
