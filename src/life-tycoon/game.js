@@ -47,7 +47,7 @@ function initState() {
       learnedSkillIds: [],
       traitIds: [],
       teachSkillId: null,
-      teachChildIndex: null,
+      teachChildIndices: [],
       traitAgingResist: false,
       traitDiscoveryBonus: 0,
       traitStatGainBonus: 0,
@@ -61,6 +61,7 @@ function initState() {
     activeProject: null,
     pendingEvent: null,
     pendingDiscoveries: [],
+    pendingDeaths: [],
     pendingFloaters: {},
     lastResult: null,
     genealogy: [],
@@ -167,11 +168,14 @@ function calcResult(proj) {
   // Tool progress from crafting
   if (proj.toolProgressGain) fx.toolProgress = S.intensity;
 
-  // Skill bonuses on outputs
-  if (hasSkill('fishing')  && proj.id === 'gather')  fx.food = (fx.food || 0) + 8;
+  // Skill/knowledge percentage bonuses — base captured before stacking
+  const baseFoodGather = fx.food || 0;
+  if (hasSkill('fishing')  && proj.id === 'gather')  fx.food = baseFoodGather + Math.round(baseFoodGather * 0.5);
   if (hasSkill('tracking') && (proj.id === 'hunt' || proj.id === 'explore')) {
     for (const k of Object.keys(fx)) { if (fx[k] > 0) fx[k] = Math.round(fx[k] * 1.2); }
   }
+  // Stone tools: +30% gather food (knowledgeBonus already adds +15% mult on hunt/explore)
+  if (hasKnowledge('stone_tools') && proj.id === 'gather') fx.food = (fx.food || 0) + Math.round(baseFoodGather * 0.3);
 
   let riskFailed = false;
   if (proj.healthRisk > 0) {
@@ -399,22 +403,38 @@ function checkToolUnlock() {
 // ── Time total (grows with grown children) ────────────────────────────────────
 function calcTimeTotal() {
   const grownCount = S.char.children.filter(c => S.cycle - (c.bornCycle || 0) >= 3).length;
-  return GAME_DATA.era.timeTotal + Math.min(grownCount, 2) * 2;
+  const grownBonus  = Math.min(grownCount, 2) * 2;
+  const familyBonus = S.char.children.length >= 3 ? 2 : 0; // T5: large family unlocks 2nd action
+  return GAME_DATA.era.timeTotal + grownBonus + familyBonus;
 }
 
 // ── End of cycle ──────────────────────────────────────────────────────────────
 function endCycle() {
   S.char.age += 2;
 
-  // Medicinal plants: regen before food/aging checks
-  if (hasSkill('medicinal_plants')) S.char.health = clamp(S.char.health + 5, 0, S.char.maxHealth);
+  // Medicinal plants: % regen before food/aging checks
+  if (hasSkill('medicinal_plants')) {
+    const regen = Math.round(S.char.maxHealth * 0.05);
+    S.char.health = clamp(S.char.health + regen, 0, S.char.maxHealth);
+  }
 
-  // Food cost: time used + 2 per child, reduced by cooking technology
-  const timeUsed   = S.timeTotal - S.timeLeft;
-  const baseFoodCost = Math.round(timeUsed * GAME_DATA.era.foodPerTimePoint) + S.char.children.length * 2;
+  // Food cost: full time budget + 2 per child, reduced by cooking technology
+  const baseFoodCost = Math.round(S.timeTotal * GAME_DATA.era.foodPerTimePoint) + S.char.children.length * 2;
   const foodCost   = hasKnowledge('cooking') ? Math.round(baseFoodCost * 0.8) : baseFoodCost;
   S.char.food = Math.max(0, S.char.food - foodCost);
-  if (S.char.food === 0) S.char.health = clamp(S.char.health - 8, 0, S.char.maxHealth);
+  if (S.char.food === 0) {
+    S.char.health = clamp(S.char.health - 8, 0, S.char.maxHealth);
+    // F5: permanent maxHealth penalty for starvation
+    S.char.maxHealth = Math.max(30, S.char.maxHealth - 5);
+    if (S.char.children.length > 0) {
+      const youngest = S.char.children.reduce((a, b) =>
+        (b.bornCycle || 0) > (a.bornCycle || 0) ? b : a
+      );
+      S.char.children = S.char.children.filter(c => c !== youngest);
+      S.char.familyReputation = clamp(S.char.familyReputation - 5, 0, 100);
+      S.pendingDeaths.push(youngest);
+    }
+  }
 
   // Aging penalty (after 70% of max lifespan), reduced by traits/skills
   const agePct = S.char.age / GAME_DATA.era.lifeExpectancy.max;
@@ -443,8 +463,12 @@ function endCycle() {
   S.timeTotal = calcTimeTotal();
   S.timeLeft = S.timeTotal;
   checkToolUnlock();
-  S.phase = S.pendingDiscoveries.length > 0 ? 'discovery' : 'select';
-  renderAll();
+  if (S.pendingDeaths.length > 0) {
+    showNextDeath();
+  } else {
+    S.phase = S.pendingDiscoveries.length > 0 ? 'discovery' : 'select';
+    renderAll();
+  }
 }
 
 function triggerDeath() {
@@ -560,8 +584,10 @@ function renderCycleForecast() {
   if (totalHealthLoss > 0) {
     fcHealth.textContent = `(-${totalHealthLoss})`;
     fcHealth.className = 'fc-delta danger';
+    fcHealth.title = willStarve ? 'Fam: -8 salut i -5 salut màxima permanent' : 'Envelliment';
   } else {
     fcHealth.textContent = '';
+    fcHealth.title = '';
   }
 }
 
@@ -593,6 +619,16 @@ function renderStats() {
   renderCycleForecast();
 }
 
+function showPillDetail(icon, name, desc, bonusLines) {
+  el('pill-det-icon').textContent = icon;
+  el('pill-det-name').textContent = name;
+  el('pill-det-desc').textContent = desc;
+  el('pill-det-bonus').innerHTML = bonusLines.map(l =>
+    `<div class="fx-line"><span>${l}</span></div>`
+  ).join('');
+  show('overlay-pill');
+}
+
 function renderTraits() {
   const row = el('knowledge-row');
   row.innerHTML = '';
@@ -601,8 +637,15 @@ function renderTraits() {
     if (!t) continue;
     const pill = document.createElement('div');
     pill.className = 'trait-pill';
-    pill.title = t.desc;
     pill.textContent = t.icon + ' ' + t.name;
+    pill.onclick = () => {
+      const lines = [];
+      if (t.effect?.stat)            lines.push(`${t.effect.stat} +${t.effect.value}`);
+      if (t.effect?.statGainBonus)   lines.push(`Guanys d'habilitats +${Math.round(t.effect.statGainBonus * 100)}%`);
+      if (t.effect?.discoveryBonus)  lines.push(`Probabilitat descobriments +${Math.round(t.effect.discoveryBonus * 100)}%`);
+      if (t.effect?.maxHealth)       lines.push(`Salut màxima +${t.effect.maxHealth}`);
+      showPillDetail(t.icon, t.name, t.desc, lines);
+    };
     row.appendChild(pill);
   }
   for (const sId of S.char.learnedSkillIds) {
@@ -610,8 +653,13 @@ function renderTraits() {
     if (!s) continue;
     const pill = document.createElement('div');
     pill.className = 'skill-pill';
-    pill.title = s.effectDesc;
     pill.textContent = s.icon + ' ' + s.name;
+    pill.onclick = () => {
+      const lines = s.transversal === false
+        ? ['Era: Prehistòria · No es transfereix als cicles futurs']
+        : s.transversal ? ['Habilitat transversal · Útil a totes les eres'] : [];
+      showPillDetail(s.icon, s.name, s.effectDesc, lines);
+    };
     row.appendChild(pill);
   }
 }
@@ -668,7 +716,9 @@ function renderExecutingPane() {
 function renderSelectPane() {
   const actionsLeft = S.timeLeft < S.timeTotal ? Math.floor(S.timeLeft / 2) : 0;
   const timeStr = actionsLeft > 0 ? ` · ${actionsLeft} acció${actionsLeft > 1 ? 'ns' : ''} més` : '';
-  el('select-header').textContent = `Cicle ${S.cycle}${timeStr} — On vas?`;
+  const showFamilyBonus = S.char.children.length >= 3 && S.timeLeft === S.timeTotal;
+  const familyStr = showFamilyBonus ? ' · 👨‍👩‍👧‍👦 +2⏱' : '';
+  el('select-header').textContent = `Cicle ${S.cycle}${timeStr}${familyStr} — On vas?`;
 
   const container = el('zone-cards');
   container.innerHTML = '';
@@ -706,11 +756,14 @@ function openZoneSheet(zoneId) {
     const reason = unlocked ? '' : lockedReason(proj);
     const riskHtml = (unlocked && proj.healthRisk > 0) ? `<div class="proj-impact"><span class="impact-tag risk">⚠️ Risc</span></div>` : '';
     const reqHtml  = reason ? `<span class="proj-req">${reason}</span>` : '';
+    const statIcons = { physical: '💪', intelligence: '🧠', social: '👥' };
+    const gainParts = Object.entries(proj.statGain || {}).map(([s, v]) => `${statIcons[s] || s}+${v}`);
+    const gainHtml  = gainParts.length > 0 ? `<span class="proj-stat-gain">${gainParts.join(' ')}</span>` : '';
     card.innerHTML = `
       <span class="proj-icon">${proj.icon}</span>
       <span class="proj-name">${proj.name}</span>
       <span class="proj-desc">${proj.description}</span>
-      ${riskHtml}${reqHtml}
+      ${gainHtml}${riskHtml}${reqHtml}
     `;
     if (unlocked) {
       card.addEventListener('click', () => {
@@ -727,7 +780,7 @@ function selectProject(projId) {
   S.activeProject = getProject(projId);
   if (S.activeProject.teachesSkill) {
     S.char.teachSkillId = null;
-    S.char.teachChildIndex = null;
+    S.char.teachChildIndices = [];
     S.phase = 'teach';
   } else {
     S.phase = 'intensity';
@@ -778,27 +831,53 @@ function calcImpactPreview(proj, intensity) {
   let knowMod = 1.0;
   for (const kId of (proj.knowledgeBonus || [])) { if (hasKnowledge(kId)) knowMod += 0.15; }
   const finalMult = mult * statMod * knowMod;
+  const mults = { intensity: mult, stat: statMod, knowledge: knowMod, final: finalMult };
   const preview = {};
   for (const [key, val] of Object.entries(proj.outputs || {})) {
     preview[key] = Math.round(val * (val < 0 ? mult : finalMult));
   }
+  // Percentage bonuses (mirrors calcResult) — base captured before stacking
+  const flatBonuses = {};
+  const baseFood = preview.food || 0;
+  if (hasSkill('fishing') && proj.id === 'gather') {
+    const b = Math.round(baseFood * 0.5);
+    flatBonuses.food = (flatBonuses.food || 0) + b;
+    preview.food = (preview.food || 0) + b;
+  }
+  if (hasKnowledge('stone_tools') && proj.id === 'gather') {
+    const b = Math.round(baseFood * 0.3);
+    flatBonuses.food = (flatBonuses.food || 0) + b;
+    preview.food = (preview.food || 0) + b;
+  }
+  const hasTracking = hasSkill('tracking') && (proj.id === 'hunt' || proj.id === 'explore');
   let effectiveRisk = proj.healthRisk;
   for (const [kId, reduction] of Object.entries(proj.riskReductions || {})) {
     if (hasKnowledge(kId)) effectiveRisk = Math.round(effectiveRisk * (1 - reduction));
   }
-  return { preview, hasRisk: effectiveRisk > 0, riskReduced: effectiveRisk < proj.healthRisk };
+  return { preview, flatBonuses, hasTracking, mults, hasRisk: effectiveRisk > 0, riskReduced: effectiveRisk < proj.healthRisk };
 }
 
 function renderImpactPreview(proj) {
   const container = el('impact-preview');
   container.innerHTML = '';
-  const { preview, hasRisk, riskReduced } = calcImpactPreview(proj, S.intensity);
+  const { preview, flatBonuses, hasTracking, mults, hasRisk, riskReduced } = calcImpactPreview(proj, S.intensity);
   const labels = { food: '🍖 Aliment', health: '❤️ Salut', happiness: '😊 Felicitat', familyReputation: '🏛️ Reputació' };
   for (const [key, val] of Object.entries(preview)) {
     if (val === 0) continue;
     const row = document.createElement('div');
     row.className = 'preview-row';
-    row.innerHTML = `<span>${labels[key] || key}</span><span class="preview-val ${val > 0 ? 'pos' : 'neg'}">${val > 0 ? '+' : ''}${val}</span>`;
+    const bonus = flatBonuses[key];
+    const base  = val - (bonus || 0);
+    const valStr = bonus
+      ? `<span class="preview-val pos">+${base}</span> <span class="preview-bonus">+${bonus}</span>`
+      : `<span class="preview-val ${val > 0 ? 'pos' : 'neg'}">${val > 0 ? '+' : ''}${val}</span>`;
+    row.innerHTML = `<span>${labels[key] || key}</span>${valStr}`;
+    container.appendChild(row);
+  }
+  if (hasTracking) {
+    const row = document.createElement('div');
+    row.className = 'preview-row';
+    row.innerHTML = `<span>🐾 Rastre</span><span class="preview-bonus">+20% tot</span>`;
     container.appendChild(row);
   }
   if (proj.toolProgressGain) {
@@ -818,6 +897,27 @@ function renderImpactPreview(proj) {
     row.innerHTML = `<span>⚠️ Risc lesió${note}</span><span class="preview-val risk">${chances[S.intensity - 1]}</span>`;
     container.appendChild(row);
   }
+
+  // U3: expandable multiplier detail
+  const detailToggle = document.createElement('button');
+  detailToggle.className = 'preview-detail-toggle';
+  detailToggle.textContent = '⌄ Detall';
+  const detailBox = document.createElement('div');
+  detailBox.className = 'preview-detail hidden';
+  const intNames = ['Suau ×0.5', 'Normal ×1.1', 'Intens ×1.8'];
+  const statLabel = { physical: '💪 Físic', intelligence: '🧠 Intel·l.', social: '👥 Social' };
+  detailBox.innerHTML = `
+    <div class="detail-row"><span>Intensitat</span><span>${intNames[S.intensity - 1]}</span></div>
+    <div class="detail-row"><span>${statLabel[proj.statKey] || proj.statKey} ${(S.char[proj.statKey] || 1).toFixed(1)}</span><span>×${mults.stat.toFixed(2)}</span></div>
+    ${mults.knowledge > 1 ? `<div class="detail-row"><span>Coneixement</span><span>×${mults.knowledge.toFixed(2)}</span></div>` : ''}
+    <div class="detail-row detail-total"><span>Multiplicador final</span><span>×${mults.final.toFixed(2)}</span></div>
+  `;
+  detailToggle.onclick = () => {
+    const hidden = detailBox.classList.toggle('hidden');
+    detailToggle.textContent = hidden ? '⌄ Detall' : '⌃ Tancar';
+  };
+  container.appendChild(detailToggle);
+  container.appendChild(detailBox);
 }
 
 // ── Execute ───────────────────────────────────────────────────────────────────
@@ -869,9 +969,21 @@ function executeProject() {
 }
 
 // ── Teach pane ────────────────────────────────────────────────────────────────
+function calcTeachCost(n) {
+  let cost = 0;
+  for (let i = 0; i < n; i++) cost += 2 + i;
+  return cost;
+}
+
 function renderTeachPane() {
   const c = S.char;
-  el('teach-cost-label').textContent = `Cost: 2 punts de temps · Temps disponible: ${S.timeLeft}`;
+  if (!c.teachChildIndices) c.teachChildIndices = [];
+  const n = c.teachChildIndices.length;
+  const cost = calcTeachCost(Math.max(1, n));
+  const costBreakdown = n > 1
+    ? Array.from({ length: n }, (_, i) => 2 + i).join('+') + ` = ${calcTeachCost(n)}`
+    : n === 1 ? '2' : '2 per fill';
+  el('teach-cost-label').textContent = `Cost: ${costBreakdown} · Temps: ${S.timeLeft}`;
 
   // Skill picker
   const skillList = el('teach-skill-list');
@@ -884,7 +996,7 @@ function renderTeachPane() {
     const btn = document.createElement('button');
     btn.className = 'teach-skill-btn' + (c.teachSkillId === sId ? ' active' : '');
     btn.textContent = s.icon + ' ' + s.name + ' — ' + s.effectDesc;
-    btn.onclick = () => { c.teachSkillId = sId; c.teachChildIndex = null; renderTeachPane(); };
+    btn.onclick = () => { c.teachSkillId = sId; c.teachChildIndices = []; renderTeachPane(); };
     skillList.appendChild(btn);
   }
 
@@ -900,44 +1012,78 @@ function renderTeachPane() {
     childSection.style.display = 'none';
   } else if (eligibleChildren.length === 1) {
     childSection.style.display = 'block';
-    c.teachChildIndex = c.children.indexOf(eligibleChildren[0]);
-    childList.innerHTML = `<p style="font-size:0.82rem;color:var(--text)">${childAvatar(eligibleChildren[0])} ${eligibleChildren[0].name} aprendrà l'habilitat.</p>`;
+    const ch0 = eligibleChildren[0];
+    const idx0 = c.children.indexOf(ch0);
+    if (!c.teachChildIndices.includes(idx0)) c.teachChildIndices = [idx0];
+    const bornInfo0 = ch0.bornEraCycle != null ? ` · cicle era ${ch0.bornEraCycle}` : '';
+    childList.innerHTML = `<p style="font-size:0.82rem;color:var(--text)">${childAvatar(ch0)} ${ch0.name}${bornInfo0} aprendrà l'habilitat.</p>`;
   } else {
     childSection.style.display = 'block';
     for (const child of eligibleChildren) {
       const idx = c.children.indexOf(child);
+      const selected = c.teachChildIndices.includes(idx);
       const btn = document.createElement('button');
-      btn.className = 'teach-child-btn' + (c.teachChildIndex === idx ? ' active' : '');
-      btn.textContent = childAvatar(child) + ' ' + child.name;
-      btn.onclick = () => { c.teachChildIndex = idx; renderTeachPane(); };
+      btn.className = 'teach-child-btn' + (selected ? ' active' : '');
+      const bornInfo = child.bornEraCycle != null ? ` · era ${child.bornEraCycle}` : '';
+      btn.textContent = childAvatar(child) + ' ' + child.name + bornInfo;
+      btn.onclick = () => {
+        const i = c.teachChildIndices.indexOf(idx);
+        if (i === -1) {
+          const nextCost = calcTeachCost(c.teachChildIndices.length + 1);
+          if (nextCost <= S.timeLeft) c.teachChildIndices.push(idx);
+        } else {
+          c.teachChildIndices.splice(i, 1);
+        }
+        renderTeachPane();
+      };
       childList.appendChild(btn);
     }
   }
 
-  el('btn-confirm-teach').disabled = c.teachSkillId === null || c.teachChildIndex === null;
+  const canTeach = c.teachSkillId !== null && c.teachChildIndices.length > 0 &&
+    calcTeachCost(c.teachChildIndices.length) <= S.timeLeft;
+  el('btn-confirm-teach').disabled = !canTeach;
 }
 
 function executeTeach() {
   const c = S.char;
-  const skill = getSkill(c.teachSkillId);
-  const child = c.children[c.teachChildIndex];
-  if (!skill || !child) return;
+  const indices = c.teachChildIndices || [];
+  if (c.teachSkillId === null || indices.length === 0) return;
+  const cost = calcTeachCost(indices.length);
+  if (S.timeLeft < cost) return;
 
-  if (!child.learnedSkillIds) child.learnedSkillIds = [];
-  child.learnedSkillIds.push(c.teachSkillId);
+  for (const idx of indices) {
+    const child = c.children[idx];
+    if (!child) continue;
+    if (!child.learnedSkillIds) child.learnedSkillIds = [];
+    if (!child.learnedSkillIds.includes(c.teachSkillId)) {
+      child.learnedSkillIds.push(c.teachSkillId);
+    }
+  }
 
-  const fx = { happiness: 8, familyReputation: 3, '_gain_social': 0.2, '_gain_intelligence': 0.1 };
+  const n = indices.length;
+  const fx = { happiness: 8 * n, familyReputation: 3, '_gain_social': 0.2, '_gain_intelligence': 0.1 };
   applyFx(fx);
   accumulateFloaters(fx);
 
-  S.timeLeft = Math.max(0, S.timeLeft - 2);
+  S.timeLeft = Math.max(0, S.timeLeft - cost);
   c.teachSkillId = null;
-  c.teachChildIndex = null;
+  c.teachChildIndices = [];
 
   afterNotifications();
 }
 
 // ── Discovery & notification helpers ─────────────────────────────────────────
+function showNextDeath() {
+  const dead = S.pendingDeaths.shift();
+  el('evr-icon').textContent = childAvatar(dead);
+  el('evr-text').textContent = `${dead.name} no ha sobreviscut a la fam. La família porta el dol.`;
+  el('evr-fx').innerHTML = '<div class="fx-line"><span>Reputació familiar</span><span class="fx-neg">-5</span></div>';
+  S._showingDeath = true;
+  S.phase = 'ev-result';
+  renderAll();
+}
+
 function afterNotifications() {
   if (S.timeLeft > 0) {
     S.phase = 'select';
@@ -1250,7 +1396,7 @@ function renderEndOverlay() {
     <div class="end-stat"><span>Generacions</span><span class="end-stat-val">${S.generation}</span></div>
     <div class="end-stat"><span>Fills totals</span><span class="end-stat-val">${S.char.children.length}</span></div>
     <div class="end-stat"><span>Reputació</span><span class="end-stat-val">${Math.round(S.char.familyReputation)}</span></div>
-    <div class="end-stat"><span>Coneixements</span><span class="end-stat-val">${S.char.knowledgeIds.length}/3</span></div>
+    <div class="end-stat"><span>Coneixements</span><span class="end-stat-val">${S.char.knowledgeIds.length}/${GAME_DATA.knowledge.length}</span></div>
   `;
 
   const msRow = el('end-milestones-row');
@@ -1317,6 +1463,22 @@ function renderTechOverlay() {
       list.appendChild(row);
     }
   }
+
+  // Tool progress for locked tiers
+  for (const tier of (GAME_DATA.era.toolTiers || [])) {
+    if (hasKnowledge(tier.knowledgeId)) continue;
+    const pct = Math.min(100, Math.round(S.toolProgress / tier.progressThreshold * 100));
+    const k = getKnowledge(tier.knowledgeId);
+    const wrap = document.createElement('div');
+    wrap.className = 'tech-progress-wrap';
+    wrap.innerHTML = `
+      <div class="tech-progress-label">${k ? k.icon + ' ' + k.name : tier.knowledgeId}: ${S.toolProgress}/${tier.progressThreshold}</div>
+      <div class="tech-progress-bar"><div class="tech-progress-fill" style="width:${pct}%"></div></div>
+      <div class="tech-progress-hint">Auto-desbloqueig al cicle d'era ${tier.auto}</div>
+    `;
+    list.appendChild(wrap);
+  }
+
   show('overlay-tech');
 }
 
@@ -1355,9 +1517,21 @@ function bindEvents() {
     S.phase = 'select'; renderAll();
     openZoneSheet(S.activeProject.zone);
   });
-  el('btn-confirm-teach').addEventListener('click', () => { if (!el('btn-confirm-teach').disabled) executeTeach(); });
+  el('btn-confirm-teach').addEventListener('click', executeTeach);
   el('btn-dismiss-discovery').addEventListener('click', advanceFromDiscovery);
-  el('btn-dismiss-ev-result').addEventListener('click', () => afterNotifications());
+  el('btn-dismiss-ev-result').addEventListener('click', () => {
+    if (S._showingDeath) {
+      S._showingDeath = false;
+      if (S.pendingDeaths.length > 0) {
+        showNextDeath();
+      } else {
+        S.phase = S.pendingDiscoveries.length > 0 ? 'discovery' : 'select';
+        renderAll();
+      }
+    } else {
+      afterNotifications();
+    }
+  });
 
   // Zone sheet
   el('btn-close-zone-sheet').addEventListener('click', () => hide('overlay-zone-actions'));
@@ -1365,6 +1539,7 @@ function bindEvents() {
     if (e.target === el('overlay-zone-actions')) hide('overlay-zone-actions');
   });
 
+  el('btn-close-pill').addEventListener('click', () => hide('overlay-pill'));
   el('btn-milestones').addEventListener('click', () => { renderMilestonesOverlay(); });
   el('btn-close-milestones').addEventListener('click', () => hide('overlay-milestones'));
   el('btn-tech').addEventListener('click', () => { renderTechOverlay(); });

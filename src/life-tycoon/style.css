@@ -206,6 +206,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 .tech-icon { font-size: 1.5rem; line-height: 1; }
 .tech-info strong { font-size: 0.85rem; color: var(--text); display: block; }
 .tech-info small  { font-size: 0.7rem;  color: var(--text-dim); margin-top: 2px; display: block; }
+.tech-progress-wrap  { padding: 0.6rem 0; border-top: 1px solid var(--border); }
+.tech-progress-label { font-size: 0.8rem; color: var(--text); margin-bottom: 5px; }
+.tech-progress-bar   { background: var(--surface2); border-radius: 4px; height: 8px; overflow: hidden; }
+.tech-progress-fill  { height: 100%; background: var(--gold); border-radius: 4px; transition: width 0.3s; }
+.tech-progress-hint  { font-size: 0.65rem; color: var(--text-dim); margin-top: 4px; }
 
 /* ── Partner Row ─────────────────────────────────────────────────────── */
 #partner-row {
@@ -344,7 +349,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 .proj-icon { font-size: 1.4rem; line-height: 1; }
 .proj-name { font-weight: 700; font-size: 0.82rem; color: var(--gold); }
 .proj-desc { font-size: 0.62rem; color: var(--text-dim); line-height: 1.3; }
-.proj-req  { font-size: 0.6rem; color: #e74c3c; margin-top: 2px; }
+.proj-req       { font-size: 0.6rem; color: #e74c3c; margin-top: 2px; }
+.proj-stat-gain { font-size: 0.6rem; color: var(--text-dim); margin-top: 2px; letter-spacing: 0.02em; }
 .proj-impact {
   margin-top: 4px;
   display: flex;
@@ -416,9 +422,24 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   font-size: 0.88rem;
 }
 .preview-label { color: var(--text-dim); }
-.preview-val.pos { color: #2ecc71; font-weight: 700; }
-.preview-val.neg { color: #e74c3c; font-weight: 700; }
+.preview-val.pos  { color: #2ecc71; font-weight: 700; }
+.preview-val.neg  { color: #e74c3c; font-weight: 700; }
 .preview-val.risk { color: #e67e22; font-weight: 700; }
+.preview-bonus    { color: #27ae60; font-size: 0.75rem; margin-left: 3px; }
+.preview-detail-toggle {
+  font-size: 0.68rem; color: var(--text-dim); background: none; border: none;
+  padding: 2px 0; cursor: pointer; text-align: left; margin-top: 2px;
+}
+.preview-detail-toggle:hover { color: var(--text); }
+.preview-detail {
+  background: var(--surface2); border-radius: 6px; padding: 0.4rem 0.5rem;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.detail-row {
+  display: flex; justify-content: space-between;
+  font-size: 0.72rem; color: var(--text-dim);
+}
+.detail-row.detail-total { color: var(--gold); font-weight: 700; margin-top: 2px; border-top: 1px solid var(--border); padding-top: 3px; }
 
 #slider-footer {
   margin-top: auto;
@@ -744,6 +765,15 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   padding: 0.65rem;
   text-align: center;
 }
+
+/* Pill detail overlay */
+.pill-detail-card { min-width: 220px; }
+.pill-detail-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+.pill-detail-header span:first-child { font-size: 1.6rem; line-height: 1; }
+.pill-detail-header span:last-child  { font-size: 0.95rem; font-weight: 700; color: var(--gold); }
+#pill-det-desc { font-size: 0.8rem; color: var(--text-dim); margin: 0.4rem 0; line-height: 1.4; }
+#pill-det-bonus { font-size: 0.75rem; }
+#btn-close-pill { margin-top: 0.8rem; }
 
 /* Milestones overlay */
 .milestones-card { max-height: 80dvh; }
