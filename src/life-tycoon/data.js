@@ -20,6 +20,7 @@ const GAME_DATA = {
     timeTotal: 6,
     foodPerTimePoint: 1.7,
     duration: 60,
+    globalEvents: ['harsh_winter', 'tribe_conflict'],
 
     dynastySuffixes: ['de la Roca', 'del Foc', 'de la Tribu', 'del Vent', 'de les Cavernes'],
 
@@ -36,6 +37,7 @@ const GAME_DATA = {
       statModMax:     1.8,
       knowledgeBonusPerTech: 0.15,
       maxLearnedSkills: 2,
+      skillDiscoveryMinScore: 0.3,
 
       // Final de cicle
       happinessDrift:   -3,
@@ -108,11 +110,19 @@ const GAME_DATA = {
   ],
 
   // Generic resources — loaded into S.resources = { id: { value, max } }
+  // visibleAfterTech: null = visible des del principi; 'tech_id' = s'amaga fins que es descobreix
   resources: [
-    { id: 'food',             name: 'Menjar',             icon: '🍖', initial: 40, max: 100 },
-    { id: 'health',           name: 'Salut',              icon: '❤️', initial: 80, max: 100 },
-    { id: 'happiness',        name: 'Felicitat',          icon: '😊', initial: 60, max: 100 },
-    { id: 'familyReputation', name: 'Reputació Familiar', icon: '🏛️', initial: 0,  max: 100 },
+    { id: 'food',             name: 'Menjar',             icon: '🍖', initial: 40, max: 100, visibleAfterTech: null,                  hasForecast: true  },
+    { id: 'health',           name: 'Salut',              icon: '❤️', initial: 80, max: 100, visibleAfterTech: null,                  hasForecast: true  },
+    { id: 'happiness',        name: 'Felicitat',          icon: '😊', initial: 60, max: 100, visibleAfterTech: 'language_basics',     hasForecast: true  },
+    { id: 'familyReputation', name: 'Reputació Familiar', icon: '🏛️', initial: 0,  max: 100, visibleAfterTech: 'tribal_organization', hasForecast: false },
+  ],
+
+  // Stats del personatge — visibles progressivament
+  charStats: [
+    { id: 'physical',     icon: '💪', visibleAfterTech: null },
+    { id: 'intelligence', icon: '🧠', visibleAfterTech: null },
+    { id: 'social',       icon: '👥', visibleAfterTech: 'language_basics' },
   ],
 
   // Technologies — auto-unlock at eraCycleAppears if requiresTech is also known
@@ -179,7 +189,9 @@ const GAME_DATA = {
       statKey: 'intelligence',
       outputs: { food: 15, happiness: 5, health: 2 },
       healthRisk: 0,
-      knowledgeBonus: ['stone_tools'], statGain: { intelligence: 0.3 },
+      knowledgeBonus: ['stone_tools'],
+      techBonuses: { stone_tools: { foodPct: 0.3 } },
+      statGain: { intelligence: 0.3 },
       destreseDiscovery: ['medicinal_plants', 'fishing', 'cooking'],
       eventPool: ['good_harvest', 'found_herb'],
       zone: 'wild',
@@ -440,7 +452,7 @@ const GAME_DATA = {
       effect: { maxHealth: 15 }, inheritChance: 0.4 },
     { id: 'natural_resilience', name: 'Resistència natural', icon: '🛡️', statKey: 'physical',
       desc: 'L\'envelliment li afecta la meitat.',
-      effect: { agingResist: true }, inheritChance: 0.5 },
+      effect: { agingResistFactor: 0.5 }, inheritChance: 0.5 },
     { id: 'sharp_intuition',    name: 'Intuïció afilada',   icon: '🔮', statKey: 'intelligence',
       desc: 'Descobreix coneixements amb +20% de probabilitat.',
       effect: { discoveryBonus: 0.2 }, inheritChance: 0.3 },

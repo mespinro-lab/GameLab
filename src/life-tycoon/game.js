@@ -47,7 +47,7 @@ function initState() {
       traitIds: [],
       teachSkillId: null,
       teachChildIndices: [],
-      traitAgingResist: false,
+      traitAgingResist: 0,
       traitDiscoveryBonus: 0,
       traitStatGainBonus: 0,
       bornEraCycle: 0,
@@ -106,7 +106,7 @@ function applyTrait(traitId) {
       S.char[e.stat] = +(S.char[e.stat] + e.value).toFixed(1);
     }
   }
-  if (e.agingResist)    { S.char.traitAgingResist = true; }
+  if (e.agingResistFactor) { S.char.traitAgingResist = e.agingResistFactor; }
   if (e.discoveryBonus) { S.char.traitDiscoveryBonus = e.discoveryBonus; }
   if (e.statGainBonus)  { S.char.traitStatGainBonus = e.statGainBonus; }
 }
@@ -185,8 +185,11 @@ function calcResult(proj) {
     const mult2 = 1 + (getSkill('tracking')?.effect?.huntMultBonus || 0);
     for (const k of Object.keys(fx)) { if (fx[k] > 0) fx[k] = Math.round(fx[k] * mult2); }
   }
-  // Stone tools: +30% gather food (knowledgeBonus already adds +15% mult on hunt/explore)
-  if (hasKnowledge('stone_tools') && proj.id === 'gather') fx.food = (fx.food || 0) + Math.round(baseFoodGather * 0.3);
+  for (const [techId, bonus] of Object.entries(proj.techBonuses || {})) {
+    if (hasKnowledge(techId) && bonus.foodPct) {
+      fx.food = (fx.food || 0) + Math.round(baseFoodGather * bonus.foodPct);
+    }
+  }
 
   let riskFailed = false;
   if (proj.healthRisk > 0) {
@@ -231,14 +234,14 @@ function applyFx(fx) {
 
 // ── Floating numbers ──────────────────────────────────────────────────────────
 function showFxFloaters(fx) {
-  const fxMap  = { health: 'chip-health', food: 'chip-food', happiness: 's-hap', familyReputation: 's-rep' };
-  const gainMap = { physical: 's-phys', intelligence: 's-intel', social: 's-social' };
+  const fxMap  = { health: 'chip-health', food: 'chip-food', happiness: 'chip-happiness', familyReputation: 'chip-familyReputation' };
+  const gainMap = { physical: 'chip-stat-physical', intelligence: 'chip-stat-intelligence', social: 'chip-stat-social' };
   for (const [k, v] of Object.entries(fx)) {
     if (v === 0) continue;
     const anchorId = k.startsWith('_gain_') ? gainMap[k.slice(6)] : fxMap[k];
     if (!anchorId) continue;
     const anchor = el(anchorId);
-    if (!anchor) continue;
+    if (!anchor || anchor.classList.contains('hidden')) continue;
     const rect = anchor.getBoundingClientRect();
     const div = document.createElement('div');
     div.className = `float-num ${v > 0 ? 'pos' : 'neg'}`;
@@ -258,7 +261,7 @@ function tryDiscoverSkill(proj, score) {
     if (S.char.learnedSkillIds.length >= M.maxLearnedSkills) break;
     if (hasSkill(sId)) continue;
     const s = getSkill(sId);
-    if (!s || score < 0.3) continue;
+    if (!s || score < M.skillDiscoveryMinScore) continue;
     const reqTechs = s.requires?.techIds || [];
     if (reqTechs.some(tId => !hasKnowledge(tId))) continue;
     if (Math.random() < s.discoveryChance + (S.char.traitDiscoveryBonus || 0)) {
@@ -374,7 +377,7 @@ function tryTriggerEvent(proj, quality) {
     if (ev && Math.random() < M.eventTriggerChance) return ev;
   }
   if (S.cycle >= M.globalEventMinCycle && Math.random() < M.globalEventChance) {
-    const globals = ['harsh_winter', 'tribe_conflict'];
+    const globals = GAME_DATA.era.globalEvents;
     const eId = pick(globals);
     return GAME_DATA.events.find(e => e.id === eId) || null;
   }
@@ -483,7 +486,7 @@ function endCycle() {
   const ac = GAME_DATA.era.agingCurve;
   if (S.cycle > ac.threshold) {
     let ageLoss = Math.round(ac.baseLoss * Math.pow(ac.acceleration, S.cycle - ac.threshold - 1));
-    if (S.char.traitAgingResist) ageLoss = Math.round(ageLoss * 0.5);
+    if (S.char.traitAgingResist) ageLoss = Math.round(ageLoss * S.char.traitAgingResist);
     if (hasSkill('weaving')) {
       const reduction = getSkill('weaving')?.effect?.agingDamageReduction || 0;
       ageLoss = Math.round(ageLoss * (1 - reduction));
@@ -580,7 +583,7 @@ function doSuccession(child) {
     huntCount: 0,
     learnedSkillIds: child.learnedSkillIds || [],
     traitIds: child.traitIds || [],
-    traitAgingResist: false,
+    traitAgingResist: 0,
     traitDiscoveryBonus: 0,
     traitStatGainBonus: 0,
     bornEraCycle: child.bornEraCycle || 0,
@@ -624,10 +627,67 @@ function dynastyTitle() {
   return '';
 }
 
+function renderStatChips() {
+  const vitalContainer = el('stats-vital');
+  vitalContainer.innerHTML = '';
+  for (const res of GAME_DATA.resources) {
+    const chip = document.createElement('div');
+    chip.className = 'stat-chip hidden';
+    chip.id = 'chip-' + res.id;
+    const span = document.createElement('span');
+    span.id = 's-' + res.id;
+    span.textContent = '0';
+    chip.textContent = res.icon + ' ';
+    chip.appendChild(span);
+    if (res.hasForecast) {
+      const fc = document.createElement('small');
+      fc.id = 'fc-' + res.id;
+      fc.className = 'fc-delta';
+      chip.appendChild(fc);
+    }
+    vitalContainer.appendChild(chip);
+  }
+
+  const skillsContainer = el('stats-skills');
+  skillsContainer.innerHTML = '';
+  for (const stat of GAME_DATA.charStats) {
+    const chip = document.createElement('div');
+    chip.className = 'stat-chip hidden';
+    chip.id = 'chip-stat-' + stat.id;
+    const span = document.createElement('span');
+    span.id = 's-' + stat.id;
+    span.textContent = '1';
+    chip.textContent = stat.icon;
+    chip.appendChild(span);
+    skillsContainer.appendChild(chip);
+  }
+}
+
+function renderMenuEra() {
+  const icon = el('menu-era-icon');
+  const badge = el('menu-era-badge');
+  if (icon) icon.textContent = GAME_DATA.era.icon;
+  if (badge) badge.textContent = `Era 1 · ${GAME_DATA.era.name}`;
+}
+
 // ── Rendering ─────────────────────────────────────────────────────────────────
+function syncStatVisibility() {
+  for (const res of GAME_DATA.resources) {
+    const chip = el('chip-' + res.id);
+    if (!chip) continue;
+    chip.classList.toggle('hidden', !(!res.visibleAfterTech || hasKnowledge(res.visibleAfterTech)));
+  }
+  for (const stat of GAME_DATA.charStats) {
+    const chip = el('chip-stat-' + stat.id);
+    if (!chip) continue;
+    chip.classList.toggle('hidden', !(!stat.visibleAfterTech || hasKnowledge(stat.visibleAfterTech)));
+  }
+}
+
 function renderAll() {
   renderHeader();
   renderStats();
+  syncStatVisibility();
   renderTraits();
   renderPartner();
   renderPhase();
@@ -644,7 +704,7 @@ function renderCycleForecast() {
     ? Math.round(ac.baseLoss * Math.pow(ac.acceleration, S.cycle - ac.threshold - 1))
     : 0;
   let displayAgeLoss = ageLoss;
-  if (S.char.traitAgingResist) displayAgeLoss = Math.round(displayAgeLoss * 0.5);
+  if (S.char.traitAgingResist) displayAgeLoss = Math.round(displayAgeLoss * S.char.traitAgingResist);
   if (hasSkill('weaving')) {
     const reduction = getSkill('weaving')?.effect?.agingDamageReduction || 0;
     displayAgeLoss = Math.round(displayAgeLoss * (1 - reduction));
@@ -656,7 +716,7 @@ function renderCycleForecast() {
 
   const artBonus = hasSkill('art_narratiu') ? (getSkill('art_narratiu')?.effect?.happinessCycleBonus || 0) : 0;
   const hapDelta = M.happinessDrift + artBonus;
-  const fcHap = el('fc-hap');
+  const fcHap = el('fc-happiness');
   fcHap.textContent = hapDelta === 0 ? '(=)' : `(${hapDelta > 0 ? '+' : ''}${hapDelta})`;
   fcHap.className = 'fc-delta' + (hapDelta > 0 ? ' pos' : '');
 
@@ -700,11 +760,11 @@ function renderStats() {
   el('chip-food').classList.toggle('low',      food < 30 && food >= 15);
   el('chip-food').classList.toggle('critical', food < 15);
 
-  el('s-hap').textContent    = Math.round(S.resources.happiness.value);
-  el('s-rep').textContent    = Math.round(S.resources.familyReputation.value);
-  el('s-phys').textContent   = S.char.physical.toFixed(1);
-  el('s-intel').textContent  = S.char.intelligence.toFixed(1);
-  el('s-social').textContent = S.char.social.toFixed(1);
+  el('s-happiness').textContent        = Math.round(S.resources.happiness.value);
+  el('s-familyReputation').textContent = Math.round(S.resources.familyReputation.value);
+  el('s-physical').textContent         = S.char.physical.toFixed(1);
+  el('s-intelligence').textContent     = S.char.intelligence.toFixed(1);
+  el('s-social').textContent           = S.char.social.toFixed(1);
   renderCycleForecast();
 }
 
@@ -928,10 +988,12 @@ function calcImpactPreview(proj, intensity) {
     flatBonuses.food = (flatBonuses.food || 0) + b;
     preview.food = (preview.food || 0) + b;
   }
-  if (hasKnowledge('stone_tools') && proj.id === 'gather') {
-    const b = Math.round(baseFood * 0.3);
-    flatBonuses.food = (flatBonuses.food || 0) + b;
-    preview.food = (preview.food || 0) + b;
+  for (const [techId, bonus] of Object.entries(proj.techBonuses || {})) {
+    if (hasKnowledge(techId) && bonus.foodPct) {
+      const b = Math.round(baseFood * bonus.foodPct);
+      flatBonuses.food = (flatBonuses.food || 0) + b;
+      preview.food = (preview.food || 0) + b;
+    }
   }
   const hasTracking = hasSkill('tracking') && (proj.id === 'hunt' || proj.id === 'explore');
   let effectiveRisk = proj.healthRisk;
@@ -1689,6 +1751,7 @@ function startGame() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  renderStatChips();
+  renderMenuEra();
   bindEvents();
-  // Menu is visible by default (no class="hidden" on it)
 });

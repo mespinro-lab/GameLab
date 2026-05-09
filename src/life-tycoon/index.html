@@ -26,18 +26,9 @@
       <button id="btn-milestones">🏅</button>
     </div>
 
-    <!-- STATS: recursos vitals + habilitats -->
-    <div id="stats-vital">
-      <div class="stat-chip" id="chip-health">❤️ <span id="s-health">80</span><small id="fc-health" class="fc-delta"></small></div>
-      <div class="stat-chip" id="chip-food">🍖 <span id="s-food">40</span><small id="fc-food" class="fc-delta"></small></div>
-<div class="stat-chip">😊<span id="s-hap">60</span><small id="fc-hap" class="fc-delta"></small></div>
-      <div class="stat-chip">🏛️<span id="s-rep">0</span></div>
-    </div>
-    <div id="stats-skills">
-      <div class="stat-chip">💪<span id="s-phys">1</span></div>
-      <div class="stat-chip">🧠<span id="s-intel">1</span></div>
-      <div class="stat-chip">👥<span id="s-social">1</span></div>
-    </div>
+    <!-- STATS: recursos vitals + habilitats — generats dinàmicament per JS des de GAME_DATA -->
+    <div id="stats-vital"></div>
+    <div id="stats-skills"></div>
 
     <!-- TRETS INNATS + BOTÓ TECNOLOGIA (placement definitiu pendent de disseny) -->
     <div id="traits-tech-row">
@@ -146,10 +137,10 @@
   <!-- OVERLAY: Menu -->
   <div id="overlay-menu" class="overlay">
     <div class="overlay-card menu-card">
-      <div class="game-logo">🦴</div>
+      <div class="game-logo" id="menu-era-icon">🦴</div>
       <h1 class="game-title">Life Tycoon</h1>
       <p class="game-sub">Construeix el millor llinatge de la història</p>
-      <div class="era-badge">Era 1 · Prehistòria</div>
+      <div class="era-badge" id="menu-era-badge">Era 1 · Prehistòria</div>
       <button id="btn-new-game">Comença →</button>
     </div>
   </div>
