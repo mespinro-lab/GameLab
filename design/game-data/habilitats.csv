@@ -1,0 +1,7 @@
+id,era_id,nom,icona,descripcio,transversal,probabilitat_descobriment,requereix_tecnologies,requereix_fisic,requereix_intel,requereix_social,efecte_tipus,efecte_valor,descripcio_efecte,notes
+medicinal_plants,prehistoria,Plantes Medicinals,🌿,"Saps identificar les plantes que curen i les que maten.",false,0.25,,,,,healthRegenPct,0.05,"+5% Salut màxima al final de cada cicle",""
+fishing,prehistoria,Pesca,🎣,"Saps trobar els millors llocs on pescar al riu.",false,0.2,,,,,gatherFoodPct,0.5,"+50% Menjar extra quan recol·lectes",""
+tracking,prehistoria,Rastreig,🐾,"Llegeixes el terreny i el rastre de les preses millor que ningú.",false,0.25,,,,,huntMultBonus,0.2,"+20% als resultats de Caçar i Explorar",""
+weaving,prehistoria,Teixir,🧵,"Teixeixes roba i abrics que protegeixen del fred i l'esgotament.",true,0.2,,,,,agingDamageReduction,0.25,"La penalitat d'envelliment és un 25% menor",""
+socialitzar,prehistoria,Socialitzar,🗣️,"Saps crear llaços de confiança i fer que la tribu et segueixi.",false,0.25,language_basics,,,,familyRepPct,0.2,"+20% als guanys de Reputació Familiar",""
+art_narratiu,prehistoria,Art Narratiu,🎨,"Expliques les gestes ancestrals al voltant del foc. La tribu recorda i s'enforteix.",true,0.2,symbolic_thinking,,,,happinessCycleBonus,5,"+5 Felicitat al final de cada cicle","Requereix Pensament Simbòlic (cicle 13+). Habilitat de partida excepcional."

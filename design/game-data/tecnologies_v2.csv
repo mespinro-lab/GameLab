@@ -1,0 +1,23 @@
+id,era_id,nom,icona,cicle_aparicio,requereix_tecnologia,tipus_consequencia,consequencia
+base,prehistoria,-,-,0,-,nou_indicador,Salut
+base,prehistoria,-,-,0,-,nou_recurs,Aliment
+base,prehistoria,-,-,0,-,nova_caracteristica,Físic
+base,prehistoria,-,-,0,-,nova_caracteristica,Intel·ligència
+base,prehistoria,-,-,0,-,nova_accio,recol·lectar
+base,prehistoria,-,-,0,-,nova_accio,caçar_petit
+language_basics,prehistoria,Llengua bàsica,🗣️,3,base,nova_caracteristica,Socialització
+language_basics,prehistoria,Llengua bàsica,🗣️,3,base,habilitat_disponible,socialitzar
+tribal_organization,prehistoria,Organització tribal,👥,6,language_basics,nou_indicador,Felicitat
+tribal_organization,prehistoria,Organització tribal,👥,6,language_basics,nou_indicador,Reputació
+tribal_organization,prehistoria,Organització tribal,👥,6,language_basics,nova_accio,buscar_parella
+tribal_organization,prehistoria,Organització tribal,👥,6,language_basics,nova_accio,cuidar_llar
+fire,prehistoria,Domini del foc,🔥,8,base,nou_indicador,Salut màxima +5
+fire,prehistoria,Domini del foc,🔥,8,base,habilitat_disponible,cuinar
+stone_tools,prehistoria,Eines rudimentàries,🪨,10,base,nova_accio,caçar_gran
+stone_tools,prehistoria,Eines rudimentàries,🪨,10,base,nova_accio,explorar
+stone_tools,prehistoria,Eines rudimentàries,🪨,10,base,habilitat_disponible,rastreig
+symbolic_thinking,prehistoria,Pensament simbòlic,🎨,13,tribal_organization,habilitat_disponible,art_narratiu
+sedentarism,prehistoria,Sedentarisme,🏕️,16,stone_tools,nova_accio,tenir_fills
+sedentarism,prehistoria,Sedentarisme,🏕️,16,stone_tools,nova_accio,educar_fills
+sedentarism,prehistoria,Sedentarisme,🏕️,16,stone_tools,habilitat_disponible,teixir
+sedentarism,prehistoria,Sedentarisme,🏕️,16,stone_tools,habilitat_disponible,plantes_medicinals

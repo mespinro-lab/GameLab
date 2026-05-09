@@ -213,7 +213,8 @@ function applyFx(fx) {
     } else if (k === 'happiness') {
       c.happiness = clamp(c.happiness + v, 0, 100);
     } else if (k === 'familyReputation') {
-      c.familyReputation = clamp(c.familyReputation + v, 0, 100);
+      const applied = (v > 0 && hasSkill('socialitzar')) ? Math.round(v * 1.2) : v;
+      c.familyReputation = clamp(c.familyReputation + applied, 0, 100);
     } else if (k === 'toolProgress') {
       S.toolProgress += v;
     }
@@ -422,13 +423,22 @@ function endCycle() {
 
   // Food cost: full time budget + 2 per child, reduced by cooking technology
   const baseFoodCost = Math.round(S.timeTotal * GAME_DATA.era.foodPerTimePoint) + S.char.children.length * 2;
-  const foodCost   = hasKnowledge('cooking') ? Math.round(baseFoodCost * 0.8) : baseFoodCost;
+  const foodCost = hasKnowledge('cooking') ? Math.round(baseFoodCost * 0.8) : baseFoodCost;
+  const shortfall = Math.max(0, foodCost - S.char.food);
   S.char.food = Math.max(0, S.char.food - foodCost);
-  if (S.char.food === 0) {
-    S.char.health = clamp(S.char.health - 8, 0, S.char.maxHealth);
-    S.char.maxHealth = Math.max(30, S.char.maxHealth - 5);
-    S.pendingDeaths.push({ _isFamine: true }); // always show famine notification
-    if (S.char.children.length > 0) {
+
+  if (shortfall > 0) {
+    const shortfallPct = shortfall / foodCost;
+    const familySize = 1 + S.char.children.length;
+    const healthLoss = Math.max(1, Math.round((shortfall / familySize) * 1.5));
+    S.char.health = clamp(S.char.health - healthLoss, 0, S.char.maxHealth);
+
+    if (shortfallPct >= 0.3) {
+      const maxLoss = shortfallPct >= 0.6 ? 5 : 2;
+      S.char.maxHealth = Math.max(30, S.char.maxHealth - maxLoss);
+    }
+
+    if (shortfallPct >= 0.8 && S.char.children.length > 0) {
       const youngest = S.char.children.reduce((a, b) =>
         (b.bornCycle || 0) > (a.bornCycle || 0) ? b : a
       );
@@ -436,19 +446,24 @@ function endCycle() {
       S.char.familyReputation = clamp(S.char.familyReputation - 5, 0, 100);
       S.pendingDeaths.push(youngest);
     }
+
+    S.pendingDeaths.push({ _isFamine: true, shortfallPct, healthLoss });
   }
 
-  // Aging penalty (after 70% of max lifespan), reduced by traits/skills
-  const agePct = S.char.age / GAME_DATA.era.lifeExpectancy.max;
-  if (agePct > 0.7) {
-    let ageLoss = Math.round(agePct * 3);
-    if (S.char.traitAgingResist)          ageLoss = Math.round(ageLoss * 0.5);
-    if (hasSkill('weaving'))              ageLoss = Math.round(ageLoss * 0.75);
+  // Aging curve: cap pla fins al llindar, exponencial a partir d'aquí
+  const ac = GAME_DATA.era.agingCurve;
+  if (S.cycle > ac.threshold) {
+    let ageLoss = Math.round(ac.baseLoss * Math.pow(ac.acceleration, S.cycle - ac.threshold - 1));
+    if (S.char.traitAgingResist) ageLoss = Math.round(ageLoss * 0.5);
+    if (hasSkill('weaving'))     ageLoss = Math.round(ageLoss * 0.75);
     S.char.health = clamp(S.char.health - ageLoss, 0, S.char.maxHealth);
   }
 
   // Happiness drift
   S.char.happiness = clamp(S.char.happiness - 3, 20, 100);
+
+  // Art narratiu: +5 felicitat per cicle
+  if (hasSkill('art_narratiu')) S.char.happiness = clamp(S.char.happiness + 5, 0, 100);
 
   // Family reputation bonus for 2+ children
   if (S.char.children.length >= 2) S.char.familyReputation = clamp(S.char.familyReputation + 2, 0, 100);
@@ -583,26 +598,41 @@ function renderAll() {
 function renderCycleForecast() {
   const baseProjected = Math.round(S.timeTotal * GAME_DATA.era.foodPerTimePoint) + S.char.children.length * 2;
   const projectedFood = hasKnowledge('cooking') ? Math.round(baseProjected * 0.8) : baseProjected;
-  const agePct        = S.char.age / GAME_DATA.era.lifeExpectancy.max;
-  const ageLoss       = agePct > 0.7 ? Math.round(agePct * 3) : 0;
+
+  const ac = GAME_DATA.era.agingCurve;
+  const ageLoss = S.cycle > ac.threshold
+    ? Math.round(ac.baseLoss * Math.pow(ac.acceleration, S.cycle - ac.threshold - 1))
+    : 0;
+  let displayAgeLoss = ageLoss;
+  if (S.char.traitAgingResist) displayAgeLoss = Math.round(displayAgeLoss * 0.5);
+  if (hasSkill('weaving'))     displayAgeLoss = Math.round(displayAgeLoss * 0.75);
 
   // Food — full-cycle cost + children upkeep, always visible
   const fcFood = el('fc-food');
   fcFood.textContent = `(-${projectedFood})`;
   fcFood.className = 'fc-delta' + (S.char.food - projectedFood < 15 ? ' danger' : '');
 
-  // Happiness always -3
-  el('fc-hap').textContent = '(-3)';
-  el('fc-hap').className = 'fc-delta';
+  // Happiness: -3 base, +5 if art_narratiu
+  const hapDelta = -3 + (hasSkill('art_narratiu') ? 5 : 0);
+  const fcHap = el('fc-hap');
+  fcHap.textContent = hapDelta === 0 ? '(=)' : `(${hapDelta > 0 ? '+' : ''}${hapDelta})`;
+  fcHap.className = 'fc-delta' + (hapDelta > 0 ? ' pos' : '');
 
-  // Health: only if aging penalty or starvation risk
+  // Health: aging penalty + proportional fam estimate
   const fcHealth = el('fc-health');
-  const willStarve = S.char.food - projectedFood <= 0;
-  const totalHealthLoss = ageLoss + (willStarve ? 8 : 0);
+  const foodAfter = S.char.food - projectedFood;
+  const shortfallAmt = foodAfter < 0 ? -foodAfter : 0;
+  const shortfallHealthLoss = shortfallAmt > 0
+    ? Math.max(1, Math.round((shortfallAmt / (1 + S.char.children.length)) * 1.5))
+    : 0;
+  const totalHealthLoss = displayAgeLoss + shortfallHealthLoss;
   if (totalHealthLoss > 0) {
     fcHealth.textContent = `(-${totalHealthLoss})`;
     fcHealth.className = 'fc-delta danger';
-    fcHealth.title = willStarve ? 'Fam: -8 salut i -5 salut màxima permanent' : 'Envelliment';
+    const reasons = [];
+    if (displayAgeLoss > 0) reasons.push(`Envelliment -${displayAgeLoss}`);
+    if (shortfallHealthLoss > 0) reasons.push(`Fam est. -${shortfallHealthLoss}`);
+    fcHealth.title = reasons.join(' · ');
   } else {
     fcHealth.textContent = '';
     fcHealth.title = '';
@@ -1096,11 +1126,26 @@ function executeTeach() {
 function showNextDeath() {
   const item = S.pendingDeaths.shift();
   if (item._isFamine) {
-    el('evr-icon').textContent = '🍖';
-    el('evr-text').textContent = 'La fam arriba al campament. No hi ha prou menjar per a tothom.';
+    const sev = item.shortfallPct || 1;
+    let icon, text, extraLine;
+    if (sev < 0.3) {
+      icon = '🌾';
+      text = 'Les provisions escassegen. La família s\'apanya amb el que té.';
+      extraLine = '';
+    } else if (sev < 0.6) {
+      icon = '🍖';
+      text = 'La fam comença a colpejar. Les reserves s\'esgoten i tothom en pateix.';
+      extraLine = '<div class="fx-line"><span>Salut màxima (permanent)</span><span class="fx-neg">-2</span></div>';
+    } else {
+      icon = '💀';
+      text = 'La fam s\'apodera del campament. No hi ha prou menjar per a tothom.';
+      extraLine = '<div class="fx-line"><span>Salut màxima (permanent)</span><span class="fx-neg">-5</span></div>';
+    }
+    el('evr-icon').textContent = icon;
+    el('evr-text').textContent = text;
     el('evr-fx').innerHTML = `
-      <div class="fx-line"><span>Salut</span><span class="fx-neg">-8</span></div>
-      <div class="fx-line"><span>Salut màxima (permanent)</span><span class="fx-neg">-5</span></div>
+      <div class="fx-line"><span>Salut</span><span class="fx-neg">-${item.healthLoss}</span></div>
+      ${extraLine}
     `;
   } else {
     el('evr-icon').textContent = childAvatar(item);
