@@ -125,13 +125,12 @@ const GAME_DATA = {
     { id: 'social',       icon: '👥', visibleAfterTech: 'language_basics' },
   ],
 
-  // Technologies — auto-unlock at eraCycleAppears if requiresTech is also known
-  // eraCycle is global (persists across generations); see tecnologies_v2.csv
+  // Technologies — worldwide, auto-unlock at eraCycleAppears regardless of player actions
+  // eraCycle is global (persists across generations)
   techs: [
     {
       id: 'language_basics', name: 'Llengua Bàsica', icon: '🗣️',
       eraCycleAppears: 3,
-      requiresTech: null,
       description: 'Comunicar-se millor enforteix els llaços tribals. La tribu comença a organitzar-se.',
       statBonus: { social: 1 }, inheritanceRate: 1.0,
       unlocksActionIds: [],
@@ -139,7 +138,6 @@ const GAME_DATA = {
     {
       id: 'tribal_organization', name: 'Organització Tribal', icon: '👥',
       eraCycleAppears: 6,
-      requiresTech: 'language_basics',
       description: 'Rols i normes emergents. La tribu funciona com una unitat.',
       statBonus: {}, inheritanceRate: 1.0,
       unlocksActionIds: ['find_partner', 'care_home'],
@@ -147,7 +145,6 @@ const GAME_DATA = {
     {
       id: 'fire', name: 'Domini del Foc', icon: '🔥',
       eraCycleAppears: 8,
-      requiresTech: null,
       description: 'Dominar el foc canvia les possibilitats de la tribu. Calor, cuina i protecció.',
       effectDesc: '+5 Salut màxima permanent.',
       statBonus: { health: 5 }, inheritanceRate: 1.0,
@@ -156,7 +153,6 @@ const GAME_DATA = {
     {
       id: 'stone_tools', name: 'Eines de Pedra', icon: '🪨',
       eraCycleAppears: 10,
-      requiresTech: null,
       description: 'Eines millorades per a la caça i l\'exploració. Redueix el risc de caça.',
       statBonus: {}, inheritanceRate: 1.0,
       unlocksActionIds: ['explore'],
@@ -164,7 +160,6 @@ const GAME_DATA = {
     {
       id: 'symbolic_thinking', name: 'Pensament Simbòlic', icon: '🧿',
       eraCycleAppears: 13,
-      requiresTech: 'tribal_organization',
       description: 'Conceptes abstractes, art i espiritualitat. Nous horitzons de la ment.',
       statBonus: { intelligence: 1 }, inheritanceRate: 1.0,
       unlocksActionIds: [],
@@ -172,10 +167,34 @@ const GAME_DATA = {
     {
       id: 'sedentarism', name: 'Sedentarisme', icon: '🏕️',
       eraCycleAppears: 16,
-      requiresTech: 'stone_tools',
       description: 'La tribu s\'estableix en un lloc fix. Noves pràctiques familiars i d\'emmagatzematge.',
       statBonus: {}, inheritanceRate: 1.0,
       unlocksActionIds: [],
+    },
+  ],
+
+  // Skills (habilitats) — optional, unlocked when requirements are met, persistent to lineage
+  // Unlike techs (worldwide/fixed), skills depend on player choices and stats
+  skills: [
+    {
+      id: 'big_game_hunting',
+      name: 'Caça Major',
+      icon: '🦣',
+      description: 'Amb eines de pedra, la tribu aprèn a caçar animals grans.',
+      requiresTech: 'stone_tools',
+      requiresMinStat: { physical: 2 },
+      unlocksActionIds: ['hunt_big'],
+      effectDesc: 'Desbloqueja Caçar el Mamut',
+    },
+    {
+      id: 'cooking_skill',
+      name: 'Tècnica de Cocció',
+      icon: '🍳',
+      description: 'La tribu aprèn a cuinar els aliments sobre el foc.',
+      requiresTech: 'fire',
+      requiresMinStat: null,
+      unlocksActionIds: ['cook_food'],
+      effectDesc: 'Desbloqueja Cuinar',
     },
   ],
 
@@ -322,6 +341,37 @@ const GAME_DATA = {
       zone: 'home',
       successTexts: ['El fill aprèn ràpidament.', 'Un moment inoblidable.', 'Sents com el llinatge creix en saviesa.'],
       failTexts: [],
+    },
+    {
+      id: 'hunt_big', name: 'Caçar el Mamut', icon: '🦣', category: 'survival',
+      description: 'La gran caça. Alt risc, alta recompensa.',
+      requirements: { physical: 2 },
+      requiresSkill: 'big_game_hunting',
+      statKey: 'physical',
+      outputs: { food: 35 },
+      healthRisk: 18,
+      riskReductions: { stone_tools: 0.5 },
+      knowledgeBonus: ['stone_tools'], statGain: { physical: 0.5 },
+      destreseDiscovery: ['tracking'],
+      eventPool: ['great_prey', 'injured_companion'],
+      zone: 'forest',
+      successTexts: ['El mamut cau! La tribu celebra.', 'Una presa enorme per a tots.', 'La caça gran ha triomfat.'],
+      failTexts: ['El mamut és massa fort.', 'La caça fracassa, la tribu torna amb les mans buides.'],
+    },
+    {
+      id: 'cook_food', name: 'Cuinar', icon: '🍳', category: 'home',
+      description: 'Cuina els aliments sobre el foc. Recupera forces i millora l\'ànim.',
+      requirements: {},
+      requiresSkill: 'cooking_skill',
+      statKey: 'intelligence',
+      outputs: { health: 8, happiness: 10 },
+      healthRisk: 0,
+      knowledgeBonus: [], statGain: { intelligence: 0.2 },
+      destreseDiscovery: ['cooking'],
+      eventPool: [],
+      zone: 'home',
+      successTexts: ['L\'olor del foc omple la cova.', 'El menjar calent reconforta la tribu.'],
+      failTexts: ['El foc no vol cremar avui.'],
     },
   ],
 

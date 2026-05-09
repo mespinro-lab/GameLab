@@ -60,6 +60,7 @@ function initState() {
     pendingEvent: null,
     pendingDiscoveries: [],
     discoveredZoneIds: [],
+    unlockedSkillIds: [],
     pendingDeaths: [],
     pendingFloaters: {},
     lastResult: null,
@@ -129,6 +130,7 @@ function isProjectUnlocked(proj) {
     for (const k of r.knowledgeIds) { if (!hasKnowledge(k)) return false; }
   }
   if (proj.requiresTech && !hasKnowledge(proj.requiresTech)) return false;
+  if (proj.requiresSkill && !hasUnlockedSkill(proj.requiresSkill)) return false;
   if (proj.requiresNoPartner && S.char.partner) return false;
   return true;
 }
@@ -154,6 +156,10 @@ function lockedReason(proj) {
   if (proj.requiresTech && !hasKnowledge(proj.requiresTech)) {
     const t = getKnowledge(proj.requiresTech);
     return `Necessites: ${t ? t.name : proj.requiresTech}`;
+  }
+  if (proj.requiresSkill && !hasUnlockedSkill(proj.requiresSkill)) {
+    const sk = getGameSkill(proj.requiresSkill);
+    return `Necessites habilitat: ${sk ? sk.name : proj.requiresSkill}`;
   }
   if (proj.requiresNoPartner && S.char.partner) return 'Ja tens parella';
   return '';
@@ -384,12 +390,11 @@ function tryTriggerEvent(proj, quality) {
   return null;
 }
 
-// ── Technology auto-unlock (fixed era cycle) ──────────────────────────────────
+// ── Technology auto-unlock (worldwide, fixed era cycle) ───────────────────────
 function checkTechUnlock() {
   for (const tech of GAME_DATA.techs) {
     if (hasKnowledge(tech.id)) continue;
     if (S.eraCycle < tech.eraCycleAppears) continue;
-    if (tech.requiresTech && !hasKnowledge(tech.requiresTech)) continue;
     S.char.knowledgeIds.push(tech.id);
     for (const [stat, bonus] of Object.entries(tech.statBonus || {})) {
       if (stat === 'health') {
@@ -405,7 +410,25 @@ function checkTechUnlock() {
     if (tech.id === 'fire') earnMilestone('first_fire');
     if (S.char.knowledgeIds.length >= GAME_DATA.techs.length) earnMilestone('all_knowledge');
   }
+  checkSkillUnlock();
   checkZoneDiscoveries();
+}
+
+// ── Skill unlock (optional, lineage-persistent, condition-based) ───────────────
+function getGameSkill(id)    { return (GAME_DATA.skills || []).find(s => s.id === id); }
+function hasUnlockedSkill(id){ return S.unlockedSkillIds.includes(id); }
+
+function checkSkillUnlock() {
+  for (const skill of (GAME_DATA.skills || [])) {
+    if (hasUnlockedSkill(skill.id)) continue;
+    if (skill.requiresTech && !hasKnowledge(skill.requiresTech)) continue;
+    if (skill.requiresMinStat) {
+      const unmet = Object.entries(skill.requiresMinStat).some(([k, v]) => (S.char[k] || 0) < v);
+      if (unmet) continue;
+    }
+    S.unlockedSkillIds.push(skill.id);
+    S.pendingDiscoveries.push({ ...skill, _type: 'habilitat' });
+  }
 }
 
 // ── Zone discovery ────────────────────────────────────────────────────────────
@@ -518,6 +541,7 @@ function endCycle() {
   S.timeTotal = calcTimeTotal();
   S.timeLeft = S.timeTotal;
   checkTechUnlock();
+  checkSkillUnlock();
 
   requestAnimationFrame(() => {
     const hdrC = el('hdr-c');
@@ -1289,13 +1313,25 @@ function renderDiscoveryPane() {
       efxEl.appendChild(div);
     }
   } else if (item._type === 'skill') {
-    el('disc-badge').textContent = '📚 Nova habilitat apresa';
+    el('disc-badge').textContent = '📚 Nova destresa apresa';
     el('disc-name').textContent = item.name;
     el('disc-desc').textContent = item.description;
     const div = document.createElement('div');
     div.className = 'fx-line';
     div.innerHTML = `<span>Efecte</span><span class="fx-pos">${item.effectDesc}</span>`;
     efxEl.appendChild(div);
+  } else if (item._type === 'habilitat') {
+    el('disc-badge').textContent = '🔓 Nova habilitat del llinatge';
+    el('disc-name').textContent = item.name;
+    el('disc-desc').textContent = item.description;
+    for (const actionId of (item.unlocksActionIds || [])) {
+      const action = getProject(actionId);
+      if (!action) continue;
+      const div = document.createElement('div');
+      div.className = 'fx-line';
+      div.innerHTML = `<span>🔓 Desbloqueja</span><span class="fx-pos">${action.icon} ${action.name}</span>`;
+      efxEl.appendChild(div);
+    }
   } else {
     el('disc-badge').textContent = '✨ Nova tecnologia descoberta';
     el('disc-name').textContent = item.name;
@@ -1636,6 +1672,50 @@ function renderTechOverlay() {
           <small>${knowledgeEffectDesc(k)}</small>
         </div>
       `;
+      list.appendChild(row);
+    }
+  }
+
+  // Habilitats del llinatge
+  const allSkills = GAME_DATA.skills || [];
+  if (allSkills.length > 0) {
+    const secHeader = document.createElement('p');
+    secHeader.style.cssText = 'color:var(--text-dim);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;margin:0.75rem 0 0.25rem';
+    secHeader.textContent = 'Habilitats del Llinatge';
+    list.appendChild(secHeader);
+
+    for (const skill of allSkills) {
+      const unlocked = hasUnlockedSkill(skill.id);
+      const row = document.createElement('div');
+      row.className = unlocked ? 'tech-row' : 'tech-progress-wrap';
+      if (unlocked) {
+        row.innerHTML = `
+          <span class="tech-icon">${skill.icon}</span>
+          <div class="tech-info">
+            <strong>${skill.name}</strong>
+            <small>${skill.effectDesc || skill.description}</small>
+          </div>
+        `;
+      } else {
+        const techMet = !skill.requiresTech || hasKnowledge(skill.requiresTech);
+        const reqTech = skill.requiresTech ? getKnowledge(skill.requiresTech) : null;
+        let hint;
+        if (!techMet) {
+          hint = `Requereix tecnologia: ${reqTech ? reqTech.name : skill.requiresTech}`;
+        } else if (skill.requiresMinStat) {
+          const unmet = Object.entries(skill.requiresMinStat)
+            .filter(([k, v]) => (S.char[k] || 0) < v)
+            .map(([k, v]) => `${k} ${v}`)
+            .join(', ');
+          hint = unmet ? `Requereix: ${unmet}` : 'Pendent de desbloquejar';
+        } else {
+          hint = 'Pendent de desbloquejar';
+        }
+        row.innerHTML = `
+          <div class="tech-progress-label">${skill.icon} ${skill.name}</div>
+          <div class="tech-progress-hint">${hint}</div>
+        `;
+      }
       list.appendChild(row);
     }
   }
