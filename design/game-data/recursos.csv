@@ -1,0 +1,5 @@
+id,nom,icona,valor_inicial,maxim,era_id,notes
+food,Menjar,🍖,40,100,prehistoria,""
+health,Salut,❤️,80,100,prehistoria,""
+happiness,Felicitat,😊,60,100,prehistoria,"Disponible des de tribal_organization (cicle era 6)"
+familyReputation,Reputació Familiar,🏛️,0,100,prehistoria,"Disponible des de tribal_organization (cicle era 6)"
