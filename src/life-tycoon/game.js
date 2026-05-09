@@ -59,6 +59,7 @@ function initState() {
     activeProject: null,
     pendingEvent: null,
     pendingDiscoveries: [],
+    discoveredZoneIds: [],
     pendingDeaths: [],
     pendingFloaters: {},
     lastResult: null,
@@ -75,8 +76,7 @@ function randomName(gender, exclude) {
 }
 
 function dynastyName(firstName) {
-  const suffixes = ['de la Roca', 'del Foc', 'de la Tribu', 'del Vent', 'de les Cavernes'];
-  return firstName + ' ' + pick(suffixes);
+  return firstName + ' ' + pick(GAME_DATA.era.dynastySuffixes);
 }
 
 // ── Project helpers ───────────────────────────────────────────────────────────
@@ -161,12 +161,13 @@ function lockedReason(proj) {
 
 // ── Formula ───────────────────────────────────────────────────────────────────
 function calcResult(proj) {
-  const mult     = [0.5, 1.1, 1.8][S.intensity - 1];
-  const riskMult = [0.4, 1.0, 2.2][S.intensity - 1];
+  const M = GAME_DATA.era.mechanics;
+  const mult     = M.intensityOutputMults[S.intensity - 1];
+  const riskMult = M.intensityRiskMults[S.intensity - 1];
   const statVal  = S.char[proj.statKey] || 1;
-  const statMod  = clamp(0.65 + (statVal - 1) * 0.12, 0.5, 1.8);
+  const statMod  = clamp(M.statModBase + (statVal - 1) * M.statModPerStat, M.statModMin, M.statModMax);
   let knowMod = 1.0;
-  for (const kId of (proj.knowledgeBonus || [])) { if (hasKnowledge(kId)) knowMod += 0.15; }
+  for (const kId of (proj.knowledgeBonus || [])) { if (hasKnowledge(kId)) knowMod += M.knowledgeBonusPerTech; }
   const finalMult = mult * statMod * knowMod;
 
   const fx = {};
@@ -176,9 +177,13 @@ function calcResult(proj) {
 
   // Skill/knowledge percentage bonuses — base captured before stacking
   const baseFoodGather = fx.food || 0;
-  if (hasSkill('fishing')  && proj.id === 'gather')  fx.food = baseFoodGather + Math.round(baseFoodGather * 0.5);
+  if (hasSkill('fishing') && proj.id === 'gather') {
+    const pct = getSkill('fishing')?.effect?.gatherFoodPct || 0;
+    fx.food = baseFoodGather + Math.round(baseFoodGather * pct);
+  }
   if (hasSkill('tracking') && (proj.id === 'hunt' || proj.id === 'explore')) {
-    for (const k of Object.keys(fx)) { if (fx[k] > 0) fx[k] = Math.round(fx[k] * 1.2); }
+    const mult2 = 1 + (getSkill('tracking')?.effect?.huntMultBonus || 0);
+    for (const k of Object.keys(fx)) { if (fx[k] > 0) fx[k] = Math.round(fx[k] * mult2); }
   }
   // Stone tools: +30% gather food (knowledgeBonus already adds +15% mult on hunt/explore)
   if (hasKnowledge('stone_tools') && proj.id === 'gather') fx.food = (fx.food || 0) + Math.round(baseFoodGather * 0.3);
@@ -189,7 +194,7 @@ function calcResult(proj) {
     for (const [kId, reduction] of Object.entries(proj.riskReductions || {})) {
       if (hasKnowledge(kId)) effectiveRisk = Math.round(effectiveRisk * (1 - reduction));
     }
-    const failChance = [0.15, 0.3, 0.55][S.intensity - 1] / Math.max(1, statMod);
+    const failChance = M.intensityFailChances[S.intensity - 1] / Math.max(1, statMod);
     if (Math.random() < failChance) {
       fx.health = (fx.health || 0) - Math.round(effectiveRisk * riskMult);
       riskFailed = true;
@@ -215,7 +220,8 @@ function applyFx(fx) {
     } else if (k in S.resources) {
       const res = S.resources[k];
       if (k === 'familyReputation' && v > 0 && hasSkill('socialitzar')) {
-        res.value = clamp(res.value + Math.round(v * 1.2), 0, res.max);
+        const bonus = 1 + (getSkill('socialitzar')?.effect?.familyRepPct || 0);
+        res.value = clamp(res.value + Math.round(v * bonus), 0, res.max);
       } else {
         res.value = clamp(res.value + v, 0, res.max);
       }
@@ -246,9 +252,10 @@ function showFxFloaters(fx) {
 
 // ── Destresa discovery (earned through play) ──────────────────────────────────
 function tryDiscoverSkill(proj, score) {
+  const M = GAME_DATA.era.mechanics;
   const discovered = [];
   for (const sId of (proj.destreseDiscovery || [])) {
-    if (S.char.learnedSkillIds.length >= 2) break;
+    if (S.char.learnedSkillIds.length >= M.maxLearnedSkills) break;
     if (hasSkill(sId)) continue;
     const s = getSkill(sId);
     if (!s || score < 0.3) continue;
@@ -269,17 +276,21 @@ function earnMilestone(id) {
 }
 
 function checkMilestones() {
-  if (S.char.age >= 40) earnMilestone('long_lived');
-  if (S.resources.familyReputation.value >= 50) earnMilestone('tribe_respected');
-  if (S.char.huntCount >= 5) earnMilestone('great_hunter');
-  if (S.char.partner && S.char.children.length >= 2) earnMilestone('family_complete');
+  for (const m of GAME_DATA.milestones) {
+    if (!m.check || S.milestones.includes(m.id)) continue;
+    const { type, key, value } = m.check;
+    if (type === 'char'     && S.char[key] >= value)                              earnMilestone(m.id);
+    if (type === 'resource' && S.resources[key]?.value >= value)                  earnMilestone(m.id);
+    if (type === 'family'   && S.char.partner && S.char.children.length >= value) earnMilestone(m.id);
+  }
 }
 
 // ── Partner generation ────────────────────────────────────────────────────────
 function generatePartner() {
+  const M = GAME_DATA.era.mechanics;
   const gender = S.char.gender === 'M' ? 'F' : 'M';
   const name = randomName(gender, S.char.name);
-  const base = Math.max(1, Math.round(S.char.social / 1.5));
+  const base = Math.max(1, Math.round(S.char.social / M.partnerStatDivisor));
   return {
     name,
     gender,
@@ -355,14 +366,14 @@ function virtueForChar(c) {
 
 // ── Event system ──────────────────────────────────────────────────────────────
 function tryTriggerEvent(proj, quality) {
+  const M = GAME_DATA.era.mechanics;
   if (quality === 'poor') return null;
   const pool = proj.eventPool || [];
   for (const eId of pool) {
     const ev = GAME_DATA.events.find(e => e.id === eId);
-    if (ev && Math.random() < 0.28) return ev;
+    if (ev && Math.random() < M.eventTriggerChance) return ev;
   }
-  // Global events (harsher conditions)
-  if (S.cycle >= 4 && Math.random() < 0.1) {
+  if (S.cycle >= M.globalEventMinCycle && Math.random() < M.globalEventChance) {
     const globals = ['harsh_winter', 'tribe_conflict'];
     const eId = pick(globals);
     return GAME_DATA.events.find(e => e.id === eId) || null;
@@ -391,44 +402,72 @@ function checkTechUnlock() {
     if (tech.id === 'fire') earnMilestone('first_fire');
     if (S.char.knowledgeIds.length >= GAME_DATA.techs.length) earnMilestone('all_knowledge');
   }
+  checkZoneDiscoveries();
+}
+
+// ── Zone discovery ────────────────────────────────────────────────────────────
+function zoneHasAvailableAction(zoneId) {
+  return GAME_DATA.actions.some(p => p.zone === zoneId && isProjectUnlocked(p));
+}
+
+function initDiscoveredZones() {
+  for (const zone of GAME_DATA.zones) {
+    if (!S.discoveredZoneIds.includes(zone.id) && zoneHasAvailableAction(zone.id)) {
+      S.discoveredZoneIds.push(zone.id);
+    }
+  }
+}
+
+function checkZoneDiscoveries() {
+  for (const zone of GAME_DATA.zones) {
+    if (S.discoveredZoneIds.includes(zone.id)) continue;
+    if (zoneHasAvailableAction(zone.id)) {
+      S.discoveredZoneIds.push(zone.id);
+      S.pendingDiscoveries.push({ ...zone, _type: 'zone' });
+    }
+  }
 }
 
 // ── Time total (grows with grown children) ────────────────────────────────────
 function calcTimeTotal() {
-  const grownCount = S.char.children.filter(c => S.cycle - (c.bornCycle || 0) >= 3).length;
-  const grownBonus  = Math.min(grownCount, 2) * 2;
-  const familyBonus = S.char.children.length >= 3 ? 2 : 0; // T5: large family unlocks 2nd action
+  const M = GAME_DATA.era.mechanics;
+  const grownCount = S.char.children.filter(c => S.cycle - (c.bornCycle || 0) >= M.grownChildCycles).length;
+  const grownBonus  = Math.min(grownCount, M.grownChildMaxCount) * M.grownChildBonus;
+  const familyBonus = S.char.children.length >= M.largeChildThreshold ? M.largeChildBonus : 0;
   return GAME_DATA.era.timeTotal + grownBonus + familyBonus;
 }
 
 // ── End of cycle ──────────────────────────────────────────────────────────────
 function endCycle() {
+  const M = GAME_DATA.era.mechanics;
   S.char.age += 2;
 
-  // Medicinal plants: % regen before food/aging checks
+  // Medicinal plants: read regenPct from skill data
   if (hasSkill('medicinal_plants')) {
-    const regen = Math.round(S.resources.health.max * 0.05);
+    const pct = getSkill('medicinal_plants')?.effect?.healthRegenPct || 0;
+    const regen = Math.round(S.resources.health.max * pct);
     S.resources.health.value = clamp(S.resources.health.value + regen, 0, S.resources.health.max);
   }
 
-  // Food cost: full time budget + 2 per child, reduced by cooking destresa
-  const baseFoodCost = Math.round(S.timeTotal * GAME_DATA.era.foodPerTimePoint) + S.char.children.length * 2;
-  const foodCost = hasSkill('cooking') ? Math.round(baseFoodCost * 0.8) : baseFoodCost;
+  // Food cost: full time budget + childrenFoodCost per child, reduced by cooking destresa
+  const baseFoodCost = Math.round(S.timeTotal * GAME_DATA.era.foodPerTimePoint) + S.char.children.length * M.childrenFoodCost;
+  const cookingReduction = hasSkill('cooking') ? (getSkill('cooking')?.effect?.foodCostReduction || 0) : 0;
+  const foodCost = Math.round(baseFoodCost * (1 - cookingReduction));
   const shortfall = Math.max(0, foodCost - S.resources.food.value);
   S.resources.food.value = Math.max(0, S.resources.food.value - foodCost);
 
   if (shortfall > 0) {
     const shortfallPct = shortfall / foodCost;
     const familySize = 1 + S.char.children.length;
-    const healthLoss = Math.max(1, Math.round((shortfall / familySize) * 1.5));
+    const healthLoss = Math.max(1, Math.round((shortfall / familySize) * M.famineHealthMult));
     S.resources.health.value = clamp(S.resources.health.value - healthLoss, 0, S.resources.health.max);
 
-    if (shortfallPct >= 0.3) {
-      const maxLoss = shortfallPct >= 0.6 ? 5 : 2;
-      S.resources.health.max = Math.max(30, S.resources.health.max - maxLoss);
+    if (shortfallPct >= M.famineModerate) {
+      const maxLoss = shortfallPct >= M.famineSevere ? M.famineMaxLossSevere : M.famineMaxLossModerate;
+      S.resources.health.max = Math.max(M.healthMaxFloor, S.resources.health.max - maxLoss);
     }
 
-    if (shortfallPct >= 0.8 && S.char.children.length > 0) {
+    if (shortfallPct >= M.famineChildDeathRisk && S.char.children.length > 0) {
       const youngest = S.char.children.reduce((a, b) =>
         (b.bornCycle || 0) > (a.bornCycle || 0) ? b : a
       );
@@ -445,18 +484,24 @@ function endCycle() {
   if (S.cycle > ac.threshold) {
     let ageLoss = Math.round(ac.baseLoss * Math.pow(ac.acceleration, S.cycle - ac.threshold - 1));
     if (S.char.traitAgingResist) ageLoss = Math.round(ageLoss * 0.5);
-    if (hasSkill('weaving'))     ageLoss = Math.round(ageLoss * 0.75);
+    if (hasSkill('weaving')) {
+      const reduction = getSkill('weaving')?.effect?.agingDamageReduction || 0;
+      ageLoss = Math.round(ageLoss * (1 - reduction));
+    }
     S.resources.health.value = clamp(S.resources.health.value - ageLoss, 0, S.resources.health.max);
   }
 
   // Happiness drift
-  S.resources.happiness.value = clamp(S.resources.happiness.value - 3, 20, 100);
+  S.resources.happiness.value = clamp(S.resources.happiness.value + M.happinessDrift, M.happinessMin, 100);
 
-  // Art narratiu: +5 felicitat per cicle
-  if (hasSkill('art_narratiu')) S.resources.happiness.value = clamp(S.resources.happiness.value + 5, 0, 100);
+  // Art narratiu: read bonus from skill data
+  if (hasSkill('art_narratiu')) {
+    const bonus = getSkill('art_narratiu')?.effect?.happinessCycleBonus || 0;
+    S.resources.happiness.value = clamp(S.resources.happiness.value + bonus, 0, 100);
+  }
 
   // Family reputation bonus for 2+ children
-  if (S.char.children.length >= 2) S.resources.familyReputation.value = clamp(S.resources.familyReputation.value + 2, 0, 100);
+  if (S.char.children.length >= 2) S.resources.familyReputation.value = clamp(S.resources.familyReputation.value + M.familyRepBonus, 0, 100);
 
   checkMilestones();
 
@@ -471,7 +516,6 @@ function endCycle() {
   S.timeLeft = S.timeTotal;
   checkTechUnlock();
 
-  // Cycle bump animation (triggers after renderAll sets the new cycle number)
   requestAnimationFrame(() => {
     const hdrC = el('hdr-c');
     hdrC.classList.remove('cycle-bump');
@@ -511,6 +555,7 @@ function triggerDeath() {
 
 // ── Succession ────────────────────────────────────────────────────────────────
 function doSuccession(child) {
+  const M = GAME_DATA.era.mechanics;
   S.generation++;
   earnMilestone('dynasty_founded');
 
@@ -545,21 +590,23 @@ function doSuccession(child) {
   S.cycle = 1;
   S.timeTotal = GAME_DATA.era.timeTotal;
   S.timeLeft = S.timeTotal;
-  S.maxCycles = GAME_DATA.era.cyclesPerLife.base + Math.round(S.char.physical * 0.3);
+  S.maxCycles = GAME_DATA.era.cyclesPerLife.base + Math.round(S.char.physical * M.successionPhysicalFactor);
   S.pendingDeaths = [];
   S._showingDeath = false;
   S.pendingDiscoveries = [];
   S.pendingEvent = null;
-  S.phase = 'select';
+  checkZoneDiscoveries();
+  S.phase = S.pendingDiscoveries.length > 0 ? 'discovery' : 'select';
   renderAll();
 }
 
 // ── Scoring ───────────────────────────────────────────────────────────────────
 function calcScore() {
+  const M = GAME_DATA.era.mechanics;
   let score = 0;
-  score += S.generation * 400;
-  score += S.resources.familyReputation.value * 5;
-  score += S.char.knowledgeIds.length * 100;
+  score += S.generation * M.scorePerGeneration;
+  score += S.resources.familyReputation.value * M.scorePerRep;
+  score += S.char.knowledgeIds.length * M.scorePerKnowledge;
   for (const mId of S.milestones) {
     const m = GAME_DATA.milestones.find(x => x.id === mId);
     if (m) score += m.points;
@@ -569,12 +616,12 @@ function calcScore() {
 
 function dynastyTitle() {
   const m = S.milestones;
-  if (m.length >= 5) return 'Llegenda Viva';
-  if (m.includes('dynasty_founded') && m.includes('tribe_respected')) return 'Constructors d\'Imperis';
-  if (m.includes('all_knowledge')) return 'La Línia dels Savis';
-  if (m.includes('great_hunter')) return 'Guerrers de la Prehistòria';
-  if (m.includes('family_complete')) return 'La Família Completa';
-  return 'Fills de la Terra';
+  for (const t of GAME_DATA.dynastyTitles) {
+    if (t.default) return t.label;
+    if (t.minMilestones && m.length >= t.minMilestones) return t.label;
+    if (t.requires && t.requires.every(id => m.includes(id))) return t.label;
+  }
+  return '';
 }
 
 // ── Rendering ─────────────────────────────────────────────────────────────────
@@ -587,8 +634,10 @@ function renderAll() {
 }
 
 function renderCycleForecast() {
-  const baseProjected = Math.round(S.timeTotal * GAME_DATA.era.foodPerTimePoint) + S.char.children.length * 2;
-  const projectedFood = hasSkill('cooking') ? Math.round(baseProjected * 0.8) : baseProjected;
+  const M = GAME_DATA.era.mechanics;
+  const baseProjected = Math.round(S.timeTotal * GAME_DATA.era.foodPerTimePoint) + S.char.children.length * M.childrenFoodCost;
+  const cookingReduction = hasSkill('cooking') ? (getSkill('cooking')?.effect?.foodCostReduction || 0) : 0;
+  const projectedFood = Math.round(baseProjected * (1 - cookingReduction));
 
   const ac = GAME_DATA.era.agingCurve;
   const ageLoss = S.cycle > ac.threshold
@@ -596,25 +645,26 @@ function renderCycleForecast() {
     : 0;
   let displayAgeLoss = ageLoss;
   if (S.char.traitAgingResist) displayAgeLoss = Math.round(displayAgeLoss * 0.5);
-  if (hasSkill('weaving'))     displayAgeLoss = Math.round(displayAgeLoss * 0.75);
+  if (hasSkill('weaving')) {
+    const reduction = getSkill('weaving')?.effect?.agingDamageReduction || 0;
+    displayAgeLoss = Math.round(displayAgeLoss * (1 - reduction));
+  }
 
-  // Food — full-cycle cost + children upkeep, always visible
   const fcFood = el('fc-food');
   fcFood.textContent = `(-${projectedFood})`;
   fcFood.className = 'fc-delta' + (S.resources.food.value - projectedFood < 15 ? ' danger' : '');
 
-  // Happiness: -3 base, +5 if art_narratiu
-  const hapDelta = -3 + (hasSkill('art_narratiu') ? 5 : 0);
+  const artBonus = hasSkill('art_narratiu') ? (getSkill('art_narratiu')?.effect?.happinessCycleBonus || 0) : 0;
+  const hapDelta = M.happinessDrift + artBonus;
   const fcHap = el('fc-hap');
   fcHap.textContent = hapDelta === 0 ? '(=)' : `(${hapDelta > 0 ? '+' : ''}${hapDelta})`;
   fcHap.className = 'fc-delta' + (hapDelta > 0 ? ' pos' : '');
 
-  // Health: aging penalty + proportional fam estimate
   const fcHealth = el('fc-health');
   const foodAfter = S.resources.food.value - projectedFood;
   const shortfallAmt = foodAfter < 0 ? -foodAfter : 0;
   const shortfallHealthLoss = shortfallAmt > 0
-    ? Math.max(1, Math.round((shortfallAmt / (1 + S.char.children.length)) * 1.5))
+    ? Math.max(1, Math.round((shortfallAmt / (1 + S.char.children.length)) * M.famineHealthMult))
     : 0;
   const totalHealthLoss = displayAgeLoss + shortfallHealthLoss;
   if (totalHealthLoss > 0) {
@@ -735,14 +785,6 @@ function renderPhase() {
   }
 }
 
-// ── Zone definitions ──────────────────────────────────────────────────────────
-const ZONE_DEFS = {
-  home:   { icon: '🏠', name: 'Llar',   hint: 'Descansa i cuida la família' },
-  town:   { icon: '🏛️', name: 'Poblat', hint: 'Socialitza i fabrica' },
-  wild:   { icon: '🌿', name: 'Camp',   hint: 'Recol·lecta i observa la natura' },
-  forest: { icon: '🌲', name: 'Bosc',   hint: 'Caça i explora terres llunyanes' },
-};
-
 // ── Select pane ───────────────────────────────────────────────────────────────
 function renderExecutingPane() {
   const proj = S.activeProject;
@@ -763,8 +805,8 @@ function renderSelectPane() {
   const container = el('zone-cards');
   container.innerHTML = '';
 
-  for (const [zoneId, zone] of Object.entries(ZONE_DEFS)) {
-    const zoneProjects = GAME_DATA.actions.filter(p => p.zone === zoneId);
+  for (const zone of GAME_DATA.zones.filter(z => S.discoveredZoneIds.includes(z.id))) {
+    const zoneProjects = GAME_DATA.actions.filter(p => p.zone === zone.id);
     const availCount = zoneProjects.filter(p => isProjectUnlocked(p)).length;
     const card = document.createElement('div');
     card.className = 'zone-card';
@@ -772,17 +814,17 @@ function renderSelectPane() {
       <span class="zone-card-icon">${zone.icon}</span>
       <div class="zone-card-info">
         <span class="zone-card-name">${zone.name}</span>
-        <span class="zone-card-hint">${zone.hint}</span>
+        <span class="zone-card-hint">${zone.description}</span>
       </div>
       <span class="zone-card-count">${availCount} activ.</span>
     `;
-    card.addEventListener('click', () => openZoneSheet(zoneId));
+    card.addEventListener('click', () => openZoneSheet(zone.id));
     container.appendChild(card);
   }
 }
 
 function openZoneSheet(zoneId) {
-  const zone = ZONE_DEFS[zoneId];
+  const zone = GAME_DATA.zones.find(z => z.id === zoneId);
   el('zone-sheet-icon').textContent = zone.icon;
   el('zone-sheet-name').textContent = zone.name;
 
@@ -834,8 +876,9 @@ function renderIntensityPane() {
   el('sl-proj-icon').textContent = proj.icon;
   el('sl-proj-name').textContent = proj.name;
 
-  const costs = [2, 4, 6];
-  const names = ['🌱 Suau', '⚡ Normal', '🔥 Intens'];
+  const M = GAME_DATA.era.mechanics;
+  const costs = M.intensityTimeCosts;
+  const names = M.intensityLabels;
 
   // Auto-downgrade if current intensity not affordable
   if (costs[S.intensity - 1] > S.timeLeft) {
@@ -856,7 +899,7 @@ function renderIntensityPane() {
 }
 
 function setIntensity(n) {
-  if ([2, 4, 6][n - 1] > S.timeLeft) return;
+  if (GAME_DATA.era.mechanics.intensityTimeCosts[n - 1] > S.timeLeft) return;
   S.intensity = n;
   document.querySelectorAll('.int-btn').forEach(b => {
     b.classList.toggle('active', +b.dataset.int === n);
@@ -865,22 +908,23 @@ function setIntensity(n) {
 }
 
 function calcImpactPreview(proj, intensity) {
-  const mult    = [0.5, 1.1, 1.8][intensity - 1];
+  const M = GAME_DATA.era.mechanics;
+  const mult    = M.intensityOutputMults[intensity - 1];
   const statVal = S.char[proj.statKey] || 1;
-  const statMod = clamp(0.65 + (statVal - 1) * 0.12, 0.5, 1.8);
+  const statMod = clamp(M.statModBase + (statVal - 1) * M.statModPerStat, M.statModMin, M.statModMax);
   let knowMod = 1.0;
-  for (const kId of (proj.knowledgeBonus || [])) { if (hasKnowledge(kId)) knowMod += 0.15; }
+  for (const kId of (proj.knowledgeBonus || [])) { if (hasKnowledge(kId)) knowMod += M.knowledgeBonusPerTech; }
   const finalMult = mult * statMod * knowMod;
   const mults = { intensity: mult, stat: statMod, knowledge: knowMod, final: finalMult };
   const preview = {};
   for (const [key, val] of Object.entries(proj.outputs || {})) {
     preview[key] = Math.round(val * (val < 0 ? mult : finalMult));
   }
-  // Percentage bonuses (mirrors calcResult) — base captured before stacking
   const flatBonuses = {};
   const baseFood = preview.food || 0;
   if (hasSkill('fishing') && proj.id === 'gather') {
-    const b = Math.round(baseFood * 0.5);
+    const pct = getSkill('fishing')?.effect?.gatherFoodPct || 0;
+    const b = Math.round(baseFood * pct);
     flatBonuses.food = (flatBonuses.food || 0) + b;
     preview.food = (preview.food || 0) + b;
   }
@@ -921,7 +965,8 @@ function renderImpactPreview(proj) {
     container.appendChild(row);
   }
   if (hasRisk) {
-    const chances = ['15%', '30%', '55%'];
+    const M = GAME_DATA.era.mechanics;
+    const chances = M.intensityFailChances.map(c => Math.round(c * 100) + '%');
     const row = document.createElement('div');
     row.className = 'preview-row';
     const note = riskReduced ? ' ↓ eines' : '';
@@ -935,7 +980,9 @@ function renderImpactPreview(proj) {
   detailToggle.textContent = '⌄ Detall';
   const detailBox = document.createElement('div');
   detailBox.className = 'preview-detail hidden';
-  const intNames = ['Suau ×0.5', 'Normal ×1.1', 'Intens ×1.8'];
+  const { intensityLabels, intensityOutputMults } = GAME_DATA.era.mechanics;
+  const shortLabels = ['Suau', 'Normal', 'Intens'];
+  const intNames = shortLabels.map((n, i) => `${n} ×${intensityOutputMults[i]}`);
   const statLabel = { physical: '💪 Físic', intelligence: '🧠 Intel·l.', social: '👥 Social' };
   detailBox.innerHTML = `
     <div class="detail-row"><span>Intensitat</span><span>${intNames[S.intensity - 1]}</span></div>
@@ -954,7 +1001,7 @@ function renderImpactPreview(proj) {
 // ── Execute ───────────────────────────────────────────────────────────────────
 function executeProject() {
   const proj = S.activeProject;
-  const timeCostCheck = [2, 4, 6][S.intensity - 1];
+  const timeCostCheck = GAME_DATA.era.mechanics.intensityTimeCosts[S.intensity - 1];
   if (S.timeLeft < timeCostCheck) return;
   S.phase = 'executing';
   renderAll();
@@ -978,12 +1025,13 @@ function executeProject() {
       if (S.char.children.length < GAME_DATA.era.maxChildren) S.char.children.push(generateChild());
     }
 
-    const timeCost = [2, 4, 6][S.intensity - 1];
+    const timeCost = GAME_DATA.era.mechanics.intensityTimeCosts[S.intensity - 1];
     S.timeLeft = Math.max(0, S.timeLeft - timeCost);
 
     const discovered = tryDiscoverSkill(proj, result.finalMult);
     const event = tryTriggerEvent(proj, result.quality);
     if (discovered.length > 0) S.pendingDiscoveries.push(...discovered);
+    checkZoneDiscoveries();
     if (event) S.pendingEvent = event;
 
     S.lastResult = { proj, result };
@@ -998,8 +1046,9 @@ function executeProject() {
 
 // ── Teach pane ────────────────────────────────────────────────────────────────
 function calcTeachCost(n) {
+  const M = GAME_DATA.era.mechanics;
   let cost = 0;
-  for (let i = 0; i < n; i++) cost += 2 + i;
+  for (let i = 0; i < n; i++) cost += M.teachCostBase + i * M.teachCostIncrement;
   return cost;
 }
 
@@ -1007,10 +1056,11 @@ function renderTeachPane() {
   const c = S.char;
   if (!c.teachChildIndices) c.teachChildIndices = [];
   const n = c.teachChildIndices.length;
+  const { teachCostBase, teachCostIncrement } = GAME_DATA.era.mechanics;
   const cost = calcTeachCost(Math.max(1, n));
   const costBreakdown = n > 1
-    ? Array.from({ length: n }, (_, i) => 2 + i).join('+') + ` = ${calcTeachCost(n)}`
-    : n === 1 ? '2' : '2 per fill';
+    ? Array.from({ length: n }, (_, i) => teachCostBase + i * teachCostIncrement).join('+') + ` = ${calcTeachCost(n)}`
+    : n === 1 ? String(teachCostBase) : `${teachCostBase} per fill`;
   el('teach-cost-label').textContent = `Cost: ${costBreakdown} · Temps: ${S.timeLeft}`;
 
   // Skill picker
@@ -1161,21 +1211,33 @@ function accumulateFloaters(fx) {
 function renderDiscoveryPane() {
   const item = S.pendingDiscoveries[0];
   el('disc-icon').textContent = item.icon;
-  el('disc-name').textContent = item.name;
-  el('disc-desc').textContent = item.description;
-
-  const isSkill = item._type === 'skill';
-  el('disc-badge').textContent = isSkill ? '📚 Nova habilitat apresa' : '✨ Nova tecnologia descoberta';
 
   const efxEl = el('disc-effects');
   efxEl.innerHTML = '';
 
-  if (isSkill) {
+  if (item._type === 'zone') {
+    el('disc-badge').textContent = '🗺️ Nova zona descoberta';
+    el('disc-name').textContent = item.discoveryTitle;
+    el('disc-desc').textContent = item.discoveryText;
+    const zoneActions = GAME_DATA.actions.filter(p => p.zone === item.id && isProjectUnlocked(p));
+    for (const action of zoneActions) {
+      const div = document.createElement('div');
+      div.className = 'fx-line';
+      div.innerHTML = `<span>${action.icon} ${action.name}</span><span class="fx-pos">${action.description}</span>`;
+      efxEl.appendChild(div);
+    }
+  } else if (item._type === 'skill') {
+    el('disc-badge').textContent = '📚 Nova habilitat apresa';
+    el('disc-name').textContent = item.name;
+    el('disc-desc').textContent = item.description;
     const div = document.createElement('div');
     div.className = 'fx-line';
     div.innerHTML = `<span>Efecte</span><span class="fx-pos">${item.effectDesc}</span>`;
     efxEl.appendChild(div);
   } else {
+    el('disc-badge').textContent = '✨ Nova tecnologia descoberta';
+    el('disc-name').textContent = item.name;
+    el('disc-desc').textContent = item.description;
     if (item.effectDesc) {
       const div = document.createElement('div');
       div.className = 'fx-line';
@@ -1291,7 +1353,7 @@ function renderResultPane() {
   } else if (S.pendingEvent) {
     nextBtn.textContent = '⚡ Event! →';
   } else if (S.timeLeft > 0) {
-    const n = Math.floor(S.timeLeft / 2);
+    const n = Math.floor(S.timeLeft / GAME_DATA.era.mechanics.intensityTimeCosts[0]);
     nextBtn.textContent = `Altra acció (${n} disp.) →`;
   } else {
     nextBtn.textContent = 'Cicle següent →';
@@ -1620,6 +1682,7 @@ function startGame() {
   S.char.traitIds = [t1, t2];
   applyTrait(t1);
   applyTrait(t2);
+  initDiscoveredZones();
   S.phase = 'select';
   hide('overlay-menu');
   renderAll();

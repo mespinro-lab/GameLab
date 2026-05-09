@@ -20,7 +20,92 @@ const GAME_DATA = {
     timeTotal: 6,
     foodPerTimePoint: 1.7,
     duration: 60,
+
+    dynastySuffixes: ['de la Roca', 'del Foc', 'de la Tribu', 'del Vent', 'de les Cavernes'],
+
+    mechanics: {
+      // Resultats d'acció
+      intensityOutputMults: [0.5, 1.1, 1.8],
+      intensityRiskMults:   [0.4, 1.0, 2.2],
+      intensityFailChances: [0.15, 0.3, 0.55],
+      intensityTimeCosts:   [2, 4, 6],
+      intensityLabels:      ['🌱 Suau', '⚡ Normal', '🔥 Intens'],
+      statModBase:    0.65,
+      statModPerStat: 0.12,
+      statModMin:     0.5,
+      statModMax:     1.8,
+      knowledgeBonusPerTech: 0.15,
+      maxLearnedSkills: 2,
+
+      // Final de cicle
+      happinessDrift:   -3,
+      happinessMin:     20,
+      familyRepBonus:   2,
+      childrenFoodCost: 2,
+
+      // Fam
+      famineModerate:        0.3,
+      famineSevere:          0.6,
+      famineChildDeathRisk:  0.8,
+      famineHealthMult:      1.5,
+      famineMaxLossModerate: 2,
+      famineMaxLossSevere:   5,
+      healthMaxFloor:        30,
+
+      // Temps per cicle
+      grownChildCycles:    3,
+      grownChildBonus:     2,
+      grownChildMaxCount:  2,
+      largeChildThreshold: 3,
+      largeChildBonus:     2,
+
+      // Ensenyament
+      teachCostBase:      2,
+      teachCostIncrement: 1,
+
+      // Events
+      eventTriggerChance:  0.28,
+      globalEventMinCycle: 4,
+      globalEventChance:   0.1,
+
+      // Personatges
+      partnerStatDivisor:       1.5,
+      successionPhysicalFactor: 0.3,
+
+      // Puntuació
+      scorePerGeneration: 400,
+      scorePerRep:        5,
+      scorePerKnowledge:  100,
+    },
   },
+
+  // Zones — shown only when ≥1 action is available; discoveryTitle/Text shown on first reveal
+  zones: [
+    {
+      id: 'wild', era_id: 'prehistoria', name: 'Camp', icon: '🌿',
+      description: 'Recol·lecta i observa la natura',
+      discoveryTitle: 'El camp us alimenta',
+      discoveryText: 'La tribu aprèn a llegir la terra. Cada arrel, cada baia, cada rastre és una lliçó de supervivència que es transmet de generació en generació.',
+    },
+    {
+      id: 'town', era_id: 'prehistoria', name: 'Poblat', icon: '🏛️',
+      description: 'Socialitza i fabrica eines',
+      discoveryTitle: 'Neix el poblat',
+      discoveryText: 'El lloc on la tribu es troba, fabrica i discuteix. Aquí les mans transformen la pedra en eines i les idees en costums.',
+    },
+    {
+      id: 'forest', era_id: 'prehistoria', name: 'Bosc', icon: '🌲',
+      description: 'Caça i explora terres llunyanes',
+      discoveryTitle: 'El bosc reclama el seu preu',
+      discoveryText: 'Ets prou fort per endinsar-te on les preses s\'amaguen. Aquí la vida és abundant i perillosa a parts iguals. Qui domina el bosc, domina la supervivència.',
+    },
+    {
+      id: 'home', era_id: 'prehistoria', name: 'Llar', icon: '🏠',
+      description: 'Descansa i cuida la família',
+      discoveryTitle: 'Un lloc al món',
+      discoveryText: 'Per primer cop, la tribu crea un lloc que no és simplement refugi. És llar. I una llar implica família, rols i futures generacions.',
+    },
+  ],
 
   // Generic resources — loaded into S.resources = { id: { value, max } }
   resources: [
@@ -332,7 +417,7 @@ const GAME_DATA = {
     { id: 'cooking', name: 'Cuinar', icon: '🍳',
       description: 'Cuines els aliments sobre el foc. El valor nutritiu augmenta.',
       effectDesc: 'Consum de menjar al final de cicle -20%.',
-      effect: { cookingBonus: true },
+      effect: { foodCostReduction: 0.2 },
       requires: { techIds: ['fire'] },
       transversal: false, discoveryChance: 0.35 },
     { id: 'socialitzar', name: 'Socialitzar', icon: '💬',
@@ -373,6 +458,15 @@ const GAME_DATA = {
       effect: { stat: 'happiness', value: 15 }, inheritChance: 0.25 },
   ],
 
+  dynastyTitles: [
+    { minMilestones: 5,  label: 'Llegenda Viva' },
+    { requires: ['dynasty_founded', 'tribe_respected'], label: "Constructors d'Imperis" },
+    { requires: ['all_knowledge'],   label: 'La Línia dels Savis' },
+    { requires: ['great_hunter'],    label: 'Guerrers de la Prehistòria' },
+    { requires: ['family_complete'], label: 'La Família Completa' },
+    { default: true, label: 'Fills de la Terra' },
+  ],
+
   namesMasc: ['Brac', 'Arn', 'Dal', 'Kur', 'Mog', 'Thag', 'Bok', 'Drak', 'Fal', 'Gar', 'Huk', 'Jok'],
   namesFem:  ['Mira', 'Sela', 'Una', 'Bera', 'Kala', 'Thea', 'Nara', 'Lira', 'Vela', 'Hara', 'Yuna', 'Asha'],
 
@@ -385,11 +479,11 @@ const GAME_DATA = {
 
   milestones: [
     { id: 'first_fire',      name: 'Mestre del Foc',        icon: '🔥', desc: 'Descobrir el foc',               points: 300 },
-    { id: 'great_hunter',    name: 'Gran Caçador/a',         icon: '🦣', desc: '5 caceres exitoses',             points: 250 },
-    { id: 'long_lived',      name: 'Longeu/a',               icon: '⏳', desc: 'Sobreviure fins als 40+ anys',   points: 200 },
+    { id: 'great_hunter',    name: 'Gran Caçador/a',         icon: '🦣', desc: '5 caceres exitoses',             points: 250, check: { type: 'char', key: 'huntCount', value: 5 } },
+    { id: 'long_lived',      name: 'Longeu/a',               icon: '⏳', desc: 'Sobreviure fins als 40+ anys',   points: 200, check: { type: 'char', key: 'age', value: 40 } },
     { id: 'dynasty_founded', name: 'Fundador/a de Dinastia', icon: '🏛️', desc: 'Iniciar la 2a generació',        points: 400 },
     { id: 'all_knowledge',   name: 'Buscador/a de Saviesa',  icon: '📜', desc: 'Descobrir totes les tecnologies', points: 350 },
-    { id: 'tribe_respected', name: 'Respectat/da per la Tribu', icon: '👑', desc: 'Reputació > 50',             points: 300 },
-    { id: 'family_complete', name: 'Família Completa',       icon: '👨‍👩‍👧', desc: 'Tenir parella i 2+ fills',       points: 300 },
+    { id: 'tribe_respected', name: 'Respectat/da per la Tribu', icon: '👑', desc: 'Reputació > 50',             points: 300, check: { type: 'resource', key: 'familyReputation', value: 50 } },
+    { id: 'family_complete', name: 'Família Completa',       icon: '👨‍👩‍👧', desc: 'Tenir parella i 2+ fills',       points: 300, check: { type: 'family', value: 2 } },
   ],
 };

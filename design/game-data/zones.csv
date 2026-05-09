@@ -1,0 +1,5 @@
+id,era_id,nom,icona,descripcio,titol_descoberta,text_descoberta,notes
+wild,prehistoria,Camp,🌿,"Recol·lecta i observa la natura","El camp us alimenta","La tribu aprèn a llegir la terra. Cada arrel, cada baia, cada rastre és una lliçó de supervivència que es transmet de generació en generació.",""
+town,prehistoria,Poblat,🏛️,"Socialitza i fabrica eines","Neix el poblat","El lloc on la tribu es troba, fabrica i discuteix. Aquí les mans transformen la pedra en eines i les idees en costums.",""
+forest,prehistoria,Bosc,🌲,"Caça i explora terres llunyanes","El bosc reclama el seu preu","Ets prou fort per endinsar-te on les preses s'amaguen. Aquí la vida és abundant i perillosa a parts iguals. Qui domina el bosc, domina la supervivència.",""
+home,prehistoria,Llar,🏠,"Descansa i cuida la família","Un lloc al món","Per primer cop, la tribu crea un lloc que no és simplement refugi. És llar. I una llar implica família, rols i futures generacions.",""
