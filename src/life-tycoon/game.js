@@ -92,6 +92,19 @@ function getSkill(id)     { return currentEra().destreses.find(s => s.id === id)
 function hasKnowledge(id) { return S.char.knowledgeIds.includes(id); }
 function hasSkill(id)     { return S.char.learnedSkillIds.includes(id); }
 
+function getSkillGlobal(id) {
+  for (const era of GAME_DATA.eras) {
+    const s = era.destreses?.find(s => s.id === id);
+    if (s) return s;
+  }
+  return null;
+}
+function skillEffectSum(effectKey) {
+  return S.char.learnedSkillIds.reduce((total, sId) => {
+    return total + (getSkillGlobal(sId)?.effect?.[effectKey] || 0);
+  }, 0);
+}
+
 function currentEra() { return GAME_DATA.eras.find(e => e.id === S.currentEraId) || GAME_DATA.eras[0]; }
 
 function generateTrait(statKey, exclude = null) {
@@ -189,13 +202,13 @@ function calcResult(proj) {
 
   // Skill/knowledge percentage bonuses — base captured before stacking
   const baseFoodGather = fx.food || 0;
-  if (hasSkill('fishing') && proj.id === 'gather') {
-    const pct = getSkill('fishing')?.effect?.gatherFoodPct || 0;
-    fx.food = baseFoodGather + Math.round(baseFoodGather * pct);
-  }
-  if (hasSkill('tracking') && (proj.id === 'hunt' || proj.id === 'explore')) {
-    const mult2 = 1 + (getSkill('tracking')?.effect?.huntMultBonus || 0);
-    for (const k of Object.keys(fx)) { if (fx[k] > 0) fx[k] = Math.round(fx[k] * mult2); }
+  const gatherPct = skillEffectSum('gatherFoodPct');
+  if (gatherPct > 0 && proj.id === 'gather') fx.food = baseFoodGather + Math.round(baseFoodGather * gatherPct);
+  const farmPct = skillEffectSum('farmFoodPct');
+  if (farmPct > 0 && proj.zone === 'fields' && (fx.food || 0) > 0) fx.food = (fx.food || 0) + Math.round((fx.food || 0) * farmPct);
+  const huntMult = 1 + skillEffectSum('huntMultBonus');
+  if (huntMult > 1 && (proj.id === 'hunt' || proj.id === 'explore')) {
+    for (const k of Object.keys(fx)) { if (fx[k] > 0) fx[k] = Math.round(fx[k] * huntMult); }
   }
   for (const [techId, bonus] of Object.entries(proj.techBonuses || {})) {
     if (hasKnowledge(techId) && bonus.foodPct) {
@@ -234,9 +247,9 @@ function applyFx(fx) {
       c[stat] = +(c[stat] + v).toFixed(1);
     } else if (k in S.resources) {
       const res = S.resources[k];
-      if (k === 'familyReputation' && v > 0 && hasSkill('socialitzar')) {
-        const bonus = 1 + (getSkill('socialitzar')?.effect?.familyRepPct || 0);
-        res.value = clamp(res.value + Math.round(v * bonus), 0, res.max);
+      if (k === 'familyReputation' && v > 0) {
+        const repPct = skillEffectSum('familyRepPct');
+        res.value = clamp(res.value + Math.round(v * (1 + repPct)), 0, res.max);
       } else {
         res.value = clamp(res.value + v, 0, res.max);
       }
@@ -476,16 +489,15 @@ function endCycle() {
   const M = currentEra().mechanics;
   S.char.age += 2;
 
-  // Medicinal plants: read regenPct from skill data
-  if (hasSkill('medicinal_plants')) {
-    const pct = getSkill('medicinal_plants')?.effect?.healthRegenPct || 0;
-    const regen = Math.round(S.resources.health.max * pct);
+  const healthRegenPct = skillEffectSum('healthRegenPct');
+  if (healthRegenPct > 0) {
+    const regen = Math.round(S.resources.health.max * healthRegenPct);
     S.resources.health.value = clamp(S.resources.health.value + regen, 0, S.resources.health.max);
   }
 
   // Food cost: full time budget + childrenFoodCost per child, reduced by cooking destresa
   const baseFoodCost = Math.round(S.timeTotal * currentEra().foodPerTimePoint) + S.char.children.length * M.childrenFoodCost;
-  const cookingReduction = hasSkill('cooking') ? (getSkill('cooking')?.effect?.foodCostReduction || 0) : 0;
+  const cookingReduction = skillEffectSum('foodCostReduction');
   const foodCost = Math.round(baseFoodCost * (1 - cookingReduction));
   const shortfall = Math.max(0, foodCost - S.resources.food.value);
   S.resources.food.value = Math.max(0, S.resources.food.value - foodCost);
@@ -518,21 +530,16 @@ function endCycle() {
   if (S.cycle > ac.threshold) {
     let ageLoss = Math.round(ac.baseLoss * Math.pow(ac.acceleration, S.cycle - ac.threshold - 1));
     if (S.char.traitAgingResist) ageLoss = Math.round(ageLoss * S.char.traitAgingResist);
-    if (hasSkill('weaving')) {
-      const reduction = getSkill('weaving')?.effect?.agingDamageReduction || 0;
-      ageLoss = Math.round(ageLoss * (1 - reduction));
-    }
+    const agingReduction = skillEffectSum('agingDamageReduction');
+    if (agingReduction > 0) ageLoss = Math.round(ageLoss * (1 - agingReduction));
     S.resources.health.value = clamp(S.resources.health.value - ageLoss, 0, S.resources.health.max);
   }
 
   // Happiness drift
   S.resources.happiness.value = clamp(S.resources.happiness.value + M.happinessDrift, M.happinessMin, 100);
 
-  // Art narratiu: read bonus from skill data
-  if (hasSkill('art_narratiu')) {
-    const bonus = getSkill('art_narratiu')?.effect?.happinessCycleBonus || 0;
-    S.resources.happiness.value = clamp(S.resources.happiness.value + bonus, 0, 100);
-  }
+  const happinessBonus = skillEffectSum('happinessCycleBonus');
+  if (happinessBonus > 0) S.resources.happiness.value = clamp(S.resources.happiness.value + happinessBonus, 0, 100);
 
   // Family reputation bonus for 2+ children
   if (S.char.children.length >= 2) S.resources.familyReputation.value = clamp(S.resources.familyReputation.value + M.familyRepBonus, 0, 100);
@@ -742,7 +749,7 @@ function renderAll() {
 function renderCycleForecast() {
   const M = currentEra().mechanics;
   const baseProjected = Math.round(S.timeTotal * currentEra().foodPerTimePoint) + S.char.children.length * M.childrenFoodCost;
-  const cookingReduction = hasSkill('cooking') ? (getSkill('cooking')?.effect?.foodCostReduction || 0) : 0;
+  const cookingReduction = skillEffectSum('foodCostReduction');
   const projectedFood = Math.round(baseProjected * (1 - cookingReduction));
 
   const ac = currentEra().agingCurve;
@@ -751,16 +758,14 @@ function renderCycleForecast() {
     : 0;
   let displayAgeLoss = ageLoss;
   if (S.char.traitAgingResist) displayAgeLoss = Math.round(displayAgeLoss * S.char.traitAgingResist);
-  if (hasSkill('weaving')) {
-    const reduction = getSkill('weaving')?.effect?.agingDamageReduction || 0;
-    displayAgeLoss = Math.round(displayAgeLoss * (1 - reduction));
-  }
+  const agingReduction = skillEffectSum('agingDamageReduction');
+  if (agingReduction > 0) displayAgeLoss = Math.round(displayAgeLoss * (1 - agingReduction));
 
   const fcFood = el('fc-food');
   fcFood.textContent = `(-${projectedFood})`;
   fcFood.className = 'fc-delta' + (S.resources.food.value - projectedFood < 15 ? ' danger' : '');
 
-  const artBonus = hasSkill('art_narratiu') ? (getSkill('art_narratiu')?.effect?.happinessCycleBonus || 0) : 0;
+  const artBonus = skillEffectSum('happinessCycleBonus');
   const hapDelta = M.happinessDrift + artBonus;
   const fcHap = el('fc-happiness');
   fcHap.textContent = hapDelta === 0 ? '(=)' : `(${hapDelta > 0 ? '+' : ''}${hapDelta})`;
@@ -844,14 +849,15 @@ function renderTraits() {
     row.appendChild(pill);
   }
   for (const sId of S.char.learnedSkillIds) {
-    const s = getSkill(sId);
+    const s = getSkillGlobal(sId);
     if (!s) continue;
     const pill = document.createElement('div');
     pill.className = 'skill-pill';
     pill.textContent = s.icon + ' ' + s.name;
     pill.onclick = () => {
+      const skillEra = GAME_DATA.eras.find(e => e.destreses?.some(d => d.id === sId));
       const lines = s.transversal === false
-        ? ['Era: Prehistòria · No es transfereix als cicles futurs']
+        ? [`Era: ${skillEra?.name || '?'} · No es transfereix als cicles futurs`]
         : s.transversal ? ['Habilitat transversal · Útil a totes les eres'] : [];
       showPillDetail(s.icon, s.name, s.effectDesc, lines);
     };
@@ -1032,9 +1038,15 @@ function calcImpactPreview(proj, intensity) {
   }
   const flatBonuses = {};
   const baseFood = preview.food || 0;
-  if (hasSkill('fishing') && proj.id === 'gather') {
-    const pct = getSkill('fishing')?.effect?.gatherFoodPct || 0;
-    const b = Math.round(baseFood * pct);
+  const gatherPct = skillEffectSum('gatherFoodPct');
+  if (gatherPct > 0 && proj.id === 'gather') {
+    const b = Math.round(baseFood * gatherPct);
+    flatBonuses.food = (flatBonuses.food || 0) + b;
+    preview.food = (preview.food || 0) + b;
+  }
+  const farmPct = skillEffectSum('farmFoodPct');
+  if (farmPct > 0 && proj.zone === 'fields' && baseFood > 0) {
+    const b = Math.round(baseFood * farmPct);
     flatBonuses.food = (flatBonuses.food || 0) + b;
     preview.food = (preview.food || 0) + b;
   }
@@ -1045,7 +1057,7 @@ function calcImpactPreview(proj, intensity) {
       preview.food = (preview.food || 0) + b;
     }
   }
-  const hasTracking = hasSkill('tracking') && (proj.id === 'hunt' || proj.id === 'explore');
+  const hasTracking = skillEffectSum('huntMultBonus') > 0 && (proj.id === 'hunt' || proj.id === 'explore');
   let effectiveRisk = proj.healthRisk;
   for (const [kId, reduction] of Object.entries(proj.riskReductions || {})) {
     if (hasKnowledge(kId)) effectiveRisk = Math.round(effectiveRisk * (1 - reduction));
@@ -1183,7 +1195,7 @@ function renderTeachPane() {
   const skillList = el('teach-skill-list');
   skillList.innerHTML = '';
   for (const sId of c.learnedSkillIds) {
-    const s = getSkill(sId);
+    const s = getSkillGlobal(sId);
     if (!s) continue;
     const teachable = c.children.some(ch => (ch.learnedSkillIds || []).length < 2 && !(ch.learnedSkillIds || []).includes(sId));
     if (!teachable) continue;
@@ -1587,7 +1599,7 @@ function resolveEvent(ev, optId) {
 // ── Succession overlay ────────────────────────────────────────────────────────
 function buildChildCard(child, showChooseBtn) {
   const skillsHtml = (child.learnedSkillIds || []).map(sId => {
-    const s = getSkill(sId); return s ? `<span class="skill-pill">${s.icon} ${s.name}</span>` : '';
+    const s = getSkillGlobal(sId); return s ? `<span class="skill-pill">${s.icon} ${s.name}</span>` : '';
   }).join('');
   const knowHtml = child.knowledgeIds.length > 0
     ? `<span class="succ-child-knowledge">Tecnologia: ${child.knowledgeIds.map(k => getKnowledge(k)?.icon || k).join(' ')}</span>`
