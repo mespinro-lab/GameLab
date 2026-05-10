@@ -1,5 +1,8 @@
-id,era_id,nom,icona,descripcio,requereix_tecnologies,probabilitat_descobriment,herencia,bonus_salut,bonus_fisic,bonus_intel,bonus_social,desbloqueja_accions,descripcio_efecte,notes
-fire,prehistoria,Foc,🔥,"Dominar el foc canvia les possibilitats de la tribu.",,0.3,1.0,5,,,,"","+5 Salut màxima permanent",""
-stone_tools,prehistoria,Eines de Pedra,🪨,"Eines millorades per a la caça i l'exploració.",,0.45,1.0,,,,,"explore","Redueix risc de caça 50%. +30% menjar en recol·lectar.",""
-language_basics,prehistoria,Llengua Bàsica,🗣️,"Comunicar-se millor enforteix els llaços tribals.",,0.3,1.0,,,,1,"","+1 Social permanent",""
-cooking,prehistoria,Cocció,🍳,"Cuinar els aliments sobre el foc en augmenta el valor nutritiu.",fire,0.3,1.0,,,,,"","Consum de menjar al final de cicle -20%",""
+id,era_id,nom,icona,cicle_aparicio,requereix_tecnologia,bonus_salut,bonus_fisic,bonus_intel,bonus_social,herencia,desbloqueja_accions,efecte_desc,gate_tech,next_era
+language_basics,prehistoria,Llengua Bàsica,🗣️,2,,-,,-,-,+1,1.0,"","","",""
+tribal_organization,prehistoria,Organització Tribal,👥,8,language_basics,-,,-,-,-,1.0,find_partner|care_home,"","",""
+fire,prehistoria,Domini del Foc,🔥,18,,+5 (max),-,-,-,1.0,cook_food,+5 Salut màxima permanent,"",""
+stone_tools,prehistoria,Eines de Pedra,🪨,28,,-,-,-,-,1.0,explore,"","",""
+symbolic_thinking,prehistoria,Pensament Simbòlic,🧿,38,tribal_organization,-,-,+1,-,1.0,"","","",""
+sedentarism,prehistoria,Sedentarisme,🏕️,47,stone_tools,-,-,-,-,1.0,"","","",""
+agricultura,prehistoria,Agricultura,🌾,55,sedentarism,-,-,+1,-,1.0,"",Inicia la transició cap al Neolític,true,neolitic

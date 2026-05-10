@@ -1,0 +1,13 @@
+id,era_id,nom,icona,descripcio,requereix_tecnologia,requereix_fisic,requereix_intel,requereix_social,desbloqueja_accions,descripcio_efecte
+persuasion,prehistoria,Persuasió,🗣️,El llinatge desenvolupa l'art de convèncer i negociar amb altres grups.,language_basics,-,-, 2,negotiate|mediate_conflict,Desbloqueja Negociar i Mediar Conflictes
+oral_tradition,prehistoria,Tradició Oral,📖,El llinatge preserva el coneixement ancestral a través de contes i cants.,language_basics,-,2,-,tell_stories|teach_group,Desbloqueja Contar Gestes i Ensenyar en Grup
+chieftainship,prehistoria,Lideratge Tribal,👑,El llinatge pren el paper de líders naturals dins la tribu.,tribal_organization,-,-,3,rally_tribe|lead_hunt,Desbloqueja Mobilitzar la Tribu i Caça Organitzada
+barter_trade,prehistoria,Bescanvi,🤝,El llinatge estableix xarxes d'intercanvi amb tribus veïnes.,tribal_organization,-,2,-,trade_resources|establish_trade_route,Desbloqueja Bescanviar Recursos i Ruta Comercial
+cooking_mastery,prehistoria,Art Culinari,🍳,El llinatge domina les tècniques culinàries avançades: festins i conservació.,fire,-,2,-,cook_feast|preserve_food,Desbloqueja Gran Festí i Conservar Aliments
+fire_techniques,prehistoria,Tècniques del Foc,🔥,El llinatge usa el foc com a eina de caça nocturna i comunicació a distància.,fire,2,-,-,torch_hunt|signal_fires,Desbloqueja Caça amb Torxes i Senyals de Foc
+big_game_hunting,prehistoria,Caça Major,🦣,El llinatge domina la caça de les grans preses de la prehistòria.,stone_tools,3,-,-,hunt_mammoth|hunt_bison,Desbloqueja Caçar el Mamut i Caçar el Bisó
+advanced_crafting,prehistoria,Artesania Avançada,🪨,El llinatge perfecciona l'elaboració d'armes i ornaments de pedra i os.,stone_tools,-,3,-,craft_weapons|craft_ornaments,Desbloqueja Forjar Armes i Crear Ornaments
+shamanism,prehistoria,Xamanisme,🧿,El llinatge connecta amb el món espiritual i guia la tribu en rituals sagrats.,symbolic_thinking,-,-,2,healing_ritual|spirit_ceremony,Desbloqueja Ritual Curatiu i Cerimònia Espiritual
+cave_art,prehistoria,Art Rupestre,🎨,El llinatge immortalitza les seves gestes i visions a les parets de les coves.,symbolic_thinking,-,2,-,paint_cave|carve_symbols,Desbloqueja Pintura Rupestre i Gravar Símbols
+proto_agriculture,prehistoria,Proto-Agricultura,🌾,El llinatge comença a cultivar plantes de manera intencionada.,sedentarism,-,2,-,plant_seeds|tend_crops,Desbloqueja Plantar Llavors i Conrear
+shelter_building,prehistoria,Construcció de Refugis,🏗️,El llinatge construeix estructures permanents per protegir la tribu.,sedentarism,2,-,-,build_shelter|fortify_camp,Desbloqueja Construir Refugi i Fortificar el Camp
