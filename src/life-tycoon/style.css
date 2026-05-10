@@ -131,6 +131,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   color: var(--text);
   padding: 0 2px;
 }
+.stat-chip.hidden   { display: none; }
 .stat-chip.low      { color: #e67e22; }
 .stat-chip.critical { color: #e74c3c; animation: chipPulse 0.8s ease-in-out infinite; }
 @keyframes chipPulse {
@@ -514,42 +515,92 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   margin-top: auto;
 }
 
-/* ── Discovery pane ──────────────────────────────────────────────────── */
+/* ── Discovery — overlay backdrop + cream card ───────────────────────── */
+#pane-discovery {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  z-index: 450;
+  gap: 0;
+}
+#pane-discovery.hidden { display: none !important; }
+
+.disc-card {
+  background: #f5efde;
+  border-radius: 14px;
+  padding: 1.25rem 1.1rem;
+  max-width: 340px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+  animation: discCardIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes discCardIn {
+  from { opacity: 0; transform: scale(0.88) translateY(12px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
 #disc-header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 700;
-  color: var(--gold);
+  color: #6b4200;
 }
-#disc-icon { font-size: 2rem; }
+#disc-icon { font-size: 1.8rem; }
 .disc-badge {
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: var(--gold);
-  opacity: 0.75;
+  color: #9a6200;
+  opacity: 0.85;
 }
-#disc-desc { font-size: 0.9rem; line-height: 1.5; color: var(--text); }
+#disc-desc { font-size: 0.88rem; line-height: 1.5; color: #3d2200; }
 #disc-effects { display: flex; flex-direction: column; gap: 0.3rem; }
 #btn-dismiss-discovery {
   align-self: stretch;
-  background: var(--accent);
-  border-color: var(--gold);
+  background: #8b5000;
+  border: none;
+  color: #fff;
   font-weight: 700;
-  padding: 0.7rem;
-  font-size: 0.95rem;
+  padding: 0.65rem;
+  font-size: 0.9rem;
+  border-radius: 8px;
+  margin-top: 0.25rem;
+  cursor: pointer;
+}
+/* Auto-advance progress bars */
+#result-auto-bar, #evr-auto-bar {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
   margin-top: auto;
 }
-#btn-dismiss-ev-result {
-  align-self: stretch;
-  background: var(--surface2);
-  border-color: var(--border);
-  font-weight: 600;
-  padding: 0.6rem;
-  margin-top: auto;
+#result-auto-fill {
+  height: 100%;
+  background: var(--gold);
+  border-radius: 2px;
+  width: 0%;
+  animation: autoFill 1.6s linear forwards;
+}
+#evr-auto-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  width: 0%;
+  animation: autoFill 1.1s linear forwards;
+}
+@keyframes autoFill {
+  from { width: 0%; }
+  to   { width: 100%; }
 }
 
 /* ── Event ───────────────────────────────────────────────────────────── */
@@ -815,7 +866,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 }
 .pane:not(.hidden) { animation: fadeInUp 0.2s ease; }
 #pane-event:not(.hidden)     { animation: slideInRight 0.25s ease; }
-#pane-discovery:not(.hidden) { animation: discoveryIn 0.3s ease; }
+#pane-discovery:not(.hidden) { animation: none; }
 
 
 /* ── Floating numbers ────────────────────────────────────────────────── */

@@ -82,19 +82,21 @@
         <p id="result-narrative"></p>
         <div id="result-fx-list"></div>
         <div id="result-discoveries"></div>
-        <button id="btn-next-cycle">Cicle següent →</button>
+        <div id="result-auto-bar"><div id="result-auto-fill"></div></div>
       </div>
 
       <!-- PHASE: discovery -->
       <div id="pane-discovery" class="pane hidden">
-        <div id="disc-header">
-          <span id="disc-icon"></span>
-          <span id="disc-name"></span>
+        <div class="disc-card">
+          <div id="disc-header">
+            <span id="disc-icon"></span>
+            <span id="disc-name"></span>
+          </div>
+          <p class="disc-badge" id="disc-badge">✨ Nou coneixement descobert</p>
+          <p id="disc-desc"></p>
+          <div id="disc-effects"></div>
+          <button id="btn-dismiss-discovery">Entès →</button>
         </div>
-        <p class="disc-badge" id="disc-badge">✨ Nou coneixement descobert</p>
-        <p id="disc-desc"></p>
-        <div id="disc-effects"></div>
-        <button id="btn-dismiss-discovery">Entès →</button>
       </div>
 
       <!-- PHASE: event -->
@@ -112,7 +114,8 @@
         <div id="evr-icon"></div>
         <p id="evr-text"></p>
         <div id="evr-fx"></div>
-        <button id="btn-dismiss-ev-result">Continua →</button>
+        <div id="evr-auto-bar"><div id="evr-auto-fill"></div></div>
+        <button id="btn-dismiss-ev-result" style="display:none">Continua →</button>
       </div>
 
       <!-- PHASE: teach skill -->

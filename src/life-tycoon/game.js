@@ -22,11 +22,12 @@ function gameDelay(ms, fn) {
 let S = {};
 
 function initState() {
-  const st = GAME_DATA.era.startingStats;
+  const startEra = GAME_DATA.eras[0];
+  const st = startEra.startingStats;
   S = {
     phase: 'select',
     cycle: 1,
-    maxCycles: GAME_DATA.era.cyclesPerLife.base,
+    maxCycles: startEra.cyclesPerLife.base,
     generation: 1,
     dynastyName: '',
     resources: Object.fromEntries(
@@ -53,8 +54,8 @@ function initState() {
       bornEraCycle: 0,
     },
     intensity: 2,
-    timeTotal: GAME_DATA.era.timeTotal,
-    timeLeft: GAME_DATA.era.timeTotal,
+    timeTotal: startEra.timeTotal,
+    timeLeft: startEra.timeTotal,
     eraCycle: 0,
     activeProject: null,
     pendingEvent: null,
@@ -66,6 +67,8 @@ function initState() {
     lastResult: null,
     genealogy: [],
     milestones: [],
+    currentEraId: startEra.id,
+    pendingEraTransition: null,
   };
 }
 
@@ -77,16 +80,18 @@ function randomName(gender, exclude) {
 }
 
 function dynastyName(firstName) {
-  return firstName + ' ' + pick(GAME_DATA.era.dynastySuffixes);
+  return firstName + ' ' + pick(currentEra().dynastySuffixes);
 }
 
 // ── Project helpers ───────────────────────────────────────────────────────────
-function getProject(id)   { return GAME_DATA.actions.find(p => p.id === id); }
-function getKnowledge(id) { return GAME_DATA.techs.find(k => k.id === id); }
+function getProject(id)   { return currentEra().actions.find(p => p.id === id); }
+function getKnowledge(id) { return currentEra().techs.find(k => k.id === id); }
 function getTrait(id)     { return GAME_DATA.traits.find(t => t.id === id); }
-function getSkill(id)     { return GAME_DATA.destreses.find(s => s.id === id); }
+function getSkill(id)     { return currentEra().destreses.find(s => s.id === id); }
 function hasKnowledge(id) { return S.char.knowledgeIds.includes(id); }
 function hasSkill(id)     { return S.char.learnedSkillIds.includes(id); }
+
+function currentEra() { return GAME_DATA.eras.find(e => e.id === S.currentEraId) || GAME_DATA.eras[0]; }
 
 function generateTrait(statKey, exclude = null) {
   const pool = GAME_DATA.traits.filter(t => t.statKey === statKey && t.id !== exclude);
@@ -167,7 +172,7 @@ function lockedReason(proj) {
 
 // ── Formula ───────────────────────────────────────────────────────────────────
 function calcResult(proj) {
-  const M = GAME_DATA.era.mechanics;
+  const M = currentEra().mechanics;
   const mult     = M.intensityOutputMults[S.intensity - 1];
   const riskMult = M.intensityRiskMults[S.intensity - 1];
   const statVal  = S.char[proj.statKey] || 1;
@@ -261,7 +266,7 @@ function showFxFloaters(fx) {
 
 // ── Destresa discovery (earned through play) ──────────────────────────────────
 function tryDiscoverSkill(proj, score) {
-  const M = GAME_DATA.era.mechanics;
+  const M = currentEra().mechanics;
   const discovered = [];
   for (const sId of (proj.destreseDiscovery || [])) {
     if (S.char.learnedSkillIds.length >= M.maxLearnedSkills) break;
@@ -296,7 +301,7 @@ function checkMilestones() {
 
 // ── Partner generation ────────────────────────────────────────────────────────
 function generatePartner() {
-  const M = GAME_DATA.era.mechanics;
+  const M = currentEra().mechanics;
   const gender = S.char.gender === 'M' ? 'F' : 'M';
   const name = randomName(gender, S.char.name);
   const base = Math.max(1, Math.round(S.char.social / M.partnerStatDivisor));
@@ -354,6 +359,7 @@ function generateChild() {
     traitIds: [inheritedTraitId, ownTraitId],
     bornCycle: S.cycle,
     bornEraCycle: S.eraCycle,
+    bornEraId: S.pendingEraTransition || S.currentEraId,
   };
 }
 
@@ -375,24 +381,24 @@ function virtueForChar(c) {
 
 // ── Event system ──────────────────────────────────────────────────────────────
 function tryTriggerEvent(proj, quality) {
-  const M = GAME_DATA.era.mechanics;
+  const M = currentEra().mechanics;
   if (quality === 'poor') return null;
   const pool = proj.eventPool || [];
   for (const eId of pool) {
-    const ev = GAME_DATA.events.find(e => e.id === eId);
+    const ev = currentEra().events.find(e => e.id === eId);
     if (ev && Math.random() < M.eventTriggerChance) return ev;
   }
   if (S.cycle >= M.globalEventMinCycle && Math.random() < M.globalEventChance) {
-    const globals = GAME_DATA.era.globalEvents;
+    const globals = currentEra().globalEvents;
     const eId = pick(globals);
-    return GAME_DATA.events.find(e => e.id === eId) || null;
+    return currentEra().events.find(e => e.id === eId) || null;
   }
   return null;
 }
 
 // ── Technology auto-unlock (worldwide, fixed era cycle) ───────────────────────
 function checkTechUnlock() {
-  for (const tech of GAME_DATA.techs) {
+  for (const tech of currentEra().techs) {
     if (hasKnowledge(tech.id)) continue;
     if (S.eraCycle < tech.eraCycleAppears) continue;
     S.char.knowledgeIds.push(tech.id);
@@ -408,18 +414,19 @@ function checkTechUnlock() {
     }
     S.pendingDiscoveries.push({ ...tech, _type: 'technology' });
     if (tech.id === 'fire') earnMilestone('first_fire');
-    if (S.char.knowledgeIds.length >= GAME_DATA.techs.length) earnMilestone('all_knowledge');
+    if (tech.isGateTech && !S.pendingEraTransition) { S.pendingEraTransition = tech.nextEra; earnMilestone('era_transition'); }
+    if (S.char.knowledgeIds.length >= currentEra().techs.length) earnMilestone('all_knowledge');
   }
   checkSkillUnlock();
   checkZoneDiscoveries();
 }
 
 // ── Skill unlock (optional, lineage-persistent, condition-based) ───────────────
-function getGameSkill(id)    { return (GAME_DATA.skills || []).find(s => s.id === id); }
+function getGameSkill(id)    { return (currentEra().skills || []).find(s => s.id === id); }
 function hasUnlockedSkill(id){ return S.unlockedSkillIds.includes(id); }
 
 function checkSkillUnlock() {
-  for (const skill of (GAME_DATA.skills || [])) {
+  for (const skill of (currentEra().skills || [])) {
     if (hasUnlockedSkill(skill.id)) continue;
     if (skill.requiresTech && !hasKnowledge(skill.requiresTech)) continue;
     if (skill.requiresMinStat) {
@@ -433,11 +440,11 @@ function checkSkillUnlock() {
 
 // ── Zone discovery ────────────────────────────────────────────────────────────
 function zoneHasAvailableAction(zoneId) {
-  return GAME_DATA.actions.some(p => p.zone === zoneId && isProjectUnlocked(p));
+  return currentEra().actions.some(p => p.zone === zoneId && isProjectUnlocked(p));
 }
 
 function initDiscoveredZones() {
-  for (const zone of GAME_DATA.zones) {
+  for (const zone of currentEra().zones) {
     if (!S.discoveredZoneIds.includes(zone.id) && zoneHasAvailableAction(zone.id)) {
       S.discoveredZoneIds.push(zone.id);
     }
@@ -445,7 +452,7 @@ function initDiscoveredZones() {
 }
 
 function checkZoneDiscoveries() {
-  for (const zone of GAME_DATA.zones) {
+  for (const zone of currentEra().zones) {
     if (S.discoveredZoneIds.includes(zone.id)) continue;
     if (zoneHasAvailableAction(zone.id)) {
       S.discoveredZoneIds.push(zone.id);
@@ -456,16 +463,16 @@ function checkZoneDiscoveries() {
 
 // ── Time total (grows with grown children) ────────────────────────────────────
 function calcTimeTotal() {
-  const M = GAME_DATA.era.mechanics;
+  const M = currentEra().mechanics;
   const grownCount = S.char.children.filter(c => S.cycle - (c.bornCycle || 0) >= M.grownChildCycles).length;
   const grownBonus  = Math.min(grownCount, M.grownChildMaxCount) * M.grownChildBonus;
   const familyBonus = S.char.children.length >= M.largeChildThreshold ? M.largeChildBonus : 0;
-  return GAME_DATA.era.timeTotal + grownBonus + familyBonus;
+  return currentEra().timeTotal + grownBonus + familyBonus;
 }
 
 // ── End of cycle ──────────────────────────────────────────────────────────────
 function endCycle() {
-  const M = GAME_DATA.era.mechanics;
+  const M = currentEra().mechanics;
   S.char.age += 2;
 
   // Medicinal plants: read regenPct from skill data
@@ -476,7 +483,7 @@ function endCycle() {
   }
 
   // Food cost: full time budget + childrenFoodCost per child, reduced by cooking destresa
-  const baseFoodCost = Math.round(S.timeTotal * GAME_DATA.era.foodPerTimePoint) + S.char.children.length * M.childrenFoodCost;
+  const baseFoodCost = Math.round(S.timeTotal * currentEra().foodPerTimePoint) + S.char.children.length * M.childrenFoodCost;
   const cookingReduction = hasSkill('cooking') ? (getSkill('cooking')?.effect?.foodCostReduction || 0) : 0;
   const foodCost = Math.round(baseFoodCost * (1 - cookingReduction));
   const shortfall = Math.max(0, foodCost - S.resources.food.value);
@@ -506,7 +513,7 @@ function endCycle() {
   }
 
   // Aging curve: cap pla fins al llindar, exponencial a partir d'aquí
-  const ac = GAME_DATA.era.agingCurve;
+  const ac = currentEra().agingCurve;
   if (S.cycle > ac.threshold) {
     let ageLoss = Math.round(ac.baseLoss * Math.pow(ac.acceleration, S.cycle - ac.threshold - 1));
     if (S.char.traitAgingResist) ageLoss = Math.round(ageLoss * S.char.traitAgingResist);
@@ -566,7 +573,7 @@ function triggerDeath() {
     gender: S.char.gender,
     age: S.char.age,
     generation: S.generation,
-    era: GAME_DATA.era.name,
+    era: currentEra().name,
     cause: S.cycle >= S.maxCycles ? 'Mort natural' : 'Salut esgotada',
     knowledgeIds: [...S.char.knowledgeIds],
   });
@@ -582,7 +589,6 @@ function triggerDeath() {
 
 // ── Succession ────────────────────────────────────────────────────────────────
 function doSuccession(child) {
-  const M = GAME_DATA.era.mechanics;
   S.generation++;
   earnMilestone('dynasty_founded');
 
@@ -615,21 +621,35 @@ function doSuccession(child) {
   for (const tId of S.char.traitIds) applyTrait(tId);
 
   S.cycle = 1;
-  S.timeTotal = GAME_DATA.era.timeTotal;
-  S.timeLeft = S.timeTotal;
-  S.maxCycles = GAME_DATA.era.cyclesPerLife.base + Math.round(S.char.physical * M.successionPhysicalFactor);
   S.pendingDeaths = [];
   S._showingDeath = false;
   S.pendingDiscoveries = [];
   S.pendingEvent = null;
-  checkZoneDiscoveries();
+  if (child.bornEraId && child.bornEraId !== S.currentEraId) {
+    transitionEra(child.bornEraId);
+  } else {
+    checkZoneDiscoveries();
+  }
+  S.timeTotal = currentEra().timeTotal;
+  S.timeLeft = S.timeTotal;
+  S.maxCycles = currentEra().cyclesPerLife.base + Math.round(S.char.physical * currentEra().mechanics.successionPhysicalFactor);
   S.phase = S.pendingDiscoveries.length > 0 ? 'discovery' : 'select';
   renderAll();
 }
 
+function transitionEra(newEraId) {
+  S.currentEraId = newEraId;
+  S.eraCycle = 0;
+  S.pendingEraTransition = null;
+  S.discoveredZoneIds = [];
+  S.unlockedSkillIds = [];
+  checkSkillUnlock();
+  checkZoneDiscoveries();
+}
+
 // ── Scoring ───────────────────────────────────────────────────────────────────
 function calcScore() {
-  const M = GAME_DATA.era.mechanics;
+  const M = currentEra().mechanics;
   let score = 0;
   score += S.generation * M.scorePerGeneration;
   score += S.resources.familyReputation.value * M.scorePerRep;
@@ -690,8 +710,8 @@ function renderStatChips() {
 function renderMenuEra() {
   const icon = el('menu-era-icon');
   const badge = el('menu-era-badge');
-  if (icon) icon.textContent = GAME_DATA.era.icon;
-  if (badge) badge.textContent = `Era 1 · ${GAME_DATA.era.name}`;
+  if (icon) icon.textContent = currentEra().icon;
+  if (badge) badge.textContent = `Era 1 · ${currentEra().name}`;
 }
 
 // ── Rendering ─────────────────────────────────────────────────────────────────
@@ -718,12 +738,12 @@ function renderAll() {
 }
 
 function renderCycleForecast() {
-  const M = GAME_DATA.era.mechanics;
-  const baseProjected = Math.round(S.timeTotal * GAME_DATA.era.foodPerTimePoint) + S.char.children.length * M.childrenFoodCost;
+  const M = currentEra().mechanics;
+  const baseProjected = Math.round(S.timeTotal * currentEra().foodPerTimePoint) + S.char.children.length * M.childrenFoodCost;
   const cookingReduction = hasSkill('cooking') ? (getSkill('cooking')?.effect?.foodCostReduction || 0) : 0;
   const projectedFood = Math.round(baseProjected * (1 - cookingReduction));
 
-  const ac = GAME_DATA.era.agingCurve;
+  const ac = currentEra().agingCurve;
   const ageLoss = S.cycle > ac.threshold
     ? Math.round(ac.baseLoss * Math.pow(ac.acceleration, S.cycle - ac.threshold - 1))
     : 0;
@@ -889,8 +909,8 @@ function renderSelectPane() {
   const container = el('zone-cards');
   container.innerHTML = '';
 
-  for (const zone of GAME_DATA.zones.filter(z => S.discoveredZoneIds.includes(z.id))) {
-    const zoneProjects = GAME_DATA.actions.filter(p => p.zone === zone.id);
+  for (const zone of currentEra().zones.filter(z => S.discoveredZoneIds.includes(z.id))) {
+    const zoneProjects = currentEra().actions.filter(p => p.zone === zone.id);
     const availCount = zoneProjects.filter(p => isProjectUnlocked(p)).length;
     const card = document.createElement('div');
     card.className = 'zone-card';
@@ -908,14 +928,14 @@ function renderSelectPane() {
 }
 
 function openZoneSheet(zoneId) {
-  const zone = GAME_DATA.zones.find(z => z.id === zoneId);
+  const zone = currentEra().zones.find(z => z.id === zoneId);
   el('zone-sheet-icon').textContent = zone.icon;
   el('zone-sheet-name').textContent = zone.name;
 
   const grid = el('zone-sheet-grid');
   grid.innerHTML = '';
 
-  for (const proj of GAME_DATA.actions.filter(p => p.zone === zoneId)) {
+  for (const proj of currentEra().actions.filter(p => p.zone === zoneId)) {
     const unlocked = isProjectUnlocked(proj);
     const card = document.createElement('div');
     card.className = 'proj-card' + (unlocked ? '' : ' locked');
@@ -960,7 +980,7 @@ function renderIntensityPane() {
   el('sl-proj-icon').textContent = proj.icon;
   el('sl-proj-name').textContent = proj.name;
 
-  const M = GAME_DATA.era.mechanics;
+  const M = currentEra().mechanics;
   const costs = M.intensityTimeCosts;
   const names = M.intensityLabels;
 
@@ -983,7 +1003,7 @@ function renderIntensityPane() {
 }
 
 function setIntensity(n) {
-  if (GAME_DATA.era.mechanics.intensityTimeCosts[n - 1] > S.timeLeft) return;
+  if (currentEra().mechanics.intensityTimeCosts[n - 1] > S.timeLeft) return;
   S.intensity = n;
   document.querySelectorAll('.int-btn').forEach(b => {
     b.classList.toggle('active', +b.dataset.int === n);
@@ -992,7 +1012,7 @@ function setIntensity(n) {
 }
 
 function calcImpactPreview(proj, intensity) {
-  const M = GAME_DATA.era.mechanics;
+  const M = currentEra().mechanics;
   const mult    = M.intensityOutputMults[intensity - 1];
   const statVal = S.char[proj.statKey] || 1;
   const statMod = clamp(M.statModBase + (statVal - 1) * M.statModPerStat, M.statModMin, M.statModMax);
@@ -1051,7 +1071,7 @@ function renderImpactPreview(proj) {
     container.appendChild(row);
   }
   if (hasRisk) {
-    const M = GAME_DATA.era.mechanics;
+    const M = currentEra().mechanics;
     const chances = M.intensityFailChances.map(c => Math.round(c * 100) + '%');
     const row = document.createElement('div');
     row.className = 'preview-row';
@@ -1066,7 +1086,7 @@ function renderImpactPreview(proj) {
   detailToggle.textContent = '⌄ Detall';
   const detailBox = document.createElement('div');
   detailBox.className = 'preview-detail hidden';
-  const { intensityLabels, intensityOutputMults } = GAME_DATA.era.mechanics;
+  const { intensityLabels, intensityOutputMults } = currentEra().mechanics;
   const shortLabels = ['Suau', 'Normal', 'Intens'];
   const intNames = shortLabels.map((n, i) => `${n} ×${intensityOutputMults[i]}`);
   const statLabel = { physical: '💪 Físic', intelligence: '🧠 Intel·l.', social: '👥 Social' };
@@ -1087,7 +1107,7 @@ function renderImpactPreview(proj) {
 // ── Execute ───────────────────────────────────────────────────────────────────
 function executeProject() {
   const proj = S.activeProject;
-  const timeCostCheck = GAME_DATA.era.mechanics.intensityTimeCosts[S.intensity - 1];
+  const timeCostCheck = currentEra().mechanics.intensityTimeCosts[S.intensity - 1];
   if (S.timeLeft < timeCostCheck) return;
   S.phase = 'executing';
   renderAll();
@@ -1108,10 +1128,10 @@ function executeProject() {
     if (proj.id === 'hunt' && result.quality !== 'poor') S.char.huntCount++;
     if (proj.generatesPartner && result.quality !== 'poor' && !S.char.partner) S.char.partner = generatePartner();
     if (proj.generatesChild && result.quality !== 'poor' && S.char.partner) {
-      if (S.char.children.length < GAME_DATA.era.maxChildren) S.char.children.push(generateChild());
+      if (S.char.children.length < currentEra().maxChildren) S.char.children.push(generateChild());
     }
 
-    const timeCost = GAME_DATA.era.mechanics.intensityTimeCosts[S.intensity - 1];
+    const timeCost = currentEra().mechanics.intensityTimeCosts[S.intensity - 1];
     S.timeLeft = Math.max(0, S.timeLeft - timeCost);
 
     const discovered = tryDiscoverSkill(proj, result.finalMult);
@@ -1132,7 +1152,7 @@ function executeProject() {
 
 // ── Teach pane ────────────────────────────────────────────────────────────────
 function calcTeachCost(n) {
-  const M = GAME_DATA.era.mechanics;
+  const M = currentEra().mechanics;
   let cost = 0;
   for (let i = 0; i < n; i++) cost += M.teachCostBase + i * M.teachCostIncrement;
   return cost;
@@ -1142,7 +1162,7 @@ function renderTeachPane() {
   const c = S.char;
   if (!c.teachChildIndices) c.teachChildIndices = [];
   const n = c.teachChildIndices.length;
-  const { teachCostBase, teachCostIncrement } = GAME_DATA.era.mechanics;
+  const { teachCostBase, teachCostIncrement } = currentEra().mechanics;
   const cost = calcTeachCost(Math.max(1, n));
   const costBreakdown = n > 1
     ? Array.from({ length: n }, (_, i) => teachCostBase + i * teachCostIncrement).join('+') + ` = ${calcTeachCost(n)}`
@@ -1269,6 +1289,9 @@ function showNextDeath() {
   }
   S._showingDeath = true;
   S.phase = 'ev-result';
+  clearTimeout(_timer);
+  el('evr-auto-bar').style.display = 'none';
+  el('btn-dismiss-ev-result').style.display = 'block';
   renderAll();
 }
 
@@ -1305,7 +1328,7 @@ function renderDiscoveryPane() {
     el('disc-badge').textContent = '🗺️ Nova zona descoberta';
     el('disc-name').textContent = item.discoveryTitle;
     el('disc-desc').textContent = item.discoveryText;
-    const zoneActions = GAME_DATA.actions.filter(p => p.zone === item.id && isProjectUnlocked(p));
+    const zoneActions = currentEra().actions.filter(p => p.zone === item.id && isProjectUnlocked(p));
     for (const action of zoneActions) {
       const div = document.createElement('div');
       div.className = 'fx-line';
@@ -1433,7 +1456,6 @@ function renderResultPane() {
 
   el('result-discoveries').innerHTML = '';
 
-  const nextBtn = el('btn-next-cycle');
   const goNext = () => {
     if (S.pendingDiscoveries.length > 0) {
       S.phase = 'discovery'; renderAll();
@@ -1446,17 +1468,10 @@ function renderResultPane() {
     }
   };
 
-  if (S.pendingDiscoveries.length > 0) {
-    nextBtn.textContent = '✨ Descobriment! →';
-  } else if (S.pendingEvent) {
-    nextBtn.textContent = '⚡ Event! →';
-  } else if (S.timeLeft > 0) {
-    const n = Math.floor(S.timeLeft / GAME_DATA.era.mechanics.intensityTimeCosts[0]);
-    nextBtn.textContent = `Altra acció (${n} disp.) →`;
-  } else {
-    nextBtn.textContent = 'Cicle següent →';
-  }
-  nextBtn.onclick = goNext;
+  // Reset barra de progrés per reiniciar l'animació
+  const fill = el('result-auto-fill');
+  if (fill) { fill.style.animation = 'none'; void fill.offsetWidth; fill.style.animation = ''; }
+  gameDelay(1600, goNext);
 }
 
 // ── Event pane ────────────────────────────────────────────────────────────────
@@ -1518,7 +1533,11 @@ function resolveEvent(ev, optId) {
     return `<span class="${v > 0 ? 'fx-pos' : 'fx-neg'}">${labels[k] || k} ${v > 0 ? '+' : ''}${v}</span>`;
   }).join('  ');
 
-  el('btn-dismiss-ev-result').onclick = afterNotifications;
+  el('btn-dismiss-ev-result').style.display = 'none';
+  el('evr-auto-bar').style.display = '';
+  const evrFill = el('evr-auto-fill');
+  if (evrFill) { evrFill.style.animation = 'none'; void evrFill.offsetWidth; evrFill.style.animation = ''; }
+  gameDelay(1100, afterNotifications);
 }
 
 // ── Succession overlay ────────────────────────────────────────────────────────
@@ -1608,7 +1627,7 @@ function renderEndOverlay() {
     <div class="end-stat"><span>Generacions</span><span class="end-stat-val">${S.generation}</span></div>
     <div class="end-stat"><span>Fills totals</span><span class="end-stat-val">${S.char.children.length}</span></div>
     <div class="end-stat"><span>Reputació</span><span class="end-stat-val">${Math.round(S.resources.familyReputation.value)}</span></div>
-    <div class="end-stat"><span>Tecnologies</span><span class="end-stat-val">${S.char.knowledgeIds.length}/${GAME_DATA.techs.length}</span></div>
+    <div class="end-stat"><span>Tecnologies</span><span class="end-stat-val">${S.char.knowledgeIds.length}/${currentEra().techs.length}</span></div>
   `;
 
   const msRow = el('end-milestones-row');
@@ -1646,7 +1665,7 @@ function knowledgeEffectDesc(k) {
     const p = getProject(actionId);
     parts.push(`Desbloqueja "${p?.name || actionId}"`);
   }
-  for (const action of GAME_DATA.actions) {
+  for (const action of currentEra().actions) {
     if (action.riskReductions?.[k.id]) {
       parts.push(`-${Math.round(action.riskReductions[k.id] * 100)}% risc a ${action.name}`);
     }
@@ -1677,7 +1696,7 @@ function renderTechOverlay() {
   }
 
   // Habilitats del llinatge
-  const allSkills = GAME_DATA.skills || [];
+  const allSkills = currentEra().skills || [];
   if (allSkills.length > 0) {
     const secHeader = document.createElement('p');
     secHeader.style.cssText = 'color:var(--text-dim);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;margin:0.75rem 0 0.25rem';
@@ -1721,7 +1740,7 @@ function renderTechOverlay() {
   }
 
   // Upcoming technologies (not yet unlocked)
-  const upcoming = GAME_DATA.techs.filter(t => !hasKnowledge(t.id));
+  const upcoming = currentEra().techs.filter(t => !hasKnowledge(t.id));
   for (const tech of upcoming) {
     const reqMet = !tech.requiresTech || hasKnowledge(tech.requiresTech);
     const cyclesLeft = Math.max(0, tech.eraCycleAppears - S.eraCycle);
