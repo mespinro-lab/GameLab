@@ -915,18 +915,26 @@ function renderSelectPane() {
   for (const zone of currentEra().zones.filter(z => S.discoveredZoneIds.includes(z.id))) {
     const zoneProjects = currentEra().actions.filter(p => p.zone === zone.id);
     const availCount = zoneProjects.filter(p => isProjectUnlocked(p)).length;
+    const locked = availCount === 0;
     const card = document.createElement('div');
-    card.className = 'zone-card';
+    card.className = 'zone-card' + (locked ? ' zone-card-locked' : '');
     card.innerHTML = `
       <span class="zone-card-icon">${zone.icon}</span>
       <div class="zone-card-info">
         <span class="zone-card-name">${zone.name}</span>
-        <span class="zone-card-hint">${zone.description}</span>
+        <span class="zone-card-hint">${locked ? 'Cap acció disponible encara' : zone.description}</span>
       </div>
-      <span class="zone-card-count">${availCount} activ.</span>
+      <span class="zone-card-count">${locked ? '—' : availCount + ' activ.'}</span>
     `;
-    card.addEventListener('click', () => openZoneSheet(zone.id));
+    if (!locked) card.addEventListener('click', () => openZoneSheet(zone.id));
     container.appendChild(card);
+  }
+
+  const restBtn = el('btn-rest-cycle');
+  if (S.timeLeft < S.timeTotal) {
+    restBtn.classList.remove('hidden');
+  } else {
+    restBtn.classList.add('hidden');
   }
 }
 
@@ -1586,12 +1594,16 @@ function buildChildCard(child, showChooseBtn) {
     : '';
   const card = document.createElement('div');
   card.className = 'succ-child-card';
-  const bornLabel = child.bornEraCycle != null ? `Nascut/da al cicle d'era ${child.bornEraCycle}` : '';
+  const isEraTransition = child.bornEraId && child.bornEraId !== S.currentEraId;
+  const nextEraName = isEraTransition ? (GAME_DATA.eras.find(e => e.id === child.bornEraId)?.name || child.bornEraId) : '';
+  const eraBadgeHtml = isEraTransition
+    ? `<span class="succ-era-badge">🌿 Portarà el llinatge a ${nextEraName}</span>`
+    : '';
   card.innerHTML = `
     <span class="succ-child-avatar">${childAvatar(child)}</span>
     <span class="succ-child-name">${child.name}</span>
     <span class="succ-child-virtue">"${child.virtueLabel}"</span>
-    ${bornLabel ? `<span class="succ-child-born-era">${bornLabel}</span>` : ''}
+    ${eraBadgeHtml}
     <div class="succ-child-stats">
       <span>💪${child.physical}</span>
       <span>🧠${child.intelligence}</span>
@@ -1837,6 +1849,7 @@ function bindEvents() {
     openZoneSheet(S.activeProject.zone);
   });
   el('btn-confirm-teach').addEventListener('click', executeTeach);
+  el('btn-rest-cycle').addEventListener('click', endCycle);
   el('btn-dismiss-birth').addEventListener('click', advanceFromBirth);
   el('btn-dismiss-discovery').addEventListener('click', advanceFromDiscovery);
   el('btn-dismiss-ev-result').addEventListener('click', () => {
