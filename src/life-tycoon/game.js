@@ -63,6 +63,7 @@ function initState() {
     discoveredZoneIds: [],
     unlockedSkillIds: [],
     pendingDeaths: [],
+    pendingBirths: [],
     pendingFloaters: {},
     lastResult: null,
     genealogy: [],
@@ -622,6 +623,7 @@ function doSuccession(child) {
 
   S.cycle = 1;
   S.pendingDeaths = [];
+  S.pendingBirths = [];
   S._showingDeath = false;
   S.pendingDiscoveries = [];
   S.pendingEvent = null;
@@ -868,7 +870,7 @@ function renderPartner() {
 }
 
 function renderPhase() {
-  const panes = ['pane-select','pane-sliders','pane-executing','pane-result','pane-discovery','pane-event','pane-ev-result','pane-teach'];
+  const panes = ['pane-select','pane-sliders','pane-executing','pane-result','pane-birth','pane-discovery','pane-event','pane-ev-result','pane-teach'];
   panes.forEach(p => hide(p));
 
   const overlays = ['overlay-succession','overlay-gameover','overlay-end','overlay-milestones'];
@@ -879,6 +881,7 @@ function renderPhase() {
     case 'intensity':  renderIntensityPane(); show('pane-sliders'); break;
     case 'executing':  renderExecutingPane(); show('pane-executing'); break;
     case 'result':     renderResultPane();    show('pane-result');    break;
+    case 'birth':      renderBirthPane();     show('pane-birth');     break;
     case 'ev-result':  show('pane-ev-result'); break;
     case 'teach':      renderTeachPane();     show('pane-teach');     break;
     case 'discovery':  renderDiscoveryPane(); show('pane-discovery'); break;
@@ -1123,7 +1126,11 @@ function executeProject() {
     if (proj.id === 'hunt' && result.quality !== 'poor') S.char.huntCount++;
     if (proj.generatesPartner && result.quality !== 'poor' && !S.char.partner) S.char.partner = generatePartner();
     if (proj.generatesChild && result.quality !== 'poor' && S.char.partner) {
-      if (S.char.children.length < currentEra().maxChildren) S.char.children.push(generateChild());
+      if (S.char.children.length < currentEra().maxChildren) {
+        const newChild = generateChild();
+        S.char.children.push(newChild);
+        S.pendingBirths.push(newChild);
+      }
     }
 
     const timeCost = currentEra().mechanics.intensityTimeCosts[S.intensity - 1];
@@ -1291,7 +1298,8 @@ function showNextDeath() {
 }
 
 function afterNotifications() {
-  if (S.timeLeft > 0) {
+  const minCost = currentEra().mechanics.intensityTimeCosts[0];
+  if (S.timeLeft >= minCost) {
     S.phase = 'select';
     renderAll();
     const floaters = S.pendingFloaters;
@@ -1379,6 +1387,46 @@ function renderDiscoveryPane() {
   }
 }
 
+function renderBirthPane() {
+  const child = S.pendingBirths[0];
+  el('birth-avatar').textContent = childAvatar(child);
+  el('birth-name').textContent = child.name;
+  el('birth-virtue').textContent = child.virtueLabel;
+
+  const statsEl = el('birth-stats');
+  statsEl.innerHTML = `
+    <div class="birth-stat"><span>💪</span><span>${child.physical}</span></div>
+    <div class="birth-stat"><span>🧠</span><span>${child.intelligence}</span></div>
+    <div class="birth-stat"><span>👥</span><span>${child.social}</span></div>
+  `;
+
+  const traitsEl = el('birth-traits');
+  traitsEl.innerHTML = '';
+  for (const tId of child.traitIds) {
+    const t = getTrait(tId);
+    if (!t) continue;
+    const span = document.createElement('span');
+    span.className = 'birth-trait-pill';
+    span.textContent = t.icon + ' ' + t.name;
+    traitsEl.appendChild(span);
+  }
+}
+
+function advanceFromBirth() {
+  S.pendingBirths.shift();
+  if (S.pendingBirths.length > 0) {
+    renderAll();
+    return;
+  }
+  if (S.pendingDiscoveries.length > 0) {
+    S.phase = 'discovery'; renderAll();
+  } else if (S.pendingEvent) {
+    S.phase = 'event'; renderAll();
+  } else {
+    afterNotifications();
+  }
+}
+
 function advanceFromDiscovery() {
   S.pendingDiscoveries.shift();
   if (S.pendingDiscoveries.length > 0) {
@@ -1440,19 +1488,12 @@ function renderResultPane() {
     fxList.appendChild(div);
   }
 
-  // Children
-  if (proj.generatesChild && S.char.children.length > 0) {
-    const last = S.char.children[S.char.children.length - 1];
-    const div = document.createElement('div');
-    div.className = 'fx-line';
-    div.innerHTML = `<span>👶 Nou fill/a: <strong>${last.name}</strong></span>`;
-    fxList.appendChild(div);
-  }
-
   el('result-discoveries').innerHTML = '';
 
   const goNext = () => {
-    if (S.pendingDiscoveries.length > 0) {
+    if (S.pendingBirths.length > 0) {
+      S.phase = 'birth'; renderAll();
+    } else if (S.pendingDiscoveries.length > 0) {
       S.phase = 'discovery'; renderAll();
     } else if (S.pendingEvent) {
       S.phase = 'event'; renderAll();
@@ -1796,6 +1837,7 @@ function bindEvents() {
     openZoneSheet(S.activeProject.zone);
   });
   el('btn-confirm-teach').addEventListener('click', executeTeach);
+  el('btn-dismiss-birth').addEventListener('click', advanceFromBirth);
   el('btn-dismiss-discovery').addEventListener('click', advanceFromDiscovery);
   el('btn-dismiss-ev-result').addEventListener('click', () => {
     if (S._showingDeath) {

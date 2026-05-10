@@ -867,6 +867,110 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 .pane:not(.hidden) { animation: fadeInUp 0.2s ease; }
 #pane-event:not(.hidden)     { animation: slideInRight 0.25s ease; }
 #pane-discovery:not(.hidden) { animation: none; }
+#pane-birth:not(.hidden) { animation: none; }
+
+/* ── Birth card ────────────────────────────────────────────────── */
+#pane-birth {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.72);
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  z-index: 460;
+  gap: 0;
+}
+#pane-birth.hidden { display: none !important; }
+
+.birth-card {
+  background: #2a1d08;
+  border: 1px solid #c8952a;
+  border-radius: 16px;
+  padding: 1.6rem 1.4rem 1.3rem;
+  max-width: 340px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  box-shadow: 0 0 60px rgba(200,149,42,0.25), 0 12px 48px rgba(0,0,0,0.6);
+  animation: birthCardIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  text-align: center;
+}
+@keyframes birthCardIn {
+  from { opacity: 0; transform: scale(0.82) translateY(18px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.birth-label {
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #c8952a;
+  font-weight: 700;
+}
+.birth-avatar-wrap {
+  font-size: 3.2rem;
+  line-height: 1;
+  margin: 0.2rem 0;
+}
+#birth-name {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: #f5e8c0;
+  margin: 0;
+  line-height: 1.1;
+}
+.birth-virtue {
+  font-size: 0.8rem;
+  color: #c8952a;
+  font-style: italic;
+  margin: 0;
+}
+.birth-stats-row {
+  display: flex;
+  gap: 1.2rem;
+  margin: 0.3rem 0;
+}
+.birth-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  font-size: 0.75rem;
+  color: #b89a5a;
+}
+.birth-stat span:last-child {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #f5e8c0;
+}
+.birth-traits-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: center;
+}
+.birth-trait-pill {
+  background: rgba(200,149,42,0.15);
+  border: 1px solid rgba(200,149,42,0.35);
+  border-radius: 20px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.7rem;
+  color: #d4aa5a;
+}
+#btn-dismiss-birth {
+  margin-top: 0.6rem;
+  background: #c8952a;
+  color: #1c1208;
+  border: none;
+  border-radius: 10px;
+  padding: 0.6rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+}
 
 
 /* ── Floating numbers ────────────────────────────────────────────────── */
