@@ -710,7 +710,7 @@ const GAME_DATA = {
           effectDesc: 'La penalitat d\'envelliment és un 25% menor.',
           effect: { agingDamageReduction: 0.25 }, requires: { techIds: [] },
           transversal: true, discoveryChance: 0.2 },
-        { id: 'cooking', name: 'Cuinar', icon: '🍳',
+        { id: 'cooking', name: 'Cuina Bàsica', icon: '🍳',
           description: 'Cuines els aliments sobre el foc. El valor nutritiu augmenta.',
           effectDesc: 'Consum de menjar al final de cicle -20%.',
           effect: { foodCostReduction: 0.2 }, requires: { techIds: ['fire'] },
@@ -743,7 +743,7 @@ const GAME_DATA = {
       timeTotal: 6,
       foodPerTimePoint: 1.4,
       duration: 60,
-      globalEvents: ['harsh_winter', 'tribe_conflict'],
+      globalEvents: [],
       dynastySuffixes: ['de la Sembra', 'del Blat', 'de l\'Argila', 'del Riu', 'de la Pedra'],
       mechanics: {
         intensityOutputMults: [0.5, 1.1, 1.8],
