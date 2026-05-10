@@ -935,28 +935,23 @@ function openZoneSheet(zoneId) {
   const grid = el('zone-sheet-grid');
   grid.innerHTML = '';
 
-  for (const proj of currentEra().actions.filter(p => p.zone === zoneId)) {
-    const unlocked = isProjectUnlocked(proj);
+  const statIcons = { physical: '💪', intelligence: '🧠', social: '👥' };
+  for (const proj of currentEra().actions.filter(p => p.zone === zoneId && isProjectUnlocked(p))) {
     const card = document.createElement('div');
-    card.className = 'proj-card' + (unlocked ? '' : ' locked');
-    const reason = unlocked ? '' : lockedReason(proj);
-    const riskHtml = (unlocked && proj.healthRisk > 0) ? `<div class="proj-impact"><span class="impact-tag risk">⚠️ Risc</span></div>` : '';
-    const reqHtml  = reason ? `<span class="proj-req">${reason}</span>` : '';
-    const statIcons = { physical: '💪', intelligence: '🧠', social: '👥' };
+    card.className = 'proj-card';
+    const riskHtml = proj.healthRisk > 0 ? `<div class="proj-impact"><span class="impact-tag risk">⚠️ Risc</span></div>` : '';
     const gainParts = Object.entries(proj.statGain || {}).map(([s, v]) => `${statIcons[s] || s}+${v}`);
     const gainHtml  = gainParts.length > 0 ? `<span class="proj-stat-gain">${gainParts.join(' ')}</span>` : '';
     card.innerHTML = `
       <span class="proj-icon">${proj.icon}</span>
       <span class="proj-name">${proj.name}</span>
       <span class="proj-desc">${proj.description}</span>
-      ${gainHtml}${riskHtml}${reqHtml}
+      ${gainHtml}${riskHtml}
     `;
-    if (unlocked) {
-      card.addEventListener('click', () => {
-        hide('overlay-zone-actions');
-        selectProject(proj.id);
-      });
-    }
+    card.addEventListener('click', () => {
+      hide('overlay-zone-actions');
+      selectProject(proj.id);
+    });
     grid.appendChild(card);
   }
   show('overlay-zone-actions');
