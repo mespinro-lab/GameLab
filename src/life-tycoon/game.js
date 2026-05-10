@@ -1903,4 +1903,5 @@ document.addEventListener('DOMContentLoaded', () => {
   renderStatChips();
   renderMenuEra();
   bindEvents();
+  if (typeof initDevPanel === 'function') initDevPanel();
 });
