@@ -664,9 +664,9 @@ const GAME_DATA = {
           text: 'Un rival reclama la mateixa parella que tu. La tensió és palpable.',
           options: [
             { id: 'compete',  name: 'Competir',   requiresStat: { social: 2 }, successChance: 0.6,
-              fx: { onSuccess: { happiness: 20, familyReputation: 10 }, onFailure: { happiness: -15, familyReputation: -8 } },
+              fx: { onSuccess: { happiness: 20, familyReputation: 10 }, onFailure: { happiness: -15, familyReputation: -8, clearPartner: true } },
               desc: 'Demostreu el vostre valor. El cor tria.' },
-            { id: 'withdraw', name: 'Retirar-se', fx: { always: { happiness: -12 } },
+            { id: 'withdraw', name: 'Retirar-se', fx: { always: { happiness: -12, clearPartner: true } },
               desc: 'La prudència a vegades és sàvia.' },
           ] },
         { id: 'dangerous_prey', name: 'Presa Perillosa', icon: '🐯',

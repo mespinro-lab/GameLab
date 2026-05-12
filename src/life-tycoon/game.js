@@ -139,6 +139,7 @@ function isProjectUnlocked(proj) {
   if (r.health && S.resources.health.value < r.health) return false;
   if (r.requiresPartner && !S.char.partner) return false;
   if (r.requiresChild && S.char.children.length === 0) return false;
+  if (proj.generatesChild && S.char.children.length >= (currentEra().maxChildren || 99)) return false;
   if (r.requiresLearnedSkill) {
     const teachable = S.char.learnedSkillIds.filter(sId =>
       S.char.children.some(c => (c.learnedSkillIds || []).length < 2 && !(c.learnedSkillIds || []).includes(sId))
@@ -162,6 +163,7 @@ function lockedReason(proj) {
   if (r.health && S.resources.health.value < r.health) return `Salut ${r.health}+`;
   if (r.requiresPartner && !S.char.partner) return 'Necessites parella';
   if (r.requiresChild && S.char.children.length === 0) return 'Necessites un fill';
+  if (proj.generatesChild && S.char.children.length >= (currentEra().maxChildren || 99)) return `Màxim de fills assolit (${currentEra().maxChildren})`;
   if (r.requiresLearnedSkill && S.char.learnedSkillIds.length === 0) return 'No tens habilitats per ensenyar';
   if (r.requiresLearnedSkill) return 'Els fills ja saben tot el que els pots ensenyar';
   if (r.knowledgeIds) {
@@ -635,6 +637,13 @@ function doSuccession(child) {
   S.pendingDiscoveries = [];
   S.pendingEvent = null;
   if (child.bornEraId && child.bornEraId !== S.currentEraId) {
+    const newEra = GAME_DATA.eras.find(e => e.id === child.bornEraId);
+    if (newEra) {
+      el('era-transition-icon').textContent = newEra.icon || '🌍';
+      el('era-transition-name').textContent = newEra.name;
+      show('overlay-era-transition');
+      gameDelay(2200, () => hide('overlay-era-transition'));
+    }
     transitionEra(child.bornEraId);
   } else {
     checkZoneDiscoveries();
@@ -735,6 +744,15 @@ function syncStatVisibility() {
     if (!chip) continue;
     chip.classList.toggle('hidden', !(!stat.visibleAfterTech || hasKnowledge(stat.visibleAfterTech)));
   }
+  // Progressive UI: hide header elements and buttons until relevant progress
+  const hasTechs = S.char.knowledgeIds.length > 0;
+  const hasMilestones = S.milestones.length > 0;
+  const btnTech = el('btn-tech');
+  const btnMilestones = el('btn-milestones');
+  const hdrEraCycle = el('hdr-era-cycle');
+  if (btnTech) btnTech.classList.toggle('hidden', !hasTechs);
+  if (btnMilestones) btnMilestones.classList.toggle('hidden', !hasMilestones);
+  if (hdrEraCycle) hdrEraCycle.classList.toggle('hidden', S.eraCycle === 0);
 }
 
 function renderAll() {
@@ -796,7 +814,6 @@ function renderHeader() {
   el('hdr-age').textContent = `· ${S.char.age} anys`;
   el('hdr-gen').textContent = `Gen. ${S.generation}`;
   el('hdr-c').textContent = S.cycle;
-  el('hdr-mc').textContent = S.maxCycles;
   el('hdr-ec').textContent = S.eraCycle;
 }
 
@@ -869,7 +886,13 @@ function renderPartner() {
   const row = el('partner-row');
   if (S.char.partner) {
     row.classList.remove('hidden');
-    el('partner-label').textContent = `💑 Parella: ${S.char.partner.name} · ${S.char.children.length} fill${S.char.children.length !== 1 ? 's' : ''}`;
+    const M = currentEra().mechanics;
+    const grownCount = S.char.children.filter(c => S.cycle - (c.bornCycle || 0) >= M.grownChildCycles).length;
+    const grownBonus = Math.min(grownCount, M.grownChildMaxCount) * M.grownChildBonus;
+    const familyBonus = S.char.children.length >= M.largeChildThreshold ? M.largeChildBonus : 0;
+    const totalBonus = grownBonus + familyBonus;
+    const bonusPart = totalBonus > 0 ? ` · +${totalBonus}⏱/cicle` : '';
+    el('partner-label').textContent = `💑 ${S.char.partner.name} · ${S.char.children.length} fill${S.char.children.length !== 1 ? 's' : ''}${bonusPart}`;
   } else {
     row.classList.add('hidden');
   }
@@ -911,9 +934,9 @@ function renderExecutingPane() {
 function renderSelectPane() {
   const actionsLeft = S.timeLeft < S.timeTotal ? Math.floor(S.timeLeft / 2) : 0;
   const timeStr = actionsLeft > 0 ? ` · ${actionsLeft} acció${actionsLeft > 1 ? 'ns' : ''} més` : '';
-  const showFamilyBonus = S.char.children.length >= 3 && S.timeLeft === S.timeTotal;
-  const familyStr = showFamilyBonus ? ' · 👨‍👩‍👧‍👦 +2⏱' : '';
-  el('select-header').textContent = `Cicle ${S.cycle}${timeStr}${familyStr} — On vas?`;
+  const timeBonus = S.timeTotal - currentEra().timeTotal;
+  const bonusStr = (timeBonus > 0 && S.timeLeft === S.timeTotal) ? ` · 👨‍👩‍👧 +${timeBonus}⏱` : '';
+  el('select-header').textContent = `Cicle ${S.cycle}${timeStr}${bonusStr} — On vas?`;
 
   const container = el('zone-cards');
   container.innerHTML = '';
@@ -1570,6 +1593,7 @@ function resolveEvent(ev, optId) {
   }
 
   applyFx(fx);
+  if (fx.clearPartner) S.char.partner = null;
   accumulateFloaters(fx);
   renderStats();
 
@@ -1583,7 +1607,7 @@ function resolveEvent(ev, optId) {
 
   el('evr-icon').textContent = success ? '✅' : '❌';
   el('evr-text').textContent = success ? `${opt.name}: èxit.` : `${opt.name}: ha fallat.`;
-  const fxLines = Object.entries(fx).filter(([k]) => !k.startsWith('_gain_'));
+  const fxLines = Object.entries(fx).filter(([k]) => !k.startsWith('_gain_') && k !== 'clearPartner');
   el('evr-fx').innerHTML = fxLines.map(([k, v]) => {
     const labels = { food: '🍖', health: '❤️', happiness: '😊', familyReputation: '🏛️' };
     return `<span class="${v > 0 ? 'fx-pos' : 'fx-neg'}">${labels[k] || k} ${v > 0 ? '+' : ''}${v}</span>`;
@@ -1601,9 +1625,6 @@ function buildChildCard(child, showChooseBtn) {
   const skillsHtml = (child.learnedSkillIds || []).map(sId => {
     const s = getSkillGlobal(sId); return s ? `<span class="skill-pill">${s.icon} ${s.name}</span>` : '';
   }).join('');
-  const knowHtml = child.knowledgeIds.length > 0
-    ? `<span class="succ-child-knowledge">Tecnologia: ${child.knowledgeIds.map(k => getKnowledge(k)?.icon || k).join(' ')}</span>`
-    : '';
   const card = document.createElement('div');
   card.className = 'succ-child-card';
   const isEraTransition = child.bornEraId && child.bornEraId !== S.currentEraId;
@@ -1611,10 +1632,12 @@ function buildChildCard(child, showChooseBtn) {
   const eraBadgeHtml = isEraTransition
     ? `<span class="succ-era-badge">🌿 Portarà el llinatge a ${nextEraName}</span>`
     : '';
+  const bornAge = child.bornCycle ? `Nascut al cicle ${child.bornCycle}` : '';
   card.innerHTML = `
     <span class="succ-child-avatar">${childAvatar(child)}</span>
     <span class="succ-child-name">${child.name}</span>
     <span class="succ-child-virtue">"${child.virtueLabel}"</span>
+    ${bornAge ? `<span class="succ-child-born">${bornAge}</span>` : ''}
     ${eraBadgeHtml}
     <div class="succ-child-stats">
       <span>💪${child.physical}</span>
@@ -1625,7 +1648,6 @@ function buildChildCard(child, showChooseBtn) {
       ${(child.traitIds || []).map(id => { const t = getTrait(id); return t ? `<span class="trait-pill">${t.icon} ${t.name}</span>` : ''; }).join('')}
       ${skillsHtml}
     </div>
-    ${knowHtml}
     ${showChooseBtn ? `<button class="btn-choose-child">Triar ${child.name} →</button>` : ''}
   `;
   if (showChooseBtn) {
@@ -1733,93 +1755,104 @@ function knowledgeEffectDesc(k) {
   return parts.join(' · ') || k.description;
 }
 
-function renderTechOverlay() {
+function renderTechOverlay(tab) {
+  const activeTab = tab || 'techs';
+  el('tab-techs').classList.toggle('active', activeTab === 'techs');
+  el('tab-skills').classList.toggle('active', activeTab === 'skills');
+
   const list = el('tech-list');
   list.innerHTML = '';
-  if (S.char.knowledgeIds.length === 0) {
-    list.innerHTML = '<p style="color:var(--text-dim);font-size:0.8rem;padding:0.5rem 0">Cap coneixement descobert encara.</p>';
-  } else {
-    for (const kId of S.char.knowledgeIds) {
-      const k = getKnowledge(kId);
-      if (!k) continue;
-      const row = document.createElement('div');
-      row.className = 'tech-row';
-      row.innerHTML = `
-        <span class="tech-icon">${k.icon}</span>
-        <div class="tech-info">
-          <strong>${k.name}</strong>
-          <small>${knowledgeEffectDesc(k)}</small>
-        </div>
-      `;
-      list.appendChild(row);
-    }
-  }
 
-  // Habilitats del llinatge
-  const allSkills = currentEra().skills || [];
-  if (allSkills.length > 0) {
-    const secHeader = document.createElement('p');
-    secHeader.style.cssText = 'color:var(--text-dim);font-size:0.7rem;text-transform:uppercase;letter-spacing:0.05em;margin:0.75rem 0 0.25rem';
-    secHeader.textContent = 'Habilitats del Llinatge';
-    list.appendChild(secHeader);
-
-    for (const skill of allSkills) {
-      const unlocked = hasUnlockedSkill(skill.id);
-      const row = document.createElement('div');
-      row.className = unlocked ? 'tech-row' : 'tech-progress-wrap';
-      if (unlocked) {
+  if (activeTab === 'techs') {
+    // Discovered technologies (all eras)
+    const allDiscovered = GAME_DATA.eras.flatMap(era => (era.techs || []).filter(t => hasKnowledge(t.id)));
+    if (allDiscovered.length === 0) {
+      list.innerHTML = '<p class="tech-empty">Cap tecnologia descoberta encara.</p>';
+    } else {
+      for (const k of allDiscovered) {
+        const row = document.createElement('div');
+        row.className = 'tech-row';
         row.innerHTML = `
-          <span class="tech-icon">${skill.icon}</span>
+          <span class="tech-icon">${k.icon}</span>
           <div class="tech-info">
-            <strong>${skill.name}</strong>
-            <small>${skill.effectDesc || skill.description}</small>
+            <strong>${k.name}</strong>
+            <small>${knowledgeEffectDesc(k)}</small>
           </div>
         `;
-      } else {
-        const techMet = !skill.requiresTech || hasKnowledge(skill.requiresTech);
-        const reqTech = skill.requiresTech ? getKnowledge(skill.requiresTech) : null;
+        list.appendChild(row);
+      }
+    }
+
+    // Upcoming technologies (names hidden)
+    const upcoming = currentEra().techs.filter(t => !hasKnowledge(t.id));
+    if (upcoming.length > 0) {
+      const secHeader = document.createElement('p');
+      secHeader.className = 'tech-section-header';
+      secHeader.textContent = 'Per descobrir';
+      list.appendChild(secHeader);
+
+      for (const tech of upcoming) {
+        const reqMet = !tech.requiresTech || hasKnowledge(tech.requiresTech);
+        const cyclesLeft = Math.max(0, tech.eraCycleAppears - S.eraCycle);
+        const wrap = document.createElement('div');
+        wrap.className = 'tech-progress-wrap';
         let hint;
-        if (!techMet) {
-          hint = `Requereix tecnologia: ${reqTech ? reqTech.name : skill.requiresTech}`;
-        } else if (skill.requiresMinStat) {
-          const unmet = Object.entries(skill.requiresMinStat)
-            .filter(([k, v]) => (S.char[k] || 0) < v)
-            .map(([k, v]) => `${k} ${v}`)
-            .join(', ');
-          hint = unmet ? `Requereix: ${unmet}` : 'Pendent de desbloquejar';
+        if (!reqMet) {
+          hint = 'Requereix altres coneixements primer';
+        } else if (cyclesLeft > 0) {
+          hint = `En ${cyclesLeft} cicle${cyclesLeft !== 1 ? 's' : ''} d'era`;
         } else {
-          hint = 'Pendent de desbloquejar';
+          hint = 'A punt de descobrir-se';
         }
-        row.innerHTML = `
-          <div class="tech-progress-label">${skill.icon} ${skill.name}</div>
+        wrap.innerHTML = `
+          <div class="tech-progress-label">🔒 ???</div>
           <div class="tech-progress-hint">${hint}</div>
         `;
+        list.appendChild(wrap);
       }
-      list.appendChild(row);
     }
-  }
-
-  // Upcoming technologies (not yet unlocked)
-  const upcoming = currentEra().techs.filter(t => !hasKnowledge(t.id));
-  for (const tech of upcoming) {
-    const reqMet = !tech.requiresTech || hasKnowledge(tech.requiresTech);
-    const cyclesLeft = Math.max(0, tech.eraCycleAppears - S.eraCycle);
-    const wrap = document.createElement('div');
-    wrap.className = 'tech-progress-wrap';
-    let hint;
-    if (!reqMet) {
-      const reqTech = getKnowledge(tech.requiresTech);
-      hint = `Requereix: ${reqTech ? reqTech.name : tech.requiresTech}`;
-    } else if (cyclesLeft > 0) {
-      hint = `Apareix al cicle d'era ${tech.eraCycleAppears} (${cyclesLeft} cicle${cyclesLeft !== 1 ? 's' : ''})`;
+  } else {
+    // Skills tab — lineage skills for the current era
+    const eraSkills = currentEra().skills || [];
+    if (eraSkills.length === 0) {
+      list.innerHTML = '<p class="tech-empty">Cap habilitat de llinatge en aquesta era.</p>';
     } else {
-      hint = 'Pendent d\'aparèixer';
+      for (const skill of eraSkills) {
+        const unlocked = hasUnlockedSkill(skill.id);
+        const row = document.createElement('div');
+        if (unlocked) {
+          row.className = 'tech-row';
+          row.innerHTML = `
+            <span class="tech-icon">${skill.icon}</span>
+            <div class="tech-info">
+              <strong>${skill.name}</strong>
+              <small>${skill.description}</small>
+            </div>
+          `;
+        } else {
+          const techMet = !skill.requiresTech || hasKnowledge(skill.requiresTech);
+          const reqTech = skill.requiresTech ? getKnowledge(skill.requiresTech) : null;
+          let hint;
+          if (!techMet) {
+            hint = `Requereix tecnologia: ${reqTech ? reqTech.name : skill.requiresTech}`;
+          } else if (skill.requiresMinStat) {
+            const unmet = Object.entries(skill.requiresMinStat)
+              .filter(([k, v]) => (S.char[k] || 0) < v)
+              .map(([k, v]) => `${k} ${v}`)
+              .join(', ');
+            hint = unmet ? `Requereix: ${unmet}` : 'Pendent de desbloquejar';
+          } else {
+            hint = 'Pendent de desbloquejar';
+          }
+          row.className = 'tech-progress-wrap';
+          row.innerHTML = `
+            <div class="tech-progress-label">${skill.icon} ${skill.name}</div>
+            <div class="tech-progress-hint">${hint}</div>
+          `;
+        }
+        list.appendChild(row);
+      }
     }
-    wrap.innerHTML = `
-      <div class="tech-progress-label">${tech.icon} ${tech.name}</div>
-      <div class="tech-progress-hint">${hint}</div>
-    `;
-    list.appendChild(wrap);
   }
 
   show('overlay-tech');
@@ -1887,8 +1920,10 @@ function bindEvents() {
   el('btn-close-pill').addEventListener('click', () => hide('overlay-pill'));
   el('btn-milestones').addEventListener('click', () => { renderMilestonesOverlay(); });
   el('btn-close-milestones').addEventListener('click', () => hide('overlay-milestones'));
-  el('btn-tech').addEventListener('click', () => { renderTechOverlay(); });
+  el('btn-tech').addEventListener('click', () => { renderTechOverlay('techs'); });
   el('btn-close-tech').addEventListener('click', () => hide('overlay-tech'));
+  el('tab-techs').addEventListener('click', () => renderTechOverlay('techs'));
+  el('tab-skills').addEventListener('click', () => renderTechOverlay('skills'));
   el('btn-restart').addEventListener('click', () => { hide('overlay-end'); startGame(); });
 }
 

@@ -20,7 +20,7 @@
       </div>
       <div id="hdr-center">
         <span id="hdr-gen">Gen. 1</span>
-        <span id="hdr-cycle">Cicle <span id="hdr-c">1</span>/<span id="hdr-mc">10</span></span>
+        <span id="hdr-cycle">Cicle <span id="hdr-c">1</span></span>
         <span id="hdr-era-cycle" title="Cicle global de l'era">Era <span id="hdr-ec">0</span></span>
       </div>
       <button id="btn-milestones">🏅</button>
@@ -234,9 +234,24 @@
   <!-- OVERLAY: Tecnologia del Llinatge -->
   <div id="overlay-tech" class="overlay hidden">
     <div class="overlay-card tech-card">
-      <h3>📜 Tecnologia del Llinatge</h3>
+      <div class="overlay-tech-header">
+        <h3>📜 Tecnologia del Llinatge</h3>
+        <button id="btn-close-tech" class="btn-close-x">×</button>
+      </div>
+      <div class="tech-tabs">
+        <button id="tab-techs" class="tech-tab active">Tecnologies</button>
+        <button id="tab-skills" class="tech-tab">Destreses</button>
+      </div>
       <div id="tech-list"></div>
-      <button id="btn-close-tech">Tancar ×</button>
+    </div>
+  </div>
+
+  <!-- OVERLAY: Era Transition -->
+  <div id="overlay-era-transition" class="hidden">
+    <div id="era-transition-content">
+      <div id="era-transition-icon"></div>
+      <div id="era-transition-label">Nova Era</div>
+      <div id="era-transition-name"></div>
     </div>
   </div>
 
