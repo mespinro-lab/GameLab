@@ -18,6 +18,52 @@ function gameDelay(ms, fn) {
   _timer = setTimeout(fn, ms);
 }
 
+// ── Save / Load ───────────────────────────────────────────────────────────────
+const SAVE_KEY = 'lifetycoon_autosave';
+
+function cleanStateForSave() {
+  return { ...S, phase: 'select', pendingDeaths: [], pendingBirths: [],
+    pendingDiscoveries: [], pendingEvent: null, pendingFloaters: {}, _showingDeath: false };
+}
+
+function saveGame() {
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(cleanStateForSave())); } catch(e) {}
+}
+
+function hasSave() {
+  return !!localStorage.getItem(SAVE_KEY);
+}
+
+function loadSavedGame() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return false;
+    S = JSON.parse(raw);
+    hide('overlay-menu');
+    renderAll();
+    return true;
+  } catch(e) { return false; }
+}
+
+function clearSave() {
+  localStorage.removeItem(SAVE_KEY);
+}
+
+function exportSaveCode() {
+  try { return btoa(encodeURIComponent(JSON.stringify(cleanStateForSave()))); } catch(e) { return null; }
+}
+
+function importSaveCode(code) {
+  try {
+    S = JSON.parse(decodeURIComponent(atob(code.trim())));
+    saveGame();
+    hide('overlay-save');
+    hide('overlay-menu');
+    renderAll();
+    return true;
+  } catch(e) { return false; }
+}
+
 // ── State ─────────────────────────────────────────────────────────────────────
 let S = {};
 
@@ -559,6 +605,7 @@ function endCycle() {
   S.timeLeft = S.timeTotal;
   checkTechUnlock();
   checkSkillUnlock();
+  saveGame();
 
   requestAnimationFrame(() => {
     const hdrC = el('hdr-c');
@@ -652,6 +699,7 @@ function doSuccession(child) {
   S.timeLeft = S.timeTotal;
   S.maxCycles = currentEra().cyclesPerLife.base + Math.round(S.char.physical * currentEra().mechanics.successionPhysicalFactor);
   S.phase = S.pendingDiscoveries.length > 0 ? 'discovery' : 'select';
+  saveGame();
   renderAll();
 }
 
@@ -1858,6 +1906,25 @@ function renderTechOverlay(tab) {
   show('overlay-tech');
 }
 
+// ── Save overlay ──────────────────────────────────────────────────────────────
+function renderSaveOverlay(tab) {
+  const activeTab = tab || 'export';
+  el('tab-export').classList.toggle('active', activeTab === 'export');
+  el('tab-import').classList.toggle('active', activeTab === 'import');
+  el('save-export-panel').classList.toggle('hidden', activeTab !== 'export');
+  el('save-import-panel').classList.toggle('hidden', activeTab !== 'import');
+
+  if (activeTab === 'export') {
+    const code = exportSaveCode();
+    el('save-export-code').value = code || '';
+    el('btn-copy-code').textContent = 'Copiar codi';
+  } else {
+    el('save-import-code').value = '';
+    el('save-import-error').classList.add('hidden');
+  }
+  show('overlay-save');
+}
+
 // ── Milestones overlay ────────────────────────────────────────────────────────
 function renderMilestonesOverlay() {
   const list = el('milestones-list');
@@ -1874,7 +1941,6 @@ function renderMilestonesOverlay() {
 
 // ── Event listeners ───────────────────────────────────────────────────────────
 function bindEvents() {
-  el('btn-new-game').addEventListener('click', startGame);
   el('btn-execute').addEventListener('click', executeProject);
   el('btn-back-sliders').addEventListener('click', () => {
     S.phase = 'select';
@@ -1925,6 +1991,28 @@ function bindEvents() {
   el('tab-techs').addEventListener('click', () => renderTechOverlay('techs'));
   el('tab-skills').addEventListener('click', () => renderTechOverlay('skills'));
   el('btn-restart').addEventListener('click', () => { hide('overlay-end'); startGame(); });
+
+  // Save / Load
+  el('btn-save').addEventListener('click', () => renderSaveOverlay('export'));
+  el('btn-close-save').addEventListener('click', () => hide('overlay-save'));
+  el('tab-export').addEventListener('click', () => renderSaveOverlay('export'));
+  el('tab-import').addEventListener('click', () => renderSaveOverlay('import'));
+  el('btn-copy-code').addEventListener('click', () => {
+    const code = el('save-export-code').value;
+    navigator.clipboard.writeText(code).then(() => {
+      el('btn-copy-code').textContent = '✓ Copiat!';
+      setTimeout(() => { el('btn-copy-code').textContent = 'Copiar codi'; }, 2000);
+    }).catch(() => {
+      el('save-export-code').select();
+    });
+  });
+  el('btn-load-code').addEventListener('click', () => {
+    const code = el('save-import-code').value;
+    const ok = importSaveCode(code);
+    if (!ok) el('save-import-error').classList.remove('hidden');
+  });
+  el('btn-continue-game').addEventListener('click', () => loadSavedGame());
+  el('btn-new-game').addEventListener('click', () => { clearSave(); startGame(); });
 }
 
 // ── Start ─────────────────────────────────────────────────────────────────────
@@ -1950,5 +2038,9 @@ document.addEventListener('DOMContentLoaded', () => {
   renderStatChips();
   renderMenuEra();
   bindEvents();
+  if (hasSave()) {
+    el('btn-continue-game').classList.remove('hidden');
+    el('btn-new-game').textContent = 'Nova partida';
+  }
   if (typeof initDevPanel === 'function') initDevPanel();
 });

@@ -24,6 +24,7 @@
         <span id="hdr-era-cycle" title="Cicle global de l'era">Era <span id="hdr-ec">0</span></span>
       </div>
       <button id="btn-milestones">🏅</button>
+      <button id="btn-save">💾</button>
     </div>
 
     <!-- STATS: recursos vitals + habilitats — generats dinàmicament per JS des de GAME_DATA -->
@@ -158,7 +159,8 @@
       <h1 class="game-title">Life Tycoon</h1>
       <p class="game-sub">Construeix el millor llinatge de la història</p>
       <div class="era-badge" id="menu-era-badge">Era 1 · Prehistòria</div>
-      <button id="btn-new-game">Comença →</button>
+      <button id="btn-continue-game" class="hidden">Continuar partida →</button>
+      <button id="btn-new-game">Nova partida →</button>
     </div>
   </div>
 
@@ -243,6 +245,31 @@
         <button id="tab-skills" class="tech-tab">Destreses</button>
       </div>
       <div id="tech-list"></div>
+    </div>
+  </div>
+
+  <!-- OVERLAY: Guardar / Carregar -->
+  <div id="overlay-save" class="overlay hidden">
+    <div class="overlay-card save-card">
+      <div class="overlay-tech-header">
+        <h3>💾 Partida</h3>
+        <button id="btn-close-save" class="btn-close-x">×</button>
+      </div>
+      <div class="tech-tabs">
+        <button id="tab-export" class="tech-tab active">Exportar</button>
+        <button id="tab-import" class="tech-tab">Importar</button>
+      </div>
+      <div id="save-export-panel">
+        <p class="save-hint">Copia aquest codi per guardar la partida. Enganxa'l al mòbil (o qualsevol dispositiu) per continuar.</p>
+        <textarea id="save-export-code" readonly></textarea>
+        <button id="btn-copy-code">Copiar codi</button>
+      </div>
+      <div id="save-import-panel" class="hidden">
+        <p class="save-hint">Enganxa un codi exportat per carregar la partida.</p>
+        <textarea id="save-import-code" placeholder="Enganxa el codi aquí..."></textarea>
+        <p id="save-import-error" class="save-error hidden">Codi no vàlid. Comprova que l'has copiat sencer.</p>
+        <button id="btn-load-code">Carregar partida</button>
+      </div>
     </div>
   </div>
 

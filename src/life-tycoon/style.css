@@ -895,6 +895,27 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 .ms-icon { font-size: 1.1rem; width: 1.4rem; }
 #btn-close-milestones { align-self: center; }
 
+/* ── Save / Load overlay ─────────────────────────────────────────────── */
+.save-card { max-height: 85dvh; }
+.save-hint { font-size: 0.78rem; color: var(--text-dim); margin: 0.5rem 0 0.6rem; line-height: 1.5; }
+#save-export-code,
+#save-import-code {
+  width: 100%; box-sizing: border-box;
+  height: 7rem; resize: none;
+  background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); font-family: monospace; font-size: 0.65rem;
+  padding: 0.5rem; line-height: 1.4;
+}
+#save-export-code { color: var(--gold); cursor: text; }
+#btn-copy-code, #btn-load-code { margin-top: 0.6rem; width: 100%; }
+.save-error { font-size: 0.75rem; color: #e74c3c; margin-top: 0.4rem; }
+#btn-continue-game {
+  background: var(--gold); color: #000; font-weight: 700;
+  border: none; border-radius: 10px; padding: 0.85rem 2rem; font-size: 1rem;
+  cursor: pointer; width: 100%; margin-bottom: 0.5rem;
+}
+#btn-save { background: none; border: none; font-size: 1.1rem; cursor: pointer; padding: 0.2rem 0.3rem; }
+
 /* ── Era Transition Overlay ──────────────────────────────────────────── */
 #overlay-era-transition {
   position: fixed; inset: 0; z-index: 900;
