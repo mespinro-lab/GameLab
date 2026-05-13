@@ -96,6 +96,7 @@ function initState() {
       children: [],
       huntCount: 0,
       learnedSkillIds: [],
+      skillProgress: {},
       traitIds: [],
       teachSkillId: null,
       teachChildIndices: [],
@@ -341,18 +342,26 @@ function showFxFloaters(fx) {
   }
 }
 
-// ── Destresa discovery (earned through play) ──────────────────────────────────
-function tryDiscoverSkill(proj, score) {
+// ── Destresa discovery (progress-based, deterministic) ───────────────────────
+function skillThreshold(s) {
+  return Math.max(2, Math.round(1 / (s.discoveryChance || 0.25)));
+}
+
+function progressSkills(proj, score) {
   const M = currentEra().mechanics;
   const discovered = [];
+  if (score < M.skillDiscoveryMinScore) return discovered;
+  if (!S.char.skillProgress) S.char.skillProgress = {};
   for (const sId of (proj.destreseDiscovery || [])) {
     if (S.char.learnedSkillIds.length >= M.maxLearnedSkills) break;
     if (hasSkill(sId)) continue;
     const s = getSkill(sId);
-    if (!s || score < M.skillDiscoveryMinScore) continue;
+    if (!s) continue;
     const reqTechs = s.requires?.techIds || [];
     if (reqTechs.some(tId => !hasKnowledge(tId))) continue;
-    if (Math.random() < s.discoveryChance + (S.char.traitDiscoveryBonus || 0)) {
+    const gain = 1 + (S.char.traitDiscoveryBonus > 0 ? 1 : 0);
+    S.char.skillProgress[sId] = (S.char.skillProgress[sId] || 0) + gain;
+    if (S.char.skillProgress[sId] >= skillThreshold(s)) {
       S.char.learnedSkillIds.push(sId);
       discovered.push({ ...s, _type: 'skill' });
     }
@@ -679,6 +688,7 @@ function doSuccession(child) {
     children: [],
     huntCount: 0,
     learnedSkillIds: child.learnedSkillIds || [],
+    skillProgress: {},
     traitIds: child.traitIds || [],
     traitAgingResist: 0,
     traitDiscoveryBonus: 0,
@@ -1195,6 +1205,25 @@ function renderImpactPreview(proj) {
     container.appendChild(row);
   }
 
+  // Skill progress hint
+  const M = currentEra().mechanics;
+  if ((proj.destreseDiscovery || []).length > 0 && S.char.learnedSkillIds.length < M.maxLearnedSkills) {
+    const sp = S.char.skillProgress || {};
+    for (const sId of proj.destreseDiscovery) {
+      if (hasSkill(sId)) continue;
+      const s = getSkill(sId);
+      if (!s) continue;
+      const reqTechs = s.requires?.techIds || [];
+      if (reqTechs.some(tId => !hasKnowledge(tId))) continue;
+      const cur = sp[sId] || 0;
+      const thr = skillThreshold(s);
+      const row = document.createElement('div');
+      row.className = 'preview-row preview-skill-prog';
+      row.innerHTML = `<span>📚 ${s.name}</span><span class="preview-bonus">${cur}/${thr}</span>`;
+      container.appendChild(row);
+    }
+  }
+
   // U3: expandable multiplier detail
   const detailToggle = document.createElement('button');
   detailToggle.className = 'preview-detail-toggle';
@@ -1253,7 +1282,7 @@ function executeProject() {
     const timeCost = currentEra().mechanics.intensityTimeCosts[S.intensity - 1];
     S.timeLeft = Math.max(0, S.timeLeft - timeCost);
 
-    const discovered = tryDiscoverSkill(proj, result.finalMult);
+    const discovered = progressSkills(proj, result.finalMult);
     const event = tryTriggerEvent(proj, result.quality);
     if (discovered.length > 0) S.pendingDiscoveries.push(...discovered);
     checkZoneDiscoveries();
@@ -1908,23 +1937,39 @@ function renderTechOverlay(tab) {
         } else {
           const techMet = !skill.requiresTech || hasKnowledge(skill.requiresTech);
           const reqTech = skill.requiresTech ? getKnowledge(skill.requiresTech) : null;
+          const progress = (S.char.skillProgress || {})[skill.id] || 0;
+          const threshold = skillThreshold(skill);
+          const statLabels = { physical: '💪', intelligence: '🧠', social: '👥' };
+
           let hint;
           if (!techMet) {
             hint = `Requereix tecnologia: ${reqTech ? reqTech.name : skill.requiresTech}`;
           } else if (skill.requiresMinStat) {
             const unmet = Object.entries(skill.requiresMinStat)
               .filter(([k, v]) => (S.char[k] || 0) < v)
-              .map(([k, v]) => `${k} ${v}`)
+              .map(([k, v]) => `${statLabels[k] || k} ${v}`)
               .join(', ');
-            hint = unmet ? `Requereix: ${unmet}` : 'Pendent de desbloquejar';
-          } else {
-            hint = 'Pendent de desbloquejar';
+            hint = unmet ? `Requereix: ${unmet}` : null;
           }
+
           row.className = 'tech-progress-wrap';
-          row.innerHTML = `
-            <div class="tech-progress-label">${skill.icon} ${skill.name}</div>
-            <div class="tech-progress-hint">${hint}</div>
-          `;
+          if (hint) {
+            row.innerHTML = `
+              <div class="tech-progress-label dim">${skill.icon} ${skill.name}</div>
+              <div class="tech-progress-hint">${hint}</div>
+            `;
+          } else {
+            const pct = Math.min(100, Math.round((progress / threshold) * 100));
+            row.innerHTML = `
+              <div class="tech-progress-label">${skill.icon} ${skill.name}
+                <span class="skill-prog-count">${progress}/${threshold}</span>
+              </div>
+              <div class="skill-prog-bar-wrap">
+                <div class="skill-prog-bar-fill" style="width:${pct}%"></div>
+              </div>
+              <div class="tech-progress-hint">${skill.description}</div>
+            `;
+          }
         }
         list.appendChild(row);
       }
