@@ -96,7 +96,6 @@ function initState() {
       children: [],
       huntCount: 0,
       learnedSkillIds: [],
-      skillProgress: {},
       traitIds: [],
       teachSkillId: null,
       teachChildIndices: [],
@@ -110,6 +109,7 @@ function initState() {
     timeTotal: startEra.timeTotal,
     timeLeft: startEra.timeTotal,
     eraCycle: 0,
+    actionMastery: {},
     activeProject: null,
     pendingEvent: null,
     pendingDiscoveries: [],
@@ -257,7 +257,8 @@ function calcResult(proj) {
   for (const kId of (proj.knowledgeBonus || [])) { if (hasKnowledge(kId)) knowMod += M.knowledgeBonusPerTech; }
   const traitBonus = (S.char.traitOutputBonuses || {});
   const traitMult = 1 + (traitBonus[proj.statKey] || 0) + (traitBonus['all'] || 0);
-  const finalMult = mult * statMod * knowMod * traitMult;
+  const masteryMult = 1 + getMasteryLevel(proj.id) * MASTERY_BONUS_LEVEL;
+  const finalMult = mult * statMod * knowMod * traitMult * masteryMult;
 
   const fx = {};
   for (const [key, val] of Object.entries(proj.outputs || {})) {
@@ -342,32 +343,36 @@ function showFxFloaters(fx) {
   }
 }
 
-// ── Destresa discovery (progress-based, deterministic) ───────────────────────
-function skillThreshold(s) {
-  return Math.max(2, Math.round(1 / (s.discoveryChance || 0.25)));
-}
-
-function progressSkills(proj, score) {
+// ── Destresa discovery (random) ───────────────────────────────────────────────
+function tryDiscoverSkill(proj, score) {
   const M = currentEra().mechanics;
   const discovered = [];
-  if (score < M.skillDiscoveryMinScore) return discovered;
-  if (!S.char.skillProgress) S.char.skillProgress = {};
   for (const sId of (proj.destreseDiscovery || [])) {
     if (S.char.learnedSkillIds.length >= M.maxLearnedSkills) break;
     if (hasSkill(sId)) continue;
     const s = getSkill(sId);
-    if (!s) continue;
+    if (!s || score < M.skillDiscoveryMinScore) continue;
     const reqTechs = s.requires?.techIds || [];
     if (reqTechs.some(tId => !hasKnowledge(tId))) continue;
-    const gain = 1 + (S.char.traitDiscoveryBonus > 0 ? 1 : 0);
-    S.char.skillProgress[sId] = (S.char.skillProgress[sId] || 0) + gain;
-    if (S.char.skillProgress[sId] >= skillThreshold(s)) {
+    if (Math.random() < s.discoveryChance + (S.char.traitDiscoveryBonus || 0)) {
       S.char.learnedSkillIds.push(sId);
       discovered.push({ ...s, _type: 'skill' });
     }
   }
   return discovered;
 }
+
+// ── Action mastery (dynasty-level, persistent) ────────────────────────────────
+const MASTERY_THRESHOLDS  = [5, 12, 25];
+const MASTERY_BONUS_LEVEL = 0.20;
+
+function getMasteryLevel(actionId) {
+  const uses = (S.actionMastery || {})[actionId] || 0;
+  let level = 0;
+  for (const t of MASTERY_THRESHOLDS) { if (uses >= t) level++; }
+  return level;
+}
+function getMasteryUses(actionId) { return (S.actionMastery || {})[actionId] || 0; }
 
 // ── Milestones ────────────────────────────────────────────────────────────────
 function earnMilestone(id) {
@@ -688,7 +693,6 @@ function doSuccession(child) {
     children: [],
     huntCount: 0,
     learnedSkillIds: child.learnedSkillIds || [],
-    skillProgress: {},
     traitIds: child.traitIds || [],
     traitAgingResist: 0,
     traitDiscoveryBonus: 0,
@@ -1066,11 +1070,17 @@ function openZoneSheet(zoneId) {
     const riskHtml = proj.healthRisk > 0 ? `<div class="proj-impact"><span class="impact-tag risk">⚠️ Risc</span></div>` : '';
     const gainParts = Object.entries(proj.statGain || {}).map(([s, v]) => `${statIcons[s] || s}+${v}`);
     const gainHtml  = gainParts.length > 0 ? `<span class="proj-stat-gain">${gainParts.join(' ')}</span>` : '';
+    const mLvl  = getMasteryLevel(proj.id);
+    const mUses = getMasteryUses(proj.id);
+    const nextT = MASTERY_THRESHOLDS[mLvl];
+    const masteryHtml = mLvl > 0
+      ? `<span class="proj-mastery mastery-${mLvl}">${'★'.repeat(mLvl)} +${Math.round(mLvl * MASTERY_BONUS_LEVEL * 100)}%</span>`
+      : (mUses > 0 ? `<span class="proj-mastery mastery-0">☆ ${mUses}/${nextT}</span>` : '');
     card.innerHTML = `
       <span class="proj-icon">${proj.icon}</span>
       <span class="proj-name">${proj.name}</span>
       <span class="proj-desc">${proj.description}</span>
-      ${gainHtml}${riskHtml}
+      ${gainHtml}${masteryHtml}${riskHtml}
     `;
     card.addEventListener('click', () => {
       hide('overlay-zone-actions');
@@ -1137,8 +1147,9 @@ function calcImpactPreview(proj, intensity) {
   const statMod = clamp(M.statModBase + (statVal - 1) * M.statModPerStat, M.statModMin, M.statModMax);
   let knowMod = 1.0;
   for (const kId of (proj.knowledgeBonus || [])) { if (hasKnowledge(kId)) knowMod += M.knowledgeBonusPerTech; }
-  const finalMult = mult * statMod * knowMod;
-  const mults = { intensity: mult, stat: statMod, knowledge: knowMod, final: finalMult };
+  const masteryMult = 1 + getMasteryLevel(proj.id) * MASTERY_BONUS_LEVEL;
+  const finalMult = mult * statMod * knowMod * masteryMult;
+  const mults = { intensity: mult, stat: statMod, knowledge: knowMod, mastery: masteryMult, final: finalMult };
   const preview = {};
   for (const [key, val] of Object.entries(proj.outputs || {})) {
     preview[key] = Math.round(val * (val < 0 ? mult : finalMult));
@@ -1205,23 +1216,21 @@ function renderImpactPreview(proj) {
     container.appendChild(row);
   }
 
-  // Skill progress hint
-  const M = currentEra().mechanics;
-  if ((proj.destreseDiscovery || []).length > 0 && S.char.learnedSkillIds.length < M.maxLearnedSkills) {
-    const sp = S.char.skillProgress || {};
-    for (const sId of proj.destreseDiscovery) {
-      if (hasSkill(sId)) continue;
-      const s = getSkill(sId);
-      if (!s) continue;
-      const reqTechs = s.requires?.techIds || [];
-      if (reqTechs.some(tId => !hasKnowledge(tId))) continue;
-      const cur = sp[sId] || 0;
-      const thr = skillThreshold(s);
-      const row = document.createElement('div');
-      row.className = 'preview-row preview-skill-prog';
-      row.innerHTML = `<span>📚 ${s.name}</span><span class="preview-bonus">${cur}/${thr}</span>`;
-      container.appendChild(row);
+  // Mastery hint
+  const mLvl  = getMasteryLevel(proj.id);
+  const mUses = getMasteryUses(proj.id);
+  const nextT = MASTERY_THRESHOLDS[mLvl];
+  if (mLvl > 0 || mUses > 0) {
+    const row = document.createElement('div');
+    row.className = 'preview-row preview-mastery';
+    if (mLvl > 0) {
+      const pct = Math.round(mLvl * MASTERY_BONUS_LEVEL * 100);
+      const prog = nextT ? ` · ${mUses}/${nextT}` : ' · màx';
+      row.innerHTML = `<span>${'★'.repeat(mLvl)} Mestratge${prog}</span><span class="preview-bonus">+${pct}%</span>`;
+    } else {
+      row.innerHTML = `<span>☆ Mestratge ${mUses}/${nextT}</span><span class="preview-bonus">—</span>`;
     }
+    container.appendChild(row);
   }
 
   // U3: expandable multiplier detail
@@ -1238,6 +1247,7 @@ function renderImpactPreview(proj) {
     <div class="detail-row"><span>Intensitat</span><span>${intNames[S.intensity - 1]}</span></div>
     <div class="detail-row"><span>${statLabel[proj.statKey] || proj.statKey} ${(S.char[proj.statKey] || 1).toFixed(1)}</span><span>×${mults.stat.toFixed(2)}</span></div>
     ${mults.knowledge > 1 ? `<div class="detail-row"><span>Coneixement</span><span>×${mults.knowledge.toFixed(2)}</span></div>` : ''}
+    ${mults.mastery > 1 ? `<div class="detail-row"><span>⭐ Mestratge</span><span>×${mults.mastery.toFixed(2)}</span></div>` : ''}
     <div class="detail-row detail-total"><span>Multiplicador final</span><span>×${mults.final.toFixed(2)}</span></div>
   `;
   detailToggle.onclick = () => {
@@ -1269,6 +1279,9 @@ function executeProject() {
     applyFx(result.fx);
     accumulateFloaters(result.fx);
 
+    if (!S.actionMastery) S.actionMastery = {};
+    S.actionMastery[proj.id] = (S.actionMastery[proj.id] || 0) + 1;
+
     if (proj.id === 'hunt' && result.quality !== 'poor') S.char.huntCount++;
     if (proj.generatesPartner && result.quality !== 'poor' && !S.char.partner) S.char.partner = generatePartner();
     if (proj.generatesChild && result.quality !== 'poor' && S.char.partner) {
@@ -1282,7 +1295,7 @@ function executeProject() {
     const timeCost = currentEra().mechanics.intensityTimeCosts[S.intensity - 1];
     S.timeLeft = Math.max(0, S.timeLeft - timeCost);
 
-    const discovered = progressSkills(proj, result.finalMult);
+    const discovered = tryDiscoverSkill(proj, result.finalMult);
     const event = tryTriggerEvent(proj, result.quality);
     if (discovered.length > 0) S.pendingDiscoveries.push(...discovered);
     checkZoneDiscoveries();
@@ -1937,39 +1950,23 @@ function renderTechOverlay(tab) {
         } else {
           const techMet = !skill.requiresTech || hasKnowledge(skill.requiresTech);
           const reqTech = skill.requiresTech ? getKnowledge(skill.requiresTech) : null;
-          const progress = (S.char.skillProgress || {})[skill.id] || 0;
-          const threshold = skillThreshold(skill);
-          const statLabels = { physical: '💪', intelligence: '🧠', social: '👥' };
-
           let hint;
           if (!techMet) {
             hint = `Requereix tecnologia: ${reqTech ? reqTech.name : skill.requiresTech}`;
           } else if (skill.requiresMinStat) {
             const unmet = Object.entries(skill.requiresMinStat)
               .filter(([k, v]) => (S.char[k] || 0) < v)
-              .map(([k, v]) => `${statLabels[k] || k} ${v}`)
+              .map(([k, v]) => `${k} ${v}`)
               .join(', ');
-            hint = unmet ? `Requereix: ${unmet}` : null;
-          }
-
-          row.className = 'tech-progress-wrap';
-          if (hint) {
-            row.innerHTML = `
-              <div class="tech-progress-label dim">${skill.icon} ${skill.name}</div>
-              <div class="tech-progress-hint">${hint}</div>
-            `;
+            hint = unmet ? `Requereix: ${unmet}` : 'Pendent de desbloquejar';
           } else {
-            const pct = Math.min(100, Math.round((progress / threshold) * 100));
-            row.innerHTML = `
-              <div class="tech-progress-label">${skill.icon} ${skill.name}
-                <span class="skill-prog-count">${progress}/${threshold}</span>
-              </div>
-              <div class="skill-prog-bar-wrap">
-                <div class="skill-prog-bar-fill" style="width:${pct}%"></div>
-              </div>
-              <div class="tech-progress-hint">${skill.description}</div>
-            `;
+            hint = 'Pendent de desbloquejar';
           }
+          row.className = 'tech-progress-wrap';
+          row.innerHTML = `
+            <div class="tech-progress-label">${skill.icon} ${skill.name}</div>
+            <div class="tech-progress-hint">${hint}</div>
+          `;
         }
         list.appendChild(row);
       }

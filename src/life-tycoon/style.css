@@ -233,16 +233,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 .tech-info strong { font-size: 0.85rem; color: var(--text); display: block; }
 .tech-info small  { font-size: 0.7rem;  color: var(--text-dim); margin-top: 2px; display: block; }
 .tech-progress-wrap  { padding: 0.6rem 0; border-top: 1px solid var(--border); }
-.tech-progress-label { font-size: 0.8rem; color: var(--text); margin-bottom: 5px;
-                       display: flex; justify-content: space-between; align-items: center; }
-.tech-progress-label.dim { color: var(--text-dim); }
+.tech-progress-label { font-size: 0.8rem; color: var(--text); margin-bottom: 5px; }
 .tech-progress-bar   { background: var(--surface2); border-radius: 4px; height: 8px; overflow: hidden; }
 .tech-progress-fill  { height: 100%; background: var(--gold); border-radius: 4px; transition: width 0.3s; }
 .tech-progress-hint  { font-size: 0.65rem; color: var(--text-dim); margin-top: 4px; }
-.skill-prog-count    { font-size: 0.7rem; color: var(--gold); font-weight: 700; }
-.skill-prog-bar-wrap { background: var(--surface2); border-radius: 4px; height: 6px;
-                       overflow: hidden; margin: 4px 0; }
-.skill-prog-bar-fill { height: 100%; background: var(--gold); border-radius: 4px; transition: width 0.4s; }
 
 /* ── Partner Row ─────────────────────────────────────────────────────── */
 #partner-row {
@@ -413,6 +407,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 .proj-desc { font-size: 0.62rem; color: var(--text-dim); line-height: 1.3; }
 .proj-req       { font-size: 0.6rem; color: #e74c3c; margin-top: 2px; }
 .proj-stat-gain { font-size: 0.6rem; color: var(--text-dim); margin-top: 2px; letter-spacing: 0.02em; }
+.proj-mastery   { font-size: 0.6rem; margin-top: 3px; letter-spacing: 0.03em; }
+.proj-mastery.mastery-0 { color: var(--text-dim); }
+.proj-mastery.mastery-1 { color: #c9a227; }
+.proj-mastery.mastery-2 { color: #e8b84b; }
+.proj-mastery.mastery-3 { color: #ffd700; font-weight: 700; }
 .proj-impact {
   margin-top: 4px;
   display: flex;
@@ -488,8 +487,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 .preview-val.neg  { color: #e74c3c; font-weight: 700; }
 .preview-val.risk { color: #e67e22; font-weight: 700; }
 .preview-bonus    { color: #27ae60; font-size: 0.75rem; margin-left: 3px; }
-.preview-skill-prog { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 4px;
-                      font-size: 0.75rem; color: var(--text-dim); }
+.preview-mastery  { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 4px;
+                    font-size: 0.75rem; color: var(--gold); }
 .preview-detail-toggle {
   font-size: 0.68rem; color: var(--text-dim); background: none; border: none;
   padding: 2px 0; cursor: pointer; text-align: left; margin-top: 2px;
