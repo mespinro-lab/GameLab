@@ -22,8 +22,13 @@ function gameDelay(ms, fn) {
 const SAVE_KEY = 'lifetycoon_autosave';
 
 function cleanStateForSave() {
-  return { ...S, phase: 'select', pendingDeaths: [], pendingBirths: [],
+  const keepPhase = ['succession', 'gameover'].includes(S.phase) ? S.phase : 'select';
+  return { ...S, phase: keepPhase, pendingDeaths: [], pendingBirths: [],
     pendingDiscoveries: [], pendingEvent: null, pendingFloaters: {}, _showingDeath: false };
+}
+
+function updateContinueBtn() {
+  el('btn-continue-game').disabled = !hasSave();
 }
 
 function saveGame() {
@@ -204,6 +209,7 @@ function isProjectUnlocked(proj) {
   if (proj.requiresTech && !hasKnowledge(proj.requiresTech)) return false;
   if (proj.requiresSkill && !hasUnlockedSkill(proj.requiresSkill)) return false;
   if (proj.requiresNoPartner && S.char.partner) return false;
+  if (proj.requiresMinCycle && S.cycle < proj.requiresMinCycle) return false;
   return true;
 }
 
@@ -235,6 +241,7 @@ function lockedReason(proj) {
     return `Necessites habilitat: ${sk ? sk.name : proj.requiresSkill}`;
   }
   if (proj.requiresNoPartner && S.char.partner) return 'Ja tens parella';
+  if (proj.requiresMinCycle && S.cycle < proj.requiresMinCycle) return 'El personatge és massa jove';
   return '';
 }
 
@@ -639,13 +646,12 @@ function triggerDeath() {
     knowledgeIds: [...S.char.knowledgeIds],
   });
 
-  if (S.char.children.length > 0) {
-    S.phase = 'succession';
-    renderAll();
-  } else {
-    S.phase = 'gameover';
-    renderAll();
-  }
+  S.phase = S.char.children.length > 0 ? 'succession' : 'gameover';
+  saveGame();
+  hide('overlay-zone-actions');
+  renderMenuEra();
+  updateContinueBtn();
+  show('overlay-menu');
 }
 
 // ── Succession ────────────────────────────────────────────────────────────────
@@ -705,7 +711,10 @@ function doSuccession(child) {
   S.maxCycles = currentEra().cyclesPerLife.base + Math.round(S.char.physical * currentEra().mechanics.successionPhysicalFactor);
   S.phase = S.pendingDiscoveries.length > 0 ? 'discovery' : 'select';
   saveGame();
-  renderAll();
+  hide('overlay-succession');
+  renderMenuEra();
+  updateContinueBtn();
+  show('overlay-menu');
 }
 
 function transitionEra(newEraId) {
@@ -867,7 +876,7 @@ function renderHeader() {
   el('hdr-age').textContent = `· ${S.char.age} anys`;
   el('hdr-gen').textContent = `Gen. ${S.generation}`;
   el('hdr-c').textContent = S.cycle;
-  el('hdr-ec').textContent = S.eraCycle;
+  el('hdr-ec').textContent = S.eraCycle + 1;
 }
 
 function renderStats() {
@@ -1522,13 +1531,11 @@ function renderBirthPane() {
 
 function advanceFromBirth() {
   S.pendingBirths.shift();
-  if (S.pendingBirths.length > 0) {
-    renderAll();
-    return;
-  }
-  if (S.pendingDiscoveries.length > 0) {
+  if (S.pendingBirths.length > 0) { renderAll(); return; }
+  const minCost = currentEra().mechanics.intensityTimeCosts[0];
+  if (S.timeLeft >= minCost && S.pendingDiscoveries.length > 0) {
     S.phase = 'discovery'; renderAll();
-  } else if (S.pendingEvent) {
+  } else if (S.timeLeft >= minCost && S.pendingEvent) {
     S.phase = 'event'; renderAll();
   } else {
     afterNotifications();
@@ -1599,13 +1606,15 @@ function renderResultPane() {
   el('result-discoveries').innerHTML = '';
 
   const goNext = () => {
+    const minCost = currentEra().mechanics.intensityTimeCosts[0];
+    const canContinue = S.timeLeft >= minCost;
     if (S.pendingBirths.length > 0) {
       S.phase = 'birth'; renderAll();
-    } else if (S.pendingDiscoveries.length > 0) {
+    } else if (canContinue && S.pendingDiscoveries.length > 0) {
       S.phase = 'discovery'; renderAll();
-    } else if (S.pendingEvent) {
+    } else if (canContinue && S.pendingEvent) {
       S.phase = 'event'; renderAll();
-    } else if (S.timeLeft > 0) {
+    } else if (canContinue) {
       S.phase = 'select'; renderAll();
     } else {
       endCycle();
@@ -2009,7 +2018,13 @@ function bindEvents() {
   el('btn-close-tech').addEventListener('click', () => hide('overlay-tech'));
   el('tab-techs').addEventListener('click', () => renderTechOverlay('techs'));
   el('tab-skills').addEventListener('click', () => renderTechOverlay('skills'));
-  el('btn-restart').addEventListener('click', () => { hide('overlay-end'); startGame(); });
+  el('btn-restart').addEventListener('click', () => {
+    hide('overlay-end');
+    clearSave();
+    renderMenuEra();
+    updateContinueBtn();
+    show('overlay-menu');
+  });
 
   // Save / Load
   el('btn-save').addEventListener('click', () => renderSaveOverlay('export'));
@@ -2031,7 +2046,7 @@ function bindEvents() {
     if (!ok) el('save-import-error').classList.remove('hidden');
   });
   el('btn-continue-game').addEventListener('click', () => loadSavedGame());
-  el('btn-new-game').addEventListener('click', () => { clearSave(); startGame(); });
+  el('btn-new-game').addEventListener('click', () => { clearSave(); updateContinueBtn(); startGame(); });
 }
 
 // ── Start ─────────────────────────────────────────────────────────────────────
@@ -2057,9 +2072,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderStatChips();
   renderMenuEra();
   bindEvents();
-  if (hasSave()) {
-    el('btn-continue-game').classList.remove('hidden');
-    el('btn-new-game').textContent = 'Nova partida';
-  }
+  updateContinueBtn();
+  if (hasSave()) el('btn-new-game').textContent = 'Nova partida';
   if (typeof initDevPanel === 'function') initDevPanel();
 });

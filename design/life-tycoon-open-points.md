@@ -2,45 +2,14 @@
 
 ## Pendents de disseny
 
-### [DISSENY] Tres capes de coneixement — estructura pendent d'implementar
+### [ERA 4] Antiguitat Clàssica — pendent d'implementar
 
-El joc ha de tenir tres capes diferenciades de coneixement, de les quals només la primera i la tercera estan implementades:
+L'era 4 (`antiguitat_classica`) és referenciada com a `nextEra` de la tech gate
+`iron_smelting` (Edat Antiga), però **no existeix a `data.js`**.
 
-**Capa 1 — Trets innats** (biologia, per individu, no ensenyables)
-Exemples: fusta de líder, força excepcional, intuïció. ✅ Implementat com a pills verdes.
-
-**Capa 2 — Habilitats apreses** (per individu, ensenyables al fill)
-Exemples: conèixer les plantes medicinals, rastrejar, pescar, cuinar.
-- Es descobreixen durant la vida via accions (com ara els coneixements actuals).
-- El pare les pot transmetre al fill via l'acció "Educar fills".
-- Visibles a la pantalla principal (pills d'un color diferent dels trets).
-- **No existeixen encara — tot el sistema és nou.**
-
-**Capa 3 — Tecnologia** (saber col·lectiu del llinatge, permanent, no per individu)
-Exemples: foc, eines de pedra, eines de metall.
-- Descoberta per qualsevol generació, queda al llinatge per sempre.
-- Visible al panell 📜. ✅ Implementat.
-- Pendent: progrés incremental d'eines (vegeu punt d'eines a baix).
-
-### [DISSENY] Dos trets innats per personatge
-Ara cada personatge té 1 tret innat. La proposta és tenir-ne 2:
-- **Tret heretat**: prové del pare (si l'herència té èxit) o de la mare/atzar.
-- **Tret propi**: generat aleatòriament en néixer, independent de l'herència.
-Això dona més varietat i fa que cada personatge se senti únic fins i tot si hereta trets.
-
-### [DISSENY] Successió: escollir entre fills
-Ara la successió tria automàticament l'únic fill (o el primer si n'hi ha més d'un). La proposta:
-- Mostrar tots els fills disponibles amb les seves estadístiques, trets i coneixements heretats.
-- El jugador tria quin fill continua el llinatge.
-- Amb 1 fill no hi ha elecció. Amb 2+ fills es pot optimitzar el llinatge.
-- Ja implementat en part: `renderSuccessionOverlay` mostra 1 fill. Cal ampliar.
-
-### [DISSENY] Acció: Educar Fills
-Falta una acció de "passar temps amb els fills" / "educar". Possible disseny:
-- Zona: Llar.
-- Requisit: tenir almenys 1 fill.
-- Efecte: millora les estadístiques o trets del fill que succeirà (physical/intelligence/social +0.5 al fill, no al pare). Potser augmenta la probabilitat d'heretar un tret concret.
-- Cost: temps (com qualsevol acció), potser +felicitat com a subproducte.
+Cal dissenyar i implementar:
+- Zones, techs, destreses, accions, events, mecàniques
+- Tech gate final cap a l'era 5 (si n'hi ha)
 
 ### [DISSENY] Eines: progrés incremental i beneficis graduals
 L'acció "Fabricar Eines" no té prou lògica. Proposta de redisseny:
@@ -70,3 +39,10 @@ L'acció "Fabricar Eines" no té prou lògica. Proposta de redisseny:
 - Riquesa eliminada de l'era prehistòrica (implementat 2026-05-05).
 - Trets innats amb efectes reals implementats (implementat 2026-05-05).
 - Panell de Tecnologia del Llinatge implementat (implementat 2026-05-05).
+- Tres capes de coneixement implementades (implementat 2026-05-13):
+  - Capa 1 — Trets innats (2 per personatge: heretat + propi).
+  - Capa 2 — Habilitats apreses (descobertes via accions, ensenyables via "Educar Fills").
+  - Capa 3 — Tecnologia del llinatge (permanent, visible al panell 📜).
+- Dos trets innats per personatge (implementat 2026-05-13): `traitIds[0]` = heretat, `traitIds[1]` = propi.
+- Successió amb elecció entre fills (implementat 2026-05-13): `renderSuccessionOverlay` mostra tots els fills, marca el millor, el jugador tria.
+- Acció "Educar Fills" implementada a les 3 eres (implementat 2026-05-13).
