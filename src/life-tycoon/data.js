@@ -19,8 +19,8 @@ const GAME_DATA = {
 
   traits: [
     { id: 'great_strength',     name: 'Força excepcional',  icon: '⚡', statKey: 'physical',
-      desc: 'Salut màxima incrementada en 15.',
-      effect: { maxHealth: 15 }, inheritChance: 0.4 },
+      desc: '+20% als outputs de totes les accions físiques.',
+      effect: { outputBonusStat: 'physical', outputBonusPct: 0.2 }, inheritChance: 0.4 },
     { id: 'natural_resilience', name: 'Resistència natural', icon: '🛡️', statKey: 'physical',
       desc: 'L\'envelliment li afecta la meitat.',
       effect: { agingResistFactor: 0.5 }, inheritChance: 0.5 },
@@ -31,14 +31,14 @@ const GAME_DATA = {
       desc: 'Guanya habilitats un 25% més ràpidament.',
       effect: { statGainBonus: 0.25 }, inheritChance: 0.3 },
     { id: 'born_leader',        name: 'Líder nat',           icon: '👑', statKey: 'social',
-      desc: 'Comença amb +10 reputació familiar.',
-      effect: { stat: 'familyReputation', value: 10 }, inheritChance: 0.35 },
+      desc: '+20% als outputs de totes les accions socials.',
+      effect: { outputBonusStat: 'social', outputBonusPct: 0.2 }, inheritChance: 0.35 },
     { id: 'gift_of_speech',     name: 'Do de la paraula',   icon: '🗣️', statKey: 'social',
-      desc: 'Carisma innat: +1 Social.',
-      effect: { stat: 'social', value: 1 }, inheritChance: 0.4 },
+      desc: '+1 Social i +15% als outputs de les accions socials.',
+      effect: { stat: 'social', value: 1, outputBonusStat: 'social', outputBonusPct: 0.15 }, inheritChance: 0.4 },
     { id: 'adaptable',          name: 'Adaptable',           icon: '🌿', statKey: 'balanced',
-      desc: 'S\'adapta a qualsevol situació: +15 Felicitat inicial.',
-      effect: { stat: 'happiness', value: 15 }, inheritChance: 0.25 },
+      desc: '+10% als outputs de qualsevol acció.',
+      effect: { outputBonusStat: 'all', outputBonusPct: 0.1 }, inheritChance: 0.25 },
   ],
 
   dynastyTitles: [

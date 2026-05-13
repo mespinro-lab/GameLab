@@ -97,6 +97,7 @@ function initState() {
       traitAgingResist: 0,
       traitDiscoveryBonus: 0,
       traitStatGainBonus: 0,
+      traitOutputBonuses: {},
       bornEraCycle: 0,
     },
     intensity: 2,
@@ -175,6 +176,11 @@ function applyTrait(traitId) {
   if (e.agingResistFactor) { S.char.traitAgingResist = e.agingResistFactor; }
   if (e.discoveryBonus) { S.char.traitDiscoveryBonus = e.discoveryBonus; }
   if (e.statGainBonus)  { S.char.traitStatGainBonus = e.statGainBonus; }
+  if (e.outputBonusStat) {
+    if (!S.char.traitOutputBonuses) S.char.traitOutputBonuses = {};
+    const k = e.outputBonusStat;
+    S.char.traitOutputBonuses[k] = (S.char.traitOutputBonuses[k] || 0) + e.outputBonusPct;
+  }
 }
 
 function isProjectUnlocked(proj) {
@@ -241,7 +247,9 @@ function calcResult(proj) {
   const statMod  = clamp(M.statModBase + (statVal - 1) * M.statModPerStat, M.statModMin, M.statModMax);
   let knowMod = 1.0;
   for (const kId of (proj.knowledgeBonus || [])) { if (hasKnowledge(kId)) knowMod += M.knowledgeBonusPerTech; }
-  const finalMult = mult * statMod * knowMod;
+  const traitBonus = (S.char.traitOutputBonuses || {});
+  const traitMult = 1 + (traitBonus[proj.statKey] || 0) + (traitBonus['all'] || 0);
+  const finalMult = mult * statMod * knowMod * traitMult;
 
   const fx = {};
   for (const [key, val] of Object.entries(proj.outputs || {})) {
@@ -523,13 +531,9 @@ function checkZoneDiscoveries() {
   }
 }
 
-// ── Time total (grows with grown children) ────────────────────────────────────
+// ── Time total ────────────────────────────────────────────────────────────────
 function calcTimeTotal() {
-  const M = currentEra().mechanics;
-  const grownCount = S.char.children.filter(c => S.cycle - (c.bornCycle || 0) >= M.grownChildCycles).length;
-  const grownBonus  = Math.min(grownCount, M.grownChildMaxCount) * M.grownChildBonus;
-  const familyBonus = S.char.children.length >= M.largeChildThreshold ? M.largeChildBonus : 0;
-  return currentEra().timeTotal + grownBonus + familyBonus;
+  return currentEra().timeTotal;
 }
 
 // ── End of cycle ──────────────────────────────────────────────────────────────
@@ -553,11 +557,11 @@ function endCycle() {
   if (shortfall > 0) {
     const shortfallPct = shortfall / foodCost;
     const familySize = 1 + S.char.children.length;
-    const healthLoss = Math.max(1, Math.round((shortfall / familySize) * M.famineHealthMult));
+    const healthLoss = Math.max(2, Math.round((shortfall / familySize) * M.famineHealthMult * 1.5));
     S.resources.health.value = clamp(S.resources.health.value - healthLoss, 0, S.resources.health.max);
 
     if (shortfallPct >= M.famineModerate) {
-      const maxLoss = shortfallPct >= M.famineSevere ? M.famineMaxLossSevere : M.famineMaxLossModerate;
+      const maxLoss = shortfallPct >= M.famineSevere ? M.famineMaxLossSevere + 2 : M.famineMaxLossModerate + 1;
       S.resources.health.max = Math.max(M.healthMaxFloor, S.resources.health.max - maxLoss);
     }
 
@@ -673,6 +677,7 @@ function doSuccession(child) {
     traitAgingResist: 0,
     traitDiscoveryBonus: 0,
     traitStatGainBonus: 0,
+    traitOutputBonuses: {},
     bornEraCycle: child.bornEraCycle || 0,
   };
   for (const tId of S.char.traitIds) applyTrait(tId);
@@ -934,13 +939,8 @@ function renderPartner() {
   const row = el('partner-row');
   if (S.char.partner) {
     row.classList.remove('hidden');
-    const M = currentEra().mechanics;
-    const grownCount = S.char.children.filter(c => S.cycle - (c.bornCycle || 0) >= M.grownChildCycles).length;
-    const grownBonus = Math.min(grownCount, M.grownChildMaxCount) * M.grownChildBonus;
-    const familyBonus = S.char.children.length >= M.largeChildThreshold ? M.largeChildBonus : 0;
-    const totalBonus = grownBonus + familyBonus;
-    const bonusPart = totalBonus > 0 ? ` · +${totalBonus}⏱/cicle` : '';
-    el('partner-label').textContent = `💑 ${S.char.partner.name} · ${S.char.children.length} fill${S.char.children.length !== 1 ? 's' : ''}${bonusPart}`;
+    const fills = S.char.children.length;
+    el('partner-label').textContent = `💑 ${S.char.partner.name} · ${fills} fill${fills !== 1 ? 's' : ''}`;
   } else {
     row.classList.add('hidden');
   }
@@ -982,9 +982,26 @@ function renderExecutingPane() {
 function renderSelectPane() {
   const actionsLeft = S.timeLeft < S.timeTotal ? Math.floor(S.timeLeft / 2) : 0;
   const timeStr = actionsLeft > 0 ? ` · ${actionsLeft} acció${actionsLeft > 1 ? 'ns' : ''} més` : '';
-  const timeBonus = S.timeTotal - currentEra().timeTotal;
-  const bonusStr = (timeBonus > 0 && S.timeLeft === S.timeTotal) ? ` · 👨‍👩‍👧 +${timeBonus}⏱` : '';
-  el('select-header').textContent = `Cicle ${S.cycle}${timeStr}${bonusStr} — On vas?`;
+  el('select-header').textContent = `Cicle ${S.cycle}${timeStr} — On vas?`;
+
+  // Famine warning banner
+  const M = currentEra().mechanics;
+  const cookingRed = skillEffectSum('foodCostReduction');
+  const projFoodCost = Math.round((S.timeTotal * currentEra().foodPerTimePoint + S.char.children.length * M.childrenFoodCost) * (1 - cookingRed));
+  let famineWarn = el('famine-warning');
+  if (!famineWarn) {
+    famineWarn = document.createElement('div');
+    famineWarn.id = 'famine-warning';
+    famineWarn.className = 'famine-warning';
+    el('pane-select').insertBefore(famineWarn, el('zone-cards'));
+  }
+  if (S.resources.food.value < projFoodCost) {
+    const deficit = projFoodCost - S.resources.food.value;
+    famineWarn.textContent = `⚠️ Fam imminent — falten ${deficit} de menjar per cobrir el cicle`;
+    famineWarn.classList.remove('hidden');
+  } else {
+    famineWarn.classList.add('hidden');
+  }
 
   const container = el('zone-cards');
   container.innerHTML = '';
@@ -1669,38 +1686,44 @@ function resolveEvent(ev, optId) {
 }
 
 // ── Succession overlay ────────────────────────────────────────────────────────
-function buildChildCard(child, showChooseBtn) {
+function childSuccessionScore(child) {
+  return (child.physical || 0) + (child.intelligence || 0) + (child.social || 0)
+    + (child.learnedSkillIds || []).length * 1.5
+    + (child.traitIds || []).length * 0.5;
+}
+
+function buildChildCard(child, isBest) {
   const skillsHtml = (child.learnedSkillIds || []).map(sId => {
     const s = getSkillGlobal(sId); return s ? `<span class="skill-pill">${s.icon} ${s.name}</span>` : '';
   }).join('');
+  const traitsHtml = (child.traitIds || []).map(id => {
+    const t = getTrait(id); return t ? `<span class="trait-pill" title="${t.desc}">${t.icon} ${t.name}</span>` : '';
+  }).join('');
   const card = document.createElement('div');
-  card.className = 'succ-child-card';
+  card.className = 'succ-child-card' + (isBest ? ' succ-child-best' : '');
   const isEraTransition = child.bornEraId && child.bornEraId !== S.currentEraId;
   const nextEraName = isEraTransition ? (GAME_DATA.eras.find(e => e.id === child.bornEraId)?.name || child.bornEraId) : '';
   const eraBadgeHtml = isEraTransition
     ? `<span class="succ-era-badge">🌿 Portarà el llinatge a ${nextEraName}</span>`
     : '';
+  const bestBadge = isBest ? `<span class="succ-best-badge">⭐ Millor opció</span>` : '';
   const bornAge = child.bornCycle ? `Nascut al cicle ${child.bornCycle}` : '';
   card.innerHTML = `
+    ${bestBadge}
     <span class="succ-child-avatar">${childAvatar(child)}</span>
     <span class="succ-child-name">${child.name}</span>
     <span class="succ-child-virtue">"${child.virtueLabel}"</span>
     ${bornAge ? `<span class="succ-child-born">${bornAge}</span>` : ''}
     ${eraBadgeHtml}
     <div class="succ-child-stats">
-      <span>💪${child.physical}</span>
-      <span>🧠${child.intelligence}</span>
-      <span>👥${child.social}</span>
+      <span title="Físic">💪 ${(child.physical||0).toFixed(1)}</span>
+      <span title="Intel·ligència">🧠 ${(child.intelligence||0).toFixed(1)}</span>
+      <span title="Social">👥 ${(child.social||0).toFixed(1)}</span>
     </div>
-    <div class="succ-child-traits">
-      ${(child.traitIds || []).map(id => { const t = getTrait(id); return t ? `<span class="trait-pill">${t.icon} ${t.name}</span>` : ''; }).join('')}
-      ${skillsHtml}
-    </div>
-    ${showChooseBtn ? `<button class="btn-choose-child">Triar ${child.name} →</button>` : ''}
+    <div class="succ-child-traits">${traitsHtml}${skillsHtml}</div>
+    <button class="btn-choose-child">Continua amb ${child.name} →</button>
   `;
-  if (showChooseBtn) {
-    card.querySelector('.btn-choose-child').onclick = () => doSuccession(child);
-  }
+  card.querySelector('.btn-choose-child').onclick = () => doSuccession(child);
   return card;
 }
 
@@ -1712,25 +1735,21 @@ function renderSuccessionOverlay() {
   `;
 
   const children = S.char.children;
-  const multi = children.length > 1;
-  el('succ-title').textContent = multi
+  el('succ-title').textContent = children.length > 1
     ? `Tria el Successor (${children.length} fills)`
     : 'El Llinatge Continua';
 
+  const scores = children.map(c => childSuccessionScore(c));
+  const maxScore = Math.max(...scores);
+
   const list = el('succ-children-list');
   list.innerHTML = '';
-  for (const child of children) {
-    list.appendChild(buildChildCard(child, multi));
+  for (let i = 0; i < children.length; i++) {
+    const isBest = children.length > 1 && scores[i] === maxScore;
+    list.appendChild(buildChildCard(children[i], isBest));
   }
 
-  const btn = el('btn-succession');
-  if (multi) {
-    btn.classList.add('hidden');
-  } else {
-    btn.classList.remove('hidden');
-    btn.textContent = `Continua amb ${children[0].name} →`;
-    btn.onclick = () => doSuccession(children[0]);
-  }
+  el('btn-succession').classList.add('hidden');
 }
 
 // ── Game Over overlay ─────────────────────────────────────────────────────────
