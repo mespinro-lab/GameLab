@@ -21,6 +21,8 @@ function gameDelay(ms, fn) {
 // ── Save / Load ───────────────────────────────────────────────────────────────
 const SAVE_KEY    = 'lifetycoon_autosave';
 const HISTORY_KEY = 'lifetycoon_history';
+const UNLOCKS_KEY = 'lifetycoon_unlocks';
+const FREE_ERAS   = ['prehistoria', 'neolitic'];
 
 function cleanStateForSave() {
   const keepPhase = ['succession', 'gameover'].includes(S.phase) ? S.phase : 'select';
@@ -57,6 +59,23 @@ function clearSave() {
 
 function getHistory() {
   try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { return []; }
+}
+
+function getUnlockedEras() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(UNLOCKS_KEY) || 'null');
+    if (Array.isArray(stored)) return new Set([...FREE_ERAS, ...stored]);
+  } catch {}
+  return new Set(FREE_ERAS);
+}
+
+function isEraUnlocked(eraId) { return getUnlockedEras().has(eraId); }
+
+function unlockEra(eraId) {
+  if (FREE_ERAS.includes(eraId)) return;
+  const extras = [...getUnlockedEras()].filter(id => !FREE_ERAS.includes(id));
+  if (!extras.includes(eraId)) extras.push(eraId);
+  try { localStorage.setItem(UNLOCKS_KEY, JSON.stringify(extras)); } catch {}
 }
 
 function saveRunToHistory() {
@@ -768,7 +787,7 @@ function doSuccession(child) {
   S.pendingEvent = null;
   if (child.bornEraId && child.bornEraId !== S.currentEraId) {
     const newEra = GAME_DATA.eras.find(e => e.id === child.bornEraId);
-    if (newEra) {
+    if (newEra && isEraUnlocked(child.bornEraId)) {
       transitionEra(child.bornEraId);
       S.timeTotal = currentEra().timeTotal;
       S.timeLeft  = S.timeTotal;
@@ -1993,7 +2012,9 @@ function renderEndOverlay() {
     banner.classList.remove('hidden');
     const list = el('victory-eras-list');
     list.innerHTML = '';
-    for (const era of GAME_DATA.eras) {
+    const playedEraNames = new Set(S.genealogy.map(g => g.era));
+    playedEraNames.add(currentEra()?.name || GAME_DATA.eras[GAME_DATA.eras.length - 1].name);
+    for (const era of GAME_DATA.eras.filter(e => playedEraNames.has(e.name))) {
       const div = document.createElement('div');
       div.className = 'victory-era-item';
       div.innerHTML = `<span class="victory-era-icon">${era.icon}</span><span>${era.name}</span><span class="victory-check">✓</span>`;
@@ -2197,6 +2218,46 @@ function renderMilestonesOverlay() {
   show('overlay-milestones');
 }
 
+// ── Shop overlay ─────────────────────────────────────────────────────────────
+function renderShopOverlay() {
+  const container = el('shop-era-list');
+  container.innerHTML = '';
+  const eras = GAME_DATA.eras;
+  for (let i = 0; i < eras.length; i++) {
+    const era = eras[i];
+    const isFree     = FREE_ERAS.includes(era.id);
+    const isUnlocked = isEraUnlocked(era.id);
+    const prevEra    = eras[i - 1];
+    const requiresPrev = !isFree && prevEra && !isEraUnlocked(prevEra.id);
+
+    let actionHtml;
+    if (isFree) {
+      actionHtml = `<span class="shop-era-status shop-free">✓ Inclòs</span>`;
+    } else if (isUnlocked) {
+      actionHtml = `<span class="shop-era-status shop-owned">✓ Activat</span>`;
+    } else if (requiresPrev) {
+      actionHtml = `<button class="shop-era-btn shop-era-btn-locked" disabled>Requereix ${prevEra.name}</button>`;
+    } else {
+      actionHtml = `<button class="shop-era-btn" data-era="${era.id}">🔓 Desbloqueja</button>`;
+    }
+
+    const card = document.createElement('div');
+    card.className = 'shop-era-card' + (isUnlocked || isFree ? ' shop-era-card-owned' : '');
+    card.innerHTML = `
+      <div class="shop-era-icon">${era.icon}</div>
+      <div class="shop-era-info">
+        <div class="shop-era-name">${era.name}</div>
+        <div class="shop-era-num">Era ${i + 1}${isFree ? ' · Gratis' : ''}</div>
+      </div>
+      <div class="shop-era-action">${actionHtml}</div>
+    `;
+    container.appendChild(card);
+  }
+  container.querySelectorAll('.shop-era-btn[data-era]').forEach(btn => {
+    btn.addEventListener('click', () => { unlockEra(btn.dataset.era); renderShopOverlay(); });
+  });
+}
+
 // ── History overlay ───────────────────────────────────────────────────────────
 function renderHistoryOverlay() {
   const history = getHistory();
@@ -2337,9 +2398,10 @@ function bindEvents() {
   el('btn-menu-badges').addEventListener('click', () => { renderMilestonesOverlay(); });
   el('btn-history').addEventListener('click', () => { hide('overlay-menu'); renderHistoryOverlay(); show('overlay-history'); });
   el('btn-close-history').addEventListener('click', () => { hide('overlay-history'); show('overlay-menu'); });
+  el('btn-menu-shop').addEventListener('click', () => { hide('overlay-menu'); renderShopOverlay(); show('overlay-shop'); });
+  el('btn-close-shop').addEventListener('click', () => { hide('overlay-shop'); show('overlay-menu'); });
   el('btn-menu-settings').addEventListener('click', () => { show('overlay-settings'); });
   el('btn-close-settings').addEventListener('click', () => hide('overlay-settings'));
-  el('btn-close-shop').addEventListener('click', () => hide('overlay-shop'));
   el('btn-clear-save-settings').addEventListener('click', () => {
     clearSave();
     updateContinueBtn();

@@ -1642,3 +1642,94 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   transition: background 0.15s;
 }
 .history-close-btn:hover { background: rgba(255,255,255,0.12); }
+
+/* ── Shop overlay ──────────────────────────────────────────────────────── */
+.shop-card {
+  max-width: 420px;
+}
+.shop-subtitle {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  margin: 0 0 0.75rem;
+  text-align: center;
+}
+#shop-era-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+.shop-era-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  transition: border-color 0.2s;
+}
+.shop-era-card-owned {
+  border-color: rgba(212,175,55,0.25);
+}
+.shop-era-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  width: 2rem;
+  text-align: center;
+}
+.shop-era-info {
+  flex: 1;
+  min-width: 0;
+}
+.shop-era-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.shop-era-num {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  margin-top: 0.1rem;
+}
+.shop-era-action {
+  flex-shrink: 0;
+}
+.shop-era-status {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.25rem 0.55rem;
+  border-radius: 20px;
+}
+.shop-free {
+  color: var(--text-dim);
+  background: rgba(255,255,255,0.07);
+}
+.shop-owned {
+  color: var(--gold);
+  background: rgba(212,175,55,0.12);
+}
+.shop-era-btn {
+  font-size: 0.78rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 20px;
+  border: 1px solid var(--gold);
+  background: transparent;
+  color: var(--gold);
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.shop-era-btn:hover { background: rgba(212,175,55,0.15); }
+.shop-era-btn-locked {
+  border-color: rgba(255,255,255,0.15);
+  color: var(--text-dim);
+  cursor: not-allowed;
+}
+.shop-demo-note {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  opacity: 0.6;
+  text-align: center;
+  margin: 0;
+}
