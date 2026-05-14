@@ -22,7 +22,7 @@ function gameDelay(ms, fn) {
 const SAVE_KEY    = 'lifetycoon_autosave';
 const HISTORY_KEY = 'lifetycoon_history';
 const UNLOCKS_KEY = 'lifetycoon_unlocks';
-const FREE_ERAS   = ['prehistoria', 'neolitic'];
+const FREE_ERAS   = ['prehistoria'];
 
 function cleanStateForSave() {
   const keepPhase = ['succession', 'gameover'].includes(S.phase) ? S.phase : 'select';
@@ -73,8 +73,19 @@ function isEraUnlocked(eraId) { return getUnlockedEras().has(eraId); }
 
 function unlockEra(eraId) {
   if (FREE_ERAS.includes(eraId)) return;
-  const extras = [...getUnlockedEras()].filter(id => !FREE_ERAS.includes(id));
-  if (!extras.includes(eraId)) extras.push(eraId);
+  const idx = GAME_DATA.eras.findIndex(e => e.id === eraId);
+  if (idx < 0) return;
+  const cascade = GAME_DATA.eras.slice(0, idx + 1).map(e => e.id).filter(id => !FREE_ERAS.includes(id));
+  const extras = [...new Set([...[...getUnlockedEras()].filter(id => !FREE_ERAS.includes(id)), ...cascade])];
+  try { localStorage.setItem(UNLOCKS_KEY, JSON.stringify(extras)); } catch {}
+}
+
+function lockEra(eraId) {
+  if (FREE_ERAS.includes(eraId)) return;
+  const idx = GAME_DATA.eras.findIndex(e => e.id === eraId);
+  if (idx < 0) return;
+  const toLock = new Set(GAME_DATA.eras.slice(idx).map(e => e.id));
+  const extras = [...getUnlockedEras()].filter(id => !FREE_ERAS.includes(id) && !toLock.has(id));
   try { localStorage.setItem(UNLOCKS_KEY, JSON.stringify(extras)); } catch {}
 }
 
@@ -2220,42 +2231,87 @@ function renderMilestonesOverlay() {
 
 // ── Shop overlay ─────────────────────────────────────────────────────────────
 function renderShopOverlay() {
-  const container = el('shop-era-list');
-  container.innerHTML = '';
-  const eras = GAME_DATA.eras;
-  for (let i = 0; i < eras.length; i++) {
-    const era = eras[i];
+  el('shop-era-detail').classList.add('hidden');
+  const list = el('shop-era-list');
+  list.classList.remove('hidden');
+  list.innerHTML = '';
+  for (let i = 0; i < GAME_DATA.eras.length; i++) {
+    const era = GAME_DATA.eras[i];
     const isFree     = FREE_ERAS.includes(era.id);
     const isUnlocked = isEraUnlocked(era.id);
-    const prevEra    = eras[i - 1];
-    const requiresPrev = !isFree && prevEra && !isEraUnlocked(prevEra.id);
-
-    let actionHtml;
-    if (isFree) {
-      actionHtml = `<span class="shop-era-status shop-free">✓ Inclòs</span>`;
-    } else if (isUnlocked) {
-      actionHtml = `<span class="shop-era-status shop-owned">✓ Activat</span>`;
-    } else if (requiresPrev) {
-      actionHtml = `<button class="shop-era-btn shop-era-btn-locked" disabled>Requereix ${prevEra.name}</button>`;
-    } else {
-      actionHtml = `<button class="shop-era-btn" data-era="${era.id}">🔓 Desbloqueja</button>`;
-    }
-
+    let statusHtml;
+    if (isFree)       statusHtml = `<span class="shop-era-status shop-free">✓ Inclòs</span>`;
+    else if (isUnlocked) statusHtml = `<span class="shop-era-status shop-owned">✓ Activa</span>`;
+    else              statusHtml = `<span class="shop-era-status shop-locked">🔒</span>`;
     const card = document.createElement('div');
-    card.className = 'shop-era-card' + (isUnlocked || isFree ? ' shop-era-card-owned' : '');
+    card.className = 'shop-era-card shop-era-card-clickable' + (isUnlocked || isFree ? ' shop-era-card-owned' : '');
     card.innerHTML = `
       <div class="shop-era-icon">${era.icon}</div>
       <div class="shop-era-info">
         <div class="shop-era-name">${era.name}</div>
-        <div class="shop-era-num">Era ${i + 1}${isFree ? ' · Gratis' : ''}</div>
+        <div class="shop-era-num">Era ${i + 1}${isFree ? ' · Sempre inclòs' : ''}</div>
       </div>
-      <div class="shop-era-action">${actionHtml}</div>
+      <div class="shop-era-action">${statusHtml}<span class="shop-era-chevron">›</span></div>
     `;
-    container.appendChild(card);
+    card.addEventListener('click', () => renderShopEraDetail(era, i));
+    list.appendChild(card);
   }
-  container.querySelectorAll('.shop-era-btn[data-era]').forEach(btn => {
-    btn.addEventListener('click', () => { unlockEra(btn.dataset.era); renderShopOverlay(); });
-  });
+}
+
+const SHOP_DESC_ERA1 = 'Els albors de la humanitat. El teu llinatge sobreviu a la natura salvatge, aprèn a fer foc, a caçar grans preses i a teixir els primers llaços tribals. Una era de supervivència i descoberta.';
+
+function renderShopEraDetail(era, idx) {
+  const isFree     = FREE_ERAS.includes(era.id);
+  const isUnlocked = isEraUnlocked(era.id);
+  el('shop-era-list').classList.add('hidden');
+  const detail = el('shop-era-detail');
+  detail.classList.remove('hidden');
+
+  const zones  = (era.zones || []).map(z => `${z.icon} ${z.name}`).join('  ');
+  const desc   = era.transition?.desc || (era.id === 'prehistoria' ? SHOP_DESC_ERA1 : '');
+
+  let warningHtml = '';
+  if (!isFree && isUnlocked) {
+    const later = GAME_DATA.eras.slice(idx + 1).filter(e => isEraUnlocked(e.id));
+    if (later.length) warningHtml = `<p class="shop-detail-warning">⚠ Desactivar també desactivarà: ${later.map(e => e.name).join(', ')}</p>`;
+  } else if (!isFree && !isUnlocked) {
+    const prev = GAME_DATA.eras.slice(1, idx).filter(e => !isEraUnlocked(e.id));
+    if (prev.length) warningHtml = `<p class="shop-detail-info">ℹ Activar també activarà: ${prev.map(e => e.name).join(', ')}</p>`;
+  }
+
+  let actionHtml;
+  if (isFree) {
+    actionHtml = `<p class="shop-detail-free-note">✓ Era gratuïta, sempre disponible</p>`;
+  } else if (isUnlocked) {
+    actionHtml = `<button id="shop-detail-action-btn" class="shop-detail-btn shop-deactivate-btn" data-era="${era.id}" data-action="lock">Desactiva (demo)</button>`;
+  } else {
+    actionHtml = `<button id="shop-detail-action-btn" class="shop-detail-btn shop-activate-btn" data-era="${era.id}" data-action="unlock">🔓 Activa (demo)</button>`;
+  }
+
+  detail.innerHTML = `
+    <button id="shop-detail-back" class="shop-detail-back">← Tornar</button>
+    <div class="shop-detail-hero">${era.icon}</div>
+    <h4 class="shop-detail-name">${era.name}</h4>
+    ${desc ? `<p class="shop-detail-desc">${desc}</p>` : ''}
+    <div class="shop-detail-stats">
+      ${zones ? `<div class="shop-detail-row"><span>Zones</span><span class="shop-detail-val">${zones}</span></div>` : ''}
+      <div class="shop-detail-row"><span>Tecnologies</span><span class="shop-detail-val">${(era.techs||[]).length}</span></div>
+      <div class="shop-detail-row"><span>Habilitats</span><span class="shop-detail-val">${(era.skills||[]).length}</span></div>
+      <div class="shop-detail-row"><span>Esperança de vida</span><span class="shop-detail-val">${era.lifeExpectancy.base}–${era.lifeExpectancy.max} anys</span></div>
+    </div>
+    ${warningHtml}
+    <div class="shop-detail-action-area">${actionHtml}</div>
+  `;
+
+  el('shop-detail-back').addEventListener('click', () => renderShopOverlay());
+  const actionBtn = el('shop-detail-action-btn');
+  if (actionBtn) {
+    actionBtn.addEventListener('click', () => {
+      if (actionBtn.dataset.action === 'unlock') unlockEra(actionBtn.dataset.era);
+      else lockEra(actionBtn.dataset.era);
+      renderShopEraDetail(era, idx);
+    });
+  }
 }
 
 // ── History overlay ───────────────────────────────────────────────────────────
