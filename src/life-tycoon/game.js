@@ -1021,10 +1021,18 @@ function renderStats() {
   renderCycleForecast();
 }
 
-function showPillDetail(icon, name, desc, bonusLines) {
+function showPillDetail(icon, name, desc, bonusLines, quote, quoteAttribution) {
   el('pill-det-icon').textContent = icon;
   el('pill-det-name').textContent = name;
   el('pill-det-desc').textContent = desc;
+  const qWrap = el('pill-det-quote-wrap');
+  if (quote) {
+    el('pill-det-quote').textContent = `"${quote}"`;
+    el('pill-det-attribution').textContent = quoteAttribution || '';
+    qWrap.classList.remove('hidden');
+  } else {
+    qWrap.classList.add('hidden');
+  }
   el('pill-det-bonus').innerHTML = bonusLines.map(l =>
     `<div class="fx-line"><span>${l}</span></div>`
   ).join('');
@@ -1061,7 +1069,7 @@ function renderTraits() {
       const lines = s.transversal === false
         ? [`Era: ${skillEra?.name || '?'} · No es transfereix als cicles futurs`]
         : s.transversal ? ['Habilitat transversal · Útil a totes les eres'] : [];
-      showPillDetail(s.icon, s.name, s.effectDesc, lines);
+      showPillDetail(s.icon, s.name, s.effectDesc, lines, s.quote, s.quoteAttribution);
     };
     row.appendChild(pill);
   }
@@ -1194,11 +1202,14 @@ function openZoneSheet(zoneId) {
         : '';
       masteryHtml = `<div class="proj-mastery-wrap"><span class="proj-mastery mastery-${mLvl}">${stars}${pct}${prog}</span>${barHtml}</div>`;
     }
+    const quoteHtml = proj.quote
+      ? `<div class="proj-quote-wrap"><span class="proj-quote">"${proj.quote}"</span>${proj.quoteAttribution ? `<span class="proj-attribution"> ${proj.quoteAttribution}</span>` : ''}</div>`
+      : '';
     card.innerHTML = `
       <span class="proj-icon">${proj.icon}</span>
       <span class="proj-name">${proj.name}</span>
       <span class="proj-desc">${proj.description}</span>
-      ${blocked ? `<span class="proj-blocked-reason">${blocked}</span>` : `${gainHtml}${masteryHtml}${riskHtml}`}
+      ${blocked ? `<span class="proj-blocked-reason">${blocked}</span>` : `${quoteHtml}${gainHtml}${masteryHtml}${riskHtml}`}
     `;
     if (!blocked) {
       card.addEventListener('click', () => {
@@ -1600,6 +1611,17 @@ function accumulateFloaters(fx) {
   }
 }
 
+function setDiscQuote(item) {
+  const qWrap = el('disc-quote-wrap');
+  if (item.quote) {
+    el('disc-quote').textContent = `"${item.quote}"`;
+    el('disc-attribution').textContent = item.quoteAttribution || '';
+    qWrap.classList.remove('hidden');
+  } else {
+    qWrap.classList.add('hidden');
+  }
+}
+
 function renderDiscoveryPane() {
   const item = S.pendingDiscoveries[0];
   el('disc-icon').textContent = item.icon;
@@ -1611,6 +1633,7 @@ function renderDiscoveryPane() {
     el('disc-badge').textContent = '🗺️ Nova zona descoberta';
     el('disc-name').textContent = item.discoveryTitle;
     el('disc-desc').textContent = item.discoveryText;
+    setDiscQuote(item);
     const zoneActions = currentEra().actions.filter(p => p.zone === item.id && isProjectUnlocked(p));
     for (const action of zoneActions) {
       const div = document.createElement('div');
@@ -1622,6 +1645,7 @@ function renderDiscoveryPane() {
     el('disc-badge').textContent = '📚 Nova destresa apresa';
     el('disc-name').textContent = item.name;
     el('disc-desc').textContent = item.description;
+    setDiscQuote(item);
     const div = document.createElement('div');
     div.className = 'fx-line';
     div.innerHTML = `<span>Efecte</span><span class="fx-pos">${item.effectDesc}</span>`;
@@ -1630,6 +1654,7 @@ function renderDiscoveryPane() {
     el('disc-badge').textContent = '🔓 Nova habilitat del llinatge';
     el('disc-name').textContent = item.name;
     el('disc-desc').textContent = item.description;
+    setDiscQuote(item);
     for (const actionId of (item.unlocksActionIds || [])) {
       const action = getProject(actionId);
       if (!action) continue;
@@ -1642,6 +1667,7 @@ function renderDiscoveryPane() {
     el('disc-badge').textContent = '✨ Nova tecnologia descoberta';
     el('disc-name').textContent = item.name;
     el('disc-desc').textContent = item.description;
+    setDiscQuote(item);
     if (item.effectDesc) {
       const div = document.createElement('div');
       div.className = 'fx-line';
@@ -2034,6 +2060,7 @@ function renderTechOverlay(tab) {
           <div class="tech-info">
             <strong>${k.name}</strong>
             <small>${knowledgeEffectDesc(k)}</small>
+            ${k.quote ? `<em class="tech-quote">"${k.quote}"${k.quoteAttribution ? ` <span class="tech-quote-attr">${k.quoteAttribution}</span>` : ''}</em>` : ''}
           </div>
         `;
         list.appendChild(row);

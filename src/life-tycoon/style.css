@@ -1268,6 +1268,34 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 }
 .dev-preset-load:active { background: #4a3a18; }
 
+/* ── Quotes (discovery, pills, tech panel, action cards) ────────────── */
+.item-quote-wrap {
+  background: rgba(212,175,55,0.07);
+  border-left: 3px solid rgba(212,175,55,0.4);
+  border-radius: 0 6px 6px 0;
+  padding: 0.5rem 0.75rem;
+  margin: 0.4rem 0;
+}
+.item-quote-wrap blockquote {
+  margin: 0 0 0.25rem;
+  font-style: italic;
+  font-size: 0.88rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+.item-quote-wrap cite {
+  font-size: 0.72rem;
+  color: var(--gold);
+  font-style: normal;
+}
+/* Action card quotes (compact) */
+.proj-quote-wrap { margin-top: 3px; }
+.proj-quote { font-size: 0.62rem; color: var(--text-dim); font-style: italic; line-height: 1.4; }
+.proj-attribution { font-size: 0.58rem; color: rgba(212,175,55,0.6); }
+/* Tech panel quotes */
+.tech-quote { display: block; font-size: 0.7rem; color: var(--text-dim); margin-top: 2px; line-height: 1.4; }
+.tech-quote-attr { color: rgba(212,175,55,0.7); font-style: normal; font-size: 0.65rem; }
+
 /* ── Menu redesign ───────────────────────────────────────────────────── */
 #overlay-menu { padding: 0; }
 .menu-screen {
