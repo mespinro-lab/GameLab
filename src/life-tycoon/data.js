@@ -2057,7 +2057,7 @@ const GAME_DATA = {
           eraCycleAppears: 27,
           description: 'Un cos de lleis que regula la propietat, l\'herència, els contractes i els delictes. La justícia deixa de ser arbitrària.',
           statBonus: { social: 1 }, inheritanceRate: 1.0,
-          unlocksActionIds: ['civic_trial'],
+          unlocksActionIds: ['argue_case', 'draft_law'],
         },
         {
           id: 'rhetoric', name: 'Retòrica', icon: '🗣️',
