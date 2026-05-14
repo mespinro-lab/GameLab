@@ -104,6 +104,7 @@ function initState() {
       traitStatGainBonus: 0,
       traitOutputBonuses: {},
       bornEraCycle: 0,
+      statGained: { physical: 0, intelligence: 0, social: 0 },
     },
     intensity: 2,
     timeTotal: startEra.timeTotal,
@@ -210,7 +211,6 @@ function isProjectUnlocked(proj) {
   if (proj.requiresTech && !hasKnowledge(proj.requiresTech)) return false;
   if (proj.requiresSkill && !hasUnlockedSkill(proj.requiresSkill)) return false;
   if (proj.requiresNoPartner && S.char.partner) return false;
-  if (proj.requiresMinCycle && S.cycle < proj.requiresMinCycle) return false;
   return true;
 }
 
@@ -242,8 +242,18 @@ function lockedReason(proj) {
     return `Necessites habilitat: ${sk ? sk.name : proj.requiresSkill}`;
   }
   if (proj.requiresNoPartner && S.char.partner) return 'Ja tens parella';
-  if (proj.requiresMinCycle && S.cycle < proj.requiresMinCycle) return 'El personatge és massa jove';
   return '';
+}
+
+function blockedReason(proj) {
+  const pct = S.cycle / S.maxCycles;
+  if (proj.minCyclePct && pct < proj.minCyclePct) return '🌱 Massa jove per a aquesta acció';
+  if (proj.maxCyclePct && pct > proj.maxCyclePct) return '🌿 Massa gran per a aquesta acció';
+  if (proj.requiresMinHappiness && S.resources.happiness.value < proj.requiresMinHappiness)
+    return `😔 Felicitat insuficient (cal ${proj.requiresMinHappiness}+)`;
+  if (proj.requiresMinFamilyReputation && S.resources.familyReputation.value < proj.requiresMinFamilyReputation)
+    return `🏛️ Reputació insuficient (cal ${proj.requiresMinFamilyReputation}+)`;
+  return null;
 }
 
 // ── Formula ───────────────────────────────────────────────────────────────────
@@ -309,7 +319,14 @@ function applyFx(fx) {
   for (const [k, v] of Object.entries(fx)) {
     if (k.startsWith('_gain_')) {
       const stat = k.slice(6);
-      c[stat] = +(c[stat] + v).toFixed(1);
+      const caps = currentEra().mechanics.statGainCaps || {};
+      const cap = caps[stat] ?? Infinity;
+      const gained = (c.statGained && c.statGained[stat]) || 0;
+      const actual = Math.max(0, Math.min(v, cap - gained));
+      if (actual > 0) {
+        c[stat] = +(c[stat] + actual).toFixed(4);
+        if (c.statGained) c.statGained[stat] = +(gained + actual).toFixed(4);
+      }
     } else if (k in S.resources) {
       const res = S.resources[k];
       if (k === 'familyReputation' && v > 0) {
@@ -699,6 +716,7 @@ function doSuccession(child) {
     traitStatGainBonus: 0,
     traitOutputBonuses: {},
     bornEraCycle: child.bornEraCycle || 0,
+    statGained: { physical: 0, intelligence: 0, social: 0 },
   };
   for (const tId of S.char.traitIds) applyTrait(tId);
 
@@ -1077,8 +1095,9 @@ function openZoneSheet(zoneId) {
 
   const statIcons = { physical: '💪', intelligence: '🧠', social: '👥' };
   for (const proj of currentEra().actions.filter(p => p.zone === zoneId && isProjectUnlocked(p))) {
+    const blocked = blockedReason(proj);
     const card = document.createElement('div');
-    card.className = 'proj-card';
+    card.className = 'proj-card' + (blocked ? ' proj-card-disabled' : '');
     const riskHtml = proj.healthRisk > 0 ? `<div class="proj-impact"><span class="impact-tag risk">⚠️ Risc</span></div>` : '';
     const gainParts = Object.entries(proj.statGain || {}).map(([s, v]) => `${statIcons[s] || s}+${v}`);
     const gainHtml  = gainParts.length > 0 ? `<span class="proj-stat-gain">${gainParts.join(' ')}</span>` : '';
@@ -1092,12 +1111,14 @@ function openZoneSheet(zoneId) {
       <span class="proj-icon">${proj.icon}</span>
       <span class="proj-name">${proj.name}</span>
       <span class="proj-desc">${proj.description}</span>
-      ${gainHtml}${masteryHtml}${riskHtml}
+      ${blocked ? `<span class="proj-blocked-reason">${blocked}</span>` : `${gainHtml}${masteryHtml}${riskHtml}`}
     `;
-    card.addEventListener('click', () => {
-      hide('overlay-zone-actions');
-      selectProject(proj.id);
-    });
+    if (!blocked) {
+      card.addEventListener('click', () => {
+        hide('overlay-zone-actions');
+        selectProject(proj.id);
+      });
+    }
     grid.appendChild(card);
   }
   show('overlay-zone-actions');
