@@ -678,6 +678,11 @@ const GAME_DATA = {
       duration: 60,
       globalEvents: ['drought', 'rival_tribe'],
       dynastySuffixes: ['de la Sembra', 'del Blat', 'de l\'Argila', 'del Riu', 'de la Pedra'],
+      transition: {
+        quote: 'El treball no és cap deshonra; la deshonra és la inactivitat.',
+        attribution: '— Hesíode, Treballs i Dies, ~700 aC',
+        desc: 'Fa uns 10.000 anys, l\'espècie humana va protagonitzar la transformació més radical de la seva història: de caçadors nòmades a agricultors assentats. La Revolució Neolítica no fou un canvi instantani, sinó un procés de generacions on es domesticaren plantes i animals, s\'inventà la ceràmica i nasqueren els primers pobles permanents. El llinatge hereta aquest llegat i aprèn a viure en comunitat, a guardar aliment per als mesos durs i a construir quelcom que duri més que una sola vida.',
+      },
       mechanics: {
         intensityOutputMults: [0.5, 1.1, 1.8],
         intensityRiskMults:   [0.4, 1.0, 2.2],
@@ -1302,6 +1307,11 @@ const GAME_DATA = {
       duration: 70,
       globalEvents: ['barbarian_threat', 'religious_festival'],
       dynastySuffixes: ['de la Cúpula', 'del Bronze', 'de l\'Àgora', 'de la Llei', 'del Ferro'],
+      transition: {
+        quote: 'Que el fort no oprimeixi el feble; que la justícia sigui feta a l\'orfe i la vídua.',
+        attribution: '— Hammurabi, Pròleg del Codi, ~1750 aC',
+        desc: 'Les grans civilitzacions fluvials —Mesopotàmia, Egipte, l\'Indus, la Xina— van inventar l\'escriptura per gestionar la complexitat creixent dels estats. Amb l\'escriptura arribaren les lleis escrites, els registres comercials i la transmissió del coneixement entre generacions. Les ciutats creixeren fins a desenes de milers d\'habitants; els oficis s\'especialitzaren; els mercats connectaren pobles distants. El llinatge entra ara a un món de jerarquies, temples i mercaders, on la intel·ligència i la reputació valen tant com la força.',
+      },
       mechanics: {
         intensityOutputMults: [0.5, 1.1, 1.8],
         intensityRiskMults:   [0.4, 1.0, 2.2],
@@ -1966,6 +1976,11 @@ const GAME_DATA = {
       duration: 80,
       globalEvents: ['barbarian_raid', 'emperor_favor'],
       dynastySuffixes: ['de l\'Àguila', 'del Senat', 'de la Llei', 'de l\'Imperi', 'del Laurel'],
+      transition: {
+        quote: 'Cedant arma togae: que cedeixin les armes davant la toga.',
+        attribution: '— Ciceró, De Officiis, I, 77, 44 aC',
+        desc: 'Grècia inventà la democràcia, la filosofia i el concepte de ciutadà lliure; Roma en perfeccionà les institucions i les estengué per tot el Mediterrani. El dret romà, l\'enginyeria hidràulica, la retòrica i l\'administració imperial van crear el marc de la civilització occidental durant més d\'un mil·lenni. Al Fòrum es decidia el destí de les províncies; a les termes es forjaven aliances; a l\'amfiteatre s\'entenia el poder popular. El llinatge arriba al cim del món conegut, on la ploma, la llei i la paraula manen més que cap espasa.',
+      },
       mechanics: {
         intensityOutputMults: [0.5, 1.1, 1.8],
         intensityRiskMults:   [0.4, 1.0, 2.2],

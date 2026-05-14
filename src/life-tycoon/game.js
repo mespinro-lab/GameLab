@@ -745,11 +745,18 @@ function doSuccession(child) {
   if (child.bornEraId && child.bornEraId !== S.currentEraId) {
     const newEra = GAME_DATA.eras.find(e => e.id === child.bornEraId);
     if (newEra) {
-      el('era-transition-icon').textContent = newEra.icon || '🌍';
-      el('era-transition-name').textContent = newEra.name;
-      show('overlay-era-transition');
-      gameDelay(2200, () => hide('overlay-era-transition'));
       transitionEra(child.bornEraId);
+      S.timeTotal = currentEra().timeTotal;
+      S.timeLeft  = S.timeTotal;
+      S.maxCycles = currentEra().cyclesPerLife.base + Math.round(S.char.physical * currentEra().mechanics.successionPhysicalFactor);
+      S.phase = S.pendingDiscoveries.length > 0 ? 'discovery' : 'select';
+      saveGame();
+      hide('overlay-succession');
+      renderMenuEra();
+      updateContinueBtn();
+      renderEraTransitionOverlay(newEra);
+      show('overlay-era-transition');
+      return;
     } else {
       S._victoryEnding = true;
       S.phase = 'end';
@@ -771,6 +778,49 @@ function doSuccession(child) {
   renderMenuEra();
   updateContinueBtn();
   show('overlay-menu');
+}
+
+function renderEraTransitionOverlay(era) {
+  el('era-transition-icon').textContent = era.icon;
+  el('era-transition-name').textContent = era.name;
+
+  const trans = era.transition || {};
+  const quoteWrap = el('era-trans-quote-wrap');
+  if (trans.quote) {
+    el('era-trans-quote').textContent = `"${trans.quote}"`;
+    el('era-trans-attribution').textContent = trans.attribution || '';
+    quoteWrap.classList.remove('hidden');
+  } else {
+    quoteWrap.classList.add('hidden');
+  }
+  const descEl = el('era-trans-desc');
+  if (trans.desc) {
+    descEl.textContent = trans.desc;
+    descEl.classList.remove('hidden');
+  } else {
+    descEl.classList.add('hidden');
+  }
+
+  const M = era.mechanics;
+  const gameplay = el('era-trans-gameplay');
+  gameplay.innerHTML = '';
+  const zoneNames = (era.zones || []).map(z => `${z.icon} ${z.name}`).join('  ');
+  if (zoneNames) addGameplayRow(gameplay, 'Zones', zoneNames);
+  const caps = M.statGainCaps || {};
+  const capParts = [];
+  if (caps.physical    !== undefined) capParts.push(`💪 màx ${caps.physical}`);
+  if (caps.intelligence !== undefined) capParts.push(`🧠 màx ${caps.intelligence}`);
+  if (caps.social      !== undefined) capParts.push(`👥 màx ${caps.social}`);
+  if (capParts.length) addGameplayRow(gameplay, 'Límit d\'atributs', capParts.join(' · '));
+  if (M.maxLearnedSkills) addGameplayRow(gameplay, 'Habilitats', `màx ${M.maxLearnedSkills} per personatge`);
+  addGameplayRow(gameplay, 'Esperança de vida', `${era.lifeExpectancy.base}–${era.lifeExpectancy.max} anys`);
+}
+
+function addGameplayRow(container, label, value) {
+  const row = document.createElement('div');
+  row.className = 'era-trans-row';
+  row.innerHTML = `<span class="era-trans-row-label">${label}</span><span class="era-trans-row-val">${value}</span>`;
+  container.appendChild(row);
 }
 
 function transitionEra(newEraId) {
@@ -2179,6 +2229,12 @@ function bindEvents() {
   });
   el('btn-continue-game').addEventListener('click', () => loadSavedGame());
   el('btn-new-game').addEventListener('click', () => { clearSave(); updateContinueBtn(); startGame(); });
+
+  // Era transition
+  el('btn-era-transition-continue').addEventListener('click', () => {
+    hide('overlay-era-transition');
+    show('overlay-menu');
+  });
 
   // Main menu extras
   el('btn-menu-badges').addEventListener('click', () => { renderMilestonesOverlay(); });
