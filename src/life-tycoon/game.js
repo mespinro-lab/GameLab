@@ -1133,9 +1133,17 @@ function openZoneSheet(zoneId) {
     const mLvl  = getMasteryLevel(proj.id);
     const mUses = getMasteryUses(proj.id);
     const nextT = MASTERY_THRESHOLDS[mLvl];
-    const masteryHtml = mLvl > 0
-      ? `<span class="proj-mastery mastery-${mLvl}">${'★'.repeat(mLvl)} +${Math.round(mLvl * MASTERY_BONUS_LEVEL * 100)}%</span>`
-      : (mUses > 0 ? `<span class="proj-mastery mastery-0">☆ ${mUses}/${nextT}</span>` : '');
+    let masteryHtml = '';
+    if (mLvl > 0 || mUses > 0) {
+      const stars = mLvl > 0 ? '★'.repeat(mLvl) : '☆';
+      const pct   = mLvl > 0 ? ` +${Math.round(mLvl * MASTERY_BONUS_LEVEL * 100)}%` : '';
+      const prog  = nextT ? ` · ${mUses}/${nextT}` : ' · màx';
+      const barPct = nextT ? Math.round((mUses / nextT) * 100) : 100;
+      const barHtml = nextT
+        ? `<div class="mastery-bar"><div class="mastery-bar-fill mastery-fill-${mLvl}" style="width:${barPct}%"></div></div>`
+        : '';
+      masteryHtml = `<div class="proj-mastery-wrap"><span class="proj-mastery mastery-${mLvl}">${stars}${pct}${prog}</span>${barHtml}</div>`;
+    }
     card.innerHTML = `
       <span class="proj-icon">${proj.icon}</span>
       <span class="proj-name">${proj.name}</span>
