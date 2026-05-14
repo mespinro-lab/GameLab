@@ -82,7 +82,7 @@ function initState() {
     generation: 1,
     dynastyName: '',
     resources: Object.fromEntries(
-      GAME_DATA.resources.map(r => [r.id, { value: r.initial, max: r.max }])
+      GAME_DATA.resources.map(r => [r.id, { value: r.initial, max: r.max, preserveBonus: 0 }])
     ),
     char: {
       name: '',
@@ -327,11 +327,18 @@ function applyFx(fx) {
         c[stat] = +(c[stat] + actual).toFixed(4);
         if (c.statGained) c.statGained[stat] = +(gained + actual).toFixed(4);
       }
+    } else if (k === 'preserveFood') {
+      const M = currentEra().mechanics;
+      const maxBonus = M.maxFoodPreserve || 60;
+      S.resources.food.preserveBonus = Math.min((S.resources.food.preserveBonus || 0) + v, maxBonus);
     } else if (k in S.resources) {
       const res = S.resources[k];
       if (k === 'familyReputation' && v > 0) {
         const repPct = skillEffectSum('familyRepPct');
         res.value = clamp(res.value + Math.round(v * (1 + repPct)), 0, res.max);
+      } else if (k === 'food') {
+        const foodMax = res.max + (res.preserveBonus || 0);
+        res.value = clamp(res.value + v, 0, foodMax);
       } else {
         res.value = clamp(res.value + v, 0, res.max);
       }
@@ -625,6 +632,13 @@ function endCycle() {
     S.resources.health.value = clamp(S.resources.health.value - ageLoss, 0, S.resources.health.max);
   }
 
+  // Preservation bonus decay
+  if (S.resources.food.preserveBonus > 0) {
+    S.resources.food.preserveBonus = Math.max(0, S.resources.food.preserveBonus - (M.preserveDecay || 8));
+    const foodMax = S.resources.food.max + S.resources.food.preserveBonus;
+    S.resources.food.value = Math.min(S.resources.food.value, foodMax);
+  }
+
   // Happiness drift
   S.resources.happiness.value = clamp(S.resources.happiness.value + M.happinessDrift, M.happinessMin, 100);
 
@@ -691,7 +705,7 @@ function doSuccession(child) {
   earnMilestone('dynasty_founded');
 
   S.resources = Object.fromEntries(
-    GAME_DATA.resources.map(r => [r.id, { value: r.initial, max: r.max }])
+    GAME_DATA.resources.map(r => [r.id, { value: r.initial, max: r.max, preserveBonus: 0 }])
   );
   S.resources.familyReputation.value = child.familyReputation;
 
@@ -930,7 +944,7 @@ function renderStats() {
   const food = S.resources.food.value;
   el('s-food').textContent = Math.round(food);
   const maxFoodEl = el('max-food');
-  if (maxFoodEl) maxFoodEl.textContent = '/' + S.resources.food.max;
+  if (maxFoodEl) maxFoodEl.textContent = '/' + (S.resources.food.max + (S.resources.food.preserveBonus || 0));
   el('chip-food').classList.toggle('low',      food < 30 && food >= 15);
   el('chip-food').classList.toggle('critical', food < 15);
 
@@ -1220,7 +1234,7 @@ function renderImpactPreview(proj) {
   const container = el('impact-preview');
   container.innerHTML = '';
   const { preview, flatBonuses, hasTracking, mults, hasRisk, riskReduced } = calcImpactPreview(proj, S.intensity);
-  const labels = { food: '🍖 Aliment', health: '❤️ Salut', happiness: '😊 Felicitat', familyReputation: '🏛️ Reputació' };
+  const labels = { food: '🍖 Aliment', health: '❤️ Salut', happiness: '😊 Felicitat', familyReputation: '🏛️ Reputació', preserveFood: '🏺 Reserva màx.' };
   for (const [key, val] of Object.entries(preview)) {
     if (val === 0) continue;
     const row = document.createElement('div');
@@ -1640,7 +1654,7 @@ function renderResultPane() {
 
   const fxList = el('result-fx-list');
   fxList.innerHTML = '';
-  const labels = { food: '🍖 Aliment', health: '❤️ Salut', happiness: '😊 Felicitat', familyReputation: '🏛️ Reputació' };
+  const labels = { food: '🍖 Aliment', health: '❤️ Salut', happiness: '😊 Felicitat', familyReputation: '🏛️ Reputació', preserveFood: '🏺 Reserva màx.' };
   for (const [key, val] of Object.entries(result.fx)) {
     if (key.startsWith('_gain_') || val === 0) continue;
     const label = labels[key] || key;
