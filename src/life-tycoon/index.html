@@ -155,13 +155,30 @@
 
   <!-- OVERLAY: Menu -->
   <div id="overlay-menu" class="overlay">
-    <div class="overlay-card menu-card">
-      <div class="game-logo" id="menu-era-icon">🦴</div>
-      <h1 class="game-title">Life Tycoon</h1>
-      <p class="game-sub">Construeix el millor llinatge de la història</p>
-      <div class="era-badge" id="menu-era-badge">Era 1 · Prehistòria</div>
-      <button id="btn-continue-game" disabled>Continuar partida →</button>
-      <button id="btn-new-game">Nova partida →</button>
+    <div class="menu-screen">
+      <div class="menu-hero">
+        <div class="game-logo" id="menu-era-icon">🦴</div>
+        <h1 class="game-title">Life Tycoon</h1>
+        <p class="game-sub">Construeix el millor llinatge de la història</p>
+        <div class="era-badge hidden" id="menu-era-badge">Prehistòria</div>
+      </div>
+      <nav class="menu-nav">
+        <button id="btn-continue-game" class="menu-btn menu-btn-primary" disabled>
+          <span class="menu-btn-icon">▶</span><span>Continuar partida</span>
+        </button>
+        <button id="btn-new-game" class="menu-btn">
+          <span class="menu-btn-icon">✦</span><span>Nova partida</span>
+        </button>
+        <button id="btn-menu-badges" class="menu-btn">
+          <span class="menu-btn-icon">🏅</span><span>Fites</span>
+        </button>
+        <button id="btn-menu-shop" class="menu-btn">
+          <span class="menu-btn-icon">🛒</span><span>Botiga</span>
+        </button>
+        <button id="btn-menu-settings" class="menu-btn">
+          <span class="menu-btn-icon">⚙️</span><span>Opcions</span>
+        </button>
+      </nav>
     </div>
   </div>
 
@@ -189,6 +206,12 @@
   <!-- OVERLAY: End / Scoring -->
   <div id="overlay-end" class="overlay hidden">
     <div class="overlay-card end-card">
+      <div id="end-victory-banner" class="hidden">
+        <div class="victory-crown">🏆</div>
+        <p class="victory-title">Llinatge Etern</p>
+        <p class="victory-sub">Has guiat el teu llinatge a través de totes les eres de la història</p>
+        <div id="victory-eras-list" class="victory-eras"></div>
+      </div>
       <h2 id="end-dynasty"></h2>
       <p id="end-tagline"></p>
       <div id="end-stats-grid"></div>
@@ -279,6 +302,39 @@
       <div id="era-transition-icon"></div>
       <div id="era-transition-label">Nova Era</div>
       <div id="era-transition-name"></div>
+    </div>
+  </div>
+
+  <!-- OVERLAY: Settings -->
+  <div id="overlay-settings" class="overlay hidden">
+    <div class="overlay-card settings-card">
+      <div class="overlay-tech-header">
+        <h3>⚙️ Opcions</h3>
+        <button id="btn-close-settings" class="btn-close-x">×</button>
+      </div>
+      <div class="settings-list">
+        <div class="setting-row"><span>Idioma</span><span class="setting-note">Properament</span></div>
+        <div class="setting-row"><span>So i música</span><span class="setting-note">Properament</span></div>
+        <div class="setting-row setting-row-danger">
+          <span>Esborrar partida</span>
+          <button id="btn-clear-save-settings">Esborrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OVERLAY: Shop -->
+  <div id="overlay-shop" class="overlay hidden">
+    <div class="overlay-card shop-card">
+      <div class="overlay-tech-header">
+        <h3>🛒 Botiga</h3>
+        <button id="btn-close-shop" class="btn-close-x">×</button>
+      </div>
+      <div class="shop-placeholder">
+        <div class="shop-soon-icon">🔜</div>
+        <p>La botiga s'obrirà properament.</p>
+        <p class="shop-soon-sub">Cosmètics, noms de llinatge exclusius i molt més a la Fase 2.</p>
+      </div>
     </div>
   </div>
 

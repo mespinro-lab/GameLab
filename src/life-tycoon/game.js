@@ -124,6 +124,7 @@ function initState() {
     milestones: [],
     currentEraId: startEra.id,
     pendingEraTransition: null,
+    _victoryEnding: false,
   };
 }
 
@@ -748,8 +749,16 @@ function doSuccession(child) {
       el('era-transition-name').textContent = newEra.name;
       show('overlay-era-transition');
       gameDelay(2200, () => hide('overlay-era-transition'));
+      transitionEra(child.bornEraId);
+    } else {
+      S._victoryEnding = true;
+      S.phase = 'end';
+      saveGame();
+      hide('overlay-succession');
+      renderEndOverlay();
+      show('overlay-end');
+      return;
     }
-    transitionEra(child.bornEraId);
   } else {
     checkZoneDiscoveries();
   }
@@ -776,7 +785,8 @@ function transitionEra(newEraId) {
 
 // ── Scoring ───────────────────────────────────────────────────────────────────
 function calcScore() {
-  const M = currentEra().mechanics;
+  const era = currentEra() || GAME_DATA.eras[GAME_DATA.eras.length - 1];
+  const M = era.mechanics;
   let score = 0;
   score += S.generation * M.scorePerGeneration;
   score += S.resources.familyReputation.value * M.scorePerRep;
@@ -785,6 +795,7 @@ function calcScore() {
     const m = GAME_DATA.milestones.find(x => x.id === mId);
     if (m) score += m.points;
   }
+  if (S._victoryEnding) score += 10000;
   return Math.round(score);
 }
 
@@ -844,10 +855,14 @@ function renderStatChips() {
 }
 
 function renderMenuEra() {
+  const era = currentEra() || GAME_DATA.eras[0];
   const icon = el('menu-era-icon');
   const badge = el('menu-era-badge');
-  if (icon) icon.textContent = currentEra().icon;
-  if (badge) badge.textContent = `Era 1 · ${currentEra().name}`;
+  if (icon) icon.textContent = era.icon;
+  if (badge) {
+    badge.textContent = era.name;
+    badge.classList.toggle('hidden', !hasSave());
+  }
 }
 
 // ── Rendering ─────────────────────────────────────────────────────────────────
@@ -1801,9 +1816,11 @@ function buildChildCard(child, isBest) {
   const card = document.createElement('div');
   card.className = 'succ-child-card' + (isBest ? ' succ-child-best' : '');
   const isEraTransition = child.bornEraId && child.bornEraId !== S.currentEraId;
-  const nextEraName = isEraTransition ? (GAME_DATA.eras.find(e => e.id === child.bornEraId)?.name || child.bornEraId) : '';
+  const nextEraObj = isEraTransition ? GAME_DATA.eras.find(e => e.id === child.bornEraId) : null;
   const eraBadgeHtml = isEraTransition
-    ? `<span class="succ-era-badge">🌿 Portarà el llinatge a ${nextEraName}</span>`
+    ? (nextEraObj
+        ? `<span class="succ-era-badge">🌿 Portarà el llinatge a ${nextEraObj.name}</span>`
+        : `<span class="succ-era-badge succ-era-final">🏆 Completarà el llinatge</span>`)
     : '';
   const bestBadge = isBest ? `<span class="succ-best-badge">⭐ Millor opció</span>` : '';
   const bornAge = child.bornCycle ? `Nascut al cicle ${child.bornCycle}` : '';
@@ -1866,15 +1883,32 @@ function renderEndOverlay() {
 
   if (!S.dynastyName) S.dynastyName = dynastyName(S.genealogy[0]?.name || S.char.name);
 
+  const banner = el('end-victory-banner');
+  if (S._victoryEnding) {
+    banner.classList.remove('hidden');
+    const list = el('victory-eras-list');
+    list.innerHTML = '';
+    for (const era of GAME_DATA.eras) {
+      const div = document.createElement('div');
+      div.className = 'victory-era-item';
+      div.innerHTML = `<span class="victory-era-icon">${era.icon}</span><span>${era.name}</span><span class="victory-check">✓</span>`;
+      list.appendChild(div);
+    }
+  } else {
+    banner.classList.add('hidden');
+  }
+
   el('end-dynasty').textContent = S.dynastyName;
   el('end-tagline').textContent = `"${title}"`;
 
+  const era = currentEra() || GAME_DATA.eras[GAME_DATA.eras.length - 1];
+  const totalTechs = GAME_DATA.eras.reduce((sum, e) => sum + (e.techs?.length || 0), 0);
   const grid = el('end-stats-grid');
   grid.innerHTML = `
     <div class="end-stat"><span>Generacions</span><span class="end-stat-val">${S.generation}</span></div>
     <div class="end-stat"><span>Fills totals</span><span class="end-stat-val">${S.char.children.length}</span></div>
     <div class="end-stat"><span>Reputació</span><span class="end-stat-val">${Math.round(S.resources.familyReputation.value)}</span></div>
-    <div class="end-stat"><span>Tecnologies</span><span class="end-stat-val">${S.char.knowledgeIds.length}/${currentEra().techs.length}</span></div>
+    <div class="end-stat"><span>Tecnologies</span><span class="end-stat-val">${S.char.knowledgeIds.length}/${S._victoryEnding ? totalTechs : era.techs.length}</span></div>
   `;
 
   const msRow = el('end-milestones-row');
@@ -2046,8 +2080,9 @@ function renderSaveOverlay(tab) {
 function renderMilestonesOverlay() {
   const list = el('milestones-list');
   list.innerHTML = '';
+  const earnedMilestones = S?.milestones || [];
   for (const m of GAME_DATA.milestones) {
-    const earned = S.milestones.includes(m.id);
+    const earned = earnedMilestones.includes(m.id);
     const row = document.createElement('div');
     row.className = 'milestone-row ' + (earned ? 'earned' : 'locked');
     row.innerHTML = `<span class="ms-icon">${earned ? m.icon : '⬜'}</span><span><strong>${m.name}</strong><br><small>${m.desc}</small></span>`;
@@ -2136,6 +2171,19 @@ function bindEvents() {
   });
   el('btn-continue-game').addEventListener('click', () => loadSavedGame());
   el('btn-new-game').addEventListener('click', () => { clearSave(); updateContinueBtn(); startGame(); });
+
+  // Main menu extras
+  el('btn-menu-badges').addEventListener('click', () => { renderMilestonesOverlay(); });
+  el('btn-menu-shop').addEventListener('click', () => { show('overlay-shop'); });
+  el('btn-menu-settings').addEventListener('click', () => { show('overlay-settings'); });
+  el('btn-close-settings').addEventListener('click', () => hide('overlay-settings'));
+  el('btn-close-shop').addEventListener('click', () => hide('overlay-shop'));
+  el('btn-clear-save-settings').addEventListener('click', () => {
+    clearSave();
+    updateContinueBtn();
+    renderMenuEra();
+    hide('overlay-settings');
+  });
 }
 
 // ── Start ─────────────────────────────────────────────────────────────────────
@@ -2162,6 +2210,5 @@ document.addEventListener('DOMContentLoaded', () => {
   renderMenuEra();
   bindEvents();
   updateContinueBtn();
-  if (hasSave()) el('btn-new-game').textContent = 'Nova partida';
   if (typeof initDevPanel === 'function') initDevPanel();
 });

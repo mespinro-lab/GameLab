@@ -759,15 +759,6 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   font-size: 0.8rem;
   color: var(--gold);
 }
-#btn-new-game {
-  background: var(--accent);
-  border-color: var(--gold);
-  font-weight: 700;
-  font-size: 1rem;
-  padding: 0.75rem 2rem;
-  margin-top: 0.5rem;
-}
-
 /* Succession */
 #succ-death-msg {
   text-align: center;
@@ -1218,6 +1209,139 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   align-self: flex-end;
 }
 .dev-preset-load:active { background: #4a3a18; }
+
+/* ── Menu redesign ───────────────────────────────────────────────────── */
+#overlay-menu { padding: 0; }
+.menu-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100dvh;
+  width: 100%;
+  gap: 2rem;
+  padding: 2rem 1.5rem;
+  box-sizing: border-box;
+}
+.menu-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+.menu-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+  max-width: 320px;
+}
+.menu-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  text-align: left;
+}
+.menu-btn:hover { background: #4d3518; border-color: var(--gold); }
+.menu-btn:disabled { opacity: 0.4; cursor: default; }
+.menu-btn-primary {
+  background: var(--accent);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.menu-btn-primary:hover { background: #4a3010; }
+.menu-btn-icon { font-size: 1.1rem; min-width: 1.4rem; text-align: center; }
+
+/* ── Settings overlay ────────────────────────────────────────────────── */
+.settings-list { display: flex; flex-direction: column; gap: 0; margin-top: 0.5rem; }
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+.setting-row:last-child { border-bottom: none; }
+.setting-note { color: var(--text-dim); font-size: 0.8rem; }
+.setting-row-danger span:first-child { color: #e74c3c; }
+.setting-row-danger button {
+  background: rgba(231,76,60,0.15);
+  border: 1px solid rgba(231,76,60,0.5);
+  color: #e74c3c;
+  border-radius: 8px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.setting-row-danger button:hover { background: rgba(231,76,60,0.3); }
+
+/* ── Shop overlay ────────────────────────────────────────────────────── */
+.shop-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--text-dim);
+}
+.shop-soon-icon { font-size: 2.5rem; }
+.shop-soon-sub { font-size: 0.8rem; color: var(--text-dim); }
+
+/* ── Victory ending ──────────────────────────────────────────────────── */
+#end-victory-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1.2rem 1rem;
+  background: rgba(212,175,55,0.1);
+  border: 1px solid rgba(212,175,55,0.4);
+  border-radius: 14px;
+  margin-bottom: 1rem;
+}
+.victory-crown { font-size: 2.5rem; }
+.victory-title {
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: var(--gold);
+  letter-spacing: 0.05em;
+}
+.victory-sub { font-size: 0.82rem; color: var(--text-dim); text-align: center; }
+.victory-eras {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+}
+.victory-era-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  padding: 0.3rem 0.6rem;
+  background: rgba(212,175,55,0.07);
+  border-radius: 8px;
+}
+.victory-era-icon { font-size: 1.1rem; }
+.victory-era-item span:nth-child(2) { flex: 1; }
+.victory-check { color: var(--gold); font-weight: 700; }
+.succ-era-final {
+  background: rgba(212,175,55,0.18);
+  border-color: rgba(212,175,55,0.5);
+  color: var(--gold);
+}
 
 /* ── Floating numbers ────────────────────────────────────────────────── */
 .float-num {
