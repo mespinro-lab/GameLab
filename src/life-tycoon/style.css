@@ -1860,3 +1860,61 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   color: var(--text-dim);
   border: 1px solid rgba(255,255,255,0.12);
 }
+
+/* ── Session log ───────────────────────────────────────────────────────── */
+#session-log {
+  padding: 0.6rem 1rem 1rem;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  margin-top: 0.25rem;
+}
+.log-header {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  opacity: 0.5;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 0.4rem;
+}
+#session-log-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+}
+.log-entry {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  font-size: 0.74rem;
+  color: var(--text-dim);
+  opacity: 0.5;
+  line-height: 1.35;
+  transition: opacity 0.2s;
+}
+.log-entry:first-child {
+  opacity: 0.9;
+  color: var(--text);
+}
+.log-entry:nth-child(2) { opacity: 0.65; }
+.log-entry:nth-child(3) { opacity: 0.45; }
+.log-entry:nth-child(n+4) { opacity: 0.3; }
+.log-icon {
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  line-height: 1;
+}
+.log-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.log-discovery { color: var(--gold); }
+.log-discovery:first-child { color: var(--gold); }
+.log-birth { color: #a8e6cf; }
+.log-death { color: #e07a5f; }
+.log-succession { color: var(--gold); }
+.log-era { color: var(--gold); font-weight: 600; }

@@ -27,7 +27,8 @@ const FREE_ERAS   = ['prehistoria'];
 function cleanStateForSave() {
   const keepPhase = ['succession', 'gameover'].includes(S.phase) ? S.phase : 'select';
   return { ...S, phase: keepPhase, pendingDeaths: [], pendingBirths: [],
-    pendingDiscoveries: [], pendingEvent: null, pendingFloaters: {}, _showingDeath: false };
+    pendingDiscoveries: [], pendingEvent: null, pendingFloaters: {}, _showingDeath: false,
+    sessionLog: [] };
 }
 
 function updateContinueBtn() {
@@ -179,6 +180,7 @@ function initState() {
     currentEraId: startEra.id,
     pendingEraTransition: null,
     _victoryEnding: false,
+    sessionLog: [],
   };
 }
 
@@ -756,6 +758,7 @@ function triggerDeath() {
 
 // ── Succession ────────────────────────────────────────────────────────────────
 function doSuccession(child) {
+  addLog('🔮', `Gen. ${S.generation + 1} · ${child.name} pren el relleu`, 'succession');
   S.generation++;
   earnMilestone('dynasty_founded');
 
@@ -799,6 +802,7 @@ function doSuccession(child) {
   if (child.bornEraId && child.bornEraId !== S.currentEraId) {
     const newEra = GAME_DATA.eras.find(e => e.id === child.bornEraId);
     if (newEra && isEraUnlocked(child.bornEraId)) {
+      addLog(newEra.icon, `Nova era: ${newEra.name}`, 'era');
       transitionEra(child.bornEraId);
       S.timeTotal = currentEra().timeTotal;
       S.timeLeft  = S.timeTotal;
@@ -999,6 +1003,7 @@ function renderAll() {
   renderTraits();
   renderPartner();
   renderPhase();
+  renderLog();
 }
 
 function renderCycleForecast() {
@@ -1137,6 +1142,36 @@ function renderPartner() {
     el('partner-label').textContent = `💑 ${S.char.partner.name} · ${fills} fill${fills !== 1 ? 's' : ''}`;
   } else {
     row.classList.add('hidden');
+  }
+}
+
+// ── Session log ───────────────────────────────────────────────────────────────
+const LOG_ICONS = { food: '🍖', health: '❤️', happiness: '😊', familyReputation: '🏛️' };
+
+function fxSummary(fx) {
+  return Object.entries(fx)
+    .filter(([k, v]) => !k.startsWith('_gain_') && v !== 0 && LOG_ICONS[k])
+    .map(([k, v]) => `${LOG_ICONS[k]} ${v > 0 ? '+' : ''}${v}`)
+    .join('  ') || '';
+}
+
+function addLog(icon, text, type = 'action') {
+  if (!S.sessionLog) S.sessionLog = [];
+  S.sessionLog.unshift({ icon, text, type });
+  if (S.sessionLog.length > 30) S.sessionLog.length = 30;
+}
+
+function renderLog() {
+  const list = el('session-log-list');
+  if (!list) return;
+  list.innerHTML = '';
+  const entries = (S.sessionLog || []).slice(0, 8);
+  if (entries.length === 0) return;
+  for (const e of entries) {
+    const li = document.createElement('li');
+    li.className = `log-entry log-${e.type}`;
+    li.innerHTML = `<span class="log-icon">${e.icon}</span><span class="log-text">${e.text}</span>`;
+    list.appendChild(li);
   }
 }
 
@@ -1486,6 +1521,8 @@ function executeProject() {
 
     S.lastResult = { proj, result };
     S.phase = 'result';
+    const fxStr = fxSummary(result.fx);
+    addLog(proj.icon, proj.name + (fxStr ? ' — ' + fxStr : ''), 'action');
     renderAll();
 
     const floaters = S.pendingFloaters;
@@ -1605,6 +1642,7 @@ function executeTeach() {
 function showNextDeath() {
   const item = S.pendingDeaths.shift();
   if (item._isFamine) {
+    addLog('🌾', 'Fam al campament', 'death');
     const sev = item.shortfallPct || 1;
     let icon, text, extraLine;
     if (sev < 0.3) {
@@ -1627,6 +1665,7 @@ function showNextDeath() {
       ${extraLine}
     `;
   } else {
+    addLog('💔', `${item.name} no ha sobreviscut`, 'death');
     el('evr-icon').textContent = childAvatar(item);
     el('evr-text').textContent = `${item.name} no ha sobreviscut a la fam. La família porta el dol.`;
     el('evr-fx').innerHTML = '<div class="fx-line"><span>Reputació familiar</span><span class="fx-neg">-5</span></div>';
@@ -1675,6 +1714,11 @@ function setDiscQuote(item) {
 
 function renderDiscoveryPane() {
   const item = S.pendingDiscoveries[0];
+  if (!item._logged) {
+    item._logged = true;
+    const typeIcon = { zone: '🗺️', skill: '📚', habilitat: '🔓', technology: '✨' };
+    addLog(item.icon || typeIcon[item._type] || '✨', `${item.name || item.discoveryTitle} descobert`, 'discovery');
+  }
   el('disc-icon').textContent = item.icon;
 
   const efxEl = el('disc-effects');
@@ -1746,6 +1790,10 @@ function renderDiscoveryPane() {
 
 function renderBirthPane() {
   const child = S.pendingBirths[0];
+  if (!child._logged) {
+    child._logged = true;
+    addLog(childAvatar(child), `Neix ${child.name}`, 'birth');
+  }
   el('birth-avatar').textContent = childAvatar(child);
   el('birth-name').textContent = child.name;
   el('birth-virtue').textContent = child.virtueLabel;
@@ -1910,6 +1958,8 @@ function resolveEvent(ev, optId) {
   if (fx.clearPartner) S.char.partner = null;
   accumulateFloaters(fx);
   renderStats();
+
+  addLog(ev.icon, `${ev.name}: ${opt.name} ${success ? '✓' : '✗'}`, 'event');
 
   // Show brief result
   S.pendingEvent = null;
