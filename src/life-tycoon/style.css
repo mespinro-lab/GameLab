@@ -122,6 +122,19 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
+#stats-resources {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.22rem 0.75rem;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  font-size: 0.78rem;
+}
+#stats-resources:empty { display: none; }
+.res-max { color: var(--text-dim); font-size: 0.72rem; font-weight: 400; }
 .stat-chip {
   display: flex;
   align-items: center;

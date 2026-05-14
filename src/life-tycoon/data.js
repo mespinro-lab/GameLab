@@ -5,7 +5,7 @@ const GAME_DATA = {
   // ── Global data (shared across all eras) ─────────────────────────────────
 
   resources: [
-    { id: 'food',             name: 'Menjar',             icon: '🍖', initial: 40, max: 100, visibleAfterTech: null,                  hasForecast: true  },
+    { id: 'food',             name: 'Menjar',             icon: '🍖', initial: 40, max: 100, visibleAfterTech: null,                  hasForecast: true,  isResource: true },
     { id: 'health',           name: 'Salut',              icon: '❤️', initial: 80, max: 100, visibleAfterTech: null,                  hasForecast: true  },
     { id: 'happiness',        name: 'Felicitat',          icon: '😊', initial: 60, max: 100, visibleAfterTech: 'language_basics',     hasForecast: true  },
     { id: 'familyReputation', name: 'Reputació Familiar', icon: '🏛️', initial: 0,  max: 100, visibleAfterTech: 'tribal_organization', hasForecast: false },
@@ -340,7 +340,7 @@ const GAME_DATA = {
         { id: 'care_home', name: 'Cuidar la Llar', icon: '🏠', category: 'home',
           description: 'Descansa i enforteix els llaços de la tribu. Recupera salut.',
           requirements: {}, requiresTech: 'tribal_organization', statKey: 'social',
-          outputs: { health: 15, happiness: 12, familyReputation: 3 }, healthRisk: 0,
+          outputs: { health: 15, happiness: 12 }, healthRisk: 0,
           knowledgeBonus: [], statGain: { social: 0.3 },
           destreseDiscovery: ['weaving', 'socialitzar', 'cooking'],
           eventPool: ['tribe_conflict', 'epidemic'], zone: 'home',
@@ -386,7 +386,7 @@ const GAME_DATA = {
           requirements: {}, requiresSkill: 'oral_tradition', statKey: 'intelligence',
           outputs: { happiness: 20, familyReputation: 10 }, healthRisk: 0,
           knowledgeBonus: ['symbolic_thinking'], statGain: { intelligence: 0.4 },
-          destreseDiscovery: ['art_narratiu'], eventPool: ['spiritual_vision'], zone: 'home',
+          destreseDiscovery: ['art_narratiu'], eventPool: ['spiritual_vision'], zone: 'town',
           successTexts: ['La tribu escolta embadalida.', 'Les gestes ancestrals viuen de nou.'],
           failTexts: ['Les paraules no troben el ritme avui.', 'La tribu s\'adorm aviat.'] },
         // ── Chieftainship ──

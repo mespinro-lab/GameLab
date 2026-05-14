@@ -703,6 +703,7 @@ function doSuccession(child) {
   for (const tId of S.char.traitIds) applyTrait(tId);
 
   S.cycle = 1;
+  S.eraCycle = child.bornEraCycle || 0;
   S.pendingDeaths = [];
   S.pendingBirths = [];
   S._showingDeath = false;
@@ -766,8 +767,10 @@ function dynastyTitle() {
 }
 
 function renderStatChips() {
-  const vitalContainer = el('stats-vital');
+  const vitalContainer    = el('stats-vital');
+  const resourceContainer = el('stats-resources');
   vitalContainer.innerHTML = '';
+  if (resourceContainer) resourceContainer.innerHTML = '';
   for (const res of GAME_DATA.resources) {
     const chip = document.createElement('div');
     chip.className = 'stat-chip hidden';
@@ -777,13 +780,20 @@ function renderStatChips() {
     span.textContent = '0';
     chip.textContent = res.icon + ' ';
     chip.appendChild(span);
+    if (res.isResource) {
+      const maxSpan = document.createElement('small');
+      maxSpan.id = 'max-' + res.id;
+      maxSpan.className = 'res-max';
+      chip.appendChild(maxSpan);
+    }
     if (res.hasForecast) {
       const fc = document.createElement('small');
       fc.id = 'fc-' + res.id;
       fc.className = 'fc-delta';
       chip.appendChild(fc);
     }
-    vitalContainer.appendChild(chip);
+    const target = (res.isResource && resourceContainer) ? resourceContainer : vitalContainer;
+    target.appendChild(chip);
   }
 
   const skillsContainer = el('stats-skills');
@@ -901,6 +911,8 @@ function renderStats() {
 
   const food = S.resources.food.value;
   el('s-food').textContent = Math.round(food);
+  const maxFoodEl = el('max-food');
+  if (maxFoodEl) maxFoodEl.textContent = '/' + S.resources.food.max;
   el('chip-food').classList.toggle('low',      food < 30 && food >= 15);
   el('chip-food').classList.toggle('critical', food < 15);
 
@@ -1192,11 +1204,8 @@ function renderImpactPreview(proj) {
     if (val === 0) continue;
     const row = document.createElement('div');
     row.className = 'preview-row';
-    const bonus = flatBonuses[key];
-    const base  = val - (bonus || 0);
-    const valStr = bonus
-      ? `<span class="preview-val pos">+${base}</span> <span class="preview-bonus">+${bonus}</span>`
-      : `<span class="preview-val ${val > 0 ? 'pos' : 'neg'}">${val > 0 ? '+' : ''}${val}</span>`;
+    const sign = val > 0 ? '+' : '';
+    const valStr = `<span class="preview-val ${val > 0 ? 'pos' : 'neg'}">${sign}${val}</span>`;
     row.innerHTML = `<span>${labels[key] || key}</span>${valStr}`;
     container.appendChild(row);
   }
@@ -1243,12 +1252,16 @@ function renderImpactPreview(proj) {
   const shortLabels = ['Suau', 'Normal', 'Intens'];
   const intNames = shortLabels.map((n, i) => `${n} ×${intensityOutputMults[i]}`);
   const statLabel = { physical: '💪 Físic', intelligence: '🧠 Intel·l.', social: '👥 Social' };
+  const flatBonusRows = Object.entries(flatBonuses).map(([key, bonus]) =>
+    `<div class="detail-row"><span>${labels[key] || key} (hab.)</span><span>+${bonus}</span></div>`
+  ).join('');
   detailBox.innerHTML = `
     <div class="detail-row"><span>Intensitat</span><span>${intNames[S.intensity - 1]}</span></div>
     <div class="detail-row"><span>${statLabel[proj.statKey] || proj.statKey} ${(S.char[proj.statKey] || 1).toFixed(1)}</span><span>×${mults.stat.toFixed(2)}</span></div>
     ${mults.knowledge > 1 ? `<div class="detail-row"><span>Coneixement</span><span>×${mults.knowledge.toFixed(2)}</span></div>` : ''}
     ${mults.mastery > 1 ? `<div class="detail-row"><span>⭐ Mestratge</span><span>×${mults.mastery.toFixed(2)}</span></div>` : ''}
     <div class="detail-row detail-total"><span>Multiplicador final</span><span>×${mults.final.toFixed(2)}</span></div>
+    ${flatBonusRows}
   `;
   detailToggle.onclick = () => {
     const hidden = detailBox.classList.toggle('hidden');
@@ -1800,7 +1813,6 @@ function renderSuccessionOverlay() {
     list.appendChild(buildChildCard(children[i], isBest));
   }
 
-  el('btn-succession').classList.add('hidden');
 }
 
 // ── Game Over overlay ─────────────────────────────────────────────────────────
