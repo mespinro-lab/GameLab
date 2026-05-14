@@ -2854,7 +2854,7 @@ const GAME_DATA = {
           quoteAttribution: '— Atribuït a la tradició legionària romana (reconstrucció)',
           requirements: {}, requiresSkill: 'praetorian', statKey: 'physical', maxCyclePct: 0.85, requiresMinHappiness: 25,
           outputs: { familyReputation: 36, happiness: 10 }, healthRisk: 12,
-          riskReductions: { iron_mastery: 0.3 }, knowledgeBonus: ['military_organization'],
+          riskReductions: { iron_mastery: 0.3 }, knowledgeBonus: ['iron_mastery'],
           statGain: { physical: 0.5 }, destreseDiscovery: ['legionary'],
           eventPool: ['barbarian_raid', 'senate_crisis'], zone: 'forum',
           successTexts: ['La revolta és sufocada amb mà de ferro.', 'L\'ordre s\'imposa.'],

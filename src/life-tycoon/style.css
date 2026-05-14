@@ -1446,3 +1446,86 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   15%  { opacity: 1; transform: translateY(-6px) scale(1.2); }
   100% { opacity: 0; transform: translateY(-42px) scale(0.85); }
 }
+
+/* ── Nova Partida overlay ────────────────────────────────────────────── */
+.new-game-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  max-width: 340px;
+  padding: 2rem 1.5rem;
+  text-align: center;
+}
+.new-game-hero {
+  font-size: 2.2rem;
+  color: var(--gold);
+  line-height: 1;
+}
+.new-game-title {
+  margin: 0;
+  font-size: 1.3rem;
+  color: var(--text);
+}
+.new-game-hint {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  margin: 0;
+  line-height: 1.5;
+}
+.new-game-field {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  text-align: left;
+}
+.new-game-label {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.new-game-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 1rem;
+  padding: 0.6rem 0.8rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.new-game-input:focus {
+  border-color: var(--gold);
+}
+.new-game-sublabel {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  margin: 0;
+  opacity: 0.7;
+}
+.new-game-btn-primary {
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--gold);
+  color: #1a1205;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.new-game-btn-primary:hover { opacity: 0.88; }
+.new-game-btn-back {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.2rem;
+}
+.new-game-btn-back:hover { color: var(--text); }

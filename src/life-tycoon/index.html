@@ -356,6 +356,23 @@
     </div>
   </div>
 
+  <!-- OVERLAY: Nova Partida -->
+  <div id="overlay-new-game" class="overlay hidden">
+    <div class="overlay-card new-game-card">
+      <div class="new-game-hero">✦</div>
+      <h3 class="new-game-title">Nova Partida</h3>
+      <p class="new-game-hint">Tria el nom del teu llinatge. El destí dels teus descendents dependrà de les decisions que prendràs.</p>
+      <div class="new-game-field">
+        <label class="new-game-label" for="input-dynasty-name">Nom del llinatge</label>
+        <input id="input-dynasty-name" class="new-game-input" type="text" maxlength="30"
+               placeholder="Ex: Braven, Oscura, Llum..." autocomplete="off">
+        <p class="new-game-sublabel">Si el deixes en blanc, el joc en generarà un d'aleatori.</p>
+      </div>
+      <button id="btn-start-new-game" class="new-game-btn-primary">Comença l'aventura →</button>
+      <button id="btn-cancel-new-game" class="new-game-btn-back">← Tornar</button>
+    </div>
+  </div>
+
   <script src="data.js"></script>
   <script src="game.js"></script>
   <script src="debug.js"></script>

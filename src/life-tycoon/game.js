@@ -1191,17 +1191,14 @@ function openZoneSheet(zoneId) {
     const mLvl  = getMasteryLevel(proj.id);
     const mUses = getMasteryUses(proj.id);
     const nextT = MASTERY_THRESHOLDS[mLvl];
-    let masteryHtml = '';
-    if (mLvl > 0 || mUses > 0) {
-      const stars = mLvl > 0 ? '★'.repeat(mLvl) : '☆';
-      const pct   = mLvl > 0 ? ` +${Math.round(mLvl * MASTERY_BONUS_LEVEL * 100)}%` : '';
-      const prog  = nextT ? ` · ${mUses}/${nextT}` : ' · màx';
-      const barPct = nextT ? Math.round((mUses / nextT) * 100) : 100;
-      const barHtml = nextT
-        ? `<div class="mastery-bar"><div class="mastery-bar-fill mastery-fill-${mLvl}" style="width:${barPct}%"></div></div>`
-        : '';
-      masteryHtml = `<div class="proj-mastery-wrap"><span class="proj-mastery mastery-${mLvl}">${stars}${pct}${prog}</span>${barHtml}</div>`;
-    }
+    const stars  = mLvl > 0 ? '★'.repeat(mLvl) : '☆';
+    const pct    = mLvl > 0 ? ` +${Math.round(mLvl * MASTERY_BONUS_LEVEL * 100)}%` : '';
+    const prog   = nextT ? ` · ${mUses}/${nextT}` : ' · màx';
+    const barPct = nextT ? Math.round((mUses / nextT) * 100) : 100;
+    const barHtml = nextT
+      ? `<div class="mastery-bar"><div class="mastery-bar-fill mastery-fill-${mLvl}" style="width:${barPct}%"></div></div>`
+      : '';
+    const masteryHtml = `<div class="proj-mastery-wrap"><span class="proj-mastery mastery-${mLvl}">${stars}${pct}${prog}</span>${barHtml}</div>`;
     const quoteHtml = proj.quote
       ? `<div class="proj-quote-wrap"><span class="proj-quote">"${proj.quote}"</span>${proj.quoteAttribution ? `<span class="proj-attribution"> ${proj.quoteAttribution}</span>` : ''}</div>`
       : '';
@@ -2255,7 +2252,26 @@ function bindEvents() {
     if (!ok) el('save-import-error').classList.remove('hidden');
   });
   el('btn-continue-game').addEventListener('click', () => loadSavedGame());
-  el('btn-new-game').addEventListener('click', () => { clearSave(); updateContinueBtn(); startGame(); });
+  el('btn-new-game').addEventListener('click', () => {
+    el('input-dynasty-name').value = '';
+    hide('overlay-menu');
+    show('overlay-new-game');
+    setTimeout(() => el('input-dynasty-name').focus(), 120);
+  });
+  el('btn-cancel-new-game').addEventListener('click', () => {
+    hide('overlay-new-game');
+    show('overlay-menu');
+  });
+  el('btn-start-new-game').addEventListener('click', () => {
+    const customName = el('input-dynasty-name').value.trim();
+    hide('overlay-new-game');
+    clearSave();
+    updateContinueBtn();
+    startGame(customName || null);
+  });
+  el('input-dynasty-name').addEventListener('keydown', e => {
+    if (e.key === 'Enter') el('btn-start-new-game').click();
+  });
 
   // Era transition
   el('btn-era-transition-continue').addEventListener('click', () => {
@@ -2278,12 +2294,12 @@ function bindEvents() {
 }
 
 // ── Start ─────────────────────────────────────────────────────────────────────
-function startGame() {
+function startGame(customDynastyName) {
   initState();
   const gender = Math.random() > 0.5 ? 'M' : 'F';
   S.char.gender = gender;
   S.char.name = randomName(gender, '');
-  S.dynastyName = dynastyName(S.char.name);
+  S.dynastyName = customDynastyName || dynastyName(S.char.name);
   // Primer personatge: 2 trets aleatoris de pools independents
   const t1 = generateTrait(pick(['physical', 'intelligence', 'social', 'balanced']));
   const t2 = generateTrait(pick(['physical', 'intelligence', 'social', 'balanced']), t1);
