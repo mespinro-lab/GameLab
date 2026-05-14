@@ -19,7 +19,8 @@ function gameDelay(ms, fn) {
 }
 
 // ── Save / Load ───────────────────────────────────────────────────────────────
-const SAVE_KEY = 'lifetycoon_autosave';
+const SAVE_KEY    = 'lifetycoon_autosave';
+const HISTORY_KEY = 'lifetycoon_history';
 
 function cleanStateForSave() {
   const keepPhase = ['succession', 'gameover'].includes(S.phase) ? S.phase : 'select';
@@ -52,6 +53,29 @@ function loadSavedGame() {
 
 function clearSave() {
   localStorage.removeItem(SAVE_KEY);
+}
+
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { return []; }
+}
+
+function saveRunToHistory() {
+  if (!S.generation) return;
+  const visitedEras = [...new Set(S.genealogy.map(g => g.era))];
+  if (S._victoryEnding) GAME_DATA.eras.forEach(e => { if (!visitedEras.includes(e.name)) visitedEras.push(e.name); });
+  const run = {
+    dynastyName: S.dynastyName || dynastyName(S.genealogy[0]?.name || S.char.name),
+    score:       calcScore(),
+    title:       dynastyTitle(),
+    generation:  S.generation,
+    victory:     !!S._victoryEnding,
+    date:        new Date().toLocaleDateString('ca-ES'),
+    eras:        visitedEras,
+  };
+  const history = getHistory();
+  history.unshift(run);
+  if (history.length > 10) history.length = 10;
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(history)); } catch (e) {}
 }
 
 function exportSaveCode() {
@@ -2173,6 +2197,35 @@ function renderMilestonesOverlay() {
   show('overlay-milestones');
 }
 
+// ── History overlay ───────────────────────────────────────────────────────────
+function renderHistoryOverlay() {
+  const history = getHistory();
+  const list = el('history-list');
+  list.innerHTML = '';
+  if (history.length === 0) {
+    list.innerHTML = '<p class="history-empty">Encara no hi ha partides completades.<br>Acaba una partida per registrar el teu llinatge.</p>';
+    return;
+  }
+  for (const run of history) {
+    const div = document.createElement('div');
+    div.className = 'history-run' + (run.victory ? ' history-run-victory' : '');
+    const eraPills = (run.eres || run.eras || []).map(e => `<span class="history-era-pill">${e}</span>`).join('');
+    div.innerHTML = `
+      <div class="history-run-header">
+        <span class="history-dynasty-name">${run.dynastyName}</span>
+        <span class="history-score">${(run.score || 0).toLocaleString()} pts</span>
+      </div>
+      <div class="history-run-sub">
+        <span class="history-run-title">"${run.title}"</span>
+        <span class="history-run-meta">Gen. ${run.generation} · ${run.date}</span>
+      </div>
+      <div class="history-era-row">${eraPills}</div>
+      ${run.victory ? '<div class="history-victory-badge">🏆 Victòria</div>' : ''}
+    `;
+    list.appendChild(div);
+  }
+}
+
 // ── Event listeners ───────────────────────────────────────────────────────────
 function bindEvents() {
   el('btn-execute').addEventListener('click', executeProject);
@@ -2225,6 +2278,7 @@ function bindEvents() {
   el('tab-techs').addEventListener('click', () => renderTechOverlay('techs'));
   el('tab-skills').addEventListener('click', () => renderTechOverlay('skills'));
   el('btn-restart').addEventListener('click', () => {
+    saveRunToHistory();
     hide('overlay-end');
     clearSave();
     renderMenuEra();
@@ -2281,7 +2335,8 @@ function bindEvents() {
 
   // Main menu extras
   el('btn-menu-badges').addEventListener('click', () => { renderMilestonesOverlay(); });
-  el('btn-menu-shop').addEventListener('click', () => { show('overlay-shop'); });
+  el('btn-history').addEventListener('click', () => { hide('overlay-menu'); renderHistoryOverlay(); show('overlay-history'); });
+  el('btn-close-history').addEventListener('click', () => { hide('overlay-history'); show('overlay-menu'); });
   el('btn-menu-settings').addEventListener('click', () => { show('overlay-settings'); });
   el('btn-close-settings').addEventListener('click', () => hide('overlay-settings'));
   el('btn-close-shop').addEventListener('click', () => hide('overlay-shop'));
