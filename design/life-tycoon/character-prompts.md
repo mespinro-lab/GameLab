@@ -123,42 +123,42 @@ prehistoric female character, Indigenous American features, copper skin, black s
 
 **PRE-MED-C** · Ref: PRE-MED-M
 ```
-prehistoric child character, Mediterranean features, olive skin, dark hair, brown eyes, younger smaller child face, same chibi cartoon art style as reference, small animal fur tunic, holding a stick, barefoot, curious happy expression, full body standing pose, white background
+prehistoric child character, Mediterranean features, olive skin, dark hair, brown eyes, younger smaller child face, body proportionally 70% the size of the adult, same chibi cartoon art style as reference, small animal fur tunic, holding a stick, barefoot, curious happy expression, full body standing pose, white background
 ```
 
 ---
 
 **PRE-AFR-C** · Ref: PRE-AFR-M
 ```
-prehistoric child character, West African features, dark brown skin, black coiled hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, small animal fur tunic, holding a stone, barefoot, curious happy expression, full body standing pose, white background
+prehistoric child character, West African features, dark brown skin, black coiled hair, dark eyes, younger smaller child face, body proportionally 70% the size of the adult, same chibi cartoon art style as reference, small animal fur tunic, holding a stone, barefoot, curious happy expression, full body standing pose, white background
 ```
 
 ---
 
 **PRE-IND-C** · Ref: PRE-IND-M
 ```
-prehistoric child character, Northern European features, fair skin, light hair, blue eyes, younger smaller child face, same chibi cartoon art style as reference, small animal fur tunic, holding a stick, barefoot, curious happy expression, full body standing pose, white background
+prehistoric child character, Northern European features, fair skin, light hair, blue eyes, younger smaller child face, body proportionally 70% the size of the adult, same chibi cartoon art style as reference, small animal fur tunic, holding a stick, barefoot, curious happy expression, full body standing pose, white background
 ```
 
 ---
 
 **PRE-ORI-C** · Ref: PRE-ORI-M
 ```
-prehistoric child character, Near Eastern features, tan skin, dark hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, small animal fur tunic, holding a small stone, barefoot, curious happy expression, full body standing pose, white background
+prehistoric child character, Near Eastern features, tan skin, dark hair, dark eyes, younger smaller child face, body proportionally 70% the size of the adult, same chibi cartoon art style as reference, small animal fur tunic, holding a small stone, barefoot, curious happy expression, full body standing pose, white background
 ```
 
 ---
 
 **PRE-ASI-C** · Ref: PRE-ASI-M
 ```
-prehistoric child character, East Asian features, light yellow skin, black straight hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, small animal fur tunic, holding a stone, barefoot, curious happy expression, full body standing pose, white background
+prehistoric child character, East Asian features, light yellow skin, black straight hair, dark eyes, younger smaller child face, body proportionally 70% the size of the adult, same chibi cartoon art style as reference, small animal fur tunic, holding a stone, barefoot, curious happy expression, full body standing pose, white background
 ```
 
 ---
 
 **PRE-AME-C** · Ref: PRE-AME-M
 ```
-prehistoric child character, Indigenous American features, copper skin, black straight hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, small animal fur tunic, holding a stone, barefoot, curious happy expression, full body standing pose, white background
+prehistoric child character, Indigenous American features, copper skin, black straight hair, dark eyes, younger smaller child face, body proportionally 70% the size of the adult, same chibi cartoon art style as reference, small animal fur tunic, holding a stone, barefoot, curious happy expression, full body standing pose, white background
 ```
 
 ---
@@ -257,42 +257,42 @@ Neolithic female character, Indigenous American features, copper skin, black str
 
 **NEO-MED-C** · Ref: NEO-MED-M
 ```
-Neolithic child character, Mediterranean features, olive skin, dark hair, brown eyes, younger smaller child face, same chibi cartoon art style as reference, simple linen tunic, holding a small clay figure, barefoot, happy expression, full body standing pose, white background
+Neolithic child character, Mediterranean features, olive skin, dark hair, brown eyes, younger smaller child face, body proportionally 70% the size of the adult, same chibi cartoon art style as reference, simple linen tunic, holding a small clay figure, barefoot, happy expression, full body standing pose, white background
 ```
 
 ---
 
 **NEO-AFR-C** · Ref: NEO-AFR-M
 ```
-Neolithic child character, West African features, dark brown skin, black coiled hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, simple linen tunic, holding a small clay figure, barefoot, happy expression, full body standing pose, white background
+Neolithic child character, West African features, dark brown skin, black coiled hair, dark eyes, younger smaller child face, body proportionally 70% the size of the adult, same chibi cartoon art style as reference, simple linen tunic, holding a small clay figure, barefoot, happy expression, full body standing pose, white background
 ```
 
 ---
 
 **NEO-IND-C** · Ref: NEO-IND-M
 ```
-Neolithic child character, Northern European features, fair skin, light hair, blue eyes, younger smaller child face, same chibi cartoon art style as reference, simple linen tunic, holding a small clay figure, barefoot, happy expression, full body standing pose, white background
+Neolithic child character, Northern European features, fair skin, light hair, blue eyes, younger smaller child face, body proportionally 70% the size of the adult, same chibi cartoon art style as reference, simple linen tunic, holding a small clay figure, barefoot, happy expression, full body standing pose, white background
 ```
 
 ---
 
 **NEO-ORI-C** · Ref: NEO-ORI-M
 ```
-Neolithic child character, Near Eastern features, tan skin, dark hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, simple linen tunic, holding a small clay pot, barefoot, happy expression, full body standing pose, white background
+Neolithic child character, Near Eastern features, tan skin, dark hair, dark eyes, younger smaller child face, body proportionally 70% the size of the adult, same chibi cartoon art style as reference, simple linen tunic, holding a small clay pot, barefoot, happy expression, full body standing pose, white background
 ```
 
 ---
 
 **NEO-ASI-C** · Ref: NEO-ASI-M
 ```
-Neolithic child character, East Asian features, light yellow skin, black straight hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, simple linen tunic, holding a small clay figure, barefoot, happy expression, full body standing pose, white background
+Neolithic child character, East Asian features, light yellow skin, black straight hair, dark eyes, younger smaller child face, body proportionally 70% the size of the adult, same chibi cartoon art style as reference, simple linen tunic, holding a small clay figure, barefoot, happy expression, full body standing pose, white background
 ```
 
 ---
 
 **NEO-AME-C** · Ref: NEO-AME-M
 ```
-Neolithic child character, Indigenous American features, copper skin, black straight hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, simple cotton tunic, holding a small clay figure, barefoot, happy expression, full body standing pose, white background
+Neolithic child character, Indigenous American features, copper skin, black straight hair, dark eyes, younger smaller child face, body proportionally 70% the size of the adult, same chibi cartoon art style as reference, simple cotton tunic, holding a small clay figure, barefoot, happy expression, full body standing pose, white background
 ```
 
 ---
@@ -391,42 +391,42 @@ Ancient Age female character, Indigenous American features, copper skin, black s
 
 **ANT-MED-C** · Ref: ANT-MED-M
 ```
-Ancient Age child character, Mediterranean features, olive skin, dark hair, brown eyes, younger smaller child face, same chibi cartoon art style as reference, short linen tunic, small leather sandals, holding a wax tablet, happy expression, full body standing pose, white background
+Ancient Age child character, Mediterranean features, olive skin, dark hair, brown eyes, younger smaller child face, body proportionally 70% the size of the adult, same chibi cartoon art style as reference, short linen tunic, small leather sandals, holding a wax tablet, happy expression, full body standing pose, white background
 ```
 
 ---
 
 **ANT-AFR-C** · Ref: ANT-AFR-M
 ```
-Ancient Age child character, West African features, dark brown skin, black coiled hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, short linen tunic, small leather sandals, holding a wax tablet, happy expression, full body standing pose, white background
+Ancient Age child character, West African features, dark brown skin, black coiled hair, dark eyes, younger smaller child face, body proportionally 70% the size of the adult, same chibi cartoon art style as reference, short linen tunic, small leather sandals, holding a wax tablet, happy expression, full body standing pose, white background
 ```
 
 ---
 
 **ANT-IND-C** · Ref: ANT-IND-M
 ```
-Ancient Age child character, Northern European features, fair skin, light hair, blue eyes, younger smaller child face, same chibi cartoon art style as reference, short linen tunic, small leather sandals, holding a wax tablet, happy expression, full body standing pose, white background
+Ancient Age child character, Northern European features, fair skin, light hair, blue eyes, younger smaller child face, body proportionally 70% the size of the adult, same chibi cartoon art style as reference, short linen tunic, small leather sandals, holding a wax tablet, happy expression, full body standing pose, white background
 ```
 
 ---
 
 **ANT-ORI-C** · Ref: ANT-ORI-M
 ```
-Ancient Age child character, Near Eastern features, tan skin, dark hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, short linen tunic, small leather sandals, holding a small clay tablet, happy expression, full body standing pose, white background
+Ancient Age child character, Near Eastern features, tan skin, dark hair, dark eyes, younger smaller child face, body proportionally 70% the size of the adult, same chibi cartoon art style as reference, short linen tunic, small leather sandals, holding a small clay tablet, happy expression, full body standing pose, white background
 ```
 
 ---
 
 **ANT-ASI-C** · Ref: ANT-ASI-M
 ```
-Ancient Age child character, East Asian features, light yellow skin, black straight hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, short linen tunic, small leather sandals, holding a wax tablet, happy expression, full body standing pose, white background
+Ancient Age child character, East Asian features, light yellow skin, black straight hair, dark eyes, younger smaller child face, body proportionally 70% the size of the adult, same chibi cartoon art style as reference, short linen tunic, small leather sandals, holding a wax tablet, happy expression, full body standing pose, white background
 ```
 
 ---
 
 **ANT-AME-C** · Ref: ANT-AME-M
 ```
-Ancient Age child character, Indigenous American features, copper skin, black straight hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, short cotton tunic, barefoot, holding a small clay figure, happy expression, full body standing pose, white background
+Ancient Age child character, Indigenous American features, copper skin, black straight hair, dark eyes, younger smaller child face, body proportionally 70% the size of the adult, same chibi cartoon art style as reference, short cotton tunic, barefoot, holding a small clay figure, happy expression, full body standing pose, white background
 ```
 
 ---
@@ -525,42 +525,42 @@ Classical Antiquity female character, Indigenous American features, copper skin,
 
 **CLA-MED-C** · Ref: CLA-MED-M
 ```
-Classical Antiquity child character, Mediterranean features, olive skin, dark hair, brown eyes, younger smaller child face, same chibi cartoon art style as reference, short toga, small leather sandals, holding a wax tablet, school bag, happy expression, full body standing pose, white background
+Classical Antiquity child character, Mediterranean features, olive skin, dark hair, brown eyes, younger smaller child face, body proportionally 70% the size of the adult, same chibi cartoon art style as reference, short toga, small leather sandals, holding a wax tablet, school bag, happy expression, full body standing pose, white background
 ```
 
 ---
 
 **CLA-AFR-C** · Ref: CLA-AFR-M
 ```
-Classical Antiquity child character, West African features, dark brown skin, black coiled hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, short toga, small leather sandals, holding a wax tablet, happy expression, full body standing pose, white background
+Classical Antiquity child character, West African features, dark brown skin, black coiled hair, dark eyes, younger smaller child face, body proportionally 70% the size of the adult, same chibi cartoon art style as reference, short toga, small leather sandals, holding a wax tablet, happy expression, full body standing pose, white background
 ```
 
 ---
 
 **CLA-IND-C** · Ref: CLA-IND-M
 ```
-Classical Antiquity child character, Northern European features, fair skin, light hair, blue eyes, younger smaller child face, same chibi cartoon art style as reference, short toga, small leather sandals, holding a wax tablet, happy expression, full body standing pose, white background
+Classical Antiquity child character, Northern European features, fair skin, light hair, blue eyes, younger smaller child face, body proportionally 70% the size of the adult, same chibi cartoon art style as reference, short toga, small leather sandals, holding a wax tablet, happy expression, full body standing pose, white background
 ```
 
 ---
 
 **CLA-ORI-C** · Ref: CLA-ORI-M
 ```
-Classical Antiquity child character, Near Eastern features, tan skin, dark hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, short toga, small leather sandals, holding a small scroll, happy expression, full body standing pose, white background
+Classical Antiquity child character, Near Eastern features, tan skin, dark hair, dark eyes, younger smaller child face, body proportionally 70% the size of the adult, same chibi cartoon art style as reference, short toga, small leather sandals, holding a small scroll, happy expression, full body standing pose, white background
 ```
 
 ---
 
 **CLA-ASI-C** · Ref: CLA-ASI-M
 ```
-Classical Antiquity child character, East Asian features, light yellow skin, black straight hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, short toga, small leather sandals, holding a small scroll, happy expression, full body standing pose, white background
+Classical Antiquity child character, East Asian features, light yellow skin, black straight hair, dark eyes, younger smaller child face, body proportionally 70% the size of the adult, same chibi cartoon art style as reference, short toga, small leather sandals, holding a small scroll, happy expression, full body standing pose, white background
 ```
 
 ---
 
 **CLA-AME-C** · Ref: CLA-AME-M
 ```
-Classical Antiquity child character, Indigenous American features, copper skin, black straight hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, short cotton tunic, barefoot, holding a small clay figure, happy expression, full body standing pose, white background
+Classical Antiquity child character, Indigenous American features, copper skin, black straight hair, dark eyes, younger smaller child face, body proportionally 70% the size of the adult, same chibi cartoon art style as reference, short cotton tunic, barefoot, holding a small clay figure, happy expression, full body standing pose, white background
 ```
 
 ---
