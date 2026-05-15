@@ -13,6 +13,7 @@ PRE-MED-M (base)
 ├── PRE-IND-M → PRE-IND-F → PRE-IND-C
 ├── PRE-ORI-M → PRE-ORI-F → PRE-ORI-C
 ├── PRE-ASI-M → PRE-ASI-F → PRE-ASI-C
+├── PRE-AME-M → PRE-AME-F → PRE-AME-C
 └── PRE-MED-F → PRE-MED-C
     │
     ▼ cada mascle prehistoric genera el seu equivalent de les altres eres
@@ -21,11 +22,12 @@ PRE-AFR-M → NEO-AFR-M → NEO-AFR-F → NEO-AFR-C
 PRE-IND-M → NEO-IND-M → NEO-IND-F → NEO-IND-C
 PRE-ORI-M → NEO-ORI-M → NEO-ORI-F → NEO-ORI-C
 PRE-ASI-M → NEO-ASI-M → NEO-ASI-F → NEO-ASI-C
+PRE-AME-M → NEO-AME-M → NEO-AME-F → NEO-AME-C
     (mateix patró per ANT i CLA)
 ```
 
 **Codis**: PRE=Prehistòria · NEO=Neolític · ANT=Edat Antiga · CLA=Antiguitat Clàssica
-**Races**: MED=Mediterrani · AFR=Africà · IND=Indoeuropeu · ORI=Orient Pròxim · ASI=Asiàtic Oriental
+**Races**: MED=Mediterrani · AFR=Africà · IND=Indoeuropeu · ORI=Orient Pròxim · ASI=Asiàtic Oriental · AME=Indígena Americà
 **Gènere**: M=Mascle adult · F=Femella adulta · C=Infant (neutre)
 
 ---
@@ -62,6 +64,13 @@ prehistoric male character, Near Eastern features, tan skin, dark straight hair,
 **PRE-ASI-M** · Ref: PRE-MED-M
 ```
 prehistoric male character, East Asian features, light yellow skin, black straight hair, dark eyes, different face from reference, same chibi cartoon art style as reference, rough animal fur tunic, wooden spear, barefoot, bone necklace, full body standing pose, white background
+```
+
+---
+
+**PRE-AME-M** · Ref: PRE-MED-M
+```
+prehistoric male character, Indigenous American features, copper skin, black straight hair, dark eyes, different face from reference, same chibi cartoon art style as reference, rough animal fur tunic, wooden spear, barefoot, feather headband, full body standing pose, white background
 ```
 
 ---
@@ -103,6 +112,13 @@ prehistoric female character, East Asian features, light yellow skin, black stra
 
 ---
 
+**PRE-AME-F** · Ref: PRE-AME-M
+```
+prehistoric female character, Indigenous American features, copper skin, black straight hair, dark eyes, female face different from reference male, same chibi cartoon art style as reference, rough animal fur dress, woven basket, barefoot, full body standing pose, white background
+```
+
+---
+
 ### Infants
 
 **PRE-MED-C** · Ref: PRE-MED-M
@@ -136,6 +152,13 @@ prehistoric child character, Near Eastern features, tan skin, dark hair, dark ey
 **PRE-ASI-C** · Ref: PRE-ASI-M
 ```
 prehistoric child character, East Asian features, light yellow skin, black straight hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, small animal fur tunic, holding a stone, barefoot, curious happy expression, full body standing pose, white background
+```
+
+---
+
+**PRE-AME-C** · Ref: PRE-AME-M
+```
+prehistoric child character, Indigenous American features, copper skin, black straight hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, small animal fur tunic, holding a stone, barefoot, curious happy expression, full body standing pose, white background
 ```
 
 ---
@@ -179,6 +202,13 @@ Neolithic male character, East Asian features, light yellow skin, black straight
 
 ---
 
+**NEO-AME-M** · Ref: PRE-AME-M
+```
+Neolithic male character, Indigenous American features, copper skin, black straight hair, dark eyes, same chibi cartoon art style as reference, simple woven cotton tunic with belt, holding a clay pot, barefoot, full body standing pose, white background
+```
+
+---
+
 ### Femelles adultes
 
 **NEO-MED-F** · Ref: NEO-MED-M
@@ -216,6 +246,13 @@ Neolithic female character, East Asian features, light yellow skin, black straig
 
 ---
 
+**NEO-AME-F** · Ref: NEO-AME-M
+```
+Neolithic female character, Indigenous American features, copper skin, black straight hair, dark eyes, female face different from reference male, same chibi cartoon art style as reference, woven cotton dress, clay pot on hip, barefoot, full body standing pose, white background
+```
+
+---
+
 ### Infants
 
 **NEO-MED-C** · Ref: NEO-MED-M
@@ -249,6 +286,13 @@ Neolithic child character, Near Eastern features, tan skin, dark hair, dark eyes
 **NEO-ASI-C** · Ref: NEO-ASI-M
 ```
 Neolithic child character, East Asian features, light yellow skin, black straight hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, simple linen tunic, holding a small clay figure, barefoot, happy expression, full body standing pose, white background
+```
+
+---
+
+**NEO-AME-C** · Ref: NEO-AME-M
+```
+Neolithic child character, Indigenous American features, copper skin, black straight hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, simple cotton tunic, holding a small clay figure, barefoot, happy expression, full body standing pose, white background
 ```
 
 ---
@@ -292,6 +336,13 @@ Ancient Age male character, East Asian features, light yellow skin, black straig
 
 ---
 
+**ANT-AME-M** · Ref: NEO-AME-M
+```
+Ancient Age male character, Indigenous American features, copper skin, black straight hair, dark eyes, same chibi cartoon art style as reference, cotton tunic with woven belt, barefoot, holding a stone axe, feather decoration, full body standing pose, white background
+```
+
+---
+
 ### Femelles adultes
 
 **ANT-MED-F** · Ref: ANT-MED-M
@@ -329,6 +380,13 @@ Ancient Age female character, East Asian features, light yellow skin, black stra
 
 ---
 
+**ANT-AME-F** · Ref: ANT-AME-M
+```
+Ancient Age female character, Indigenous American features, copper skin, black straight hair, dark eyes, female face different from reference male, same chibi cartoon art style as reference, draped cotton dress with woven belt, barefoot, holding a clay pot, full body standing pose, white background
+```
+
+---
+
 ### Infants
 
 **ANT-MED-C** · Ref: ANT-MED-M
@@ -362,6 +420,13 @@ Ancient Age child character, Near Eastern features, tan skin, dark hair, dark ey
 **ANT-ASI-C** · Ref: ANT-ASI-M
 ```
 Ancient Age child character, East Asian features, light yellow skin, black straight hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, short linen tunic, small leather sandals, holding a wax tablet, happy expression, full body standing pose, white background
+```
+
+---
+
+**ANT-AME-C** · Ref: ANT-AME-M
+```
+Ancient Age child character, Indigenous American features, copper skin, black straight hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, short cotton tunic, barefoot, holding a small clay figure, happy expression, full body standing pose, white background
 ```
 
 ---
@@ -405,6 +470,13 @@ Classical Antiquity male character, East Asian features, light yellow skin, blac
 
 ---
 
+**CLA-AME-M** · Ref: ANT-AME-M
+```
+Classical Antiquity male character, Indigenous American features, copper skin, black straight hair, dark eyes, same chibi cartoon art style as reference, cotton tunic with woven belt, barefoot, holding a feathered staff, feather headband, full body standing pose, white background
+```
+
+---
+
 ### Femelles adultes
 
 **CLA-MED-F** · Ref: CLA-MED-M
@@ -438,6 +510,13 @@ Classical Antiquity female character, Near Eastern features, tan skin, dark stra
 **CLA-ASI-F** · Ref: CLA-ASI-M
 ```
 Classical Antiquity female character, East Asian features, light yellow skin, black straight hair, dark eyes, female face different from reference male, same chibi cartoon art style as reference, flowing stola dress, leather sandals, holding a scroll, full body standing pose, white background
+```
+
+---
+
+**CLA-AME-F** · Ref: CLA-AME-M
+```
+Classical Antiquity female character, Indigenous American features, copper skin, black straight hair, dark eyes, female face different from reference male, same chibi cartoon art style as reference, flowing cotton dress, barefoot, holding a clay pot, full body standing pose, white background
 ```
 
 ---
@@ -479,13 +558,20 @@ Classical Antiquity child character, East Asian features, light yellow skin, bla
 
 ---
 
+**CLA-AME-C** · Ref: CLA-AME-M
+```
+Classical Antiquity child character, Indigenous American features, copper skin, black straight hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, short cotton tunic, barefoot, holding a small clay figure, happy expression, full body standing pose, white background
+```
+
+---
+
 ## Resum
 
-| | MED | AFR | IND | ORI | ASI |
-|---|---|---|---|---|---|
-| **PRE** M/F/C | ✓/·/· | ·/·/· | ·/·/· | ·/·/· | ·/·/· |
-| **NEO** M/F/C | ·/·/· | ·/·/· | ·/·/· | ·/·/· | ·/·/· |
-| **ANT** M/F/C | ·/·/· | ·/·/· | ·/·/· | ·/·/· | ·/·/· |
-| **CLA** M/F/C | ·/·/· | ·/·/· | ·/·/· | ·/·/· | ·/·/· |
+| | MED | AFR | IND | ORI | ASI | AME |
+|---|---|---|---|---|---|---|
+| **PRE** M/F/C | ✓/·/· | ·/·/· | ·/·/· | ·/·/· | ·/·/· | ·/·/· |
+| **NEO** M/F/C | ·/·/· | ·/·/· | ·/·/· | ·/·/· | ·/·/· | ·/·/· |
+| **ANT** M/F/C | ·/·/· | ·/·/· | ·/·/· | ·/·/· | ·/·/· | ·/·/· |
+| **CLA** M/F/C | ·/·/· | ·/·/· | ·/·/· | ·/·/· | ·/·/· | ·/·/· |
 
-**Total: 60 personatges** · Marca ✓ quan cada un estigui generat i aprovat.
+**Total: 72 personatges** · Marca ✓ quan cada un estigui generat i aprovat.
