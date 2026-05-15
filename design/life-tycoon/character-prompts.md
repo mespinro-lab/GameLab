@@ -8,22 +8,14 @@ La cadena de referències garanteix coherència visual entre tots els personatge
 **Eina**: Recraft AI v4.1 · **Rati**: 3:4 · **Fons**: white background (eliminar després amb remove.bg)
 
 ```
-PRE-MED-M (base)
-├── PRE-AFR-M → PRE-AFR-F → PRE-AFR-C
-├── PRE-IND-M → PRE-IND-F → PRE-IND-C
-├── PRE-ORI-M → PRE-ORI-F → PRE-ORI-C
-├── PRE-ASI-M → PRE-ASI-F → PRE-ASI-C
-├── PRE-AME-M → PRE-AME-F → PRE-AME-C
-└── PRE-MED-F → PRE-MED-C
-    │
-    ▼ cada mascle prehistoric genera el seu equivalent de les altres eres
-PRE-MED-M → NEO-MED-M → NEO-MED-F → NEO-MED-C
-PRE-AFR-M → NEO-AFR-M → NEO-AFR-F → NEO-AFR-C
-PRE-IND-M → NEO-IND-M → NEO-IND-F → NEO-IND-C
-PRE-ORI-M → NEO-ORI-M → NEO-ORI-F → NEO-ORI-C
-PRE-ASI-M → NEO-ASI-M → NEO-ASI-F → NEO-ASI-C
-PRE-AME-M → NEO-AME-M → NEO-AME-F → NEO-AME-C
-    (mateix patró per ANT i CLA)
+ADULTS (ref = mascle de la mateixa raça i era)
+PRE-MED-M (base, sense ref) → PRE-AFR-M · PRE-IND-M · PRE-ORI-M · PRE-ASI-M · PRE-AME-M
+Cada mascle → femella de la mateixa raça
+Cada mascle → mascle de la mateixa raça a les eres següents
+
+INFANTS (ref = PRE-MED-C, NO usar adults com a referència)
+PRE-MED-C (base infant, SENSE style reference — generar només amb text)
+└── tots els altres infants usen PRE-MED-C com a Style Reference
 ```
 
 **Codis**: PRE=Prehistòria · NEO=Neolític · ANT=Edat Antiga · CLA=Antiguitat Clàssica
@@ -121,42 +113,42 @@ prehistoric female character, Indigenous American features, copper skin, black s
 
 ### Infants
 
-**PRE-MED-C** · Ref: PRE-MED-M
+**PRE-MED-C** · **SENSE Style Reference** — generar només amb text
 ```
-prehistoric child character, Mediterranean features, olive skin, dark hair, brown eyes, young child age 6, large head relative to body, short stubby arms and legs, clearly childlike proportions, same chibi cartoon art style as reference, small animal fur tunic, holding a stick, barefoot, curious happy expression, full body standing pose, white background
+prehistoric child character, Mediterranean features, olive skin, dark hair, brown eyes, chibi cartoon art style, big round head, very short arms and legs, chubby childlike body, age 5-6, small animal fur tunic, holding a stick, barefoot, curious happy expression, full body standing pose, white background
 ```
 
 ---
 
-**PRE-AFR-C** · Ref: PRE-AFR-M
+**PRE-AFR-C** · Ref: PRE-MED-C
 ```
 prehistoric child character, West African features, dark brown skin, black coiled hair, dark eyes, young child age 6, large head relative to body, short stubby arms and legs, clearly childlike proportions, same chibi cartoon art style as reference, small animal fur tunic, holding a stone, barefoot, curious happy expression, full body standing pose, white background
 ```
 
 ---
 
-**PRE-IND-C** · Ref: PRE-IND-M
+**PRE-IND-C** · Ref: PRE-MED-C
 ```
 prehistoric child character, Northern European features, fair skin, light hair, blue eyes, young child age 6, large head relative to body, short stubby arms and legs, clearly childlike proportions, same chibi cartoon art style as reference, small animal fur tunic, holding a stick, barefoot, curious happy expression, full body standing pose, white background
 ```
 
 ---
 
-**PRE-ORI-C** · Ref: PRE-ORI-M
+**PRE-ORI-C** · Ref: PRE-MED-C
 ```
 prehistoric child character, Near Eastern features, tan skin, dark hair, dark eyes, young child age 6, large head relative to body, short stubby arms and legs, clearly childlike proportions, same chibi cartoon art style as reference, small animal fur tunic, holding a small stone, barefoot, curious happy expression, full body standing pose, white background
 ```
 
 ---
 
-**PRE-ASI-C** · Ref: PRE-ASI-M
+**PRE-ASI-C** · Ref: PRE-MED-C
 ```
 prehistoric child character, East Asian features, light yellow skin, black straight hair, dark eyes, young child age 6, large head relative to body, short stubby arms and legs, clearly childlike proportions, same chibi cartoon art style as reference, small animal fur tunic, holding a stone, barefoot, curious happy expression, full body standing pose, white background
 ```
 
 ---
 
-**PRE-AME-C** · Ref: PRE-AME-M
+**PRE-AME-C** · Ref: PRE-MED-C
 ```
 prehistoric child character, Indigenous American features, copper skin, black straight hair, dark eyes, young child age 6, large head relative to body, short stubby arms and legs, clearly childlike proportions, same chibi cartoon art style as reference, small animal fur tunic, holding a stone, barefoot, curious happy expression, full body standing pose, white background
 ```
@@ -255,42 +247,42 @@ Neolithic female character, Indigenous American features, copper skin, black str
 
 ### Infants
 
-**NEO-MED-C** · Ref: NEO-MED-M
+**NEO-MED-C** · Ref: PRE-MED-C
 ```
 Neolithic child character, Mediterranean features, olive skin, dark hair, brown eyes, young child age 6, large head relative to body, short stubby arms and legs, clearly childlike proportions, same chibi cartoon art style as reference, simple linen tunic, holding a small clay figure, barefoot, happy expression, full body standing pose, white background
 ```
 
 ---
 
-**NEO-AFR-C** · Ref: NEO-AFR-M
+**NEO-AFR-C** · Ref: PRE-MED-C
 ```
 Neolithic child character, West African features, dark brown skin, black coiled hair, dark eyes, young child age 6, large head relative to body, short stubby arms and legs, clearly childlike proportions, same chibi cartoon art style as reference, simple linen tunic, holding a small clay figure, barefoot, happy expression, full body standing pose, white background
 ```
 
 ---
 
-**NEO-IND-C** · Ref: NEO-IND-M
+**NEO-IND-C** · Ref: PRE-MED-C
 ```
 Neolithic child character, Northern European features, fair skin, light hair, blue eyes, young child age 6, large head relative to body, short stubby arms and legs, clearly childlike proportions, same chibi cartoon art style as reference, simple linen tunic, holding a small clay figure, barefoot, happy expression, full body standing pose, white background
 ```
 
 ---
 
-**NEO-ORI-C** · Ref: NEO-ORI-M
+**NEO-ORI-C** · Ref: PRE-MED-C
 ```
 Neolithic child character, Near Eastern features, tan skin, dark hair, dark eyes, young child age 6, large head relative to body, short stubby arms and legs, clearly childlike proportions, same chibi cartoon art style as reference, simple linen tunic, holding a small clay pot, barefoot, happy expression, full body standing pose, white background
 ```
 
 ---
 
-**NEO-ASI-C** · Ref: NEO-ASI-M
+**NEO-ASI-C** · Ref: PRE-MED-C
 ```
 Neolithic child character, East Asian features, light yellow skin, black straight hair, dark eyes, young child age 6, large head relative to body, short stubby arms and legs, clearly childlike proportions, same chibi cartoon art style as reference, simple linen tunic, holding a small clay figure, barefoot, happy expression, full body standing pose, white background
 ```
 
 ---
 
-**NEO-AME-C** · Ref: NEO-AME-M
+**NEO-AME-C** · Ref: PRE-MED-C
 ```
 Neolithic child character, Indigenous American features, copper skin, black straight hair, dark eyes, young child age 6, large head relative to body, short stubby arms and legs, clearly childlike proportions, same chibi cartoon art style as reference, simple cotton tunic, holding a small clay figure, barefoot, happy expression, full body standing pose, white background
 ```
@@ -389,42 +381,42 @@ Ancient Age female character, Indigenous American features, copper skin, black s
 
 ### Infants
 
-**ANT-MED-C** · Ref: ANT-MED-M
+**ANT-MED-C** · Ref: PRE-MED-C
 ```
 Ancient Age child character, Mediterranean features, olive skin, dark hair, brown eyes, young child age 6, large head relative to body, short stubby arms and legs, clearly childlike proportions, same chibi cartoon art style as reference, short linen tunic, small leather sandals, holding a wax tablet, happy expression, full body standing pose, white background
 ```
 
 ---
 
-**ANT-AFR-C** · Ref: ANT-AFR-M
+**ANT-AFR-C** · Ref: PRE-MED-C
 ```
 Ancient Age child character, West African features, dark brown skin, black coiled hair, dark eyes, young child age 6, large head relative to body, short stubby arms and legs, clearly childlike proportions, same chibi cartoon art style as reference, short linen tunic, small leather sandals, holding a wax tablet, happy expression, full body standing pose, white background
 ```
 
 ---
 
-**ANT-IND-C** · Ref: ANT-IND-M
+**ANT-IND-C** · Ref: PRE-MED-C
 ```
 Ancient Age child character, Northern European features, fair skin, light hair, blue eyes, young child age 6, large head relative to body, short stubby arms and legs, clearly childlike proportions, same chibi cartoon art style as reference, short linen tunic, small leather sandals, holding a wax tablet, happy expression, full body standing pose, white background
 ```
 
 ---
 
-**ANT-ORI-C** · Ref: ANT-ORI-M
+**ANT-ORI-C** · Ref: PRE-MED-C
 ```
 Ancient Age child character, Near Eastern features, tan skin, dark hair, dark eyes, young child age 6, large head relative to body, short stubby arms and legs, clearly childlike proportions, same chibi cartoon art style as reference, short linen tunic, small leather sandals, holding a small clay tablet, happy expression, full body standing pose, white background
 ```
 
 ---
 
-**ANT-ASI-C** · Ref: ANT-ASI-M
+**ANT-ASI-C** · Ref: PRE-MED-C
 ```
 Ancient Age child character, East Asian features, light yellow skin, black straight hair, dark eyes, young child age 6, large head relative to body, short stubby arms and legs, clearly childlike proportions, same chibi cartoon art style as reference, short linen tunic, small leather sandals, holding a wax tablet, happy expression, full body standing pose, white background
 ```
 
 ---
 
-**ANT-AME-C** · Ref: ANT-AME-M
+**ANT-AME-C** · Ref: PRE-MED-C
 ```
 Ancient Age child character, Indigenous American features, copper skin, black straight hair, dark eyes, young child age 6, large head relative to body, short stubby arms and legs, clearly childlike proportions, same chibi cartoon art style as reference, short cotton tunic, barefoot, holding a small clay figure, happy expression, full body standing pose, white background
 ```
@@ -523,42 +515,42 @@ Classical Antiquity female character, Indigenous American features, copper skin,
 
 ### Infants
 
-**CLA-MED-C** · Ref: CLA-MED-M
+**CLA-MED-C** · Ref: PRE-MED-C
 ```
 Classical Antiquity child character, Mediterranean features, olive skin, dark hair, brown eyes, young child age 6, large head relative to body, short stubby arms and legs, clearly childlike proportions, same chibi cartoon art style as reference, short toga, small leather sandals, holding a wax tablet, school bag, happy expression, full body standing pose, white background
 ```
 
 ---
 
-**CLA-AFR-C** · Ref: CLA-AFR-M
+**CLA-AFR-C** · Ref: PRE-MED-C
 ```
 Classical Antiquity child character, West African features, dark brown skin, black coiled hair, dark eyes, young child age 6, large head relative to body, short stubby arms and legs, clearly childlike proportions, same chibi cartoon art style as reference, short toga, small leather sandals, holding a wax tablet, happy expression, full body standing pose, white background
 ```
 
 ---
 
-**CLA-IND-C** · Ref: CLA-IND-M
+**CLA-IND-C** · Ref: PRE-MED-C
 ```
 Classical Antiquity child character, Northern European features, fair skin, light hair, blue eyes, young child age 6, large head relative to body, short stubby arms and legs, clearly childlike proportions, same chibi cartoon art style as reference, short toga, small leather sandals, holding a wax tablet, happy expression, full body standing pose, white background
 ```
 
 ---
 
-**CLA-ORI-C** · Ref: CLA-ORI-M
+**CLA-ORI-C** · Ref: PRE-MED-C
 ```
 Classical Antiquity child character, Near Eastern features, tan skin, dark hair, dark eyes, young child age 6, large head relative to body, short stubby arms and legs, clearly childlike proportions, same chibi cartoon art style as reference, short toga, small leather sandals, holding a small scroll, happy expression, full body standing pose, white background
 ```
 
 ---
 
-**CLA-ASI-C** · Ref: CLA-ASI-M
+**CLA-ASI-C** · Ref: PRE-MED-C
 ```
 Classical Antiquity child character, East Asian features, light yellow skin, black straight hair, dark eyes, young child age 6, large head relative to body, short stubby arms and legs, clearly childlike proportions, same chibi cartoon art style as reference, short toga, small leather sandals, holding a small scroll, happy expression, full body standing pose, white background
 ```
 
 ---
 
-**CLA-AME-C** · Ref: CLA-AME-M
+**CLA-AME-C** · Ref: PRE-MED-C
 ```
 Classical Antiquity child character, Indigenous American features, copper skin, black straight hair, dark eyes, young child age 6, large head relative to body, short stubby arms and legs, clearly childlike proportions, same chibi cartoon art style as reference, short cotton tunic, barefoot, holding a small clay figure, happy expression, full body standing pose, white background
 ```
