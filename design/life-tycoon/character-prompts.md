@@ -12,6 +12,7 @@ PRE-MED-M (base)
 ├── PRE-AFR-M → PRE-AFR-F → PRE-AFR-C
 ├── PRE-IND-M → PRE-IND-F → PRE-IND-C
 ├── PRE-ORI-M → PRE-ORI-F → PRE-ORI-C
+├── PRE-ASI-M → PRE-ASI-F → PRE-ASI-C
 └── PRE-MED-F → PRE-MED-C
     │
     ▼ cada mascle prehistoric genera el seu equivalent de les altres eres
@@ -19,11 +20,12 @@ PRE-MED-M → NEO-MED-M → NEO-MED-F → NEO-MED-C
 PRE-AFR-M → NEO-AFR-M → NEO-AFR-F → NEO-AFR-C
 PRE-IND-M → NEO-IND-M → NEO-IND-F → NEO-IND-C
 PRE-ORI-M → NEO-ORI-M → NEO-ORI-F → NEO-ORI-C
+PRE-ASI-M → NEO-ASI-M → NEO-ASI-F → NEO-ASI-C
     (mateix patró per ANT i CLA)
 ```
 
 **Codis**: PRE=Prehistòria · NEO=Neolític · ANT=Edat Antiga · CLA=Antiguitat Clàssica
-**Races**: MED=Mediterrani · AFR=Africà · IND=Indoeuropeu · ORI=Orient Pròxim
+**Races**: MED=Mediterrani · AFR=Africà · IND=Indoeuropeu · ORI=Orient Pròxim · ASI=Asiàtic Oriental
 **Gènere**: M=Mascle adult · F=Femella adulta · C=Infant (neutre)
 
 ---
@@ -53,6 +55,13 @@ prehistoric male character, Northern European features, fair skin, light brown h
 **PRE-ORI-M** · Ref: PRE-MED-M
 ```
 prehistoric male character, Near Eastern features, tan skin, dark straight hair, dark eyes, different face from reference, same chibi cartoon art style as reference, rough animal fur tunic, wooden spear, barefoot, bone bracelet, full body standing pose, white background
+```
+
+---
+
+**PRE-ASI-M** · Ref: PRE-MED-M
+```
+prehistoric male character, East Asian features, light yellow skin, black straight hair, dark eyes, different face from reference, same chibi cartoon art style as reference, rough animal fur tunic, wooden spear, barefoot, bone necklace, full body standing pose, white background
 ```
 
 ---
@@ -87,6 +96,13 @@ prehistoric female character, Near Eastern features, tan skin, dark straight hai
 
 ---
 
+**PRE-ASI-F** · Ref: PRE-ASI-M
+```
+prehistoric female character, East Asian features, light yellow skin, black straight hair, dark eyes, female face different from reference male, same chibi cartoon art style as reference, rough animal fur dress, woven basket, barefoot, full body standing pose, white background
+```
+
+---
+
 ### Infants
 
 **PRE-MED-C** · Ref: PRE-MED-M
@@ -113,6 +129,13 @@ prehistoric child character, Northern European features, fair skin, light hair, 
 **PRE-ORI-C** · Ref: PRE-ORI-M
 ```
 prehistoric child character, Near Eastern features, tan skin, dark hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, small animal fur tunic, holding a small stone, barefoot, curious happy expression, full body standing pose, white background
+```
+
+---
+
+**PRE-ASI-C** · Ref: PRE-ASI-M
+```
+prehistoric child character, East Asian features, light yellow skin, black straight hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, small animal fur tunic, holding a stone, barefoot, curious happy expression, full body standing pose, white background
 ```
 
 ---
@@ -149,6 +172,13 @@ Neolithic male character, Near Eastern features, tan skin, dark straight hair, d
 
 ---
 
+**NEO-ASI-M** · Ref: PRE-ASI-M
+```
+Neolithic male character, East Asian features, light yellow skin, black straight hair, dark eyes, same chibi cartoon art style as reference, simple woven linen tunic with belt, holding a clay pot, leather sandals, full body standing pose, white background
+```
+
+---
+
 ### Femelles adultes
 
 **NEO-MED-F** · Ref: NEO-MED-M
@@ -179,6 +209,13 @@ Neolithic female character, Near Eastern features, tan skin, dark straight hair,
 
 ---
 
+**NEO-ASI-F** · Ref: NEO-ASI-M
+```
+Neolithic female character, East Asian features, light yellow skin, black straight hair, dark eyes, female face different from reference male, same chibi cartoon art style as reference, woven linen dress, clay pot on hip, leather sandals, full body standing pose, white background
+```
+
+---
+
 ### Infants
 
 **NEO-MED-C** · Ref: NEO-MED-M
@@ -205,6 +242,13 @@ Neolithic child character, Northern European features, fair skin, light hair, bl
 **NEO-ORI-C** · Ref: NEO-ORI-M
 ```
 Neolithic child character, Near Eastern features, tan skin, dark hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, simple linen tunic, holding a small clay pot, barefoot, happy expression, full body standing pose, white background
+```
+
+---
+
+**NEO-ASI-C** · Ref: NEO-ASI-M
+```
+Neolithic child character, East Asian features, light yellow skin, black straight hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, simple linen tunic, holding a small clay figure, barefoot, happy expression, full body standing pose, white background
 ```
 
 ---
@@ -241,6 +285,13 @@ Ancient Age male character, Near Eastern features, tan skin, dark straight hair,
 
 ---
 
+**ANT-ASI-M** · Ref: NEO-ASI-M
+```
+Ancient Age male character, East Asian features, light yellow skin, black straight hair, dark eyes, same chibi cartoon art style as reference, linen tunic with leather belt, leather sandals, holding a writing tablet, full body standing pose, white background
+```
+
+---
+
 ### Femelles adultes
 
 **ANT-MED-F** · Ref: ANT-MED-M
@@ -271,6 +322,13 @@ Ancient Age female character, Near Eastern features, tan skin, dark straight hai
 
 ---
 
+**ANT-ASI-F** · Ref: ANT-ASI-M
+```
+Ancient Age female character, East Asian features, light yellow skin, black straight hair, dark eyes, female face different from reference male, same chibi cartoon art style as reference, draped linen dress with belt, leather sandals, holding an oil lamp, full body standing pose, white background
+```
+
+---
+
 ### Infants
 
 **ANT-MED-C** · Ref: ANT-MED-M
@@ -297,6 +355,13 @@ Ancient Age child character, Northern European features, fair skin, light hair, 
 **ANT-ORI-C** · Ref: ANT-ORI-M
 ```
 Ancient Age child character, Near Eastern features, tan skin, dark hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, short linen tunic, small leather sandals, holding a small clay tablet, happy expression, full body standing pose, white background
+```
+
+---
+
+**ANT-ASI-C** · Ref: ANT-ASI-M
+```
+Ancient Age child character, East Asian features, light yellow skin, black straight hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, short linen tunic, small leather sandals, holding a wax tablet, happy expression, full body standing pose, white background
 ```
 
 ---
@@ -333,6 +398,13 @@ Classical Antiquity male character, Near Eastern features, tan skin, dark straig
 
 ---
 
+**CLA-ASI-M** · Ref: ANT-ASI-M
+```
+Classical Antiquity male character, East Asian features, light yellow skin, black straight hair, dark eyes, same chibi cartoon art style as reference, white toga with colored border, leather sandals, holding a scroll, full body standing pose, white background
+```
+
+---
+
 ### Femelles adultes
 
 **CLA-MED-F** · Ref: CLA-MED-M
@@ -359,6 +431,13 @@ Classical Antiquity female character, Northern European features, fair skin, lig
 **CLA-ORI-F** · Ref: CLA-ORI-M
 ```
 Classical Antiquity female character, Near Eastern features, tan skin, dark straight hair, dark eyes, female face different from reference male, same chibi cartoon art style as reference, flowing stola dress, leather sandals, holding a scroll, full body standing pose, white background
+```
+
+---
+
+**CLA-ASI-F** · Ref: CLA-ASI-M
+```
+Classical Antiquity female character, East Asian features, light yellow skin, black straight hair, dark eyes, female face different from reference male, same chibi cartoon art style as reference, flowing stola dress, leather sandals, holding a scroll, full body standing pose, white background
 ```
 
 ---
@@ -393,13 +472,20 @@ Classical Antiquity child character, Near Eastern features, tan skin, dark hair,
 
 ---
 
+**CLA-ASI-C** · Ref: CLA-ASI-M
+```
+Classical Antiquity child character, East Asian features, light yellow skin, black straight hair, dark eyes, younger smaller child face, same chibi cartoon art style as reference, short toga, small leather sandals, holding a small scroll, happy expression, full body standing pose, white background
+```
+
+---
+
 ## Resum
 
-| | MED | AFR | IND | ORI |
-|---|---|---|---|---|
-| **PRE** M/F/C | ✓/·/· | ·/·/· | ·/·/· | ·/·/· |
-| **NEO** M/F/C | ·/·/· | ·/·/· | ·/·/· | ·/·/· |
-| **ANT** M/F/C | ·/·/· | ·/·/· | ·/·/· | ·/·/· |
-| **CLA** M/F/C | ·/·/· | ·/·/· | ·/·/· | ·/·/· |
+| | MED | AFR | IND | ORI | ASI |
+|---|---|---|---|---|---|
+| **PRE** M/F/C | ✓/·/· | ·/·/· | ·/·/· | ·/·/· | ·/·/· |
+| **NEO** M/F/C | ·/·/· | ·/·/· | ·/·/· | ·/·/· | ·/·/· |
+| **ANT** M/F/C | ·/·/· | ·/·/· | ·/·/· | ·/·/· | ·/·/· |
+| **CLA** M/F/C | ·/·/· | ·/·/· | ·/·/· | ·/·/· | ·/·/· |
 
-**Total: 48 personatges** · Marca ✓ quan cada un estigui generat i aprovat.
+**Total: 60 personatges** · Marca ✓ quan cada un estigui generat i aprovat.
