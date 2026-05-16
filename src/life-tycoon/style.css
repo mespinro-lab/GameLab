@@ -1931,10 +1931,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   text-align: center;
 }
 
-/* Taulell hexagonal flotant: centrat, 2/3 ample, meitat d'alt */
+/* Taulell hexagonal flotant: centrat, 2/3 ample */
 #char-dashboard {
   flex: 0 0 auto;
-  height: calc((100dvh / 3 - 44px) / 2);
+  height: calc(100dvh / 3 - 44px);
   width: 66.67%;
   margin: 3px auto 0;
   background: linear-gradient(180deg, rgba(48, 30, 10, 0.97) 0%, rgba(36, 22, 7, 0.97) 100%);
@@ -2030,6 +2030,12 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   z-index: 1;
 }
 
+@keyframes zone-pulse {
+  0%   { transform: translate(-50%, -50%) scale(1); }
+  50%  { transform: translate(-50%, -50%) scale(1.1); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
 /* Nodes de zona — cercles grans amb brillantor, sense rectangle */
 .zone-node {
   position: absolute;
@@ -2045,9 +2051,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   cursor: pointer;
   transform: translate(-50%, -50%);
   padding: 0;
-  transition: filter 0.15s;
 }
-.zone-node:active { filter: brightness(1.25); }
+.zone-node-pulse {
+  animation: zone-pulse 0.35s ease-in-out;
+  pointer-events: none;
+}
 .zone-node-img {
   width: 110px;
   height: 110px;

@@ -1053,7 +1053,13 @@ function renderZoneNodes() {
            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
       <div class="zone-node-icon" style="display:none">${zone.icon}</div>
       <span class="zone-node-name">${zone.name}</span>`;
-    node.addEventListener('click', () => openZoneSheet(zone.id));
+    node.addEventListener('click', () => {
+      node.classList.add('zone-node-pulse');
+      node.addEventListener('animationend', () => {
+        node.classList.remove('zone-node-pulse');
+        openZoneSheet(zone.id);
+      }, { once: true });
+    });
     mapZone.appendChild(node);
   });
 }
