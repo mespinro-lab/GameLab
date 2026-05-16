@@ -2163,8 +2163,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 /* ── Overlay d'acció: cobreix la zona del mapa ── */
 #overlay-action {
   position: absolute;
-  top: calc(100dvh / 3);
-  bottom: calc(100dvh / 6);
+  top: calc(100dvh / 3 + 8px);
+  bottom: calc(100dvh / 6 + 8px);
   left: var(--panel-side);
   right: var(--panel-side);
   z-index: 20;
