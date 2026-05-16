@@ -2018,10 +2018,27 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   flex: 0 0 auto;
   padding: 0.18rem 0.45rem;
   border-top: 1px solid rgba(100, 65, 25, 0.4);
-  min-height: 22px;
+  min-height: 26px;
   max-height: 36px;
   overflow: hidden;
-  gap: 0.22rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.know-group {
+  display: flex;
+  gap: 0.2rem;
+  align-items: center;
+}
+.trait-pill.icon-only,
+.skill-pill.icon-only {
+  background: none;
+  border: none;
+  padding: 0 1px;
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+  color: inherit;
 }
 
 /* ── Zona del mapa (centre, espai restant) ── */
@@ -2045,13 +2062,15 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   background: transparent;
   border: none;
   cursor: pointer;
-  transform: translate(-50%, -50%);
+  margin-left: -65px;
+  margin-top: -65px;
   padding: 0;
   touch-action: none;
+  transform-origin: center center;
   transition: transform 0.1s ease-out;
 }
 .zone-node-pressed {
-  transform: translate(-50%, -50%) scale(1.1);
+  transform: scale(1.1);
 }
 .zone-node-img {
   width: 110px;

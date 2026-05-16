@@ -406,8 +406,8 @@ function applyFx(fx) {
 
 // ── Floating numbers ──────────────────────────────────────────────────────────
 function showFxFloaters(fx) {
-  const fxMap  = { health: 'chip-health', food: 'chip-food', happiness: 'chip-happiness', familyReputation: 'chip-familyReputation' };
-  const gainMap = { physical: 'chip-stat-physical', intelligence: 'chip-stat-intelligence', social: 'chip-stat-social' };
+  const fxMap  = { health: 'hex-health', food: 'panel-food-val', happiness: 'hex-happiness', familyReputation: 'hex-reputation' };
+  const gainMap = { physical: 'hex-physical', intelligence: 'hex-intelligence', social: 'hex-social' };
   for (const [k, v] of Object.entries(fx)) {
     if (v === 0) continue;
     const anchorId = k.startsWith('_gain_') ? gainMap[k.slice(6)] : fxMap[k];
@@ -1053,16 +1053,22 @@ function renderZoneNodes() {
            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
       <div class="zone-node-icon" style="display:none">${zone.icon}</div>
       <span class="zone-node-name">${zone.name}</span>`;
-    node.addEventListener('pointerdown', () => {
+    node.addEventListener('touchstart', (e) => {
+      e.preventDefault();
       node.classList.add('zone-node-pressed');
-    });
-    node.addEventListener('pointerup', () => {
-      if (!node.classList.contains('zone-node-pressed')) return;
+    }, { passive: false });
+    node.addEventListener('touchend', (e) => {
+      e.preventDefault();
       node.classList.remove('zone-node-pressed');
       openZoneSheet(zone.id);
     });
-    node.addEventListener('pointercancel', () => node.classList.remove('zone-node-pressed'));
-    node.addEventListener('pointerleave', () => node.classList.remove('zone-node-pressed'));
+    node.addEventListener('touchcancel', () => node.classList.remove('zone-node-pressed'));
+    node.addEventListener('mousedown', () => node.classList.add('zone-node-pressed'));
+    node.addEventListener('mouseup', () => {
+      node.classList.remove('zone-node-pressed');
+      openZoneSheet(zone.id);
+    });
+    node.addEventListener('mouseleave', () => node.classList.remove('zone-node-pressed'));
     mapZone.appendChild(node);
   });
 }
@@ -1227,12 +1233,20 @@ function showPillDetail(icon, name, desc, bonusLines, quote, quoteAttribution) {
 function renderTraits() {
   const row = el('knowledge-row');
   row.innerHTML = '';
+
+  const leftGroup = document.createElement('div');
+  leftGroup.className = 'know-group know-left';
+
+  const rightGroup = document.createElement('div');
+  rightGroup.className = 'know-group know-right';
+
   for (const tId of S.char.traitIds) {
     const t = getTrait(tId);
     if (!t) continue;
-    const pill = document.createElement('div');
-    pill.className = 'trait-pill';
-    pill.textContent = t.icon + ' ' + t.name;
+    const pill = document.createElement('button');
+    pill.className = 'trait-pill icon-only';
+    pill.textContent = t.icon;
+    pill.title = t.name;
     pill.onclick = () => {
       const lines = [];
       if (t.effect?.stat)            lines.push(`${t.effect.stat} +${t.effect.value}`);
@@ -1241,14 +1255,16 @@ function renderTraits() {
       if (t.effect?.maxHealth)       lines.push(`Salut màxima +${t.effect.maxHealth}`);
       showPillDetail(t.icon, t.name, t.desc, lines);
     };
-    row.appendChild(pill);
+    leftGroup.appendChild(pill);
   }
+
   for (const sId of S.char.learnedSkillIds) {
     const s = getSkillGlobal(sId);
     if (!s) continue;
-    const pill = document.createElement('div');
-    pill.className = 'skill-pill';
-    pill.textContent = s.icon + ' ' + s.name;
+    const pill = document.createElement('button');
+    pill.className = 'skill-pill icon-only';
+    pill.textContent = s.icon;
+    pill.title = s.name;
     pill.onclick = () => {
       const skillEra = GAME_DATA.eras.find(e => e.destreses?.some(d => d.id === sId));
       const lines = s.transversal === false
@@ -1256,8 +1272,11 @@ function renderTraits() {
         : s.transversal ? ['Habilitat transversal · Útil a totes les eres'] : [];
       showPillDetail(s.icon, s.name, s.effectDesc, lines, s.quote, s.quoteAttribution);
     };
-    row.appendChild(pill);
+    rightGroup.appendChild(pill);
   }
+
+  row.appendChild(leftGroup);
+  row.appendChild(rightGroup);
 }
 
 function renderPartner() {
