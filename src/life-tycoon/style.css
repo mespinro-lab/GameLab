@@ -405,27 +405,23 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 0.5rem 0.7rem;
+  padding: 0.7rem;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
+  min-height: 80px;
 }
 .proj-card:active { background: var(--surface2); }
 .proj-card.locked { opacity: 0.4; cursor: not-allowed; }
 .proj-card-disabled { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
-.proj-card-top {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
 .proj-blocked-reason { font-size: 0.64rem; color: #c0392b; line-height: 1.3; }
-.proj-icon { font-size: 1.2rem; line-height: 1; flex-shrink: 0; }
+.proj-icon { font-size: 1.4rem; line-height: 1; }
 .proj-name { font-weight: 700; font-size: 0.82rem; color: var(--gold); }
-.proj-desc { font-size: 0.6rem; color: var(--text-dim); line-height: 1.3; }
+.proj-desc { font-size: 0.62rem; color: var(--text-dim); line-height: 1.3; }
 .proj-req  { font-size: 0.6rem; color: #e74c3c; }
-.proj-benefits { font-size: 0.72rem; color: var(--text); letter-spacing: 0.02em; }
+.proj-stat-gain { font-size: 0.6rem; color: var(--text-dim); margin-top: 2px; letter-spacing: 0.02em; }
 .impact-tag.risk { font-size: 0.65rem; color: #e67e22; }
 .proj-mastery-wrap { display: flex; flex-direction: column; gap: 2px; }
 .proj-mastery { font-size: 0.6rem; letter-spacing: 0.03em; }
@@ -502,6 +498,9 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 .preview-row {
   display: flex;
@@ -2289,11 +2288,6 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 .char-card-know {
   font-size: 0.78rem;
   color: var(--text);
-}
-/* Zona llar: imatge interior més petita */
-.zone-node[data-zone="home"] .zone-node-img {
-  width: 80px;
-  height: 80px;
 }
 .char-card-close {
   position: absolute;

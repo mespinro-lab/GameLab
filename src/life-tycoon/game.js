@@ -1124,11 +1124,11 @@ function renderCharCard() {
     <div class="char-card-fam">👫 ${partnerText}</div>
     <div class="char-card-fam">👶 ${childText}</div>`;
 
-  const knowledgeHtml = S.char.knowledgeIds.map(kId => {
-    const k = getKnowledge(kId);
-    return k ? `<div class="char-card-know">${k.icon || '📖'} ${k.name}</div>` : '';
-  }).join('') || '<div class="char-card-know" style="color:var(--text-dim)">Cap coneixement adquirit</div>';
-  el('char-card-knowledge').innerHTML = `<div class="char-card-label">Coneixements</div>${knowledgeHtml}`;
+  const learnedHtml = (S.char.learnedSkillIds || []).map(sId => {
+    const s = getSkillGlobal(sId);
+    return s ? `<div class="char-card-know">${s.icon || '📖'} ${s.name}</div>` : '';
+  }).join('') || '<div class="char-card-know" style="color:var(--text-dim)">Cap aprenentatge adquirit</div>';
+  el('char-card-knowledge').innerHTML = `<div class="char-card-label">Aprenentatges</div>${learnedHtml}`;
 
   show('overlay-char-card');
 }
@@ -1440,40 +1440,32 @@ function openZoneSheet(zoneId) {
   grid.innerHTML = '';
 
   const statIcons = { physical: '💪', intelligence: '🧠', social: '👥' };
-  const outIcons  = { food: '🍖', health: '❤️', happiness: '😊', familyReputation: '🏛️' };
   for (const proj of currentEra().actions.filter(p => p.zone === zoneId && isProjectUnlocked(p))) {
     const blocked = blockedReason(proj);
     const card = document.createElement('div');
     card.className = 'proj-card' + (blocked ? ' proj-card-disabled' : '');
-    const riskHtml = proj.healthRisk > 0 ? `<span class="impact-tag risk">⚠️</span>` : '';
-    const outParts = Object.entries(proj.outputs || {})
-      .filter(([k, v]) => v && outIcons[k])
-      .map(([k, v]) => `${outIcons[k]}${v > 0 ? '+' : ''}${v}`);
-    const gainParts = Object.entries(proj.statGain || {})
-      .filter(([, v]) => v)
-      .map(([s, v]) => `${statIcons[s] || s}+${v}`);
-    const benefitsHtml = (outParts.length + gainParts.length) > 0
-      ? `<span class="proj-benefits">${[...outParts, ...gainParts].join(' ')}${riskHtml}</span>`
-      : riskHtml ? `<span class="proj-benefits">${riskHtml}</span>` : '';
+    const riskHtml = proj.healthRisk > 0 ? `<div class="proj-impact"><span class="impact-tag risk">⚠️ Risc</span></div>` : '';
+    const gainParts = Object.entries(proj.statGain || {}).map(([s, v]) => `${statIcons[s] || s}+${v}`);
+    const gainHtml  = gainParts.length > 0 ? `<span class="proj-stat-gain">${gainParts.join(' ')}</span>` : '';
     const mLvl  = getMasteryLevel(proj.id);
     const mUses = getMasteryUses(proj.id);
     const nextT = MASTERY_THRESHOLDS[mLvl];
     const stars  = mLvl > 0 ? '★'.repeat(mLvl) : '☆';
     const pct    = mLvl > 0 ? ` +${Math.round(mLvl * MASTERY_BONUS_LEVEL * 100)}%` : '';
-    const prog   = nextT ? ` ${mUses}/${nextT}` : ' màx';
+    const prog   = nextT ? ` · ${mUses}/${nextT}` : ' · màx';
     const barPct = nextT ? Math.round((mUses / nextT) * 100) : 100;
     const barHtml = nextT
       ? `<div class="mastery-bar"><div class="mastery-bar-fill mastery-fill-${mLvl}" style="width:${barPct}%"></div></div>`
       : '';
     const masteryHtml = `<div class="proj-mastery-wrap"><span class="proj-mastery mastery-${mLvl}">${stars}${pct}${prog}</span>${barHtml}</div>`;
+    const quoteHtml = proj.quote
+      ? `<div class="proj-quote-wrap"><span class="proj-quote">"${proj.quote}"</span>${proj.quoteAttribution ? `<span class="proj-attribution"> ${proj.quoteAttribution}</span>` : ''}</div>`
+      : '';
     card.innerHTML = `
-      <div class="proj-card-top">
-        <span class="proj-icon">${proj.icon}</span>
-        <span class="proj-name">${proj.name}</span>
-      </div>
-      ${blocked
-        ? `<span class="proj-desc">${proj.description}</span><span class="proj-blocked-reason">${blocked}</span>`
-        : `${benefitsHtml}${masteryHtml}`}
+      <span class="proj-icon">${proj.icon}</span>
+      <span class="proj-name">${proj.name}</span>
+      <span class="proj-desc">${proj.description}</span>
+      ${blocked ? `<span class="proj-blocked-reason">${blocked}</span>` : `${quoteHtml}${gainHtml}${masteryHtml}${riskHtml}`}
     `;
     if (!blocked) {
       card.addEventListener('click', () => {
@@ -2076,10 +2068,10 @@ function renderResultPane() {
     const canContinue = S.timeLeft >= minCost;
     if (S.pendingBirths.length > 0) {
       S.phase = 'birth'; renderAll();
-    } else if (canContinue && S.pendingDiscoveries.length > 0) {
-      S.phase = 'discovery'; renderAll();
     } else if (canContinue && S.pendingEvent) {
       S.phase = 'event'; renderAll();
+    } else if (canContinue && S.pendingDiscoveries.length > 0) {
+      S.phase = 'discovery'; renderAll();
     } else if (canContinue) {
       S.phase = 'select'; renderAll();
     } else {
