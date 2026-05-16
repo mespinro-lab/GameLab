@@ -1000,25 +1000,29 @@ const ERA_CODE = { prehistoria: 'PRE', neolitic: 'NEO', edat_antiga: 'ANT', anti
 
 const ZONE_POS = {
   // Era 1 — Prehistoria
-  wild:           { left: 28, top: 33 },
-  town:           { left: 68, top: 28 },
-  forest:         { left: 24, top: 70 },
-  home:           { left: 72, top: 68 },
+  // bosc → dalt-esquerra (posició antiga del camp, més esq. i alt)
+  forest:         { left: 20, top: 22 },
+  // camp → dalt-dreta (posició antiga del poblat, més dret i baix)
+  wild:           { left: 80, top: 32 },
+  // llar → baix-dreta
+  home:           { left: 76, top: 74 },
+  // poblat → baix-esquerra
+  town:           { left: 23, top: 76 },
   // Era 2 — Neolitic
-  fields:         { left: 28, top: 30 },
-  workshop:       { left: 72, top: 28 },
-  market:         { left: 28, top: 68 },
-  village:        { left: 72, top: 70 },
+  fields:         { left: 20, top: 22 },
+  workshop:       { left: 80, top: 30 },
+  market:         { left: 22, top: 76 },
+  village:        { left: 78, top: 74 },
   // Era 3 — Edat Antiga
-  agora:          { left: 50, top: 24 },
-  temple_quarter: { left: 76, top: 46 },
-  forge_district: { left: 24, top: 66 },
-  domus:          { left: 58, top: 74 },
+  agora:          { left: 50, top: 18 },
+  temple_quarter: { left: 80, top: 44 },
+  forge_district: { left: 20, top: 68 },
+  domus:          { left: 60, top: 78 },
   // Era 4 — Antiguitat Classica
-  forum:          { left: 50, top: 24 },
-  thermae:        { left: 76, top: 46 },
-  amphitheatrum:  { left: 24, top: 66 },
-  villa:          { left: 60, top: 74 },
+  forum:          { left: 50, top: 18 },
+  thermae:        { left: 80, top: 44 },
+  amphitheatrum:  { left: 20, top: 68 },
+  villa:          { left: 62, top: 78 },
 };
 
 function renderZoneNodes() {
