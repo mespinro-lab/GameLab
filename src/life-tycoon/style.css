@@ -1931,14 +1931,15 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   text-align: center;
 }
 
-/* Taulell hexagonal flotant: té marges laterals, el mapa es veu als costats */
+/* Taulell hexagonal flotant: centrat, 2/3 ample, meitat d'alt */
 #char-dashboard {
-  flex: 1;
-  margin: 0 var(--panel-side);
+  flex: 0 0 auto;
+  height: calc((100dvh / 3 - 44px) / 2);
+  width: 66.67%;
+  margin: 3px auto 0;
   background: linear-gradient(180deg, rgba(48, 30, 10, 0.97) 0%, rgba(36, 22, 7, 0.97) 100%);
   border: 2px solid rgba(160, 110, 55, 0.55);
-  border-top: none;
-  border-radius: 0 0 22px 22px;
+  border-radius: 22px;
   box-shadow: 0 10px 36px rgba(0,0,0,0.8), inset 0 -1px 0 rgba(255,190,80,0.07);
   display: flex;
   flex-direction: column;
