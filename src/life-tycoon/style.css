@@ -2016,7 +2016,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 /* Override flex: 1 de l'estil antic — knowledge-row és contingut fix */
 #knowledge-row {
   flex: 0 0 auto;
-  padding: 0.18rem 0.45rem;
+  padding: 0.18rem 1.4rem;
   border-top: 1px solid rgba(100, 65, 25, 0.4);
   min-height: 26px;
   max-height: 36px;
@@ -2134,11 +2134,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   flex-shrink: 0;
 }
 .resource-icon {
-  width: 15px;
-  height: 15px;
+  width: 20px;
+  height: 20px;
   object-fit: contain;
-  filter: invert(0.85) sepia(1) hue-rotate(330deg) saturate(1.8);
-  opacity: 0.9;
+  filter: brightness(0) invert(1);
+  opacity: 1;
 }
 #panel-food-fc {
   color: var(--text-dim);
@@ -2226,7 +2226,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 .char-card-body {
   display: flex;
   gap: 0.75rem;
-  align-items: flex-start;
+  align-items: center;
 }
 .char-card-portrait {
   flex: 0 0 auto;
