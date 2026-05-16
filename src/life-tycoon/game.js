@@ -1080,11 +1080,18 @@ function bustImgSrc() {
   return `../../design/life-tycoon/characters/${eraCode}-${race}-${gender}-BUST.png`;
 }
 
+function fullBodyImgSrc() {
+  const eraCode = ERA_CODE[S.currentEraId] || 'PRE';
+  const race    = S.char.race   || 'MED';
+  const gender  = S.char.gender || 'M';
+  return `../../design/life-tycoon/characters/${eraCode}-${race}-${gender}.png`;
+}
+
 function renderCharCard() {
-  el('char-card-img').src = bustImgSrc();
+  el('char-card-img').src = fullBodyImgSrc();
   el('char-card-name').textContent = `${S.char.name} ${S.dynastyName}`;
   const genderLabel = S.char.gender === 'M' ? 'Home' : 'Dona';
-  el('char-card-sub').textContent = `${S.char.age} anys · ${genderLabel} · Generació ${S.generation}`;
+  el('char-card-sub').textContent = `${S.char.age} anys · ${genderLabel} · Gen. ${S.generation}`;
 
   const traitsHtml = S.char.traitIds.map(id => {
     const t = (GAME_DATA.traits || []).find(t => t.id === id);
@@ -1093,14 +1100,14 @@ function renderCharCard() {
   el('char-card-traits').innerHTML = `<div class="char-card-label">Trets innats</div>${traitsHtml}`;
 
   const stats = [
-    { icon: '💪', label: 'Força física', val: S.char.physical },
-    { icon: '🧠', label: 'Inteligència', val: S.char.intelligence },
+    { icon: '💪', label: 'Força', val: S.char.physical },
+    { icon: '🧠', label: 'Intel·ligència', val: S.char.intelligence },
     { icon: '🗣️', label: 'Social', val: S.char.social },
   ];
   el('char-card-stats').innerHTML = `<div class="char-card-label">Característiques</div>` +
     stats.map(s => `<div class="char-card-stat"><span>${s.icon} ${s.label}</span><strong>${s.val}</strong></div>`).join('');
 
-  const partnerText = S.char.partner ? `Parella: ${S.char.partner.name}` : 'Sense parella';
+  const partnerText = S.char.partner ? S.char.partner.name : 'Sense parella';
   const grown = S.char.children.filter(c => c.grown).length;
   const childText = S.char.children.length > 0
     ? `${S.char.children.length} fill${S.char.children.length > 1 ? 's' : ''} (${grown} crescut${grown !== 1 ? 's' : ''})`
