@@ -1077,7 +1077,7 @@ function bustImgSrc() {
   const eraCode = ERA_CODE[S.currentEraId] || 'PRE';
   const race    = S.char.race   || 'MED';
   const gender  = S.char.gender || 'M';
-  return `../../design/life-tycoon/characters/${eraCode}-${race}-${gender}.png`;
+  return `../../design/life-tycoon/characters/${eraCode}-${race}-${gender}-BUST.png`;
 }
 
 function renderCharCard() {
