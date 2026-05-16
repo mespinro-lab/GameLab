@@ -12,384 +12,428 @@
 <body>
   <div id="app">
 
-    <!-- HEADER -->
-    <div id="header">
-      <div id="hdr-left">
-        <span id="hdr-name">Brac</span>
-        <span id="hdr-age">· 15 anys</span>
-      </div>
-      <div id="hdr-center">
-        <span id="hdr-gen">Gen. 1</span>
-        <span id="hdr-cycle">Cicle <span id="hdr-c">1</span></span>
-        <span id="hdr-era-cycle" title="Cicle global de l'era">Era <span id="hdr-ec">0</span></span>
-      </div>
-      <button id="btn-milestones">🏅</button>
-      <button id="btn-save">💾</button>
-    </div>
+    <!-- MAP BACKGROUND -->
+    <div id="map-bg"></div>
 
-    <!-- STATS: recursos vitals + habilitats — generats dinàmicament per JS des de GAME_DATA -->
-    <div id="stats-vital"></div>
-    <div id="stats-resources"></div>
-    <div id="stats-skills"></div>
-
-    <!-- TRETS INNATS + BOTÓ TECNOLOGIA (placement definitiu pendent de disseny) -->
-    <div id="traits-tech-row">
-      <div id="knowledge-row"></div>
-      <button id="btn-tech" class="tech-btn" title="Tecnologia del Llinatge">📜</button>
-    </div>
-
-    <!-- PARTNER INFO -->
-    <div id="partner-row" class="hidden">
-      <span id="partner-label"></span>
-    </div>
-
-    <!-- ACTION PANEL -->
-    <div id="action-panel">
-
-      <!-- PHASE: select project -->
-      <div id="pane-select" class="pane">
-        <p id="select-header"></p>
-        <div id="zone-cards"></div>
-        <button id="btn-rest-cycle" class="rest-btn hidden">Descansar / Acaba el cicle →</button>
-      </div>
-
-      <!-- PHASE: executing -->
-      <div id="pane-executing" class="pane hidden">
-        <div id="exec-project-label"></div>
-        <div id="exec-progress-wrap"><div id="exec-progress-fill"></div></div>
-        <p id="exec-status-text">Executant...</p>
-      </div>
-
-      <!-- PHASE: intensity -->
-      <div id="pane-sliders" class="pane hidden">
-        <div id="slider-project-header">
-          <button id="btn-back-sliders" style="background:none;border:none;font-size:1rem;padding:0;color:var(--text-dim)">← Enrere</button>
-          <span id="sl-proj-icon"></span>
-          <span id="sl-proj-name"></span>
+    <!-- TOP PANEL: Character dashboard (2/6 screen) -->
+    <div id="panel-top">
+      <div id="panel-top-bar">
+        <button id="btn-lineage-toggle">⚔ <span id="hdr-name">—</span></button>
+        <div id="panel-top-center">
+          <span id="hdr-gen">Gen. 1</span>
+          · Cicle <span id="hdr-c">1</span>
         </div>
-        <div id="intensity-selector">
-          <button class="int-btn" data-int="1">🌱 Suau</button>
-          <button class="int-btn active" data-int="2">⚡ Normal</button>
-          <button class="int-btn" data-int="3">🔥 Intens</button>
-        </div>
-        <div id="impact-preview"></div>
-        <div id="slider-footer">
-          <button id="btn-execute">Executar →</button>
-        </div>
+        <button id="btn-open-menu">☰</button>
       </div>
-
-      <!-- PHASE: result -->
-      <div id="pane-result" class="pane hidden">
-        <div id="result-proj-label"></div>
-        <div id="result-score-wrap"><div id="result-score-fill"></div></div>
-        <p id="result-narrative"></p>
-        <div id="result-fx-list"></div>
-        <div id="result-discoveries"></div>
-        <div id="result-auto-bar"><div id="result-auto-fill"></div></div>
-      </div>
-
-      <!-- PHASE: discovery -->
-      <div id="pane-discovery" class="pane hidden">
-        <div class="disc-card">
-          <div id="disc-header">
-            <span id="disc-icon"></span>
-            <span id="disc-name"></span>
+      <div id="char-dashboard">
+        <div id="char-hex-grid">
+          <div class="hex-stat hex-top">
+            <img class="hex-icon" src="../../design/life-tycoon/icons/ICON-SALUT.svg" alt="">
+            <span id="hex-health">—</span>
           </div>
-          <p class="disc-badge" id="disc-badge">✨ Nou coneixement descobert</p>
-          <p id="disc-desc"></p>
-          <div id="disc-quote-wrap" class="item-quote-wrap hidden">
-            <blockquote id="disc-quote"></blockquote>
-            <cite id="disc-attribution"></cite>
+          <div class="hex-stat hex-mid-l">
+            <img class="hex-icon" src="../../design/life-tycoon/icons/ICON-FELICITAT.svg" alt="">
+            <span id="hex-happiness">—</span>
           </div>
-          <div id="disc-effects"></div>
-          <button id="btn-dismiss-discovery">Entès →</button>
+          <div id="char-bust-wrap">
+            <img id="char-bust-img" src="../../design/life-tycoon/characters/PRE-MED-M.png" alt="">
+          </div>
+          <div class="hex-stat hex-mid-r">
+            <img class="hex-icon" src="../../design/life-tycoon/icons/ICON-REPUTACIO.svg" alt="">
+            <span id="hex-reputation">—</span>
+          </div>
+          <div class="hex-stat hex-low-l">
+            <img class="hex-icon" src="../../design/life-tycoon/icons/ICON-FORCA.svg" alt="">
+            <span id="hex-physical">—</span>
+          </div>
+          <div class="hex-stat hex-low-r">
+            <img class="hex-icon" src="../../design/life-tycoon/icons/ICON-SOCIAL.svg" alt="">
+            <span id="hex-social">—</span>
+          </div>
+          <div class="hex-stat hex-bot">
+            <img class="hex-icon" src="../../design/life-tycoon/icons/ICON-INTELIGENCIA.svg" alt="">
+            <span id="hex-intelligence">—</span>
+          </div>
         </div>
+        <div id="knowledge-row"></div>
       </div>
+    </div>
 
-      <!-- PHASE: event -->
-      <div id="pane-event" class="pane hidden">
-        <div id="ev-header">
-          <span id="ev-icon"></span>
-          <span id="ev-name"></span>
+    <!-- MAP ZONE: interactive map with zone nodes (3/6 screen) -->
+    <div id="map-zone">
+      <!-- Zone nodes rendered dynamically by JS -->
+    </div>
+
+    <!-- BOTTOM PANEL: resources + turn + log (1/6 screen) -->
+    <div id="panel-bottom">
+      <div id="panel-bottom-bar">
+        <span id="panel-turn-info">Cicle 1</span>
+        <div id="panel-food">
+          <img class="resource-icon" src="../../design/life-tycoon/icons/ICON-MENJAR.svg" alt="">
+          <span id="panel-food-val">—</span>
+          <small id="panel-food-fc"></small>
         </div>
-        <p id="ev-text"></p>
-        <div id="ev-choices"></div>
+        <button id="btn-rest-cycle" class="rest-btn hidden">→ Passar</button>
       </div>
-
-      <!-- PHASE: event result (brief) -->
-      <div id="pane-ev-result" class="pane hidden">
-        <div id="evr-icon"></div>
-        <p id="evr-text"></p>
-        <div id="evr-fx"></div>
-        <div id="evr-auto-bar"><div id="evr-auto-fill"></div></div>
-        <button id="btn-dismiss-ev-result" style="display:none">Continua →</button>
-      </div>
-
-      <!-- PHASE: birth -->
-      <div id="pane-birth" class="pane hidden">
-        <div class="birth-card">
-          <p class="birth-label">✨ Un nou membre del llinatge</p>
-          <div class="birth-avatar-wrap"><span id="birth-avatar"></span></div>
-          <h2 id="birth-name"></h2>
-          <p class="birth-virtue" id="birth-virtue"></p>
-          <div class="birth-stats-row" id="birth-stats"></div>
-          <div class="birth-traits-row" id="birth-traits"></div>
-          <button id="btn-dismiss-birth">Benvingut al món →</button>
-        </div>
-      </div>
-
-      <!-- PHASE: teach skill -->
-      <div id="pane-teach" class="pane hidden">
-        <div class="teach-header">
-          <button id="btn-back-teach">← Enrere</button>
-          <span>📖 Educar Fills</span>
-        </div>
-        <p id="teach-cost-label" class="teach-cost"></p>
-        <p class="teach-subtitle">Tria l'habilitat que vols transmetre:</p>
-        <div id="teach-skill-list"></div>
-        <div id="teach-child-section">
-          <p class="teach-subtitle">A quin fill?</p>
-          <div id="teach-child-list"></div>
-        </div>
-        <button id="btn-confirm-teach">Ensenyar →</button>
-      </div>
-
-    </div><!-- /#action-panel -->
-
-    <!-- SESSION LOG -->
-    <div id="session-log">
-      <div class="log-header">📋 Registre</div>
       <ul id="session-log-list"></ul>
     </div>
 
-  </div><!-- /#app -->
+    <!-- ACTION OVERLAY: non-select phases (intensity, result, birth, etc.) -->
+    <div id="overlay-action" class="hidden">
+      <div id="action-panel">
 
-  <!-- OVERLAY: Menu -->
-  <div id="overlay-menu" class="overlay">
-    <div class="menu-screen">
-      <div class="menu-hero">
-        <div class="game-logo" id="menu-era-icon">🦴</div>
-        <h1 class="game-title">Life Tycoon</h1>
-        <p class="game-sub">Construeix el millor llinatge de la història</p>
-        <div class="era-badge hidden" id="menu-era-badge">Prehistòria</div>
+        <!-- PHASE: intensity -->
+        <div id="pane-sliders" class="pane hidden">
+          <div id="slider-project-header">
+            <button id="btn-back-sliders" style="background:none;border:none;font-size:1rem;padding:0;color:var(--text-dim)">← Enrere</button>
+            <span id="sl-proj-icon"></span>
+            <span id="sl-proj-name"></span>
+          </div>
+          <div id="intensity-selector">
+            <button class="int-btn" data-int="1">🌱 Suau</button>
+            <button class="int-btn active" data-int="2">⚡ Normal</button>
+            <button class="int-btn" data-int="3">🔥 Intens</button>
+          </div>
+          <div id="impact-preview"></div>
+          <div id="slider-footer">
+            <button id="btn-execute">Executar →</button>
+          </div>
+        </div>
+
+        <!-- PHASE: executing -->
+        <div id="pane-executing" class="pane hidden">
+          <div id="exec-project-label"></div>
+          <div id="exec-progress-wrap"><div id="exec-progress-fill"></div></div>
+          <p id="exec-status-text">Executant...</p>
+        </div>
+
+        <!-- PHASE: result -->
+        <div id="pane-result" class="pane hidden">
+          <div id="result-proj-label"></div>
+          <div id="result-score-wrap"><div id="result-score-fill"></div></div>
+          <p id="result-narrative"></p>
+          <div id="result-fx-list"></div>
+          <div id="result-discoveries"></div>
+          <div id="result-auto-bar"><div id="result-auto-fill"></div></div>
+        </div>
+
+        <!-- PHASE: discovery -->
+        <div id="pane-discovery" class="pane hidden">
+          <div class="disc-card">
+            <div id="disc-header">
+              <span id="disc-icon"></span>
+              <span id="disc-name"></span>
+            </div>
+            <p class="disc-badge" id="disc-badge">✨ Nou coneixement descobert</p>
+            <p id="disc-desc"></p>
+            <div id="disc-quote-wrap" class="item-quote-wrap hidden">
+              <blockquote id="disc-quote"></blockquote>
+              <cite id="disc-attribution"></cite>
+            </div>
+            <div id="disc-effects"></div>
+            <button id="btn-dismiss-discovery">Entès →</button>
+          </div>
+        </div>
+
+        <!-- PHASE: event -->
+        <div id="pane-event" class="pane hidden">
+          <div id="ev-header">
+            <span id="ev-icon"></span>
+            <span id="ev-name"></span>
+          </div>
+          <p id="ev-text"></p>
+          <div id="ev-choices"></div>
+        </div>
+
+        <!-- PHASE: event result -->
+        <div id="pane-ev-result" class="pane hidden">
+          <div id="evr-icon"></div>
+          <p id="evr-text"></p>
+          <div id="evr-fx"></div>
+          <div id="evr-auto-bar"><div id="evr-auto-fill"></div></div>
+          <button id="btn-dismiss-ev-result" style="display:none">Continua →</button>
+        </div>
+
+        <!-- PHASE: birth -->
+        <div id="pane-birth" class="pane hidden">
+          <div class="birth-card">
+            <p class="birth-label">✨ Un nou membre del llinatge</p>
+            <div class="birth-avatar-wrap"><span id="birth-avatar"></span></div>
+            <h2 id="birth-name"></h2>
+            <p class="birth-virtue" id="birth-virtue"></p>
+            <div class="birth-stats-row" id="birth-stats"></div>
+            <div class="birth-traits-row" id="birth-traits"></div>
+            <button id="btn-dismiss-birth">Benvingut al món →</button>
+          </div>
+        </div>
+
+        <!-- PHASE: teach skill -->
+        <div id="pane-teach" class="pane hidden">
+          <div class="teach-header">
+            <button id="btn-back-teach">← Enrere</button>
+            <span>📖 Educar Fills</span>
+          </div>
+          <p id="teach-cost-label" class="teach-cost"></p>
+          <p class="teach-subtitle">Tria l'habilitat que vols transmetre:</p>
+          <div id="teach-skill-list"></div>
+          <div id="teach-child-section">
+            <p class="teach-subtitle">A quin fill?</p>
+            <div id="teach-child-list"></div>
+          </div>
+          <button id="btn-confirm-teach">Ensenyar →</button>
+        </div>
+
+      </div><!-- /#action-panel -->
+    </div><!-- /#overlay-action -->
+
+    <!-- COMPAT HIDDEN: elements needed by JS but not shown in new UI -->
+    <div id="compat-hidden" aria-hidden="true">
+      <div id="stats-vital"></div>
+      <div id="stats-resources"></div>
+      <div id="stats-skills"></div>
+      <div id="partner-row"><span id="partner-label"></span></div>
+      <span id="hdr-age"></span>
+      <span id="hdr-era-cycle"><span id="hdr-ec"></span></span>
+      <button id="btn-milestones">🏅</button>
+      <button id="btn-tech">📜</button>
+      <button id="btn-save">💾</button>
+      <!-- Select pane for JS compatibility -->
+      <div id="pane-select">
+        <p id="select-header"></p>
+        <div id="zone-cards"></div>
       </div>
-      <nav class="menu-nav">
-        <button id="btn-continue-game" class="menu-btn menu-btn-primary" disabled>
-          <span class="menu-btn-icon">▶</span><span>Continuar partida</span>
-        </button>
-        <button id="btn-new-game" class="menu-btn">
-          <span class="menu-btn-icon">✦</span><span>Nova partida</span>
-        </button>
-        <button id="btn-menu-badges" class="menu-btn">
-          <span class="menu-btn-icon">🏅</span><span>Fites</span>
-        </button>
-        <button id="btn-menu-shop" class="menu-btn">
-          <span class="menu-btn-icon">🛒</span><span>Botiga</span>
-        </button>
-        <button id="btn-history" class="menu-btn">
-          <span class="menu-btn-icon">📜</span><span>Historial de llinatges</span>
-        </button>
-        <button id="btn-menu-settings" class="menu-btn">
-          <span class="menu-btn-icon">⚙️</span><span>Opcions</span>
-        </button>
-      </nav>
+      <!-- Session log container compat -->
+      <div id="session-log"></div>
     </div>
-  </div>
 
-  <!-- OVERLAY: Succession -->
-  <div id="overlay-succession" class="overlay hidden">
-    <div class="overlay-card succ-card">
-      <div id="succ-death-msg"></div>
-      <div class="succ-divider"></div>
-      <h3 id="succ-title">El Llinatge Continua</h3>
-      <div id="succ-children-list"></div>
-      <p class="succ-note">La partida s'ha guardat automàticament.</p>
-    </div>
-  </div>
-
-  <!-- OVERLAY: Game Over (no children) -->
-  <div id="overlay-gameover" class="overlay hidden">
-    <div class="overlay-card">
-      <div class="overlay-big-icon">💀</div>
-      <h2>Fi del Llinatge</h2>
-      <p id="go-text"></p>
-      <button id="btn-go-end">Veure resum →</button>
-    </div>
-  </div>
-
-  <!-- OVERLAY: End / Scoring -->
-  <div id="overlay-end" class="overlay hidden">
-    <div class="overlay-card end-card">
-      <div id="end-victory-banner" class="hidden">
-        <div class="victory-crown">🏆</div>
-        <p class="victory-title">Llinatge Etern</p>
-        <p class="victory-sub">Has guiat el teu llinatge a través de totes les eres de la història</p>
-        <div id="victory-eras-list" class="victory-eras"></div>
-      </div>
-      <h2 id="end-dynasty"></h2>
-      <p id="end-tagline"></p>
-      <div id="end-stats-grid"></div>
-      <div id="end-milestones-row"></div>
-      <div id="end-genealogy-list"></div>
-      <div id="end-score-total"></div>
-      <button id="btn-restart">Jugar de nou</button>
-    </div>
-  </div>
-
-  <!-- OVERLAY: Milestones -->
-  <div id="overlay-milestones" class="overlay hidden">
-    <div class="overlay-card milestones-card">
-      <h3>🏅 Fites</h3>
-      <div id="milestones-list"></div>
-      <button id="btn-close-milestones">Tancar ×</button>
-    </div>
-  </div>
-
-  <!-- OVERLAY: Historial de llinatges -->
-  <div id="overlay-history" class="overlay hidden">
-    <div class="overlay-card history-card">
-      <h3 class="history-heading">📜 Historial de Llinatges</h3>
-      <div id="history-list"></div>
-      <button id="btn-close-history" class="history-close-btn">Tancar ×</button>
-    </div>
-  </div>
-
-  <!-- OVERLAY: Zone actions (bottom sheet) -->
-  <div id="overlay-zone-actions" class="overlay hidden">
-    <div class="zone-actions-sheet">
-      <div id="zone-sheet-header">
-        <span id="zone-sheet-icon"></span>
-        <span id="zone-sheet-name"></span>
-        <button id="btn-close-zone-sheet">×</button>
-      </div>
-      <div id="zone-sheet-grid"></div>
-    </div>
-  </div>
-
-  <!-- OVERLAY: Pill detail (trait / skill) -->
-  <div id="overlay-pill" class="overlay hidden">
-    <div class="overlay-card pill-detail-card">
-      <div class="pill-detail-header">
-        <span id="pill-det-icon"></span>
-        <span id="pill-det-name"></span>
-      </div>
-      <p id="pill-det-desc"></p>
-      <div id="pill-det-quote-wrap" class="item-quote-wrap hidden">
-        <blockquote id="pill-det-quote"></blockquote>
-        <cite id="pill-det-attribution"></cite>
-      </div>
-      <div id="pill-det-bonus"></div>
-      <button id="btn-close-pill">Entès →</button>
-    </div>
-  </div>
-
-  <!-- OVERLAY: Tecnologia del Llinatge -->
-  <div id="overlay-tech" class="overlay hidden">
-    <div class="overlay-card tech-card">
-      <div class="overlay-tech-header">
-        <h3>📜 Tecnologia del Llinatge</h3>
-        <button id="btn-close-tech" class="btn-close-x">×</button>
-      </div>
-      <div class="tech-tabs">
-        <button id="tab-techs" class="tech-tab active">Tecnologies</button>
-        <button id="tab-skills" class="tech-tab">Destreses</button>
-      </div>
-      <div id="tech-list"></div>
-    </div>
-  </div>
-
-  <!-- OVERLAY: Guardar / Carregar -->
-  <div id="overlay-save" class="overlay hidden">
-    <div class="overlay-card save-card">
-      <div class="overlay-tech-header">
-        <h3>💾 Partida</h3>
-        <button id="btn-close-save" class="btn-close-x">×</button>
-      </div>
-      <div class="tech-tabs">
-        <button id="tab-export" class="tech-tab active">Exportar</button>
-        <button id="tab-import" class="tech-tab">Importar</button>
-      </div>
-      <div id="save-export-panel">
-        <p class="save-hint">Copia aquest codi per guardar la partida. Enganxa'l al mòbil (o qualsevol dispositiu) per continuar.</p>
-        <textarea id="save-export-code" readonly></textarea>
-        <button id="btn-copy-code">Copiar codi</button>
-      </div>
-      <div id="save-import-panel" class="hidden">
-        <p class="save-hint">Enganxa un codi exportat per carregar la partida.</p>
-        <textarea id="save-import-code" placeholder="Enganxa el codi aquí..."></textarea>
-        <p id="save-import-error" class="save-error hidden">Codi no vàlid. Comprova que l'has copiat sencer.</p>
-        <button id="btn-load-code">Carregar partida</button>
+    <!-- OVERLAY: Menu -->
+    <div id="overlay-menu" class="overlay">
+      <div class="menu-screen">
+        <div class="menu-hero">
+          <div class="game-logo" id="menu-era-icon">🦴</div>
+          <h1 class="game-title">Life Tycoon</h1>
+          <p class="game-sub">Construeix el millor llinatge de la història</p>
+          <div class="era-badge hidden" id="menu-era-badge">Prehistòria</div>
+        </div>
+        <nav class="menu-nav">
+          <button id="btn-continue-game" class="menu-btn menu-btn-primary" disabled>
+            <span class="menu-btn-icon">▶</span><span>Continuar partida</span>
+          </button>
+          <button id="btn-new-game" class="menu-btn">
+            <span class="menu-btn-icon">✦</span><span>Nova partida</span>
+          </button>
+          <button id="btn-menu-badges" class="menu-btn">
+            <span class="menu-btn-icon">🏅</span><span>Fites</span>
+          </button>
+          <button id="btn-menu-shop" class="menu-btn">
+            <span class="menu-btn-icon">🛒</span><span>Botiga</span>
+          </button>
+          <button id="btn-history" class="menu-btn">
+            <span class="menu-btn-icon">📖</span><span>Historial de llinatges</span>
+          </button>
+          <button id="btn-menu-settings" class="menu-btn">
+            <span class="menu-btn-icon">⚙️</span><span>Opcions</span>
+          </button>
+        </nav>
       </div>
     </div>
-  </div>
 
-  <!-- OVERLAY: Era Transition -->
-  <div id="overlay-era-transition" class="overlay hidden">
-    <div class="overlay-card era-trans-card">
-      <div class="era-trans-header">
-        <div id="era-transition-icon" class="era-trans-icon"></div>
-        <div class="era-trans-label">Nova Era</div>
-        <h2 id="era-transition-name" class="era-trans-name"></h2>
+    <!-- OVERLAY: Succession -->
+    <div id="overlay-succession" class="overlay hidden">
+      <div class="overlay-card succ-card">
+        <div id="succ-death-msg"></div>
+        <div class="succ-divider"></div>
+        <h3 id="succ-title">El Llinatge Continua</h3>
+        <div id="succ-children-list"></div>
+        <p class="succ-note">La partida s'ha guardat automàticament.</p>
       </div>
-      <div id="era-trans-quote-wrap" class="era-trans-quote-wrap">
-        <blockquote id="era-trans-quote"></blockquote>
-        <cite id="era-trans-attribution"></cite>
-      </div>
-      <p id="era-trans-desc" class="era-trans-desc"></p>
-      <div class="era-trans-section-header">Com canvia la partida</div>
-      <div id="era-trans-gameplay" class="era-trans-gameplay"></div>
-      <button id="btn-era-transition-continue" class="era-trans-btn">Comença l'era →</button>
     </div>
-  </div>
 
-  <!-- OVERLAY: Settings -->
-  <div id="overlay-settings" class="overlay hidden">
-    <div class="overlay-card settings-card">
-      <div class="overlay-tech-header">
-        <h3>⚙️ Opcions</h3>
-        <button id="btn-close-settings" class="btn-close-x">×</button>
+    <!-- OVERLAY: Game Over (no children) -->
+    <div id="overlay-gameover" class="overlay hidden">
+      <div class="overlay-card">
+        <div class="overlay-big-icon">💀</div>
+        <h2>Fi del Llinatge</h2>
+        <p id="go-text"></p>
+        <button id="btn-go-end">Veure resum →</button>
       </div>
-      <div class="settings-list">
-        <div class="setting-row"><span>Idioma</span><span class="setting-note">Properament</span></div>
-        <div class="setting-row"><span>So i música</span><span class="setting-note">Properament</span></div>
-        <div class="setting-row setting-row-danger">
-          <span>Esborrar partida</span>
-          <button id="btn-clear-save-settings">Esborrar</button>
+    </div>
+
+    <!-- OVERLAY: End / Scoring -->
+    <div id="overlay-end" class="overlay hidden">
+      <div class="overlay-card end-card">
+        <div id="end-victory-banner" class="hidden">
+          <div class="victory-crown">🏆</div>
+          <p class="victory-title">Llinatge Etern</p>
+          <p class="victory-sub">Has guiat el teu llinatge a través de totes les eres de la història</p>
+          <div id="victory-eras-list" class="victory-eras"></div>
+        </div>
+        <h2 id="end-dynasty"></h2>
+        <p id="end-tagline"></p>
+        <div id="end-stats-grid"></div>
+        <div id="end-milestones-row"></div>
+        <div id="end-genealogy-list"></div>
+        <div id="end-score-total"></div>
+        <button id="btn-restart">Jugar de nou</button>
+      </div>
+    </div>
+
+    <!-- OVERLAY: Milestones -->
+    <div id="overlay-milestones" class="overlay hidden">
+      <div class="overlay-card milestones-card">
+        <h3>🏅 Fites</h3>
+        <div id="milestones-list"></div>
+        <button id="btn-close-milestones">Tancar ×</button>
+      </div>
+    </div>
+
+    <!-- OVERLAY: Historial de llinatges -->
+    <div id="overlay-history" class="overlay hidden">
+      <div class="overlay-card history-card">
+        <h3 class="history-heading">📜 Historial de Llinatges</h3>
+        <div id="history-list"></div>
+        <button id="btn-close-history" class="history-close-btn">Tancar ×</button>
+      </div>
+    </div>
+
+    <!-- OVERLAY: Zone actions -->
+    <div id="overlay-zone-actions" class="overlay hidden">
+      <div class="zone-actions-sheet">
+        <div id="zone-sheet-header">
+          <span id="zone-sheet-icon"></span>
+          <span id="zone-sheet-name"></span>
+          <button id="btn-close-zone-sheet">×</button>
+        </div>
+        <div id="zone-sheet-grid"></div>
+      </div>
+    </div>
+
+    <!-- OVERLAY: Pill detail (trait / skill) -->
+    <div id="overlay-pill" class="overlay hidden">
+      <div class="overlay-card pill-detail-card">
+        <div class="pill-detail-header">
+          <span id="pill-det-icon"></span>
+          <span id="pill-det-name"></span>
+        </div>
+        <p id="pill-det-desc"></p>
+        <div id="pill-det-quote-wrap" class="item-quote-wrap hidden">
+          <blockquote id="pill-det-quote"></blockquote>
+          <cite id="pill-det-attribution"></cite>
+        </div>
+        <div id="pill-det-bonus"></div>
+        <button id="btn-close-pill">Entès →</button>
+      </div>
+    </div>
+
+    <!-- OVERLAY: Tecnologia del Llinatge -->
+    <div id="overlay-tech" class="overlay hidden">
+      <div class="overlay-card tech-card">
+        <div class="overlay-tech-header">
+          <h3>📜 Tecnologia del Llinatge</h3>
+          <button id="btn-close-tech" class="btn-close-x">×</button>
+        </div>
+        <div class="tech-tabs">
+          <button id="tab-techs" class="tech-tab active">Tecnologies</button>
+          <button id="tab-skills" class="tech-tab">Destreses</button>
+        </div>
+        <div id="tech-list"></div>
+      </div>
+    </div>
+
+    <!-- OVERLAY: Guardar / Carregar -->
+    <div id="overlay-save" class="overlay hidden">
+      <div class="overlay-card save-card">
+        <div class="overlay-tech-header">
+          <h3>💾 Partida</h3>
+          <button id="btn-close-save" class="btn-close-x">×</button>
+        </div>
+        <div class="tech-tabs">
+          <button id="tab-export" class="tech-tab active">Exportar</button>
+          <button id="tab-import" class="tech-tab">Importar</button>
+        </div>
+        <div id="save-export-panel">
+          <p class="save-hint">Copia aquest codi per guardar la partida. Enganxa'l al mòbil (o qualsevol dispositiu) per continuar.</p>
+          <textarea id="save-export-code" readonly></textarea>
+          <button id="btn-copy-code">Copiar codi</button>
+        </div>
+        <div id="save-import-panel" class="hidden">
+          <p class="save-hint">Enganxa un codi exportat per carregar la partida.</p>
+          <textarea id="save-import-code" placeholder="Enganxa el codi aquí..."></textarea>
+          <p id="save-import-error" class="save-error hidden">Codi no vàlid. Comprova que l'has copiat sencer.</p>
+          <button id="btn-load-code">Carregar partida</button>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- OVERLAY: Shop -->
-  <div id="overlay-shop" class="overlay hidden">
-    <div class="overlay-card shop-card">
-      <div class="overlay-tech-header">
-        <h3>🛒 Botiga d'Eres</h3>
-        <button id="btn-close-shop" class="btn-close-x">×</button>
+    <!-- OVERLAY: Era Transition -->
+    <div id="overlay-era-transition" class="overlay hidden">
+      <div class="overlay-card era-trans-card">
+        <div class="era-trans-header">
+          <div id="era-transition-icon" class="era-trans-icon"></div>
+          <div class="era-trans-label">Nova Era</div>
+          <h2 id="era-transition-name" class="era-trans-name"></h2>
+        </div>
+        <div id="era-trans-quote-wrap" class="era-trans-quote-wrap">
+          <blockquote id="era-trans-quote"></blockquote>
+          <cite id="era-trans-attribution"></cite>
+        </div>
+        <p id="era-trans-desc" class="era-trans-desc"></p>
+        <div class="era-trans-section-header">Com canvia la partida</div>
+        <div id="era-trans-gameplay" class="era-trans-gameplay"></div>
+        <button id="btn-era-transition-continue" class="era-trans-btn">Comença l'era →</button>
       </div>
-      <p class="shop-subtitle">Amplia el teu llinatge amb noves eres de la història.</p>
-      <div id="shop-era-list"></div>
-      <div id="shop-era-detail" class="hidden"></div>
-      <p class="shop-demo-note">⚠️ Mode demo — activació/desactivació gratuïta per a proves.</p>
     </div>
-  </div>
 
-  <!-- OVERLAY: Nova Partida -->
-  <div id="overlay-new-game" class="overlay hidden">
-    <div class="overlay-card new-game-card">
-      <div class="new-game-hero">✦</div>
-      <h3 class="new-game-title">Nova Partida</h3>
-      <p class="new-game-hint">Tria el nom del teu llinatge. El destí dels teus descendents dependrà de les decisions que prendràs.</p>
-      <div class="new-game-field">
-        <label class="new-game-label" for="input-dynasty-name">Nom del llinatge</label>
-        <input id="input-dynasty-name" class="new-game-input" type="text" maxlength="30"
-               placeholder="Ex: Braven, Oscura, Llum..." autocomplete="off">
-        <p class="new-game-sublabel">Si el deixes en blanc, el joc en generarà un d'aleatori.</p>
+    <!-- OVERLAY: Settings -->
+    <div id="overlay-settings" class="overlay hidden">
+      <div class="overlay-card settings-card">
+        <div class="overlay-tech-header">
+          <h3>⚙️ Opcions</h3>
+          <button id="btn-close-settings" class="btn-close-x">×</button>
+        </div>
+        <div class="settings-list">
+          <div class="setting-row"><span>Idioma</span><span class="setting-note">Properament</span></div>
+          <div class="setting-row"><span>So i música</span><span class="setting-note">Properament</span></div>
+          <div class="setting-row setting-row-danger">
+            <span>Esborrar partida</span>
+            <button id="btn-clear-save-settings">Esborrar</button>
+          </div>
+        </div>
       </div>
-      <button id="btn-start-new-game" class="new-game-btn-primary">Comença l'aventura →</button>
-      <button id="btn-cancel-new-game" class="new-game-btn-back">← Tornar</button>
     </div>
-  </div>
+
+    <!-- OVERLAY: Shop -->
+    <div id="overlay-shop" class="overlay hidden">
+      <div class="overlay-card shop-card">
+        <div class="overlay-tech-header">
+          <h3>🛒 Botiga d'Eres</h3>
+          <button id="btn-close-shop" class="btn-close-x">×</button>
+        </div>
+        <p class="shop-subtitle">Amplia el teu llinatge amb noves eres de la història.</p>
+        <div id="shop-era-list"></div>
+        <div id="shop-era-detail" class="hidden"></div>
+        <p class="shop-demo-note">⚠️ Mode demo — activació/desactivació gratuïta per a proves.</p>
+      </div>
+    </div>
+
+    <!-- OVERLAY: Nova Partida -->
+    <div id="overlay-new-game" class="overlay hidden">
+      <div class="overlay-card new-game-card">
+        <div class="new-game-hero">✦</div>
+        <h3 class="new-game-title">Nova Partida</h3>
+        <p class="new-game-hint">Tria el nom del teu llinatge. El destí dels teus descendents dependrà de les decisions que prendràs.</p>
+        <div class="new-game-field">
+          <label class="new-game-label" for="input-dynasty-name">Nom del llinatge</label>
+          <input id="input-dynasty-name" class="new-game-input" type="text" maxlength="30"
+                 placeholder="Ex: Braven, Oscura, Llum..." autocomplete="off">
+          <p class="new-game-sublabel">Si el deixes en blanc, el joc en generarà un d'aleatori.</p>
+        </div>
+        <button id="btn-start-new-game" class="new-game-btn-primary">Comença l'aventura →</button>
+        <button id="btn-cancel-new-game" class="new-game-btn-back">← Tornar</button>
+      </div>
+    </div>
+
+  </div><!-- /#app -->
 
   <script src="data.js"></script>
   <script src="game.js"></script>

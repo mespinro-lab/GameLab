@@ -996,12 +996,75 @@ function syncStatVisibility() {
   if (hdrEraCycle) hdrEraCycle.classList.toggle('hidden', S.eraCycle === 0);
 }
 
+const ERA_CODE = { prehistoria: 'PRE', neolitic: 'NEO', edat_antiga: 'ANT', antiguitat_classica: 'CLA' };
+
+const ZONE_POS = {
+  // Era 1 — Prehistoria
+  wild:           { left: 28, top: 33 },
+  town:           { left: 68, top: 28 },
+  forest:         { left: 24, top: 70 },
+  home:           { left: 72, top: 68 },
+  // Era 2 — Neolitic
+  fields:         { left: 28, top: 30 },
+  workshop:       { left: 72, top: 28 },
+  market:         { left: 28, top: 68 },
+  village:        { left: 72, top: 70 },
+  // Era 3 — Edat Antiga
+  agora:          { left: 50, top: 24 },
+  temple_quarter: { left: 76, top: 46 },
+  forge_district: { left: 24, top: 66 },
+  domus:          { left: 58, top: 74 },
+  // Era 4 — Antiguitat Classica
+  forum:          { left: 50, top: 24 },
+  thermae:        { left: 76, top: 46 },
+  amphitheatrum:  { left: 24, top: 66 },
+  villa:          { left: 60, top: 74 },
+};
+
+function renderZoneNodes() {
+  const mapZone = el('map-zone');
+  mapZone.innerHTML = '';
+  const era = currentEra();
+  const eraCode = ERA_CODE[era.id] || 'PRE';
+  const allZones = era.zones;
+  // fallback grid positions for unknown zones
+  const fallbackPositions = [
+    { left: 28, top: 30 }, { left: 72, top: 30 },
+    { left: 28, top: 70 }, { left: 72, top: 70 },
+  ];
+
+  allZones.forEach((zone, idx) => {
+    const discovered = S.discoveredZoneIds.includes(zone.id);
+    const pos = ZONE_POS[zone.id] || fallbackPositions[idx] || { left: 50, top: 50 };
+    const node = document.createElement('button');
+    node.className = 'zone-node';
+    node.style.left = pos.left + '%';
+    node.style.top  = pos.top  + '%';
+
+    const imgSrc = `../../design/life-tycoon/zones/ZONA-${eraCode}-${zone.id.toUpperCase()}.png`;
+    if (discovered) {
+      node.innerHTML = `
+        <img class="zone-node-img" src="${imgSrc}" alt=""
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+        <div class="zone-node-fog" style="display:none">${zone.icon}</div>
+        <span class="zone-node-name">${zone.name}</span>`;
+      node.addEventListener('click', () => openZoneSheet(zone.id));
+    } else {
+      node.innerHTML = `<div class="zone-node-fog">🌫️</div>`;
+      node.disabled = true;
+      node.style.opacity = '0.6';
+    }
+    mapZone.appendChild(node);
+  });
+}
+
 function renderAll() {
   renderHeader();
   renderStats();
   syncStatVisibility();
   renderTraits();
   renderPartner();
+  renderZoneNodes();
   renderPhase();
   renderLog();
 }
@@ -1057,6 +1120,8 @@ function renderHeader() {
   el('hdr-gen').textContent = `Gen. ${S.generation}`;
   el('hdr-c').textContent = S.cycle;
   el('hdr-ec').textContent = S.eraCycle + 1;
+  const ptInfo = el('panel-turn-info');
+  if (ptInfo) ptInfo.textContent = `${currentEra().name} · Cicle ${S.cycle}`;
 }
 
 function renderStats() {
@@ -1078,6 +1143,17 @@ function renderStats() {
   el('s-intelligence').textContent     = S.char.intelligence.toFixed(1);
   el('s-social').textContent           = S.char.social.toFixed(1);
   renderCycleForecast();
+
+  // Hex stats (new mobile layout)
+  el('hex-health').textContent       = Math.round(hp);
+  el('hex-happiness').textContent    = Math.round(S.resources.happiness.value);
+  el('hex-reputation').textContent   = Math.round(S.resources.familyReputation.value);
+  el('hex-physical').textContent     = S.char.physical.toFixed(1);
+  el('hex-intelligence').textContent = S.char.intelligence.toFixed(1);
+  el('hex-social').textContent       = S.char.social.toFixed(1);
+  el('panel-food-val').textContent   = Math.round(food);
+  const pffc = el('panel-food-fc');
+  if (pffc) { const fc = el('fc-food'); pffc.textContent = fc ? fc.textContent : ''; }
 }
 
 function showPillDetail(icon, name, desc, bonusLines, quote, quoteAttribution) {
@@ -1181,6 +1257,10 @@ function renderPhase() {
 
   const overlays = ['overlay-succession','overlay-gameover','overlay-end','overlay-milestones'];
   overlays.forEach(o => hide(o));
+
+  // Show action overlay for all non-map phases
+  const hideAction = ['select', 'succession', 'gameover', 'end'].includes(S.phase);
+  el('overlay-action').classList.toggle('hidden', hideAction);
 
   switch (S.phase) {
     case 'select':     renderSelectPane(); show('pane-select'); break;
@@ -2430,6 +2510,9 @@ function bindEvents() {
       afterNotifications();
     }
   });
+
+  // In-game menu button (top bar)
+  el('btn-open-menu').addEventListener('click', () => show('overlay-menu'));
 
   // Zone sheet
   el('btn-close-zone-sheet').addEventListener('click', () => hide('overlay-zone-actions'));

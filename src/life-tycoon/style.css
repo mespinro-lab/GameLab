@@ -1861,6 +1861,286 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   border: 1px solid rgba(255,255,255,0.12);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   LAYOUT MÒBIL — mapa de fons + panells flotants + nodes de zona
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+#app { position: relative; }
+
+/* Compat hidden: elements JS-referenced que no apareixen al nou UI */
+#compat-hidden { display: none; }
+
+/* Mapa de fons: pantalla sencera darrere de tot */
+#map-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: url('../../design/life-tycoon/maps/MAP-PRE.png');
+  background-size: cover;
+  background-position: center top;
+}
+
+/* ── Panell superior (2/6 pantalla) ── */
+#panel-top {
+  flex: 0 0 calc(100dvh / 3);
+  background: rgba(28, 18, 8, 0.9);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#panel-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.32rem 0.55rem;
+  border-bottom: 1px solid rgba(90, 58, 24, 0.4);
+  flex-shrink: 0;
+}
+
+#btn-lineage-toggle {
+  background: none;
+  border: none;
+  color: var(--gold);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.1rem 0.2rem;
+  gap: 0.25rem;
+}
+
+#btn-open-menu {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 0.95rem;
+  padding: 0.1rem 0.3rem;
+}
+
+#panel-top-center {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+#char-dashboard {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Hex grid 3 cols × 4 files:
+   Col 1: stats esq  · Col 2: bust (files 1-3)  · Col 3: stats dret
+   Fila 4: stat inferior centrat (col 2) */
+#char-hex-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr 1fr;
+  padding: 0.22rem 0.35rem;
+  gap: 0.1rem;
+  min-height: 0;
+}
+
+#char-bust-wrap {
+  grid-column: 2;
+  grid-row: 1 / 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+#char-bust-img {
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: top;
+}
+
+.hex-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.hex-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  filter: invert(0.85) sepia(1) hue-rotate(330deg) saturate(1.8);
+  opacity: 0.9;
+}
+
+.hex-top   { grid-column: 2; grid-row: 1; flex-direction: row; gap: 0.25rem; }
+.hex-mid-l { grid-column: 1; grid-row: 2; }
+.hex-mid-r { grid-column: 3; grid-row: 2; }
+.hex-low-l { grid-column: 1; grid-row: 3; }
+.hex-low-r { grid-column: 3; grid-row: 3; }
+.hex-bot   { grid-column: 2; grid-row: 4; flex-direction: row; gap: 0.25rem; }
+
+/* Override flex: 1 de l'estil antic — knowledge-row és ara contingut fix */
+#knowledge-row {
+  flex: 0 0 auto;
+  padding: 0.18rem 0.45rem;
+  border-top: 1px solid rgba(90, 58, 24, 0.35);
+  min-height: 22px;
+  max-height: 36px;
+  overflow: hidden;
+  gap: 0.22rem;
+}
+
+/* ── Zona del mapa (3/6 pantalla) ── */
+#map-zone {
+  flex: 0 0 50dvh;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+/* Nodes de zona */
+.zone-node {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 68px;
+  height: 68px;
+  background: rgba(28, 18, 8, 0.78);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition: border-color 0.15s, background 0.15s;
+  padding: 0;
+}
+.zone-node:active { background: rgba(46, 28, 10, 0.95); border-color: var(--gold); }
+.zone-node-img {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 5px;
+}
+.zone-node-name {
+  font-size: 0.56rem;
+  color: var(--text);
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.1;
+  max-width: 62px;
+}
+.zone-node-fog {
+  width: 40px;
+  height: 40px;
+  background: rgba(28, 18, 8, 0.88);
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+/* ── Panell inferior (1/6 pantalla) ── */
+#panel-bottom {
+  flex: 0 0 calc(100dvh / 6);
+  background: rgba(28, 18, 8, 0.9);
+  border-top: 1px solid var(--border);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#panel-bottom-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.28rem 0.6rem;
+  border-bottom: 1px solid rgba(90, 58, 24, 0.35);
+  flex-shrink: 0;
+}
+
+#panel-turn-info {
+  flex: 1;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#panel-food {
+  display: flex;
+  align-items: center;
+  gap: 0.22rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text);
+  flex-shrink: 0;
+}
+.resource-icon {
+  width: 15px;
+  height: 15px;
+  object-fit: contain;
+  filter: invert(0.85) sepia(1) hue-rotate(330deg) saturate(1.8);
+  opacity: 0.9;
+}
+#panel-food-fc {
+  color: var(--text-dim);
+  font-size: 0.65rem;
+  font-weight: 400;
+}
+
+#panel-bottom-bar .rest-btn {
+  margin-top: 0;
+  width: auto;
+  padding: 0.22rem 0.6rem;
+  font-size: 0.72rem;
+  flex-shrink: 0;
+}
+
+#panel-bottom #session-log-list {
+  flex: 1;
+  padding: 0.12rem 0.6rem;
+  overflow: hidden;
+}
+
+/* ── Overlay d'acció: cobreix la zona del mapa ── */
+#overlay-action {
+  position: absolute;
+  top: calc(100dvh / 3);
+  bottom: calc(100dvh / 6);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: rgba(24, 14, 4, 0.97);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+#overlay-action.hidden { display: none; }
+
+#overlay-action #action-panel {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
 /* ── Session log ───────────────────────────────────────────────────────── */
 #session-log {
   padding: 0.6rem 1rem 1rem;
