@@ -429,6 +429,7 @@ function showFxFloaters(fx) {
 function tryDiscoverSkill(proj, score) {
   const M = currentEra().mechanics;
   const discovered = [];
+  if (getMasteryLevel(proj.id) === 0) return discovered; // cal almenys 5 usos
   for (const sId of (proj.destreseDiscovery || [])) {
     if (S.char.learnedSkillIds.length >= M.maxLearnedSkills) break;
     if (hasSkill(sId)) continue;
@@ -525,7 +526,7 @@ function generateChild() {
   const ownTraitId = generateTrait(virtueKey, inheritedTraitId);
 
   return {
-    name, gender, physical, intelligence, social, virtueLabel,
+    name, gender, race: S.char.race || 'MED', physical, intelligence, social, virtueLabel,
     knowledgeIds: inheritedKnowledge,
     learnedSkillIds: [],
     familyReputation: S.resources.familyReputation.value,
@@ -749,12 +750,17 @@ function triggerDeath() {
     knowledgeIds: [...S.char.knowledgeIds],
   });
 
-  S.phase = S.char.children.length > 0 ? 'succession' : 'gameover';
+  const hasChildren = S.char.children.length > 0;
+  S.phase = hasChildren ? 'succession' : 'gameover';
   saveGame();
   hide('overlay-zone-actions');
   renderMenuEra();
   updateContinueBtn();
-  show('overlay-menu');
+  if (hasChildren) {
+    renderAll();
+  } else {
+    show('overlay-menu');
+  }
 }
 
 // ── Succession ────────────────────────────────────────────────────────────────
@@ -771,6 +777,7 @@ function doSuccession(child) {
   S.char = {
     name: child.name,
     gender: child.gender,
+    race: child.race || 'MED',
     age: 15,
     physical:     child.physical,
     intelligence: child.intelligence,
@@ -1002,11 +1009,11 @@ const ERA_CODE = { prehistoria: 'PRE', neolitic: 'NEO', edat_antiga: 'ANT', anti
 const ZONE_POS = {
   // Era 1 — Prehistoria
   // bosc → dalt-esquerra (posició antiga del camp, més esq. i alt)
-  forest:         { left: 20, top: 22 },
+  forest:         { left: 20, top: 35 },
   // camp → dalt-dreta (posició antiga del poblat, més dret i baix)
   wild:           { left: 80, top: 32 },
   // llar → baix-dreta
-  home:           { left: 76, top: 74 },
+  home:           { left: 63, top: 74 },
   // poblat → baix-esquerra
   town:           { left: 23, top: 76 },
   // Era 2 — Neolitic
@@ -1044,6 +1051,7 @@ function renderZoneNodes() {
     const pos = ZONE_POS[zone.id] || fallbackPositions[idx] || { left: 50, top: 50 };
     const node = document.createElement('button');
     node.className = 'zone-node';
+    node.dataset.zone = zone.id;
     node.style.left = pos.left + '%';
     node.style.top  = pos.top  + '%';
 
@@ -1115,6 +1123,12 @@ function renderCharCard() {
   el('char-card-family').innerHTML = `<div class="char-card-label">Família</div>
     <div class="char-card-fam">👫 ${partnerText}</div>
     <div class="char-card-fam">👶 ${childText}</div>`;
+
+  const knowledgeHtml = S.char.knowledgeIds.map(kId => {
+    const k = getKnowledge(kId);
+    return k ? `<div class="char-card-know">${k.icon || '📖'} ${k.name}</div>` : '';
+  }).join('') || '<div class="char-card-know" style="color:var(--text-dim)">Cap coneixement adquirit</div>';
+  el('char-card-knowledge').innerHTML = `<div class="char-card-label">Coneixements</div>${knowledgeHtml}`;
 
   show('overlay-char-card');
 }
@@ -1426,32 +1440,40 @@ function openZoneSheet(zoneId) {
   grid.innerHTML = '';
 
   const statIcons = { physical: '💪', intelligence: '🧠', social: '👥' };
+  const outIcons  = { food: '🍖', health: '❤️', happiness: '😊', familyReputation: '🏛️' };
   for (const proj of currentEra().actions.filter(p => p.zone === zoneId && isProjectUnlocked(p))) {
     const blocked = blockedReason(proj);
     const card = document.createElement('div');
     card.className = 'proj-card' + (blocked ? ' proj-card-disabled' : '');
-    const riskHtml = proj.healthRisk > 0 ? `<div class="proj-impact"><span class="impact-tag risk">⚠️ Risc</span></div>` : '';
-    const gainParts = Object.entries(proj.statGain || {}).map(([s, v]) => `${statIcons[s] || s}+${v}`);
-    const gainHtml  = gainParts.length > 0 ? `<span class="proj-stat-gain">${gainParts.join(' ')}</span>` : '';
+    const riskHtml = proj.healthRisk > 0 ? `<span class="impact-tag risk">⚠️</span>` : '';
+    const outParts = Object.entries(proj.outputs || {})
+      .filter(([k, v]) => v && outIcons[k])
+      .map(([k, v]) => `${outIcons[k]}${v > 0 ? '+' : ''}${v}`);
+    const gainParts = Object.entries(proj.statGain || {})
+      .filter(([, v]) => v)
+      .map(([s, v]) => `${statIcons[s] || s}+${v}`);
+    const benefitsHtml = (outParts.length + gainParts.length) > 0
+      ? `<span class="proj-benefits">${[...outParts, ...gainParts].join(' ')}${riskHtml}</span>`
+      : riskHtml ? `<span class="proj-benefits">${riskHtml}</span>` : '';
     const mLvl  = getMasteryLevel(proj.id);
     const mUses = getMasteryUses(proj.id);
     const nextT = MASTERY_THRESHOLDS[mLvl];
     const stars  = mLvl > 0 ? '★'.repeat(mLvl) : '☆';
     const pct    = mLvl > 0 ? ` +${Math.round(mLvl * MASTERY_BONUS_LEVEL * 100)}%` : '';
-    const prog   = nextT ? ` · ${mUses}/${nextT}` : ' · màx';
+    const prog   = nextT ? ` ${mUses}/${nextT}` : ' màx';
     const barPct = nextT ? Math.round((mUses / nextT) * 100) : 100;
     const barHtml = nextT
       ? `<div class="mastery-bar"><div class="mastery-bar-fill mastery-fill-${mLvl}" style="width:${barPct}%"></div></div>`
       : '';
     const masteryHtml = `<div class="proj-mastery-wrap"><span class="proj-mastery mastery-${mLvl}">${stars}${pct}${prog}</span>${barHtml}</div>`;
-    const quoteHtml = proj.quote
-      ? `<div class="proj-quote-wrap"><span class="proj-quote">"${proj.quote}"</span>${proj.quoteAttribution ? `<span class="proj-attribution"> ${proj.quoteAttribution}</span>` : ''}</div>`
-      : '';
     card.innerHTML = `
-      <span class="proj-icon">${proj.icon}</span>
-      <span class="proj-name">${proj.name}</span>
-      <span class="proj-desc">${proj.description}</span>
-      ${blocked ? `<span class="proj-blocked-reason">${blocked}</span>` : `${quoteHtml}${gainHtml}${masteryHtml}${riskHtml}`}
+      <div class="proj-card-top">
+        <span class="proj-icon">${proj.icon}</span>
+        <span class="proj-name">${proj.name}</span>
+      </div>
+      ${blocked
+        ? `<span class="proj-desc">${proj.description}</span><span class="proj-blocked-reason">${blocked}</span>`
+        : `${benefitsHtml}${masteryHtml}`}
     `;
     if (!blocked) {
       card.addEventListener('click', () => {
@@ -1977,10 +1999,10 @@ function advanceFromBirth() {
   S.pendingBirths.shift();
   if (S.pendingBirths.length > 0) { renderAll(); return; }
   const minCost = currentEra().mechanics.intensityTimeCosts[0];
-  if (S.timeLeft >= minCost && S.pendingDiscoveries.length > 0) {
-    S.phase = 'discovery'; renderAll();
-  } else if (S.timeLeft >= minCost && S.pendingEvent) {
+  if (S.timeLeft >= minCost && S.pendingEvent) {
     S.phase = 'event'; renderAll();
+  } else if (S.timeLeft >= minCost && S.pendingDiscoveries.length > 0) {
+    S.phase = 'discovery'; renderAll();
   } else {
     afterNotifications();
   }
