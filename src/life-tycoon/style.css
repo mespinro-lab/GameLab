@@ -1886,27 +1886,24 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   background-position: center top;
 }
 
-/* ── Panell superior — taulell de pedra flotant (2/6 pantalla) ── */
+/* ── Panell superior: barra full-width + taulell flotant ── */
 #panel-top {
   flex: 0 0 calc(100dvh / 3);
-  margin: 0 var(--panel-side);
-  background: linear-gradient(180deg, rgba(48, 30, 10, 0.96) 0%, rgba(36, 22, 7, 0.96) 100%);
-  border: 2px solid rgba(160, 110, 55, 0.55);
-  border-top: none;
-  border-radius: 0 0 20px 20px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.75), inset 0 -1px 0 rgba(255,190,80,0.06);
   z-index: 10;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  background: transparent;
 }
 
+/* Barra superior: punta a punta, cobreix el mapa */
 #panel-top-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.32rem 0.55rem;
-  border-bottom: 1px solid rgba(100, 65, 25, 0.45);
+  padding: 0.35rem 0.7rem;
+  background: rgba(28, 16, 4, 0.95);
+  border-bottom: 2px solid rgba(120, 80, 30, 0.6);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.55);
   flex-shrink: 0;
 }
 
@@ -1914,7 +1911,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   background: none;
   border: none;
   color: var(--gold);
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 700;
   padding: 0.1rem 0.2rem;
   gap: 0.25rem;
@@ -1934,8 +1931,15 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   text-align: center;
 }
 
+/* Taulell hexagonal flotant: té marges laterals, el mapa es veu als costats */
 #char-dashboard {
   flex: 1;
+  margin: 0 var(--panel-side);
+  background: linear-gradient(180deg, rgba(48, 30, 10, 0.97) 0%, rgba(36, 22, 7, 0.97) 100%);
+  border: 2px solid rgba(160, 110, 55, 0.55);
+  border-top: none;
+  border-radius: 0 0 22px 22px;
+  box-shadow: 0 10px 36px rgba(0,0,0,0.8), inset 0 -1px 0 rgba(255,190,80,0.07);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1943,21 +1947,23 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 }
 
 /* Grid hexagonal: 3 cols × 4 files
-   Col 1: stats esq  · Col 2: bust (files 1-3)  · Col 3: stats dret
-   Fila 4: stat inferior centrat */
+   Fila 1: stat salut (centrat, sobre el bust)
+   Files 2-3: bust + stats laterals
+   Fila 4: stat intel (centrat, sota el bust) */
 #char-hex-grid {
   flex: 1;
   display: grid;
   grid-template-columns: 1fr 1.5fr 1fr;
-  grid-template-rows: 1fr 1fr 1fr 1fr;
-  padding: 0.22rem 0.35rem;
+  grid-template-rows: 0.7fr 1fr 1fr 0.7fr;
+  padding: 0.25rem 0.4rem;
   gap: 0.1rem;
   min-height: 0;
 }
 
+/* Bust: files 2-3 (no solapada amb la stat de salut) */
 #char-bust-wrap {
   grid-column: 2;
-  grid-row: 1 / 4;
+  grid-row: 2 / 4;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1968,7 +1974,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   width: auto;
   max-width: 100%;
   object-fit: contain;
-  object-position: top;
+  object-position: center top;
 }
 
 .hex-stat {
@@ -1977,7 +1983,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   align-items: center;
   justify-content: center;
   gap: 1px;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 700;
   color: var(--text);
 }
@@ -1989,12 +1995,20 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   opacity: 0.9;
 }
 
-.hex-top   { grid-column: 2; grid-row: 1; flex-direction: row; gap: 0.25rem; }
+.hex-top   { grid-column: 2; grid-row: 1; flex-direction: row; gap: 0.3rem; }
 .hex-mid-l { grid-column: 1; grid-row: 2; }
 .hex-mid-r { grid-column: 3; grid-row: 2; }
 .hex-low-l { grid-column: 1; grid-row: 3; }
 .hex-low-r { grid-column: 3; grid-row: 3; }
-.hex-bot   { grid-column: 2; grid-row: 4; flex-direction: row; gap: 0.25rem; }
+.hex-bot   { grid-column: 2; grid-row: 4; flex-direction: row; gap: 0.3rem; }
+
+/* Colors dels indicadors amb resplendor lluminós */
+#hex-health      { color: #e74c3c; text-shadow: 0 0 10px rgba(231,76,60,0.7); }
+#hex-happiness   { color: #f1c40f; text-shadow: 0 0 10px rgba(241,196,15,0.7); }
+#hex-reputation  { color: var(--gold); text-shadow: 0 0 10px rgba(232,168,40,0.7); }
+#hex-physical    { color: #e67e22; text-shadow: 0 0 10px rgba(230,126,34,0.7); }
+#hex-social      { color: #5dade2; text-shadow: 0 0 10px rgba(93,173,226,0.7); }
+#hex-intelligence { color: #a29bfe; text-shadow: 0 0 10px rgba(162,155,254,0.7); }
 
 /* Override flex: 1 de l'estil antic — knowledge-row és contingut fix */
 #knowledge-row {
@@ -2015,16 +2029,16 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   z-index: 1;
 }
 
-/* Nodes de zona — cercles amb brillantor, sense rectangle */
+/* Nodes de zona — cercles grans amb brillantor, sense rectangle */
 .zone-node {
   position: absolute;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  width: 90px;
-  height: 90px;
+  gap: 5px;
+  width: 130px;
+  height: 130px;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -2032,46 +2046,34 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   padding: 0;
   transition: filter 0.15s;
 }
-.zone-node:active { filter: brightness(1.2); }
+.zone-node:active { filter: brightness(1.25); }
 .zone-node-img {
-  width: 76px;
-  height: 76px;
+  width: 110px;
+  height: 110px;
   border-radius: 50%;
   object-fit: cover;
   box-shadow:
-    0 0 0 3px rgba(232, 168, 40, 0.4),
-    0 0 16px rgba(232, 168, 40, 0.45),
-    0 4px 12px rgba(0,0,0,0.6);
+    0 0 0 3px rgba(232, 168, 40, 0.45),
+    0 0 20px rgba(232, 168, 40, 0.5),
+    0 6px 16px rgba(0,0,0,0.65);
 }
 .zone-node-name {
-  font-size: 0.62rem;
+  font-size: 1.1rem;
   color: #fff;
   font-weight: 700;
   text-align: center;
   line-height: 1.15;
-  max-width: 88px;
-  text-shadow: 0 1px 5px rgba(0,0,0,1), 0 0 10px rgba(0,0,0,0.9);
-}
-.zone-node-fog {
-  width: 76px;
-  height: 76px;
-  background: rgba(28, 18, 8, 0.55);
-  border-radius: 50%;
-  border: 2px solid rgba(90, 58, 24, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.4rem;
+  max-width: 128px;
+  text-shadow: 0 1px 6px rgba(0,0,0,1), 0 0 12px rgba(0,0,0,0.95);
 }
 
 /* ── Panell inferior — placa de pedra flotant (1/6 pantalla) ── */
 #panel-bottom {
   flex: 0 0 calc(100dvh / 6 - var(--panel-bot-gap));
   margin: 0 var(--panel-side) var(--panel-bot-gap);
-  background: linear-gradient(180deg, rgba(36, 22, 7, 0.96) 0%, rgba(48, 30, 10, 0.96) 100%);
+  background: linear-gradient(180deg, rgba(36, 22, 7, 0.97) 0%, rgba(48, 30, 10, 0.97) 100%);
   border: 2px solid rgba(160, 110, 55, 0.55);
-  border-bottom: none;
-  border-radius: 18px 18px 0 0;
+  border-radius: 18px;
   box-shadow: 0 -6px 28px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,190,80,0.07);
   z-index: 10;
   display: flex;
@@ -2154,6 +2156,33 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+}
+
+/* ── Selector d'origen ètnic (nova partida) ── */
+.race-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+}
+.race-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  border-radius: 8px;
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  padding: 0.4rem 0.25rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+  line-height: 1.3;
+}
+.race-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.25) !important; }
+.race-btn.active {
+  background: rgba(232,168,40,0.15);
+  border-color: var(--gold) !important;
+  color: var(--gold);
+  font-weight: 600;
 }
 
 /* ── Session log ───────────────────────────────────────────────────────── */

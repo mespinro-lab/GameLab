@@ -142,6 +142,7 @@ function initState() {
     char: {
       name: '',
       gender: 'M',
+      race: 'MED',
       age: 15,
       physical: st.physical,
       intelligence: st.intelligence,
@@ -1039,6 +1040,7 @@ function renderZoneNodes() {
 
   allZones.forEach((zone, idx) => {
     const discovered = S.discoveredZoneIds.includes(zone.id);
+    if (!discovered) return;
     const pos = ZONE_POS[zone.id] || fallbackPositions[idx] || { left: 50, top: 50 };
     const node = document.createElement('button');
     node.className = 'zone-node';
@@ -1046,20 +1048,21 @@ function renderZoneNodes() {
     node.style.top  = pos.top  + '%';
 
     const imgSrc = `../../design/life-tycoon/zones/ZONA-${eraCode}-${zone.id.toUpperCase()}.png`;
-    if (discovered) {
-      node.innerHTML = `
-        <img class="zone-node-img" src="${imgSrc}" alt=""
-             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-        <div class="zone-node-fog" style="display:none">${zone.icon}</div>
-        <span class="zone-node-name">${zone.name}</span>`;
-      node.addEventListener('click', () => openZoneSheet(zone.id));
-    } else {
-      node.innerHTML = `<div class="zone-node-fog">🌫️</div>`;
-      node.disabled = true;
-      node.style.opacity = '0.6';
-    }
+    node.innerHTML = `
+      <img class="zone-node-img" src="${imgSrc}" alt=""
+           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="zone-node-icon" style="display:none">${zone.icon}</div>
+      <span class="zone-node-name">${zone.name}</span>`;
+    node.addEventListener('click', () => openZoneSheet(zone.id));
     mapZone.appendChild(node);
   });
+}
+
+function bustImgSrc() {
+  const eraCode = ERA_CODE[S.currentEraId] || 'PRE';
+  const race    = S.char.race   || 'MED';
+  const gender  = S.char.gender || 'M';
+  return `../../design/life-tycoon/characters/${eraCode}-${race}-${gender}.png`;
 }
 
 function renderAll() {
@@ -1071,6 +1074,8 @@ function renderAll() {
   renderZoneNodes();
   renderPhase();
   renderLog();
+  const bustImg = el('char-bust-img');
+  if (bustImg) bustImg.src = bustImgSrc();
 }
 
 function renderCycleForecast() {
@@ -2562,6 +2567,10 @@ function bindEvents() {
   el('btn-continue-game').addEventListener('click', () => loadSavedGame());
   el('btn-new-game').addEventListener('click', () => {
     el('input-dynasty-name').value = '';
+    _selectedRace = 'MED';
+    document.querySelectorAll('.race-btn').forEach(b => b.classList.remove('active'));
+    const defaultBtn = document.querySelector('.race-btn[data-race="MED"]');
+    if (defaultBtn) defaultBtn.classList.add('active');
     hide('overlay-menu');
     show('overlay-new-game');
     setTimeout(() => el('input-dynasty-name').focus(), 120);
@@ -2575,10 +2584,17 @@ function bindEvents() {
     hide('overlay-new-game');
     clearSave();
     updateContinueBtn();
-    startGame(customName || null);
+    startGame(customName || null, _selectedRace);
   });
   el('input-dynasty-name').addEventListener('keydown', e => {
     if (e.key === 'Enter') el('btn-start-new-game').click();
+  });
+  document.querySelectorAll('.race-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      _selectedRace = btn.dataset.race;
+      document.querySelectorAll('.race-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
   });
 
   // Era transition
@@ -2604,8 +2620,11 @@ function bindEvents() {
 }
 
 // ── Start ─────────────────────────────────────────────────────────────────────
-function startGame(customDynastyName) {
+let _selectedRace = 'MED';
+
+function startGame(customDynastyName, race) {
   initState();
+  S.char.race = race || 'MED';
   const gender = Math.random() > 0.5 ? 'M' : 'F';
   S.char.gender = gender;
   S.char.name = randomName(gender, '');
