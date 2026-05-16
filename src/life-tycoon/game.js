@@ -1053,13 +1053,16 @@ function renderZoneNodes() {
            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
       <div class="zone-node-icon" style="display:none">${zone.icon}</div>
       <span class="zone-node-name">${zone.name}</span>`;
-    node.addEventListener('click', () => {
-      node.classList.add('zone-node-pulse');
-      node.addEventListener('animationend', () => {
-        node.classList.remove('zone-node-pulse');
-        openZoneSheet(zone.id);
-      }, { once: true });
+    node.addEventListener('pointerdown', () => {
+      node.classList.add('zone-node-pressed');
     });
+    node.addEventListener('pointerup', () => {
+      if (!node.classList.contains('zone-node-pressed')) return;
+      node.classList.remove('zone-node-pressed');
+      openZoneSheet(zone.id);
+    });
+    node.addEventListener('pointercancel', () => node.classList.remove('zone-node-pressed'));
+    node.addEventListener('pointerleave', () => node.classList.remove('zone-node-pressed'));
     mapZone.appendChild(node);
   });
 }
@@ -1069,6 +1072,38 @@ function bustImgSrc() {
   const race    = S.char.race   || 'MED';
   const gender  = S.char.gender || 'M';
   return `../../design/life-tycoon/characters/${eraCode}-${race}-${gender}.png`;
+}
+
+function renderCharCard() {
+  el('char-card-img').src = bustImgSrc();
+  el('char-card-name').textContent = `${S.char.name} ${S.dynastyName}`;
+  const genderLabel = S.char.gender === 'M' ? 'Home' : 'Dona';
+  el('char-card-sub').textContent = `${S.char.age} anys · ${genderLabel} · Generació ${S.generation}`;
+
+  const traitsHtml = S.char.traitIds.map(id => {
+    const t = (GAME_DATA.traits || []).find(t => t.id === id);
+    return t ? `<div class="char-card-trait">${t.icon || '✦'} <strong>${t.name}</strong> — ${t.description || ''}</div>` : '';
+  }).join('') || '<div class="char-card-trait" style="color:var(--text-dim)">Sense trets assignats</div>';
+  el('char-card-traits').innerHTML = `<div class="char-card-label">Trets innats</div>${traitsHtml}`;
+
+  const stats = [
+    { icon: '💪', label: 'Força física', val: S.char.physical },
+    { icon: '🧠', label: 'Inteligència', val: S.char.intelligence },
+    { icon: '🗣️', label: 'Social', val: S.char.social },
+  ];
+  el('char-card-stats').innerHTML = `<div class="char-card-label">Característiques</div>` +
+    stats.map(s => `<div class="char-card-stat"><span>${s.icon} ${s.label}</span><strong>${s.val}</strong></div>`).join('');
+
+  const partnerText = S.char.partner ? `Parella: ${S.char.partner.name}` : 'Sense parella';
+  const grown = S.char.children.filter(c => c.grown).length;
+  const childText = S.char.children.length > 0
+    ? `${S.char.children.length} fill${S.char.children.length > 1 ? 's' : ''} (${grown} crescut${grown !== 1 ? 's' : ''})`
+    : 'Sense fills';
+  el('char-card-family').innerHTML = `<div class="char-card-label">Família</div>
+    <div class="char-card-fam">👫 ${partnerText}</div>
+    <div class="char-card-fam">👶 ${childText}</div>`;
+
+  show('overlay-char-card');
 }
 
 function renderAll() {
@@ -2528,6 +2563,13 @@ function bindEvents() {
 
   // In-game menu button (top bar)
   el('btn-open-menu').addEventListener('click', () => show('overlay-menu'));
+
+  // Character card
+  el('char-bust-wrap').addEventListener('click', () => { if (S.phase === 'select') renderCharCard(); });
+  el('btn-close-char-card').addEventListener('click', () => hide('overlay-char-card'));
+  el('overlay-char-card').addEventListener('click', e => {
+    if (e.target === el('overlay-char-card')) hide('overlay-char-card');
+  });
 
   // Zone sheet
   el('btn-close-zone-sheet').addEventListener('click', () => hide('overlay-zone-actions'));

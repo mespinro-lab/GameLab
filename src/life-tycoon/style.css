@@ -25,7 +25,9 @@ html, body {
   -webkit-font-smoothing: antialiased;
   user-select: none;
   overscroll-behavior: none;
-  overflow-x: hidden;
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
 }
 
 button {
@@ -1989,11 +1991,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   color: var(--text);
 }
 .hex-icon {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   object-fit: contain;
-  filter: invert(0.85) sepia(1) hue-rotate(330deg) saturate(1.8);
-  opacity: 0.9;
+  filter: brightness(0) invert(1);
+  opacity: 0.85;
 }
 
 .hex-top   { grid-column: 2; grid-row: 1; flex-direction: row; gap: 0.3rem; }
@@ -2030,12 +2032,6 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   z-index: 1;
 }
 
-@keyframes zone-pulse {
-  0%   { transform: translate(-50%, -50%) scale(1); }
-  50%  { transform: translate(-50%, -50%) scale(1.1); }
-  100% { transform: translate(-50%, -50%) scale(1); }
-}
-
 /* Nodes de zona — cercles grans amb brillantor, sense rectangle */
 .zone-node {
   position: absolute;
@@ -2051,10 +2047,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   cursor: pointer;
   transform: translate(-50%, -50%);
   padding: 0;
+  touch-action: none;
+  transition: transform 0.1s ease-out;
 }
-.zone-node-pulse {
-  animation: zone-pulse 0.35s ease-in-out;
-  pointer-events: none;
+.zone-node-pressed {
+  transform: translate(-50%, -50%) scale(1.1);
 }
 .zone-node-img {
   width: 110px;
@@ -2192,6 +2189,85 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   border-color: var(--gold) !important;
   color: var(--gold);
   font-weight: 600;
+}
+
+/* ── Tarjeta del personatge ── */
+#overlay-char-card {
+  z-index: 200;
+}
+.char-card-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 85dvh;
+  overflow-y: auto;
+  padding-top: 0.5rem;
+}
+.char-card-portrait {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.2rem;
+}
+.char-card-portrait img {
+  height: 130px;
+  width: auto;
+  border-radius: 12px;
+  object-fit: cover;
+  object-position: top;
+}
+.char-card-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--gold);
+  text-align: center;
+}
+.char-card-sub {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  text-align: center;
+  margin-top: -0.4rem;
+}
+.char-card-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin-bottom: 0.25rem;
+}
+.char-card-section {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 0.5rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.char-card-trait {
+  font-size: 0.8rem;
+  color: var(--text);
+}
+.char-card-stat {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: var(--text);
+}
+.char-card-stat strong { color: var(--gold); }
+.char-card-fam {
+  font-size: 0.8rem;
+  color: var(--text);
+}
+.char-card-close {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.8rem;
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
 }
 
 /* ── Session log ───────────────────────────────────────────────────────── */
