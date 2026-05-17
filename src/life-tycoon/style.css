@@ -530,6 +530,36 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   filter: drop-shadow(0 2px 8px rgba(0,0,0,0.7));
 }
 
+/* ── Turn transition overlay ─────────────────────────────────────────── */
+#turn-transition-overlay {
+  position: absolute;
+  top: 44px; left: 0; right: 0;
+  bottom: calc(100dvh / 6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 36;
+  pointer-events: none;
+}
+#turn-transition-overlay.hidden { display: none; }
+#turn-transition-msg {
+  background: rgba(10, 8, 4, 0.82);
+  border: 1px solid var(--gold);
+  border-radius: 28px;
+  padding: 0.75rem 1.8rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--gold);
+  letter-spacing: 0.04em;
+  animation: turn-trans-fade 1.4s ease-in-out;
+}
+@keyframes turn-trans-fade {
+  0%   { opacity: 0; transform: scale(0.88); }
+  20%  { opacity: 1; transform: scale(1); }
+  80%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.92); }
+}
+
 /* ── Action info overlay ─────────────────────────────────────────────── */
 #ai-header {
   display: flex;

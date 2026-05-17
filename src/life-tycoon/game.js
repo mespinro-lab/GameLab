@@ -1102,12 +1102,6 @@ function renderCharCard() {
   const genderLabel = S.char.gender === 'M' ? 'Home' : 'Dona';
   el('char-card-sub').textContent = `${S.char.age} anys · ${genderLabel} · Gen. ${S.generation}`;
 
-  const traitsHtml = S.char.traitIds.map(id => {
-    const t = (GAME_DATA.traits || []).find(t => t.id === id);
-    return t ? `<div class="char-card-trait">${t.icon || '✦'} <strong>${t.name}</strong> — ${t.description || ''}</div>` : '';
-  }).join('') || '<div class="char-card-trait" style="color:var(--text-dim)">Sense trets assignats</div>';
-  el('char-card-traits').innerHTML = `<div class="char-card-label">Trets innats</div>${traitsHtml}`;
-
   const stats = [
     { icon: '💪', label: 'Força', val: S.char.physical },
     { icon: '🧠', label: 'Intel·ligència', val: S.char.intelligence },
@@ -1115,6 +1109,18 @@ function renderCharCard() {
   ];
   el('char-card-stats').innerHTML = `<div class="char-card-label">Característiques</div>` +
     stats.map(s => `<div class="char-card-stat"><span>${s.icon} ${s.label}</span><strong>${s.val}</strong></div>`).join('');
+
+  const traitsHtml = S.char.traitIds.map(id => {
+    const t = (GAME_DATA.traits || []).find(t => t.id === id);
+    return t ? `<div class="char-card-trait">${t.icon || '✦'} <strong>${t.name}</strong> — ${t.description || ''}</div>` : '';
+  }).join('') || '<div class="char-card-trait" style="color:var(--text-dim)">Sense trets assignats</div>';
+  el('char-card-traits').innerHTML = `<div class="char-card-label">Trets innats</div>${traitsHtml}`;
+
+  const learnedHtml = (S.char.learnedSkillIds || []).map(sId => {
+    const s = getSkillGlobal(sId);
+    return s ? `<div class="char-card-know">${s.icon || '📖'} ${s.name}</div>` : '';
+  }).join('') || '<div class="char-card-know" style="color:var(--text-dim)">Cap aprenentatge adquirit</div>';
+  el('char-card-knowledge').innerHTML = `<div class="char-card-label">Aprenentatges</div>${learnedHtml}`;
 
   const partnerText = S.char.partner ? S.char.partner.name : 'Sense parella';
   const grown = S.char.children.filter(c => c.grown).length;
@@ -1124,12 +1130,6 @@ function renderCharCard() {
   el('char-card-family').innerHTML = `<div class="char-card-label">Família</div>
     <div class="char-card-fam">👫 ${partnerText}</div>
     <div class="char-card-fam">👶 ${childText}</div>`;
-
-  const learnedHtml = (S.char.learnedSkillIds || []).map(sId => {
-    const s = getSkillGlobal(sId);
-    return s ? `<div class="char-card-know">${s.icon || '📖'} ${s.name}</div>` : '';
-  }).join('') || '<div class="char-card-know" style="color:var(--text-dim)">Cap aprenentatge adquirit</div>';
-  el('char-card-knowledge').innerHTML = `<div class="char-card-label">Aprenentatges</div>${learnedHtml}`;
 
   show('overlay-char-card');
 }
@@ -1503,10 +1503,29 @@ function applyCarouselItem(item, offset, dragPx) {
 }
 
 function updateCarouselPositions(dragPx) {
+  const n = CAROUSEL.actions.length;
   Array.from(el('zone-carousel-viewport').querySelectorAll('.zc-item')).forEach(item => {
-    applyCarouselItem(item, parseInt(item.dataset.idx) - CAROUSEL.idx, dragPx);
+    let offset = parseInt(item.dataset.idx) - CAROUSEL.idx;
+    if (n > 1) {
+      while (offset >  n / 2) offset -= n;
+      while (offset < -n / 2) offset += n;
+    }
+    applyCarouselItem(item, offset, dragPx);
   });
   Array.from(el('zc-dots').children).forEach((d, i) => d.classList.toggle('active', i === CAROUSEL.idx));
+}
+
+function springEffect(dir) {
+  const items = Array.from(el('zone-carousel-viewport').querySelectorAll('.zc-item'));
+  if (!items.length) return;
+  // Overshoot slightly in dir, then snap back to center
+  items.forEach(item => {
+    item.style.transition = 'none';
+    applyCarouselItem(item, 0, dir * 22);
+  });
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    items.forEach(item => applyCarouselItem(item, 0, 0));
+  }));
 }
 
 function updateCarouselInfo() {
@@ -1534,8 +1553,12 @@ function updateCarouselInfo() {
 }
 
 function carouselNavigate(newIdx) {
-  if (newIdx < 0 || newIdx >= CAROUSEL.actions.length) return;
-  CAROUSEL.idx = newIdx;
+  const n = CAROUSEL.actions.length;
+  if (n <= 1) {
+    springEffect(newIdx < CAROUSEL.idx ? -1 : 1);
+    return;
+  }
+  CAROUSEL.idx = ((newIdx % n) + n) % n;
   updateCarouselPositions(0);
   updateCarouselInfo();
 }
@@ -1604,9 +1627,18 @@ function executeActionDirect(proj) {
   });
 }
 
+function showTurnTransition(onDone) {
+  const overlay = el('turn-transition-overlay');
+  overlay.classList.remove('hidden');
+  setTimeout(() => {
+    overlay.classList.add('hidden');
+    onDone();
+  }, 1400);
+}
+
 function handlePostAction() {
-  const minCost = currentEra().mechanics.intensityTimeCosts[0];
-  const canContinue = S.timeLeft >= minCost;
+  const actionCost = currentEra().mechanics.intensityTimeCosts[1];
+  const canContinue = S.timeLeft >= actionCost;
   if (S.pendingBirths.length > 0) {
     S.phase = 'birth'; renderAll();
   } else if (canContinue && S.pendingEvent) {
@@ -1616,7 +1648,7 @@ function handlePostAction() {
   } else if (canContinue) {
     S.phase = 'select'; renderAll();
   } else {
-    endCycle();
+    showTurnTransition(endCycle);
   }
 }
 
@@ -2039,8 +2071,8 @@ function showNextDeath() {
 }
 
 function afterNotifications() {
-  const minCost = currentEra().mechanics.intensityTimeCosts[0];
-  if (S.timeLeft >= minCost) {
+  const actionCost = currentEra().mechanics.intensityTimeCosts[1];
+  if (S.timeLeft >= actionCost) {
     S.phase = 'select';
     renderAll();
     const floaters = S.pendingFloaters;
@@ -2048,7 +2080,7 @@ function afterNotifications() {
     requestAnimationFrame(() => showFxFloaters(floaters));
   } else {
     S.pendingFloaters = {};
-    endCycle();
+    showTurnTransition(endCycle);
   }
 }
 
