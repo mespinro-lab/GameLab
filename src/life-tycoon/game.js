@@ -1430,6 +1430,16 @@ function renderSelectPane() {
   } else {
     restBtn.classList.add('hidden');
   }
+
+  const minCost = currentEra().mechanics.intensityTimeCosts[0];
+  const noTimeBanner = el('no-time-banner');
+  if (noTimeBanner) {
+    if (S.timeLeft < minCost) {
+      noTimeBanner.classList.remove('hidden');
+    } else {
+      noTimeBanner.classList.add('hidden');
+    }
+  }
 }
 
 // ── Zone Action Carousel ───────────────────────────────────────────────────────
@@ -1480,8 +1490,8 @@ function buildCarouselItems() {
 function applyCarouselItem(item, offset, dragPx) {
   const x        = offset * CAROUSEL_STEP + dragPx;
   const absNorm  = Math.abs(x) / CAROUSEL_STEP;
-  // adjacent: 10% smaller; further: 20% smaller
-  const scale    = Math.max(0.72, 1 - Math.min(absNorm, 2) * 0.10);
+  // center dominant: adjacent 35% smaller, far 50% smaller
+  const scale    = Math.max(0.48, 1 - Math.min(absNorm, 2) * 0.26);
   const rotY     = -(x / CAROUSEL_STEP) * 18;
   const opacity  = Math.max(0.35, 1 - absNorm * 0.25);
   const zi       = Math.max(0, Math.round(10 - Math.abs(x) / 18));
@@ -2765,6 +2775,7 @@ function bindEvents() {
   });
   el('btn-confirm-teach').addEventListener('click', executeTeach);
   el('btn-rest-cycle').addEventListener('click', endCycle);
+  el('no-time-banner').addEventListener('click', endCycle);
   el('btn-dismiss-birth').addEventListener('click', advanceFromBirth);
   el('btn-dismiss-discovery').addEventListener('click', advanceFromDiscovery);
   el('btn-dismiss-ev-result').addEventListener('click', () => {

@@ -284,6 +284,31 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 .pane.hidden { display: none; }
 
 /* ── Zone Cards (main select) ────────────────────────────────────────── */
+#no-time-banner {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20, 12, 3, 0.88);
+  border: 1px solid var(--gold);
+  border-radius: 24px;
+  padding: 0.55rem 1.2rem;
+  font-size: 0.82rem;
+  color: var(--text);
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+  z-index: 10;
+  animation: no-time-pulse 1.6s ease-in-out infinite;
+  box-shadow: 0 0 18px rgba(180,130,50,0.3);
+}
+#no-time-banner.hidden { display: none; }
+#no-time-banner strong { color: var(--gold); }
+@keyframes no-time-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 14px rgba(180,130,50,0.25); }
+  50%       { opacity: 0.65; box-shadow: 0 0 28px rgba(180,130,50,0.55); }
+}
+
 .famine-warning {
   background: rgba(200,60,60,0.15);
   border: 1px solid rgba(200,60,60,0.5);
