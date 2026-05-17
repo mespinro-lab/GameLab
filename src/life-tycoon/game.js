@@ -1431,51 +1431,100 @@ function renderSelectPane() {
   }
 }
 
+// ── Zone Action Carousel ───────────────────────────────────────────────────────
+const CAROUSEL = { actions: [], idx: 0, zoneId: null, dragStartX: 0, dragDelta: 0, dragging: false, didDrag: false };
+const CAROUSEL_STEP = 110;
+
 function openZoneSheet(zoneId) {
   const zone = currentEra().zones.find(z => z.id === zoneId);
   el('zone-sheet-icon').textContent = zone.icon;
   el('zone-sheet-name').textContent = zone.name;
-
-  const grid = el('zone-sheet-grid');
-  grid.innerHTML = '';
-
-  const statIcons = { physical: '💪', intelligence: '🧠', social: '👥' };
-  for (const proj of currentEra().actions.filter(p => p.zone === zoneId && isProjectUnlocked(p))) {
-    const blocked = blockedReason(proj);
-    const card = document.createElement('div');
-    card.className = 'proj-card' + (blocked ? ' proj-card-disabled' : '');
-    const riskHtml = proj.healthRisk > 0 ? `<div class="proj-impact"><span class="impact-tag risk">⚠️ Risc</span></div>` : '';
-    const gainParts = Object.entries(proj.statGain || {}).map(([s, v]) => `${statIcons[s] || s}+${v}`);
-    const gainHtml  = gainParts.length > 0 ? `<span class="proj-stat-gain">${gainParts.join(' ')}</span>` : '';
-    const mLvl  = getMasteryLevel(proj.id);
-    const mUses = getMasteryUses(proj.id);
-    const nextT = MASTERY_THRESHOLDS[mLvl];
-    const stars  = mLvl > 0 ? '★'.repeat(mLvl) : '☆';
-    const pct    = mLvl > 0 ? ` +${Math.round(mLvl * MASTERY_BONUS_LEVEL * 100)}%` : '';
-    const prog   = nextT ? ` · ${mUses}/${nextT}` : ' · màx';
-    const barPct = nextT ? Math.round((mUses / nextT) * 100) : 100;
-    const barHtml = nextT
-      ? `<div class="mastery-bar"><div class="mastery-bar-fill mastery-fill-${mLvl}" style="width:${barPct}%"></div></div>`
-      : '';
-    const masteryHtml = `<div class="proj-mastery-wrap"><span class="proj-mastery mastery-${mLvl}">${stars}${pct}${prog}</span>${barHtml}</div>`;
-    const quoteHtml = proj.quote
-      ? `<div class="proj-quote-wrap"><span class="proj-quote">"${proj.quote}"</span>${proj.quoteAttribution ? `<span class="proj-attribution"> ${proj.quoteAttribution}</span>` : ''}</div>`
-      : '';
-    card.innerHTML = `
-      <span class="proj-icon">${proj.icon}</span>
-      <span class="proj-name">${proj.name}</span>
-      <span class="proj-desc">${proj.description}</span>
-      ${blocked ? `<span class="proj-blocked-reason">${blocked}</span>` : `${quoteHtml}${gainHtml}${masteryHtml}${riskHtml}`}
-    `;
-    if (!blocked) {
-      card.addEventListener('click', () => {
-        hide('overlay-zone-actions');
-        selectProject(proj.id);
-      });
-    }
-    grid.appendChild(card);
-  }
+  CAROUSEL.actions  = currentEra().actions.filter(p => p.zone === zoneId && isProjectUnlocked(p));
+  CAROUSEL.idx      = 0;
+  CAROUSEL.zoneId   = zoneId;
+  CAROUSEL.dragDelta = 0;
+  CAROUSEL.didDrag   = false;
+  buildCarouselItems();
+  updateCarouselPositions(0);
+  updateCarouselInfo();
   show('overlay-zone-actions');
+}
+
+function buildCarouselItems() {
+  const vp = el('zone-carousel-viewport');
+  vp.innerHTML = '';
+  CAROUSEL.actions.forEach((proj, i) => {
+    const item = document.createElement('div');
+    item.className = 'zc-item' + (blockedReason(proj) ? ' zc-blocked' : '');
+    item.dataset.idx = i;
+    item.innerHTML = `<span class="zc-icon">${proj.icon}</span>`;
+    vp.appendChild(item);
+  });
+  const dotsEl = el('zc-dots');
+  dotsEl.innerHTML = '';
+  if (CAROUSEL.actions.length > 1) {
+    CAROUSEL.actions.forEach((_, i) => {
+      const d = document.createElement('div');
+      d.className = 'zc-dot' + (i === 0 ? ' active' : '');
+      dotsEl.appendChild(d);
+    });
+  }
+}
+
+function applyCarouselItem(item, offset, dragPx) {
+  const x       = offset * CAROUSEL_STEP + dragPx;
+  const absNorm = Math.abs(x) / CAROUSEL_STEP;
+  const scale   = Math.max(0.38, 1 - absNorm * 0.23);
+  const rotY    = -(x / CAROUSEL_STEP) * 22;
+  const opacity = Math.max(0.18, 1 - absNorm * 0.32);
+  const zi      = Math.max(0, Math.round(10 - Math.abs(x) / 18));
+  item.style.transition = dragPx !== 0 ? 'none' : 'transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.3s';
+  item.style.transform  = `translateX(${x}px) scale(${scale}) rotateY(${rotY}deg)`;
+  item.style.opacity    = opacity;
+  item.style.zIndex     = zi;
+  item.classList.toggle('zc-active', Math.abs(x) < 5 && dragPx === 0);
+}
+
+function updateCarouselPositions(dragPx) {
+  Array.from(el('zone-carousel-viewport').querySelectorAll('.zc-item')).forEach(item => {
+    applyCarouselItem(item, parseInt(item.dataset.idx) - CAROUSEL.idx, dragPx);
+  });
+  Array.from(el('zc-dots').children).forEach((d, i) => d.classList.toggle('active', i === CAROUSEL.idx));
+}
+
+function updateCarouselInfo() {
+  const { actions, idx } = CAROUSEL;
+  if (!actions.length) return;
+  const proj = actions[idx];
+  const blocked = blockedReason(proj);
+  const outIcons = { food: '🍖', health: '❤️', happiness: '😊', familyReputation: '🏛️' };
+  const statIcons = { physical: '💪', intelligence: '🧠', social: '👥' };
+  const parts = [
+    ...Object.entries(proj.outputs  || {}).filter(([k,v]) => v && outIcons[k] ).map(([k,v]) => `${outIcons[k]}${v>0?'+':''}${v}`),
+    ...Object.entries(proj.statGain || {}).filter(([,v]) => v).map(([s,v]) => `${statIcons[s]||s}+${v}`),
+  ];
+  if (proj.healthRisk > 0) parts.push('⚠️ Risc');
+  el('zc-name').textContent     = proj.name;
+  el('zc-benefits').textContent = parts.join('  ');
+  el('zc-desc').textContent     = blocked ? `🔒 ${blocked}` : (proj.description || '');
+  const btn = el('btn-zc-select');
+  btn.disabled    = !!blocked;
+  btn.textContent = blocked ? '🔒 Bloquejat' : 'Executar →';
+}
+
+function carouselNavigate(newIdx) {
+  if (newIdx < 0 || newIdx >= CAROUSEL.actions.length) return;
+  CAROUSEL.idx = newIdx;
+  updateCarouselPositions(0);
+  updateCarouselInfo();
+}
+
+function carouselOpenCurrent() {
+  const proj = CAROUSEL.actions[CAROUSEL.idx];
+  if (proj && !blockedReason(proj)) {
+    hide('overlay-zone-actions');
+    selectProject(proj.id);
+  }
 }
 
 function selectProject(projId) {
@@ -2611,11 +2660,69 @@ function bindEvents() {
     if (e.target === el('overlay-char-card')) hide('overlay-char-card');
   });
 
-  // Zone sheet
+  // Zone carousel
   el('btn-close-zone-sheet').addEventListener('click', () => hide('overlay-zone-actions'));
   el('overlay-zone-actions').addEventListener('click', e => {
     if (e.target === el('overlay-zone-actions')) hide('overlay-zone-actions');
   });
+  el('btn-zc-select').addEventListener('click', carouselOpenCurrent);
+
+  // Carousel touch
+  const carVp = el('zone-carousel-viewport');
+  carVp.addEventListener('touchstart', e => {
+    CAROUSEL.dragStartX = e.touches[0].clientX;
+    CAROUSEL.dragDelta = 0;
+    CAROUSEL.didDrag   = false;
+    CAROUSEL.dragging  = true;
+  }, { passive: true });
+  carVp.addEventListener('touchmove', e => {
+    if (!CAROUSEL.dragging) return;
+    CAROUSEL.dragDelta = e.touches[0].clientX - CAROUSEL.dragStartX;
+    if (Math.abs(CAROUSEL.dragDelta) > 8) CAROUSEL.didDrag = true;
+    updateCarouselPositions(CAROUSEL.dragDelta);
+  }, { passive: true });
+  carVp.addEventListener('touchend', () => {
+    if (!CAROUSEL.dragging) return;
+    CAROUSEL.dragging = false;
+    const dx = CAROUSEL.dragDelta;
+    if (!CAROUSEL.didDrag) return; // tap handled by click
+    if (dx < -50)      carouselNavigate(CAROUSEL.idx + 1);
+    else if (dx > 50)  carouselNavigate(CAROUSEL.idx - 1);
+    else               updateCarouselPositions(0);
+  });
+  carVp.addEventListener('click', e => {
+    if (CAROUSEL.didDrag) { CAROUSEL.didDrag = false; return; }
+    const item = e.target.closest('.zc-item');
+    if (!item) return;
+    const i = parseInt(item.dataset.idx);
+    if (i !== CAROUSEL.idx) carouselNavigate(i);
+    else carouselOpenCurrent();
+  });
+  // Mouse drag (desktop)
+  let _carMouse = false;
+  carVp.addEventListener('mousedown', e => {
+    _carMouse = true;
+    CAROUSEL.dragStartX = e.clientX;
+    CAROUSEL.dragDelta  = 0;
+    CAROUSEL.didDrag    = false;
+  });
+  carVp.addEventListener('mousemove', e => {
+    if (!_carMouse) return;
+    CAROUSEL.dragDelta = e.clientX - CAROUSEL.dragStartX;
+    if (Math.abs(CAROUSEL.dragDelta) > 8) CAROUSEL.didDrag = true;
+    updateCarouselPositions(CAROUSEL.dragDelta);
+  });
+  const carMouseEnd = () => {
+    if (!_carMouse) return;
+    _carMouse = false;
+    const dx = CAROUSEL.dragDelta;
+    if (!CAROUSEL.didDrag) return;
+    if (dx < -50)      carouselNavigate(CAROUSEL.idx + 1);
+    else if (dx > 50)  carouselNavigate(CAROUSEL.idx - 1);
+    else               updateCarouselPositions(0);
+  };
+  carVp.addEventListener('mouseup', carMouseEnd);
+  carVp.addEventListener('mouseleave', carMouseEnd);
 
   el('btn-close-pill').addEventListener('click', () => hide('overlay-pill'));
   el('btn-milestones').addEventListener('click', () => { renderMilestonesOverlay(); });

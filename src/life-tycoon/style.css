@@ -357,10 +357,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   border-radius: 16px 16px 0 0;
   padding: 1rem;
   max-height: 75dvh;
-  overflow-y: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.5rem;
 }
 #zone-sheet-header {
   display: flex;
@@ -383,11 +383,78 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   padding: 0.1rem 0.4rem;
   line-height: 1;
 }
-#zone-sheet-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
+/* ── Zone Action Carousel ────────────────────────────────────────────── */
+#zone-carousel-viewport {
+  position: relative;
+  height: 128px;
+  perspective: 560px;
+  perspective-origin: center center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  flex-shrink: 0;
 }
+.zc-item {
+  position: absolute;
+  width: 108px;
+  height: 108px;
+  border-radius: 22px;
+  background: var(--surface2);
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  will-change: transform, opacity;
+  transform-style: preserve-3d;
+}
+.zc-item.zc-active {
+  border-color: var(--gold);
+  background: rgba(160,110,55,0.18);
+  box-shadow: 0 0 18px rgba(180,130,50,0.25);
+}
+.zc-item.zc-blocked { filter: grayscale(0.55); }
+.zc-icon { font-size: 3rem; line-height: 1; pointer-events: none; }
+#zc-dots {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  min-height: 10px;
+}
+.zc-dot {
+  width: 6px; height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  transition: background 0.2s, width 0.2s;
+}
+.zc-dot.active { background: var(--gold); width: 14px; }
+#zone-carousel-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  text-align: center;
+  min-height: 68px;
+  padding: 0 0.4rem;
+}
+#zc-name { font-size: 1rem; font-weight: 700; color: var(--gold); }
+#zc-benefits { font-size: 0.8rem; color: var(--text); letter-spacing: 0.05em; min-height: 1.1em; }
+#zc-desc { font-size: 0.7rem; color: var(--text-dim); line-height: 1.3; }
+#btn-zc-select {
+  width: 100%;
+  background: var(--accent);
+  border: 1px solid var(--gold);
+  border-radius: 10px;
+  font-weight: 700;
+  padding: 0.65rem;
+  font-size: 0.95rem;
+  color: var(--text);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+#btn-zc-select:disabled { opacity: 0.38; cursor: not-allowed; }
 
 /* ── Project Select ──────────────────────────────────────────────────── */
 #select-header {
