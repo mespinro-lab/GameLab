@@ -399,11 +399,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 }
 .zc-item {
   position: absolute;
-  width: 108px;
-  height: 108px;
-  border-radius: 22px;
-  background: var(--surface2);
-  border: 2px solid var(--border);
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -412,12 +412,27 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   transform-style: preserve-3d;
 }
 .zc-item.zc-active {
-  border-color: var(--gold);
-  background: rgba(160,110,55,0.18);
-  box-shadow: 0 0 18px rgba(180,130,50,0.25);
+  filter: drop-shadow(0 0 14px rgba(200,160,60,0.65));
 }
-.zc-item.zc-blocked { filter: grayscale(0.55); }
-.zc-icon { font-size: 3rem; line-height: 1; pointer-events: none; }
+.zc-item.zc-blocked { filter: grayscale(0.65) opacity(0.5); }
+.zc-item.zc-no-time { filter: grayscale(0.4) opacity(0.55); }
+.zc-icon { font-size: 4.2rem; line-height: 1; pointer-events: none; }
+.zc-info-btn {
+  position: absolute;
+  top: 4px; right: 4px;
+  background: rgba(40,25,8,0.72);
+  border: 1px solid rgba(160,110,55,0.5);
+  border-radius: 50%;
+  width: 22px; height: 22px;
+  font-size: 0.7rem;
+  color: var(--gold);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  z-index: 5;
+}
+.zc-info-btn:active { background: rgba(160,110,55,0.4); }
 #zc-dots {
   display: flex;
   justify-content: center;
@@ -455,6 +470,60 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   flex-shrink: 0;
 }
 #btn-zc-select:disabled { opacity: 0.38; cursor: not-allowed; }
+
+/* ── Donut execution timer ───────────────────────────────────────────── */
+#exec-donut-overlay {
+  position: absolute;
+  top: 44px;
+  left: 0; right: 0;
+  bottom: calc(100dvh / 6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 35;
+  pointer-events: none;
+}
+#exec-donut-overlay.hidden { display: none; }
+#exec-donut-wrap {
+  position: relative;
+  width: 136px; height: 136px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#exec-donut-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+}
+#exec-donut-ring { stroke: var(--gold); }
+#exec-donut-icon {
+  font-size: 3.6rem;
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.7));
+}
+
+/* ── Action info overlay ─────────────────────────────────────────────── */
+#ai-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+#ai-icon { font-size: 1.8rem; flex-shrink: 0; }
+#ai-name { font-weight: 700; font-size: 1rem; color: var(--gold); flex: 1; }
+#btn-close-action-info {
+  background: none; border: none;
+  font-size: 1.2rem; color: var(--text-dim);
+  padding: 0.1rem 0.4rem; line-height: 1; cursor: pointer;
+}
+#ai-desc { font-size: 0.82rem; color: var(--text); line-height: 1.4; margin: 0; }
+#ai-benefits { font-size: 0.82rem; display: flex; flex-wrap: wrap; gap: 0.3rem; }
+#ai-mastery { font-size: 0.75rem; color: var(--gold); min-height: 1em; }
+#overlay-action-info { z-index: 55; }
 
 /* ── Project Select ──────────────────────────────────────────────────── */
 #select-header {

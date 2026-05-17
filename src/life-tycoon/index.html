@@ -315,6 +315,37 @@
       </div>
     </div>
 
+    <!-- Donut execution timer -->
+    <div id="exec-donut-overlay" class="hidden">
+      <div id="exec-donut-wrap">
+        <svg id="exec-donut-svg" viewBox="0 0 42 42">
+          <circle cx="21" cy="21" r="17" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="3.5"/>
+          <circle id="exec-donut-ring" cx="21" cy="21" r="17" fill="none" stroke-width="3.5"
+            stroke-linecap="round" stroke-dasharray="0 106.8"
+            style="transform:rotate(-90deg);transform-origin:50% 50%"/>
+        </svg>
+        <span id="exec-donut-icon"></span>
+      </div>
+    </div>
+
+    <!-- OVERLAY: Action info (info button, no execute) -->
+    <div id="overlay-action-info" class="overlay hidden">
+      <div class="zone-actions-sheet" style="max-height:62dvh; gap:0.55rem;">
+        <div id="ai-header">
+          <span id="ai-icon"></span>
+          <span id="ai-name"></span>
+          <button id="btn-close-action-info">✕</button>
+        </div>
+        <p id="ai-desc"></p>
+        <div id="ai-benefits"></div>
+        <div id="ai-mastery"></div>
+        <div id="ai-quote-wrap" class="item-quote-wrap hidden">
+          <blockquote id="ai-quote"></blockquote>
+          <cite id="ai-attribution"></cite>
+        </div>
+      </div>
+    </div>
+
     <!-- OVERLAY: Pill detail (trait / skill) -->
     <div id="overlay-pill" class="overlay hidden">
       <div class="overlay-card pill-detail-card">

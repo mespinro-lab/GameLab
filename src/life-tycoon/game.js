@@ -362,9 +362,9 @@ function calcResult(proj) {
     }
   }
 
-  const gainMult = 1 + (S.char.traitStatGainBonus || 0);
+  const gainMult = (1 + (S.char.traitStatGainBonus || 0)) * STAT_GAIN_SCALE;
   for (const [stat, gain] of Object.entries(proj.statGain || {})) {
-    fx['_gain_' + stat] = +(gain * gainMult).toFixed(2);
+    fx['_gain_' + stat] = +(gain * gainMult).toFixed(4);
   }
 
   const quality = finalMult > 1.0 ? 'good' : finalMult > 0.6 ? 'ok' : 'poor';
@@ -447,6 +447,7 @@ function tryDiscoverSkill(proj, score) {
 
 // ── Action mastery (dynasty-level, persistent) ────────────────────────────────
 const MASTERY_THRESHOLDS  = [5, 12, 25];
+const STAT_GAIN_SCALE     = 0.18; // stat growth residual per issue #6
 const MASTERY_BONUS_LEVEL = 0.20;
 
 function getMasteryLevel(actionId) {
@@ -1453,11 +1454,16 @@ function openZoneSheet(zoneId) {
 function buildCarouselItems() {
   const vp = el('zone-carousel-viewport');
   vp.innerHTML = '';
+  const timeCost = currentEra().mechanics.intensityTimeCosts[1];
   CAROUSEL.actions.forEach((proj, i) => {
+    const blocked = !!blockedReason(proj);
+    const noTime  = S.timeLeft < timeCost;
     const item = document.createElement('div');
-    item.className = 'zc-item' + (blockedReason(proj) ? ' zc-blocked' : '');
+    item.className = 'zc-item'
+      + (blocked ? ' zc-blocked' : '')
+      + (noTime   ? ' zc-no-time' : '');
     item.dataset.idx = i;
-    item.innerHTML = `<span class="zc-icon">${proj.icon}</span>`;
+    item.innerHTML = `<span class="zc-icon">${proj.icon}</span><button class="zc-info-btn" aria-label="Info">ⓘ</button>`;
     vp.appendChild(item);
   });
   const dotsEl = el('zc-dots');
@@ -1472,12 +1478,13 @@ function buildCarouselItems() {
 }
 
 function applyCarouselItem(item, offset, dragPx) {
-  const x       = offset * CAROUSEL_STEP + dragPx;
-  const absNorm = Math.abs(x) / CAROUSEL_STEP;
-  const scale   = Math.max(0.38, 1 - absNorm * 0.23);
-  const rotY    = -(x / CAROUSEL_STEP) * 22;
-  const opacity = Math.max(0.18, 1 - absNorm * 0.32);
-  const zi      = Math.max(0, Math.round(10 - Math.abs(x) / 18));
+  const x        = offset * CAROUSEL_STEP + dragPx;
+  const absNorm  = Math.abs(x) / CAROUSEL_STEP;
+  // adjacent: 10% smaller; further: 20% smaller
+  const scale    = Math.max(0.72, 1 - Math.min(absNorm, 2) * 0.10);
+  const rotY     = -(x / CAROUSEL_STEP) * 18;
+  const opacity  = Math.max(0.35, 1 - absNorm * 0.25);
+  const zi       = Math.max(0, Math.round(10 - Math.abs(x) / 18));
   item.style.transition = dragPx !== 0 ? 'none' : 'transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.3s';
   item.style.transform  = `translateX(${x}px) scale(${scale}) rotateY(${rotY}deg)`;
   item.style.opacity    = opacity;
@@ -1495,21 +1502,25 @@ function updateCarouselPositions(dragPx) {
 function updateCarouselInfo() {
   const { actions, idx } = CAROUSEL;
   if (!actions.length) return;
-  const proj = actions[idx];
+  const proj    = actions[idx];
   const blocked = blockedReason(proj);
-  const outIcons = { food: '🍖', health: '❤️', happiness: '😊', familyReputation: '🏛️' };
+  const timeCost = currentEra().mechanics.intensityTimeCosts[1];
+  const noTime  = S.timeLeft < timeCost;
+  const outIcons  = { food: '🍖', health: '❤️', happiness: '😊', familyReputation: '🏛️' };
   const statIcons = { physical: '💪', intelligence: '🧠', social: '👥' };
+  // Outputs with amounts; stats as icon-only (issue #6)
   const parts = [
-    ...Object.entries(proj.outputs  || {}).filter(([k,v]) => v && outIcons[k] ).map(([k,v]) => `${outIcons[k]}${v>0?'+':''}${v}`),
-    ...Object.entries(proj.statGain || {}).filter(([,v]) => v).map(([s,v]) => `${statIcons[s]||s}+${v}`),
+    ...Object.entries(proj.outputs || {}).filter(([k,v]) => v && outIcons[k]).map(([k,v]) => `${outIcons[k]}${v > 0 ? '+' : ''}${v}`),
+    ...Object.entries(proj.statGain || {}).filter(([,v]) => v).map(([s]) => statIcons[s] || s),
   ];
-  if (proj.healthRisk > 0) parts.push('⚠️ Risc');
+  if (proj.healthRisk > 0) parts.push('⚠️');
   el('zc-name').textContent     = proj.name;
   el('zc-benefits').textContent = parts.join('  ');
   el('zc-desc').textContent     = blocked ? `🔒 ${blocked}` : (proj.description || '');
   const btn = el('btn-zc-select');
-  btn.disabled    = !!blocked;
-  btn.textContent = blocked ? '🔒 Bloquejat' : 'Executar →';
+  const canRun = !blocked && !noTime;
+  btn.disabled    = !canRun;
+  btn.textContent = blocked ? '🔒 Bloquejat' : noTime ? '⏰ Sense temps aquest torn' : 'Executar →';
 }
 
 function carouselNavigate(newIdx) {
@@ -1521,10 +1532,130 @@ function carouselNavigate(newIdx) {
 
 function carouselOpenCurrent() {
   const proj = CAROUSEL.actions[CAROUSEL.idx];
-  if (proj && !blockedReason(proj)) {
-    hide('overlay-zone-actions');
-    selectProject(proj.id);
+  if (!proj || blockedReason(proj)) return;
+  const timeCost = currentEra().mechanics.intensityTimeCosts[1];
+  if (S.timeLeft < timeCost) return;
+  hide('overlay-zone-actions');
+  if (proj.teachesSkill) {
+    selectProject(proj.id); // teach pane still needed
+  } else {
+    executeActionDirect(proj);
   }
+}
+
+// ── Direct execution (no intensity pane) ──────────────────────────────────────
+function executeActionDirect(proj) {
+  S.intensity      = 2; // normal
+  S.activeProject  = proj;
+
+  const result = calcResult(proj);
+  applyFx(result.fx);
+  accumulateFloaters(result.fx);
+
+  if (!S.actionMastery) S.actionMastery = {};
+  S.actionMastery[proj.id] = (S.actionMastery[proj.id] || 0) + 1;
+
+  if (proj.id === 'hunt' && result.quality !== 'poor') S.char.huntCount++;
+  if (proj.generatesPartner && result.quality !== 'poor' && !S.char.partner) S.char.partner = generatePartner();
+  if (proj.generatesChild && result.quality !== 'poor' && S.char.partner) {
+    if (S.char.children.length < currentEra().maxChildren) {
+      const newChild = generateChild();
+      S.char.children.push(newChild);
+      S.pendingBirths.push(newChild);
+    }
+  }
+
+  const timeCost = currentEra().mechanics.intensityTimeCosts[1];
+  S.timeLeft = Math.max(0, S.timeLeft - timeCost);
+
+  const discovered = tryDiscoverSkill(proj, result.finalMult);
+  const event      = tryTriggerEvent(proj, result.quality);
+  if (discovered.length > 0) S.pendingDiscoveries.push(...discovered);
+  checkZoneDiscoveries();
+  if (event) S.pendingEvent = event;
+
+  const fxStr = fxSummary(result.fx);
+  addLog(proj.icon, proj.name + (fxStr ? ' — ' + fxStr : ''), 'action');
+  checkMilestones();
+  saveGame();
+
+  // Capture floaters before renderAll wipes them
+  const floaters = S.pendingFloaters;
+  S.pendingFloaters = {};
+
+  S.phase = 'select';
+  renderAll();
+
+  // Show donut, then floaters, then notifications
+  showDonutAnimation(proj, () => {
+    showFxFloaters(floaters);
+    renderStats();
+    setTimeout(() => handlePostAction(), 700);
+  });
+}
+
+function handlePostAction() {
+  const minCost = currentEra().mechanics.intensityTimeCosts[0];
+  const canContinue = S.timeLeft >= minCost;
+  if (S.pendingBirths.length > 0) {
+    S.phase = 'birth'; renderAll();
+  } else if (canContinue && S.pendingEvent) {
+    S.phase = 'event'; renderAll();
+  } else if (canContinue && S.pendingDiscoveries.length > 0) {
+    S.phase = 'discovery'; renderAll();
+  } else if (canContinue) {
+    S.phase = 'select'; renderAll();
+  } else {
+    endCycle();
+  }
+}
+
+function showDonutAnimation(proj, onComplete) {
+  el('exec-donut-icon').textContent = proj.icon;
+  const ring = el('exec-donut-ring');
+  const C    = 106.8; // 2π × 17
+  ring.style.transition      = 'none';
+  ring.style.strokeDasharray = `0 ${C}`;
+  el('exec-donut-overlay').classList.remove('hidden');
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    ring.style.transition      = `stroke-dasharray 1.8s linear`;
+    ring.style.strokeDasharray = `${C} 0`;
+  }));
+  setTimeout(() => {
+    el('exec-donut-overlay').classList.add('hidden');
+    ring.style.transition      = 'none';
+    ring.style.strokeDasharray = `0 ${C}`;
+    onComplete();
+  }, 1950);
+}
+
+function showActionInfo(proj) {
+  const outIcons  = { food: '🍖', health: '❤️', happiness: '😊', familyReputation: '🏛️' };
+  const statIcons = { physical: '💪', intelligence: '🧠', social: '👥' };
+  el('ai-icon').textContent = proj.icon;
+  el('ai-name').textContent = proj.name;
+  el('ai-desc').textContent = proj.description || '';
+  const parts = [
+    ...Object.entries(proj.outputs || {}).filter(([k,v]) => v && outIcons[k]).map(([k,v]) => `${outIcons[k]} ${v > 0 ? '+' : ''}${v}`),
+    ...Object.entries(proj.statGain || {}).filter(([,v]) => v).map(([s]) => statIcons[s] || s),
+    ...(proj.healthRisk > 0 ? ['⚠️ Risc'] : []),
+  ];
+  el('ai-benefits').innerHTML = parts.map(p => `<span class="impact-tag">${p}</span>`).join(' ');
+  const qw = el('ai-quote-wrap');
+  if (proj.quote) {
+    el('ai-quote').textContent       = `"${proj.quote}"`;
+    el('ai-attribution').textContent = proj.quoteAttribution || '';
+    qw.classList.remove('hidden');
+  } else {
+    qw.classList.add('hidden');
+  }
+  const mLvl = getMasteryLevel(proj.id);
+  const mUses = getMasteryUses(proj.id);
+  const nextT = MASTERY_THRESHOLDS[mLvl];
+  el('ai-mastery').textContent = mLvl > 0
+    ? `${'★'.repeat(mLvl)} Mestratge${nextT ? ` · ${mUses}/${nextT}` : ' · màx'}`
+    : mUses > 0 ? `☆ Mestratge ${mUses}/${MASTERY_THRESHOLDS[0]}` : '';
+  show('overlay-action-info');
 }
 
 function selectProject(projId) {
@@ -2692,6 +2823,12 @@ function bindEvents() {
   });
   carVp.addEventListener('click', e => {
     if (CAROUSEL.didDrag) { CAROUSEL.didDrag = false; return; }
+    // Info button
+    if (e.target.closest('.zc-info-btn')) {
+      const item = e.target.closest('.zc-item');
+      if (item) showActionInfo(CAROUSEL.actions[parseInt(item.dataset.idx)]);
+      return;
+    }
     const item = e.target.closest('.zc-item');
     if (!item) return;
     const i = parseInt(item.dataset.idx);
@@ -2724,6 +2861,10 @@ function bindEvents() {
   carVp.addEventListener('mouseup', carMouseEnd);
   carVp.addEventListener('mouseleave', carMouseEnd);
 
+  el('btn-close-action-info').addEventListener('click', () => hide('overlay-action-info'));
+  el('overlay-action-info').addEventListener('click', e => {
+    if (e.target === el('overlay-action-info')) hide('overlay-action-info');
+  });
   el('btn-close-pill').addEventListener('click', () => hide('overlay-pill'));
   el('btn-milestones').addEventListener('click', () => { renderMilestonesOverlay(); });
   el('btn-close-milestones').addEventListener('click', () => hide('overlay-milestones'));
