@@ -2298,6 +2298,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   filter: brightness(0) invert(1);
   opacity: 1;
 }
+.food-icon { font-size: 1rem; line-height: 1; }
 #panel-food-fc {
   color: var(--text-dim);
   font-size: 0.65rem;
@@ -2307,10 +2308,16 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 #panel-bottom-bar .rest-btn {
   margin-top: 0;
   width: auto;
-  padding: 0.22rem 0.6rem;
-  font-size: 0.72rem;
+  padding: 0.3rem 0.9rem;
+  font-size: 0.78rem;
+  font-weight: 700;
   flex-shrink: 0;
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(160,110,55,0.12);
+  letter-spacing: 0.02em;
 }
+#panel-bottom-bar .rest-btn:active { background: rgba(160,110,55,0.28); }
 
 #panel-bottom #session-log-list {
   flex: 1;
