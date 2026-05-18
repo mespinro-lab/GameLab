@@ -478,7 +478,7 @@ const GAME_DATA = {
           successTexts: ['L\'intercanvi és fructífer.', 'Noves relacions comercials establertes.'],
           failTexts: ['El bescanvi no surt bé.', 'L\'altra tribu no confia prou.'] },
         // ── Cooking Mastery ──
-        { id: 'cook_feast', name: 'Gran Festí', icon: '🍖', category: 'home',
+        { id: 'cook_feast', name: 'Gran Festí', icon: '🍖', category: 'home', locked: true, tokenCost: { vigor: 4, saber: 10, prestigi: 6 },
           description: 'Prepara un festí per a tota la tribu. Aliment abundant, cohesió i alegria màximes.',
           quote: 'Un festí no és menjar: és la celebració que la vida mereix ser viscuda junts.',
           quoteAttribution: '— Epicur, Carta a Meneceu, ~300 aC (adaptat)',
@@ -488,7 +488,7 @@ const GAME_DATA = {
           destreseDiscovery: ['cooking'], eventPool: [], zone: 'home',
           successTexts: ['El festí reuneix tota la tribu.', 'L\'aroma omple la cova. Tothom menja feliç.'],
           failTexts: ['El festí no surt com esperaves.', 'El menjar no és suficient per a tothom.'] },
-        { id: 'preserve_food', name: 'Conservar Aliments', icon: '🏺', category: 'home',
+        { id: 'preserve_food', name: 'Conservar Aliments', icon: '🏺', category: 'home', locked: true, tokenCost: { vigor: 4, saber: 14, prestigi: 0 },
           description: 'Tècniques de conservació que amplien temporalment la capacitat d\'emmagatzematge.',
           quote: 'La previsió és la saviesa dels qui sobreviuen l\'hivern.',
           quoteAttribution: '— Proverbi dels pobles del nord d\'Europa (reconstrucció)',
@@ -498,7 +498,7 @@ const GAME_DATA = {
           successTexts: ['Les reserves creixent. L\'hivern no us tocarà.', 'La tècnica de conservació és un èxit.'],
           failTexts: ['Els aliments es malbaraten.', 'La conservació no funciona avui.'] },
         // ── Fire Techniques ──
-        { id: 'torch_hunt', name: 'Caça amb Torxes', icon: '🕯️', category: 'survival',
+        { id: 'torch_hunt', name: 'Caça amb Torxes', icon: '🕯️', category: 'survival', locked: true, tokenCost: { vigor: 14, saber: 8, prestigi: 0 },
           description: 'Caça nocturna amb torxes. Les preses no s\'esperen la llum.',
           quote: 'La llum que portem al bosc és la que fa recular les ombres.',
           quoteAttribution: '— Proverbi prehistòric (reconstrucció)',
@@ -510,7 +510,7 @@ const GAME_DATA = {
           successTexts: ['Les torxes illuminen la presa.', 'La cacera nocturna és un èxit.'],
           failTexts: ['La foscor enganya.', 'La presa escapa a les ombres.'] },
         // ── Big Game Hunting ──
-        { id: 'hunt_mammoth', name: 'Caçar el Mamut', icon: '🦣', category: 'survival',
+        { id: 'hunt_mammoth', name: 'Caçar el Mamut', icon: '🦣', category: 'survival', locked: true, tokenCost: { vigor: 18, saber: 10, prestigi: 0 },
           description: 'La gran caça. Perill extrem, recompensa llegendària.',
           quote: 'Les grans preses requereixen els grans homes.',
           quoteAttribution: '— Homer, La Ilíada, ~800 aC (adaptat)',
@@ -523,7 +523,7 @@ const GAME_DATA = {
           successTexts: ['El mamut cau! La tribu celebra durant dies.', 'Una llegenda neix avui.'],
           failTexts: ['El mamut és invencible.', 'La cacera del mamut acaba malament.'] },
         // ── Advanced Crafting ──
-        { id: 'craft_weapons', name: 'Forjar Armes', icon: '🗡️', category: 'knowledge',
+        { id: 'craft_weapons', name: 'Forjar Armes', icon: '🗡️', category: 'knowledge', locked: true, tokenCost: { vigor: 14, saber: 6, prestigi: 0 },
           description: 'Armes especialitzades de pedra i os que milloren la caça del llinatge.',
           quote: 'L\'arma és la voluntat materialitzada del guerrer.',
           quoteAttribution: '— Miyamoto Musashi, El Llibre dels Cinc Anells, 1643 (adaptat)',
@@ -534,7 +534,7 @@ const GAME_DATA = {
           successTexts: ['Armes millors per a tots els caçadors.', 'La pedra revela el seu potencial.'],
           failTexts: ['Les armes no queden com volies.', 'La pedra es trenca.'] },
         // ── Shamanism ──
-        { id: 'healing_ritual', name: 'Ritual Curatiu', icon: '🌺', category: 'home',
+        { id: 'healing_ritual', name: 'Ritual Curatiu', icon: '🌺', category: 'home', locked: true, tokenCost: { vigor: 0, saber: 12, prestigi: 10 },
           description: 'Ritual espiritual per guarir els membres malalts de la tribu.',
           quote: 'El metge prepara el camí, però és la natura qui guareix.',
           quoteAttribution: '— Hipòcrates, Aforismes, ~400 aC (adaptat)',
@@ -544,7 +544,7 @@ const GAME_DATA = {
           destreseDiscovery: ['medicinal_plants'], eventPool: ['spiritual_vision'], zone: 'home',
           successTexts: ['La tribu es recupera.', 'El ritual funciona. La salut torna.'],
           failTexts: ['Els esperits no escolten avui.', 'El ritual no fa efecte.'] },
-        { id: 'spirit_ceremony', name: 'Cerimònia Espiritual', icon: '🪘', category: 'home',
+        { id: 'spirit_ceremony', name: 'Cerimònia Espiritual', icon: '🪘', category: 'home', locked: true, tokenCost: { vigor: 0, saber: 8, prestigi: 14 },
           description: 'Gran cerimònia que uneix la tribu al voltant de les forces del cosmos.',
           quote: 'Els ritus fan visibles les coses invisibles.',
           quoteAttribution: '— Mary Douglas, Purity and Danger, 1966 (adaptat)',
@@ -555,7 +555,7 @@ const GAME_DATA = {
           successTexts: ['La cerimònia commou tothom.', 'Els esperits somriuen. La tribu s\'uneix.'],
           failTexts: ['La cerimònia no connecta.', 'El silenci dels esperits és decebedor.'] },
         // ── Cave Art ──
-        { id: 'paint_cave', name: 'Pintura Rupestre', icon: '🎨', category: 'knowledge',
+        { id: 'paint_cave', name: 'Pintura Rupestre', icon: '🎨', category: 'knowledge', locked: true, tokenCost: { vigor: 0, saber: 12, prestigi: 8 },
           description: 'Immortalitza les gestes del llinatge a les parets de les coves.',
           quote: 'L\'art és la primera paraula que l\'home deixa als seus descendents.',
           quoteAttribution: '— André Leroi-Gourhan, Le Geste et la Parole, 1964 (adaptat)',
@@ -577,7 +577,7 @@ const GAME_DATA = {
           successTexts: ['Les llavors germinen. La collita promet.', 'La terra respon al treball del llinatge.'],
           failTexts: ['La plaga ataca els cultius.', 'La sequera atura el creixement.'] },
         // ── Shelter Building ──
-        { id: 'build_shelter', name: 'Construir Refugi', icon: '⛺', category: 'home',
+        { id: 'build_shelter', name: 'Construir Refugi', icon: '⛺', category: 'home', locked: true, tokenCost: { vigor: 14, saber: 6, prestigi: 0 },
           description: 'Construeix estructures permanents per protegir la tribu del fred i la pluja.',
           quote: 'Primer construïm les nostres llars, i després les nostres llars ens construeixen a nosaltres.',
           quoteAttribution: '— Winston Churchill, discurs al Parlament, 1943 (adaptat)',

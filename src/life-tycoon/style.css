@@ -441,6 +441,14 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 }
 .zc-item.zc-blocked { filter: grayscale(0.65) opacity(0.5); }
 .zc-item.zc-no-time { filter: grayscale(0.4) opacity(0.55); }
+.zc-item.zc-locked  { filter: grayscale(0.7) brightness(0.7); position: relative; }
+.zc-lock-badge {
+  position: absolute;
+  top: 2px; right: 4px;
+  font-size: 0.7rem;
+  line-height: 1;
+  pointer-events: none;
+}
 .zc-icon { font-size: 4.2rem; line-height: 1; pointer-events: none; }
 .zc-info-btn {
   position: absolute;

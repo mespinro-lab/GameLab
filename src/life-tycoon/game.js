@@ -195,6 +195,7 @@ function initState() {
     _victoryEnding: false,
     sessionLog: [],
     shopTokens: { vigor: 0, saber: 0, prestigi: 0 },
+    unlockedActionIds: [],
   };
 }
 
@@ -1607,7 +1608,12 @@ function openZoneSheet(zoneId) {
   const zone = currentEra().zones.find(z => z.id === zoneId);
   el('zone-sheet-icon').textContent = zone.icon;
   el('zone-sheet-name').textContent = zone.name;
-  CAROUSEL.actions  = currentEra().actions.filter(p => p.zone === zoneId && isProjectUnlocked(p));
+  if (!S.unlockedActionIds) S.unlockedActionIds = [];
+  const available   = currentEra().actions.filter(p => p.zone === zoneId && isProjectUnlocked(p));
+  const purchasable = currentEra().actions.filter(p =>
+    p.zone === zoneId && p.locked && !S.unlockedActionIds.includes(p.id) && !isProjectUnlocked(p)
+  );
+  CAROUSEL.actions = [...available, ...purchasable];
   CAROUSEL.idx      = 0;
   CAROUSEL.zoneId   = zoneId;
   CAROUSEL.dragDelta = 0;
@@ -1623,14 +1629,18 @@ function buildCarouselItems() {
   vp.innerHTML = '';
   const timeCost = currentEra().mechanics.intensityTimeCosts[1];
   CAROUSEL.actions.forEach((proj, i) => {
-    const blocked = !!blockedReason(proj);
-    const noTime  = S.timeLeft < timeCost;
+    const tokenLocked = isTokenLocked(proj);
+    const blocked = !tokenLocked && !!blockedReason(proj);
+    const noTime  = !tokenLocked && S.timeLeft < timeCost;
     const item = document.createElement('div');
     item.className = 'zc-item'
+      + (tokenLocked ? ' zc-locked' : '')
       + (blocked ? ' zc-blocked' : '')
       + (noTime   ? ' zc-no-time' : '');
     item.dataset.idx = i;
-    item.innerHTML = `<span class="zc-icon">${proj.icon}</span><button class="zc-info-btn" aria-label="Info">ⓘ</button>`;
+    item.innerHTML = tokenLocked
+      ? `<span class="zc-icon">${proj.icon}</span><span class="zc-lock-badge">🔒</span>`
+      : `<span class="zc-icon">${proj.icon}</span><button class="zc-info-btn" aria-label="Info">ⓘ</button>`;
     vp.appendChild(item);
   });
   const dotsEl = el('zc-dots');
@@ -1688,7 +1698,28 @@ function springEffect(dir) {
 function updateCarouselInfo() {
   const { actions, idx } = CAROUSEL;
   if (!actions.length) return;
-  const proj    = actions[idx];
+  const proj = actions[idx];
+
+  if (isTokenLocked(proj)) {
+    const cost = proj.tokenCost || {};
+    const tk = S.shopTokens || { vigor: 0, saber: 0, prestigi: 0 };
+    const canAfford =
+      (tk.vigor    || 0) >= (cost.vigor    || 0) &&
+      (tk.saber    || 0) >= (cost.saber    || 0) &&
+      (tk.prestigi || 0) >= (cost.prestigi || 0);
+    el('zc-name').textContent = `🔒 ${proj.name}`;
+    el('zc-desc').textContent = proj.description || '';
+    const costParts = [];
+    if (cost.vigor    > 0) costParts.push(`💪 ${cost.vigor}`);
+    if (cost.saber    > 0) costParts.push(`🧠 ${cost.saber}`);
+    if (cost.prestigi > 0) costParts.push(`👑 ${cost.prestigi}`);
+    el('zc-benefits').textContent = costParts.join('  ');
+    const btn = el('btn-zc-select');
+    btn.disabled    = !canAfford;
+    btn.textContent = canAfford ? 'Aprendre →' : '🔒 Tokens insuficients';
+    return;
+  }
+
   const blocked = blockedReason(proj);
   const timeCost = currentEra().mechanics.intensityTimeCosts[1];
   const noTime  = S.timeLeft < timeCost;
@@ -1729,7 +1760,9 @@ function carouselNavigate(newIdx) {
 
 function carouselOpenCurrent() {
   const proj = CAROUSEL.actions[CAROUSEL.idx];
-  if (!proj || blockedReason(proj)) return;
+  if (!proj) return;
+  if (isTokenLocked(proj)) { unlockAction(proj); return; }
+  if (blockedReason(proj)) return;
   const timeCost = currentEra().mechanics.intensityTimeCosts[1];
   if (S.timeLeft < timeCost) return;
   hide('overlay-zone-actions');
@@ -1741,6 +1774,32 @@ function carouselOpenCurrent() {
 }
 
 // ── Direct execution (no intensity pane) ──────────────────────────────────────
+function isTokenLocked(proj) {
+  if (!proj.locked) return false;
+  if (!S.unlockedActionIds) S.unlockedActionIds = [];
+  return !S.unlockedActionIds.includes(proj.id);
+}
+
+function unlockAction(proj) {
+  const cost = proj.tokenCost || {};
+  if (!S.shopTokens) S.shopTokens = { vigor: 0, saber: 0, prestigi: 0 };
+  if ((S.shopTokens.vigor    || 0) < (cost.vigor    || 0) ||
+      (S.shopTokens.saber    || 0) < (cost.saber    || 0) ||
+      (S.shopTokens.prestigi || 0) < (cost.prestigi || 0)) return;
+  S.shopTokens.vigor    -= (cost.vigor    || 0);
+  S.shopTokens.saber    -= (cost.saber    || 0);
+  S.shopTokens.prestigi -= (cost.prestigi || 0);
+  if (!S.unlockedActionIds) S.unlockedActionIds = [];
+  S.unlockedActionIds.push(proj.id);
+  if (proj.requiresSkill && !S.char.learnedSkillIds.includes(proj.requiresSkill)) {
+    S.char.learnedSkillIds.push(proj.requiresSkill);
+  }
+  addLog(proj.icon, `Has après: ${proj.name}`, 'skill');
+  saveGame();
+  renderShopTokens();
+  openZoneSheet(CAROUSEL.zoneId);
+}
+
 function renderShopTokens() {
   if (!S.shopTokens) S.shopTokens = { vigor: 0, saber: 0, prestigi: 0 };
   el('tok-vigor-val').textContent    = S.shopTokens.vigor;
