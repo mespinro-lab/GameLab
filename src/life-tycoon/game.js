@@ -1768,17 +1768,21 @@ function spawnTokenBalls(tokens) {
   const srcCY = srcRect.top  + srcRect.height / 2;
 
   [
-    { key: 'vigor',    targetId: 'tok-vigor',    count: Math.min(tokens.vigor,    5) },
-    { key: 'saber',    targetId: 'tok-saber',    count: Math.min(tokens.saber,    5) },
-    { key: 'prestigi', targetId: 'tok-prestigi', count: Math.min(tokens.prestigi, 5) },
-  ].forEach(({ key, targetId, count }, typeIdx) => {
+    { key: 'vigor',    targetId: 'tok-vigor',    valId: 'tok-vigor-val',    total: tokens.vigor },
+    { key: 'saber',    targetId: 'tok-saber',    valId: 'tok-saber-val',    total: tokens.saber },
+    { key: 'prestigi', targetId: 'tok-prestigi', valId: 'tok-prestigi-val', total: tokens.prestigi },
+  ].forEach(({ key, targetId, valId, total }, typeIdx) => {
     const targetEl = el(targetId);
-    if (!targetEl) return;
+    const valEl    = el(valId);
+    if (!targetEl || !valEl) return;
     const tRect = targetEl.getBoundingClientRect();
     const tCX = tRect.left + tRect.width / 2;
     const tCY = tRect.top  + tRect.height / 2;
+    const count   = Math.min(total, 5);
+    const perBall = Math.floor(total / count);
 
     for (let i = 0; i < count; i++) {
+      const amount = i === count - 1 ? total - perBall * (count - 1) : perBall;
       setTimeout(() => {
         const ball = document.createElement('div');
         ball.className = `shop-ball shop-ball-${key}`;
@@ -1792,6 +1796,7 @@ function spawnTokenBalls(tokens) {
           ball.style.opacity = '0';
           setTimeout(() => {
             ball.remove();
+            valEl.textContent = parseInt(valEl.textContent || '0') + amount;
             targetEl.classList.remove('tok-bump');
             void targetEl.offsetWidth;
             targetEl.classList.add('tok-bump');
@@ -1846,7 +1851,6 @@ function executeActionDirect(proj) {
     S.shopTokens.prestigi += tokens.prestigi;
     renderStats();
     renderTimePips();
-    renderShopTokens();
     renderStatsAnimated(oldRes);
     const floaters = S.pendingFloaters;
     S.pendingFloaters = {};
