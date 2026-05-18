@@ -194,6 +194,7 @@ function initState() {
     pendingEraTransition: null,
     _victoryEnding: false,
     sessionLog: [],
+    shopTokens: { vigor: 0, saber: 0, prestigi: 0 },
   };
 }
 
@@ -1350,6 +1351,7 @@ function renderHeader() {
   el('hdr-ec').textContent = S.eraCycle + 1;
   const ptInfo = el('panel-turn-info');
   if (ptInfo) ptInfo.textContent = `Gen. ${S.generation} · ${currentEra().name}`;
+  renderShopTokens();
 }
 
 function renderStats() {
@@ -1740,6 +1742,67 @@ function carouselOpenCurrent() {
 }
 
 // ── Direct execution (no intensity pane) ──────────────────────────────────────
+function renderShopTokens() {
+  if (!S.shopTokens) S.shopTokens = { vigor: 0, saber: 0, prestigi: 0 };
+  el('tok-vigor-val').textContent    = S.shopTokens.vigor;
+  el('tok-saber-val').textContent    = S.shopTokens.saber;
+  el('tok-prestigi-val').textContent = S.shopTokens.prestigi;
+}
+
+function generateShopTokens(proj) {
+  const sg = proj.statGain || {};
+  const physW = (sg.physical     || 0) > 0 ? 2 : 0;
+  const intW  = (sg.intelligence || 0) > 0 ? 2 : 0;
+  const socW  = (sg.social       || 0) > 0 ? 2 : 0;
+  return {
+    vigor:    1 + physW + Math.floor(Math.random() * 3),
+    saber:    1 + intW  + Math.floor(Math.random() * 3),
+    prestigi: 1 + socW  + Math.floor(Math.random() * 3),
+  };
+}
+
+function spawnTokenBalls(tokens) {
+  const sourceEl = el('exec-donut-wrap');
+  if (!sourceEl) return;
+  const srcRect = sourceEl.getBoundingClientRect();
+  const srcCX = srcRect.left + srcRect.width / 2;
+  const srcCY = srcRect.top  + srcRect.height / 2;
+
+  [
+    { key: 'vigor',    targetId: 'tok-vigor',    count: Math.min(tokens.vigor,    5) },
+    { key: 'saber',    targetId: 'tok-saber',    count: Math.min(tokens.saber,    5) },
+    { key: 'prestigi', targetId: 'tok-prestigi', count: Math.min(tokens.prestigi, 5) },
+  ].forEach(({ key, targetId, count }, typeIdx) => {
+    const targetEl = el(targetId);
+    if (!targetEl) return;
+    const tRect = targetEl.getBoundingClientRect();
+    const tCX = tRect.left + tRect.width / 2;
+    const tCY = tRect.top  + tRect.height / 2;
+
+    for (let i = 0; i < count; i++) {
+      setTimeout(() => {
+        const ball = document.createElement('div');
+        ball.className = `shop-ball shop-ball-${key}`;
+        ball.style.left = srcCX + 'px';
+        ball.style.top  = srcCY + 'px';
+        document.body.appendChild(ball);
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          ball.style.transition = `left 0.5s cubic-bezier(0.2,0.8,0.4,1), top 0.5s cubic-bezier(0.2,0.8,0.4,1), opacity 0.2s ease 0.35s`;
+          ball.style.left    = tCX + 'px';
+          ball.style.top     = tCY + 'px';
+          ball.style.opacity = '0';
+          setTimeout(() => {
+            ball.remove();
+            targetEl.classList.remove('tok-bump');
+            void targetEl.offsetWidth;
+            targetEl.classList.add('tok-bump');
+          }, 560);
+        }));
+      }, typeIdx * 60 + i * 120);
+    }
+  });
+}
+
 function executeActionDirect(proj) {
   S.intensity     = 2;
   S.activeProject = proj;
@@ -1772,13 +1835,19 @@ function executeActionDirect(proj) {
   renderAll(); // render with PRE-action stats
 
   // Action donut → apply fx → turn-end donut if needed
+  const tokens = generateShopTokens(proj);
+  setTimeout(() => spawnTokenBalls(tokens), 400);
   showDonutAnimation(proj, null, () => {
     const oldRes = snapshotResources();
     applyFx(result.fx);
     accumulateFloaters(result.fx);
     S.timeLeft = Math.max(0, S.timeLeft - timeCost);
+    S.shopTokens.vigor    += tokens.vigor;
+    S.shopTokens.saber    += tokens.saber;
+    S.shopTokens.prestigi += tokens.prestigi;
     renderStats();
     renderTimePips();
+    renderShopTokens();
     renderStatsAnimated(oldRes);
     const floaters = S.pendingFloaters;
     S.pendingFloaters = {};

@@ -2068,10 +2068,57 @@ body.donut-active * { pointer-events: none !important; }
   justify-content: space-between;
   padding: 0.35rem 0.7rem;
   background: rgba(28, 16, 4, 0.95);
-  border-bottom: 2px solid rgba(120, 80, 30, 0.6);
+  border-bottom: 1px solid rgba(120, 80, 30, 0.4);
   box-shadow: 0 3px 10px rgba(0,0,0,0.55);
   flex-shrink: 0;
 }
+#shop-token-bar {
+  display: flex;
+  justify-content: center;
+  gap: 1.4rem;
+  padding: 0.18rem 0.7rem;
+  background: rgba(20, 12, 3, 0.9);
+  border-bottom: 2px solid rgba(120, 80, 30, 0.6);
+  flex-shrink: 0;
+}
+.shop-token {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 0.22rem;
+  letter-spacing: 0.01em;
+}
+.shop-token-val {
+  font-weight: 700;
+  color: var(--gold);
+  min-width: 1.6rem;
+  display: inline-block;
+  text-align: right;
+}
+.tok-bump {
+  animation: tok-bump-anim 0.28s ease-out;
+}
+@keyframes tok-bump-anim {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.45); }
+  100% { transform: scale(1); }
+}
+
+/* ── Shop token balls ─────────────────────────────────────────────────────────── */
+.shop-ball {
+  position: fixed;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  z-index: 200;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  opacity: 1;
+}
+.shop-ball-vigor    { background: #d94020; box-shadow: 0 0 7px #d9402088; }
+.shop-ball-saber    { background: #2878c8; box-shadow: 0 0 7px #2878c888; }
+.shop-ball-prestigi { background: #c8a028; box-shadow: 0 0 7px #c8a02888; }
 
 #btn-lineage-toggle {
   background: none;
