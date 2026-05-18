@@ -510,6 +510,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   pointer-events: none;
 }
 #exec-donut-overlay.hidden { display: none; }
+body.donut-active * { pointer-events: none !important; }
 #exec-donut-wrap {
   position: relative;
   width: 136px; height: 136px;

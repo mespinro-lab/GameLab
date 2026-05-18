@@ -643,6 +643,7 @@ function calcTimeTotal() {
 
 // ── End of cycle ──────────────────────────────────────────────────────────────
 function endCycle() {
+  const oldSnap = snapshotResources();
   const M = currentEra().mechanics;
   S.char.age += 2;
 
@@ -735,6 +736,7 @@ function endCycle() {
   } else {
     S.phase = S.pendingDiscoveries.length > 0 ? 'discovery' : 'select';
     renderAll();
+    renderStatsAnimated(oldSnap);
   }
 }
 
@@ -844,9 +846,10 @@ function doSuccession(child) {
   S.phase = S.pendingDiscoveries.length > 0 ? 'discovery' : 'select';
   saveGame();
   hide('overlay-succession');
+  hide('overlay-menu');
   renderMenuEra();
   updateContinueBtn();
-  showNewGeneration(() => show('overlay-menu'));
+  showNewGeneration(() => renderAll());
 }
 
 const GEN_QUOTES = [
@@ -1488,7 +1491,7 @@ function renderSelectPane() {
     restBtn.classList.add('hidden');
   }
 
-  const minCost = currentEra().mechanics.intensityTimeCosts[0];
+  const minCost = currentEra().mechanics.intensityTimeCosts[1];
   const noTimeBanner = el('no-time-banner');
   if (noTimeBanner) {
     if (S.timeLeft < minCost) {
@@ -1595,7 +1598,7 @@ function updateCarouselInfo() {
   const outIcons  = { food: '🍖', health: '❤️', happiness: '😊', familyReputation: '🏛️' };
   const statIcons = { physical: '💪', intelligence: '🧠', social: '👥' };
   // Use real computed values (with stat/knowledge/mastery multipliers)
-  const preview = calcImpactPreview(proj, 2);
+  const { preview } = calcImpactPreview(proj, 2);
   const parts = [
     ...Object.entries(preview).filter(([k,v]) => v && outIcons[k]).map(([k,v]) => `${outIcons[k]}${v > 0 ? '+' : ''}${v}`),
     ...Object.entries(proj.statGain || {}).filter(([,v]) => v).map(([s]) => statIcons[s] || s),
@@ -1686,16 +1689,7 @@ function executeActionDirect(proj) {
     showFxFloaters(floaters);
     checkMilestones();
     saveGame();
-    setTimeout(() => {
-      const actionCost = currentEra().mechanics.intensityTimeCosts[1];
-      if (S.timeLeft >= actionCost) {
-        handlePostAction();
-      } else {
-        showDonutAnimation({ icon: '⏱️' }, 'Finalitzant torn', () => {
-          handlePostAction();
-        });
-      }
-    }, 700);
+    setTimeout(() => handlePostAction(), 700);
   });
 }
 
@@ -1789,6 +1783,7 @@ function showDonutAnimation(proj, label, onComplete) {
   ring.style.transition      = 'none';
   ring.style.strokeDasharray = `0 ${C}`;
   el('exec-donut-overlay').classList.remove('hidden');
+  document.body.classList.add('donut-active'); // block all interactions
   requestAnimationFrame(() => requestAnimationFrame(() => {
     ring.style.transition      = `stroke-dasharray 1.8s linear`;
     ring.style.strokeDasharray = `${C} 0`;
@@ -1797,6 +1792,7 @@ function showDonutAnimation(proj, label, onComplete) {
     el('exec-donut-overlay').classList.add('hidden');
     ring.style.transition      = 'none';
     ring.style.strokeDasharray = `0 ${C}`;
+    document.body.classList.remove('donut-active');
     onComplete();
   }, 1950);
 }
@@ -2356,10 +2352,10 @@ function renderBirthPane() {
 function advanceFromBirth() {
   S.pendingBirths.shift();
   if (S.pendingBirths.length > 0) { renderAll(); return; }
-  const minCost = currentEra().mechanics.intensityTimeCosts[0];
-  if (S.timeLeft >= minCost && S.pendingEvent) {
+  const actionCost = currentEra().mechanics.intensityTimeCosts[1];
+  if (S.timeLeft >= actionCost && S.pendingEvent) {
     S.phase = 'event'; renderAll();
-  } else if (S.timeLeft >= minCost && S.pendingDiscoveries.length > 0) {
+  } else if (S.timeLeft >= actionCost && S.pendingDiscoveries.length > 0) {
     S.phase = 'discovery'; renderAll();
   } else {
     afterNotifications();
@@ -2430,8 +2426,8 @@ function renderResultPane() {
   el('result-discoveries').innerHTML = '';
 
   const goNext = () => {
-    const minCost = currentEra().mechanics.intensityTimeCosts[0];
-    const canContinue = S.timeLeft >= minCost;
+    const actionCost = currentEra().mechanics.intensityTimeCosts[1];
+    const canContinue = S.timeLeft >= actionCost;
     if (S.pendingBirths.length > 0) {
       S.phase = 'birth'; renderAll();
     } else if (canContinue && S.pendingEvent) {
@@ -2441,7 +2437,7 @@ function renderResultPane() {
     } else if (canContinue) {
       S.phase = 'select'; renderAll();
     } else {
-      endCycle();
+      showDonutAnimation({ icon: '⏱️' }, 'Finalitzant torn', endCycle);
     }
   };
 
