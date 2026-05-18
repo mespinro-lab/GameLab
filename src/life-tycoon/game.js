@@ -1611,7 +1611,7 @@ function openZoneSheet(zoneId) {
   if (!S.unlockedActionIds) S.unlockedActionIds = [];
   const available   = currentEra().actions.filter(p => p.zone === zoneId && isProjectUnlocked(p));
   const purchasable = currentEra().actions.filter(p =>
-    p.zone === zoneId && p.locked && !S.unlockedActionIds.includes(p.id) && !isProjectUnlocked(p)
+    p.zone === zoneId && p.locked && !isProjectUnlocked(p) && isProjectUnlockedIgnoreSkill(p)
   );
   CAROUSEL.actions = [...available, ...purchasable];
   CAROUSEL.idx      = 0;
@@ -1774,10 +1774,23 @@ function carouselOpenCurrent() {
 }
 
 // ── Direct execution (no intensity pane) ──────────────────────────────────────
+function isProjectUnlockedIgnoreSkill(proj) {
+  const r = proj.requirements || {};
+  if (r.physical     && S.char.physical     < r.physical)     return false;
+  if (r.intelligence && S.char.intelligence < r.intelligence) return false;
+  if (r.social       && S.char.social       < r.social)       return false;
+  if (r.health       && S.resources.health.value < r.health)  return false;
+  if (r.requiresPartner && !S.char.partner)                   return false;
+  if (r.requiresChild   && S.char.children.length === 0)      return false;
+  if (proj.generatesChild && S.char.children.length >= (currentEra().maxChildren || 99)) return false;
+  if (r.knowledgeIds) { for (const k of r.knowledgeIds) { if (!hasKnowledge(k)) return false; } }
+  if (proj.requiresTech    && !hasKnowledge(proj.requiresTech)) return false;
+  if (proj.requiresNoPartner && S.char.partner)                 return false;
+  return true;
+}
+
 function isTokenLocked(proj) {
-  if (!proj.locked) return false;
-  if (!S.unlockedActionIds) S.unlockedActionIds = [];
-  return !S.unlockedActionIds.includes(proj.id);
+  return proj.locked === true && !isProjectUnlocked(proj);
 }
 
 function unlockAction(proj) {
@@ -1789,10 +1802,8 @@ function unlockAction(proj) {
   S.shopTokens.vigor    -= (cost.vigor    || 0);
   S.shopTokens.saber    -= (cost.saber    || 0);
   S.shopTokens.prestigi -= (cost.prestigi || 0);
-  if (!S.unlockedActionIds) S.unlockedActionIds = [];
-  S.unlockedActionIds.push(proj.id);
-  if (proj.requiresSkill && !S.char.learnedSkillIds.includes(proj.requiresSkill)) {
-    S.char.learnedSkillIds.push(proj.requiresSkill);
+  if (proj.requiresSkill && !hasUnlockedSkill(proj.requiresSkill)) {
+    S.unlockedSkillIds.push(proj.requiresSkill);
   }
   addLog(proj.icon, `Has après: ${proj.name}`, 'skill');
   saveGame();
@@ -1809,13 +1820,13 @@ function renderShopTokens() {
 
 function generateShopTokens(proj) {
   const sg = proj.statGain || {};
-  const physW = (sg.physical     || 0) > 0 ? 2 : 0;
-  const intW  = (sg.intelligence || 0) > 0 ? 2 : 0;
-  const socW  = (sg.social       || 0) > 0 ? 2 : 0;
+  const physW = (sg.physical     || 0) > 0;
+  const intW  = (sg.intelligence || 0) > 0;
+  const socW  = (sg.social       || 0) > 0;
   return {
-    vigor:    1 + physW + Math.floor(Math.random() * 3),
-    saber:    1 + intW  + Math.floor(Math.random() * 3),
-    prestigi: 1 + socW  + Math.floor(Math.random() * 3),
+    vigor:    physW ? 1 + Math.floor(Math.random() * 2) : (Math.random() < 0.15 ? 1 : 0),
+    saber:    intW  ? 1 + Math.floor(Math.random() * 2) : (Math.random() < 0.15 ? 1 : 0),
+    prestigi: socW  ? 1 + Math.floor(Math.random() * 2) : (Math.random() < 0.15 ? 1 : 0),
   };
 }
 
