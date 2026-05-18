@@ -12,6 +12,8 @@ function hide(id) { el(id).classList.add('hidden'); }
 
 // ── Timer ─────────────────────────────────────────────────────────────────────
 let _timer = null;
+let _restConfirmPending = false;
+let _restConfirmTimer = null;
 
 function gameDelay(ms, fn) {
   clearTimeout(_timer);
@@ -737,6 +739,10 @@ function endCycle() {
     S.phase = S.pendingDiscoveries.length > 0 ? 'discovery' : 'select';
     renderAll();
     renderStatsAnimated(oldSnap);
+    const costFx = {};
+    if (S.resources.food.value < oldSnap.food) costFx.food = Math.round(S.resources.food.value - oldSnap.food);
+    if (S.resources.health.value < oldSnap.health) costFx.health = Math.round(S.resources.health.value - oldSnap.health);
+    if (Object.keys(costFx).length > 0) setTimeout(() => showFxFloaters(costFx), 200);
   }
 }
 
@@ -1162,33 +1168,69 @@ function renderCharCard() {
   el('char-card-sub').textContent = `${S.char.age} anys · ${genderLabel} · Gen. ${S.generation}`;
 
   const stats = [
-    { icon: '💪', label: 'Força', val: S.char.physical },
-    { icon: '🧠', label: 'Intel·ligència', val: S.char.intelligence },
-    { icon: '🗣️', label: 'Social', val: S.char.social },
+    { icon: '💪', label: 'Força', val: S.char.physical.toFixed(1) },
+    { icon: '🧠', label: 'Intel·ligència', val: S.char.intelligence.toFixed(1) },
+    { icon: '🗣️', label: 'Social', val: S.char.social.toFixed(1) },
   ];
   el('char-card-stats').innerHTML = `<div class="char-card-label">Característiques</div>` +
     stats.map(s => `<div class="char-card-stat"><span>${s.icon} ${s.label}</span><strong>${s.val}</strong></div>`).join('');
 
-  const traitsHtml = S.char.traitIds.map(id => {
-    const t = (GAME_DATA.traits || []).find(t => t.id === id);
-    return t ? `<div class="char-card-trait">${t.icon || '✦'} <strong>${t.name}</strong> — ${t.description || ''}</div>` : '';
-  }).join('') || '<div class="char-card-trait" style="color:var(--text-dim)">Sense trets assignats</div>';
-  el('char-card-traits').innerHTML = `<div class="char-card-label">Trets innats</div>${traitsHtml}`;
+  // Traits (clickable)
+  const traitsEl = el('char-card-traits');
+  traitsEl.innerHTML = '<div class="char-card-label">Trets innats</div>';
+  if (S.char.traitIds.length === 0) {
+    traitsEl.insertAdjacentHTML('beforeend', '<div class="char-card-trait" style="color:var(--text-dim)">Sense trets assignats</div>');
+  } else {
+    S.char.traitIds.forEach(id => {
+      const t = (GAME_DATA.traits || []).find(t => t.id === id);
+      if (!t) return;
+      const div = document.createElement('div');
+      div.className = 'char-card-trait char-card-clickable';
+      div.textContent = `${t.icon || '✦'} ${t.name}`;
+      div.onclick = () => showPillDetail(t.icon || '✦', t.name, t.desc || t.description || '', [], null, null);
+      traitsEl.appendChild(div);
+    });
+  }
 
-  const learnedHtml = (S.char.learnedSkillIds || []).map(sId => {
-    const s = getSkillGlobal(sId);
-    return s ? `<div class="char-card-know">${s.icon || '📖'} ${s.name}</div>` : '';
-  }).join('') || '<div class="char-card-know" style="color:var(--text-dim)">Cap aprenentatge adquirit</div>';
-  el('char-card-knowledge').innerHTML = `<div class="char-card-label">Aprenentatges</div>${learnedHtml}`;
+  // Learnings/Skills (clickable)
+  const knowEl = el('char-card-knowledge');
+  knowEl.innerHTML = '<div class="char-card-label">Aprenentatges</div>';
+  const learnedIds = S.char.learnedSkillIds || [];
+  if (learnedIds.length === 0) {
+    knowEl.insertAdjacentHTML('beforeend', '<div class="char-card-know" style="color:var(--text-dim)">Cap aprenentatge adquirit</div>');
+  } else {
+    learnedIds.forEach(sId => {
+      const s = getSkillGlobal(sId);
+      if (!s) return;
+      const div = document.createElement('div');
+      div.className = 'char-card-know char-card-clickable';
+      div.textContent = `${s.icon || '📖'} ${s.name}`;
+      div.onclick = () => showPillDetail(s.icon || '📖', s.name, s.description || '', [], null, null);
+      knowEl.appendChild(div);
+    });
+  }
 
-  const partnerText = S.char.partner ? S.char.partner.name : 'Sense parella';
-  const grown = S.char.children.filter(c => c.grown).length;
-  const childText = S.char.children.length > 0
-    ? `${S.char.children.length} fill${S.char.children.length > 1 ? 's' : ''} (${grown} crescut${grown !== 1 ? 's' : ''})`
-    : 'Sense fills';
-  el('char-card-family').innerHTML = `<div class="char-card-label">Família</div>
-    <div class="char-card-fam">👫 ${partnerText}</div>
-    <div class="char-card-fam">👶 ${childText}</div>`;
+  // Family (children clickable)
+  const famEl = el('char-card-family');
+  famEl.innerHTML = `<div class="char-card-label">Família</div>
+    <div class="char-card-fam">👫 ${S.char.partner ? S.char.partner.name : 'Sense parella'}</div>`;
+  if (S.char.children.length === 0) {
+    famEl.insertAdjacentHTML('beforeend', '<div class="char-card-fam">👶 Sense fills</div>');
+  } else {
+    S.char.children.forEach(child => {
+      const div = document.createElement('div');
+      div.className = 'char-card-fam char-card-clickable';
+      const grown = child.grown ? ' · Crescut' : '';
+      div.textContent = `${childAvatar(child)} ${child.name}${grown}`;
+      div.onclick = () => {
+        const p = (child.physical||0).toFixed(1), i = (child.intelligence||0).toFixed(1), s2 = (child.social||0).toFixed(1);
+        const skills = (child.learnedSkillIds||[]).map(sk => { const g=getSkillGlobal(sk); return g?g.name:''; }).filter(Boolean).join(', ');
+        const desc = `💪 Força: ${p}  🧠 Intel·ligència: ${i}  🗣️ Social: ${s2}${skills ? '\n📚 ' + skills : ''}`;
+        showPillDetail(childAvatar(child), child.name, desc, [], null, null);
+      };
+      famEl.appendChild(div);
+    });
+  }
 
   show('overlay-char-card');
 }
@@ -1255,11 +1297,11 @@ function renderCycleForecast() {
 function renderHeader() {
   el('hdr-name').textContent = S.char.name;
   el('hdr-age').textContent = `· ${S.char.age} anys`;
-  el('hdr-gen').textContent = `Gen. ${S.generation}`;
+  el('hdr-gen').textContent = `Cicle ${S.cycle}`;
   el('hdr-c').textContent = S.cycle;
   el('hdr-ec').textContent = S.eraCycle + 1;
   const ptInfo = el('panel-turn-info');
-  if (ptInfo) ptInfo.textContent = `${currentEra().name} · Cicle ${S.cycle}`;
+  if (ptInfo) ptInfo.textContent = `Gen. ${S.generation} · ${currentEra().name}`;
 }
 
 function renderStats() {
@@ -1489,6 +1531,12 @@ function renderSelectPane() {
     restBtn.classList.remove('hidden');
   } else {
     restBtn.classList.add('hidden');
+  }
+  if (_restConfirmPending) {
+    clearTimeout(_restConfirmTimer);
+    _restConfirmPending = false;
+    restBtn.textContent = '→ Passar';
+    restBtn.classList.remove('confirm-pending');
   }
 
   const minCost = currentEra().mechanics.intensityTimeCosts[1];
@@ -1769,7 +1817,9 @@ function handlePostAction() {
   } else if (canContinue) {
     S.phase = 'select'; renderAll();
   } else {
-    showDonutAnimation({ icon: '⏱️' }, 'Finalitzant torn', endCycle);
+    // Always show map before turn-end donut
+    S.phase = 'select'; renderAll();
+    setTimeout(() => showDonutAnimation({ icon: '⏱️' }, 'Finalitzant torn', endCycle), 400);
   }
 }
 
@@ -2060,10 +2110,7 @@ function renderTeachPane() {
   const n = c.teachChildIndices.length;
   const { teachCostBase } = currentEra().mechanics;
   const cost = calcTeachCost(Math.max(1, n));
-  const costBreakdown = n > 1
-    ? `${teachCostBase} × ${n} = ${calcTeachCost(n)}`
-    : `${teachCostBase} per fill`;
-  el('teach-cost-label').textContent = `Cost: ${costBreakdown} · Temps: ${S.timeLeft}`;
+  el('teach-cost-label').textContent = `Cost: ${cost} · Temps: ${S.timeLeft}`;
 
   // Skill picker
   const skillList = el('teach-skill-list');
@@ -2212,15 +2259,15 @@ function showNextDeath() {
 
 function afterNotifications() {
   const actionCost = currentEra().mechanics.intensityTimeCosts[1];
+  S.phase = 'select';
+  renderAll();
   if (S.timeLeft >= actionCost) {
-    S.phase = 'select';
-    renderAll();
     const floaters = S.pendingFloaters;
     S.pendingFloaters = {};
     requestAnimationFrame(() => showFxFloaters(floaters));
   } else {
     S.pendingFloaters = {};
-    showDonutAnimation({ icon: '⏱️' }, 'Finalitzant torn', endCycle);
+    setTimeout(() => showDonutAnimation({ icon: '⏱️' }, 'Finalitzant torn', endCycle), 400);
   }
 }
 
@@ -2946,8 +2993,33 @@ function bindEvents() {
     openZoneSheet(S.activeProject.zone);
   });
   el('btn-confirm-teach').addEventListener('click', executeTeach);
-  el('btn-rest-cycle').addEventListener('click', endCycle);
-  el('no-time-banner').addEventListener('click', endCycle);
+  el('btn-rest-cycle').addEventListener('click', () => {
+    const actionCost = currentEra().mechanics.intensityTimeCosts[1];
+    if (S.timeLeft >= actionCost) {
+      if (!_restConfirmPending) {
+        _restConfirmPending = true;
+        const btn = el('btn-rest-cycle');
+        const origText = btn.textContent;
+        btn.textContent = 'Segur? →';
+        btn.classList.add('confirm-pending');
+        _restConfirmTimer = setTimeout(() => {
+          _restConfirmPending = false;
+          btn.textContent = origText;
+          btn.classList.remove('confirm-pending');
+        }, 2500);
+      } else {
+        clearTimeout(_restConfirmTimer);
+        _restConfirmPending = false;
+        el('btn-rest-cycle').classList.remove('confirm-pending');
+        showDonutAnimation({ icon: '⏱️' }, 'Finalitzant torn', endCycle);
+      }
+    } else {
+      showDonutAnimation({ icon: '⏱️' }, 'Finalitzant torn', endCycle);
+    }
+  });
+  el('no-time-banner').addEventListener('click', () => {
+    showDonutAnimation({ icon: '⏱️' }, 'Finalitzant torn', endCycle);
+  });
   el('btn-dismiss-birth').addEventListener('click', advanceFromBirth);
   el('btn-dismiss-discovery').addEventListener('click', advanceFromDiscovery);
   el('btn-dismiss-ev-result').addEventListener('click', () => {
