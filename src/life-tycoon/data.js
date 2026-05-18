@@ -36,7 +36,7 @@ const GAME_DATA = {
     { id: 'gift_of_speech',     name: 'Do de la paraula',   icon: '🗣️', statKey: 'social',
       desc: '+1 Social i +15% als outputs de les accions socials.',
       effect: { stat: 'social', value: 1, outputBonusStat: 'social', outputBonusPct: 0.15 }, inheritChance: 0.4 },
-    { id: 'adaptable',          name: 'Adaptable',           icon: '🌿', statKey: 'balanced',
+    { id: 'adaptable',          name: 'Adaptable',           icon: '🌀', statKey: 'balanced',
       desc: '+10% als outputs de qualsevol acció.',
       effect: { outputBonusStat: 'all', outputBonusPct: 0.1 }, inheritChance: 0.25 },
   ],
@@ -467,7 +467,7 @@ const GAME_DATA = {
           successTexts: ['La caça col·lectiva és un triomf.', 'El teu lideratge porta menjar abundant.'],
           failTexts: ['La caça s\'escapa.', 'La coordinació falla avui.'] },
         // ── Barter Trade ──
-        { id: 'trade_resources', name: 'Bescanviar Recursos', icon: '🪙', category: 'home',
+        { id: 'trade_resources', name: 'Bescanviar Recursos', icon: '🐚', category: 'home',
           description: 'Intercanvia excedents per aliment i materials. L\'enfoc és pràctic, no diplomàtic.',
           quote: 'L\'intercanvi és la primera forma de pau entre pobles estranys.',
           quoteAttribution: '— Montesquieu, L\'Esperit de les lleis, XI, 1748 (adaptat)',

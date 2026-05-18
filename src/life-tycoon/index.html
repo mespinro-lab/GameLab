@@ -71,6 +71,7 @@
     <div id="panel-bottom">
       <div id="panel-bottom-bar">
         <span id="panel-turn-info">Cicle 1</span>
+        <div id="time-pips"></div>
         <div id="panel-food">
           <span class="food-icon">🌾</span>
           <span id="panel-food-val">—</span>
@@ -252,6 +253,29 @@
       </div>
     </div>
 
+    <!-- OVERLAY: New Generation presentation -->
+    <div id="overlay-new-gen" class="overlay hidden">
+      <div id="new-gen-card">
+        <div id="new-gen-hero">
+          <img id="new-gen-bust" src="" alt="">
+          <svg id="new-gen-ring-svg" viewBox="0 0 42 42">
+            <circle cx="21" cy="21" r="17" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="3"/>
+            <circle id="new-gen-ring" cx="21" cy="21" r="17" fill="none" stroke-width="3"
+              stroke-linecap="round" stroke-dasharray="0 106.8"
+              style="transform:rotate(-90deg);transform-origin:50% 50%"/>
+          </svg>
+        </div>
+        <div id="new-gen-name"></div>
+        <div id="new-gen-subtitle"></div>
+        <div id="new-gen-stats"></div>
+        <div id="new-gen-quote"></div>
+        <div id="new-gen-lineage-wrap">
+          <div id="new-gen-lineage-line"></div>
+          <div id="new-gen-lineage"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- OVERLAY: Game Over (no children) -->
     <div id="overlay-gameover" class="overlay hidden">
       <div class="overlay-card">
@@ -329,11 +353,7 @@
         </svg>
         <span id="exec-donut-icon"></span>
       </div>
-    </div>
-
-    <!-- Turn transition overlay -->
-    <div id="turn-transition-overlay" class="hidden">
-      <div id="turn-transition-msg">⏳ Passant torn…</div>
+      <div id="exec-donut-label"></div>
     </div>
 
     <!-- OVERLAY: Action info (info button, no execute) -->

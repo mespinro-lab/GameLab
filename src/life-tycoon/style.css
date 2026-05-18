@@ -503,6 +503,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   left: 0; right: 0;
   bottom: calc(100dvh / 6);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   z-index: 35;
@@ -529,35 +530,14 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   z-index: 1;
   filter: drop-shadow(0 2px 8px rgba(0,0,0,0.7));
 }
-
-/* ── Turn transition overlay ─────────────────────────────────────────── */
-#turn-transition-overlay {
-  position: absolute;
-  top: 44px; left: 0; right: 0;
-  bottom: calc(100dvh / 6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 36;
-  pointer-events: none;
-}
-#turn-transition-overlay.hidden { display: none; }
-#turn-transition-msg {
-  background: rgba(10, 8, 4, 0.82);
-  border: 1px solid var(--gold);
-  border-radius: 28px;
-  padding: 0.75rem 1.8rem;
-  font-size: 1.05rem;
+#exec-donut-label {
+  margin-top: 0.5rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  color: var(--gold);
-  letter-spacing: 0.04em;
-  animation: turn-trans-fade 1.4s ease-in-out;
-}
-@keyframes turn-trans-fade {
-  0%   { opacity: 0; transform: scale(0.88); }
-  20%  { opacity: 1; transform: scale(1); }
-  80%  { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(0.92); }
+  color: rgba(200,170,100,0.8);
+  letter-spacing: 0.05em;
+  text-align: center;
+  min-height: 1.1em;
 }
 
 /* ── Action info overlay ─────────────────────────────────────────────── */
@@ -2304,12 +2284,30 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 }
 
 #panel-turn-info {
-  flex: 1;
   font-size: 0.72rem;
   color: var(--text-dim);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+#time-pips {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex: 1;
+}
+.time-pip {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: rgba(100,70,25,0.4);
+  border: 1px solid rgba(140,100,40,0.5);
+  transition: background 0.25s, border-color 0.25s;
+}
+.time-pip.active {
+  background: var(--gold);
+  border-color: var(--gold);
+  box-shadow: 0 0 5px rgba(200,160,60,0.5);
 }
 
 #panel-food {
@@ -2556,3 +2554,95 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 .log-death { color: #e07a5f; }
 .log-succession { color: var(--gold); }
 .log-era { color: var(--gold); font-weight: 600; }
+
+/* ── New Generation presentation overlay ────────────────────────────── */
+#overlay-new-gen {
+  background: rgba(6,4,2,0.96);
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: ng-fadein 0.6s ease-out;
+}
+@keyframes ng-fadein {
+  from { opacity: 0; } to { opacity: 1; }
+}
+#overlay-new-gen.hidden { display: none; }
+#new-gen-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 1.4rem 1.2rem 1rem;
+  width: 100%;
+  max-width: 400px;
+}
+#new-gen-hero {
+  position: relative;
+  width: 110px; height: 110px;
+  flex-shrink: 0;
+}
+#new-gen-bust {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 2px solid rgba(180,130,50,0.4);
+}
+#new-gen-ring-svg {
+  position: absolute;
+  inset: -10px;
+  width: calc(100% + 20px);
+  height: calc(100% + 20px);
+}
+#new-gen-ring { stroke: var(--gold); }
+#new-gen-name {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 0.03em;
+  text-align: center;
+}
+#new-gen-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  text-align: center;
+}
+#new-gen-stats {
+  font-size: 0.82rem;
+  color: var(--text);
+  text-align: center;
+}
+#new-gen-quote {
+  font-size: 0.82rem;
+  color: rgba(180,155,100,0.8);
+  font-style: italic;
+  text-align: center;
+  padding: 0 0.8rem;
+  margin-top: 0.2rem;
+}
+#new-gen-lineage-wrap {
+  width: 100%;
+  margin-top: 0.6rem;
+  border-top: 1px solid rgba(100,70,25,0.4);
+  padding-top: 0.6rem;
+}
+#new-gen-lineage {
+  display: flex;
+  justify-content: center;
+  gap: 1.2rem;
+}
+.ng-ancestor {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+.ng-anc-name {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+.ng-anc-age {
+  font-size: 0.62rem;
+  color: rgba(120,100,70,0.8);
+}

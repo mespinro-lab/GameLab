@@ -821,8 +821,10 @@ function doSuccession(child) {
       hide('overlay-succession');
       renderMenuEra();
       updateContinueBtn();
-      renderEraTransitionOverlay(newEra);
-      show('overlay-era-transition');
+      showNewGeneration(() => {
+        renderEraTransitionOverlay(newEra);
+        show('overlay-era-transition');
+      });
       return;
     } else {
       S._victoryEnding = true;
@@ -844,7 +846,61 @@ function doSuccession(child) {
   hide('overlay-succession');
   renderMenuEra();
   updateContinueBtn();
-  show('overlay-menu');
+  showNewGeneration(() => show('overlay-menu'));
+}
+
+const GEN_QUOTES = [
+  'El passat és el fonament del futur. El teu llinatge et dóna força.',
+  'Cada generació hereta el millor dels seus avantpassats.',
+  'La sang del llinatge porta la memòria de totes les lluites anteriors.',
+  'El temps passa, però el nom de la família perdura.',
+  'Portes el pes de moltes vides. Porta\'l amb dignitat.',
+];
+
+function showNewGeneration(onDone) {
+  // Build bust image for current char
+  el('new-gen-bust').src = bustImgSrc();
+  el('new-gen-name').textContent = `${S.char.name} ${S.dynastyName}`;
+  const genderLabel = S.char.gender === 'M' ? 'Home' : 'Dona';
+  el('new-gen-subtitle').textContent = `Generació ${S.generation} · ${genderLabel} · ${S.char.age} anys`;
+
+  el('new-gen-stats').innerHTML = [
+    `💪 Força: <strong>${S.char.physical.toFixed(1)}</strong>`,
+    `🧠 Intel·ligència: <strong>${S.char.intelligence.toFixed(1)}</strong>`,
+    `🗣️ Social: <strong>${S.char.social.toFixed(1)}</strong>`,
+  ].join('&ensp;·&ensp;');
+
+  const quoteIdx = S.generation % GEN_QUOTES.length;
+  el('new-gen-quote').textContent = `"${GEN_QUOTES[quoteIdx]}"`;
+
+  // Lineage: last 3 ancestors from genealogy
+  const lineageEl = el('new-gen-lineage');
+  lineageEl.innerHTML = '';
+  const ancestors = S.genealogy.slice(-3);
+  ancestors.forEach(anc => {
+    const div = document.createElement('div');
+    div.className = 'ng-ancestor';
+    div.innerHTML = `<span class="ng-anc-name">${anc.name}</span><span class="ng-anc-age">${anc.age} anys</span>`;
+    lineageEl.appendChild(div);
+  });
+  el('new-gen-lineage-wrap').classList.toggle('hidden', ancestors.length === 0);
+
+  // Show overlay with donut timer
+  show('overlay-new-gen');
+  const ring = el('new-gen-ring');
+  const C = 106.8;
+  ring.style.transition      = 'none';
+  ring.style.strokeDasharray = `0 ${C}`;
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    ring.style.transition      = `stroke-dasharray 4s linear`;
+    ring.style.strokeDasharray = `${C} 0`;
+  }));
+  setTimeout(() => {
+    hide('overlay-new-gen');
+    ring.style.transition      = 'none';
+    ring.style.strokeDasharray = `0 ${C}`;
+    onDone();
+  }, 4200);
 }
 
 function renderEraTransitionOverlay(era) {
@@ -1143,6 +1199,7 @@ function renderAll() {
   renderZoneNodes();
   renderPhase();
   renderLog();
+  renderTimePips();
   const bustImg = el('char-bust-img');
   if (bustImg) bustImg.src = bustImgSrc();
 }
@@ -1537,9 +1594,10 @@ function updateCarouselInfo() {
   const noTime  = S.timeLeft < timeCost;
   const outIcons  = { food: '🍖', health: '❤️', happiness: '😊', familyReputation: '🏛️' };
   const statIcons = { physical: '💪', intelligence: '🧠', social: '👥' };
-  // Outputs with amounts; stats as icon-only (issue #6)
+  // Use real computed values (with stat/knowledge/mastery multipliers)
+  const preview = calcImpactPreview(proj, 2);
   const parts = [
-    ...Object.entries(proj.outputs || {}).filter(([k,v]) => v && outIcons[k]).map(([k,v]) => `${outIcons[k]}${v > 0 ? '+' : ''}${v}`),
+    ...Object.entries(preview).filter(([k,v]) => v && outIcons[k]).map(([k,v]) => `${outIcons[k]}${v > 0 ? '+' : ''}${v}`),
     ...Object.entries(proj.statGain || {}).filter(([,v]) => v).map(([s]) => statIcons[s] || s),
   ];
   if (proj.healthRisk > 0) parts.push('⚠️');
@@ -1554,13 +1612,19 @@ function updateCarouselInfo() {
 
 function carouselNavigate(newIdx) {
   const n = CAROUSEL.actions.length;
-  if (n <= 1) {
-    springEffect(newIdx < CAROUSEL.idx ? -1 : 1);
-    return;
+  if (n >= 3) {
+    // Infinite wrap
+    CAROUSEL.idx = ((newIdx % n) + n) % n;
+    updateCarouselPositions(0);
+    updateCarouselInfo();
+  } else if (newIdx < 0 || newIdx >= n) {
+    // Spring at boundaries (n=1 always; n=2 at ends)
+    springEffect(newIdx < 0 ? -1 : 1);
+  } else {
+    CAROUSEL.idx = newIdx;
+    updateCarouselPositions(0);
+    updateCarouselInfo();
   }
-  CAROUSEL.idx = ((newIdx % n) + n) % n;
-  updateCarouselPositions(0);
-  updateCarouselInfo();
 }
 
 function carouselOpenCurrent() {
@@ -1578,16 +1642,13 @@ function carouselOpenCurrent() {
 
 // ── Direct execution (no intensity pane) ──────────────────────────────────────
 function executeActionDirect(proj) {
-  S.intensity      = 2; // normal
-  S.activeProject  = proj;
+  S.intensity     = 2;
+  S.activeProject = proj;
 
   const result = calcResult(proj);
-  applyFx(result.fx);
-  accumulateFloaters(result.fx);
 
   if (!S.actionMastery) S.actionMastery = {};
   S.actionMastery[proj.id] = (S.actionMastery[proj.id] || 0) + 1;
-
   if (proj.id === 'hunt' && result.quality !== 'poor') S.char.huntCount++;
   if (proj.generatesPartner && result.quality !== 'poor' && !S.char.partner) S.char.partner = generatePartner();
   if (proj.generatesChild && result.quality !== 'poor' && S.char.partner) {
@@ -1598,9 +1659,7 @@ function executeActionDirect(proj) {
     }
   }
 
-  const timeCost = currentEra().mechanics.intensityTimeCosts[1];
-  S.timeLeft = Math.max(0, S.timeLeft - timeCost);
-
+  const timeCost   = currentEra().mechanics.intensityTimeCosts[1];
   const discovered = tryDiscoverSkill(proj, result.finalMult);
   const event      = tryTriggerEvent(proj, result.quality);
   if (discovered.length > 0) S.pendingDiscoveries.push(...discovered);
@@ -1609,31 +1668,99 @@ function executeActionDirect(proj) {
 
   const fxStr = fxSummary(result.fx);
   addLog(proj.icon, proj.name + (fxStr ? ' — ' + fxStr : ''), 'action');
-  checkMilestones();
-  saveGame();
-
-  // Capture floaters before renderAll wipes them
-  const floaters = S.pendingFloaters;
-  S.pendingFloaters = {};
 
   S.phase = 'select';
-  renderAll();
+  renderAll(); // render with PRE-action stats
 
-  // Show donut, then floaters, then notifications
-  showDonutAnimation(proj, () => {
-    showFxFloaters(floaters);
+  // Action donut → apply fx → turn-end donut if needed
+  showDonutAnimation(proj, null, () => {
+    const oldRes = snapshotResources();
+    applyFx(result.fx);
+    accumulateFloaters(result.fx);
+    S.timeLeft = Math.max(0, S.timeLeft - timeCost);
     renderStats();
-    setTimeout(() => handlePostAction(), 700);
+    renderTimePips();
+    renderStatsAnimated(oldRes);
+    const floaters = S.pendingFloaters;
+    S.pendingFloaters = {};
+    showFxFloaters(floaters);
+    checkMilestones();
+    saveGame();
+    setTimeout(() => {
+      const actionCost = currentEra().mechanics.intensityTimeCosts[1];
+      if (S.timeLeft >= actionCost) {
+        handlePostAction();
+      } else {
+        showDonutAnimation({ icon: '⏱️' }, 'Finalitzant torn', () => {
+          handlePostAction();
+        });
+      }
+    }, 700);
   });
 }
 
-function showTurnTransition(onDone) {
-  const overlay = el('turn-transition-overlay');
-  overlay.classList.remove('hidden');
-  setTimeout(() => {
-    overlay.classList.add('hidden');
-    onDone();
-  }, 1400);
+function snapshotResources() {
+  return {
+    health:           S.resources.health.value,
+    food:             S.resources.food.value,
+    happiness:        S.resources.happiness.value,
+    familyReputation: S.resources.familyReputation.value,
+    physical:         S.char.physical,
+    intelligence:     S.char.intelligence,
+    social:           S.char.social,
+  };
+}
+
+function renderStatsAnimated(oldSnap) {
+  const cur = {
+    health:           S.resources.health.value,
+    food:             S.resources.food.value,
+    happiness:        S.resources.happiness.value,
+    familyReputation: S.resources.familyReputation.value,
+    physical:         S.char.physical,
+    intelligence:     S.char.intelligence,
+    social:           S.char.social,
+  };
+  const changed = Object.keys(cur).some(k => Math.abs(cur[k] - oldSnap[k]) > 0.001);
+  if (!changed) return;
+  const start = performance.now();
+  const dur = 500;
+  function tick(now) {
+    const t = Math.min(1, (now - start) / dur);
+    const ease = 1 - Math.pow(1 - t, 3);
+    const lerp = (a, b) => a + (b - a) * ease;
+    el('s-health').textContent           = Math.round(lerp(oldSnap.health, cur.health));
+    el('s-food').textContent             = Math.round(lerp(oldSnap.food, cur.food));
+    el('s-happiness').textContent        = Math.round(lerp(oldSnap.happiness, cur.happiness));
+    el('s-familyReputation').textContent = Math.round(lerp(oldSnap.familyReputation, cur.familyReputation));
+    el('s-physical').textContent         = lerp(oldSnap.physical, cur.physical).toFixed(1);
+    el('s-intelligence').textContent     = lerp(oldSnap.intelligence, cur.intelligence).toFixed(1);
+    el('s-social').textContent           = lerp(oldSnap.social, cur.social).toFixed(1);
+    el('hex-health').textContent         = Math.round(lerp(oldSnap.health, cur.health));
+    el('hex-happiness').textContent      = Math.round(lerp(oldSnap.happiness, cur.happiness));
+    el('hex-reputation').textContent     = Math.round(lerp(oldSnap.familyReputation, cur.familyReputation));
+    el('hex-physical').textContent       = lerp(oldSnap.physical, cur.physical).toFixed(1);
+    el('hex-intelligence').textContent   = lerp(oldSnap.intelligence, cur.intelligence).toFixed(1);
+    el('hex-social').textContent         = lerp(oldSnap.social, cur.social).toFixed(1);
+    el('panel-food-val').textContent     = Math.round(lerp(oldSnap.food, cur.food));
+    if (t < 1) requestAnimationFrame(tick);
+    else renderStats();
+  }
+  requestAnimationFrame(tick);
+}
+
+function renderTimePips() {
+  const pipEl = el('time-pips');
+  if (!pipEl) return;
+  const timeCost   = currentEra().mechanics.intensityTimeCosts[1];
+  const maxActions = Math.floor(S.timeTotal / timeCost);
+  const leftActions = Math.floor(S.timeLeft / timeCost);
+  pipEl.innerHTML = '';
+  for (let i = 0; i < maxActions; i++) {
+    const pip = document.createElement('span');
+    pip.className = 'time-pip' + (i < leftActions ? ' active' : '');
+    pipEl.appendChild(pip);
+  }
 }
 
 function handlePostAction() {
@@ -1648,14 +1775,17 @@ function handlePostAction() {
   } else if (canContinue) {
     S.phase = 'select'; renderAll();
   } else {
-    showTurnTransition(endCycle);
+    showDonutAnimation({ icon: '⏱️' }, 'Finalitzant torn', endCycle);
   }
 }
 
-function showDonutAnimation(proj, onComplete) {
+function showDonutAnimation(proj, label, onComplete) {
   el('exec-donut-icon').textContent = proj.icon;
+  const labelEl = el('exec-donut-label');
+  if (labelEl) labelEl.textContent = label || '';
   const ring = el('exec-donut-ring');
   const C    = 106.8; // 2π × 17
+  ring.style.stroke          = proj.icon === '⏱️' ? 'rgba(160,130,80,0.7)' : 'var(--gold)';
   ring.style.transition      = 'none';
   ring.style.strokeDasharray = `0 ${C}`;
   el('exec-donut-overlay').classList.remove('hidden');
@@ -1925,21 +2055,18 @@ function executeProject() {
 
 // ── Teach pane ────────────────────────────────────────────────────────────────
 function calcTeachCost(n) {
-  const M = currentEra().mechanics;
-  let cost = 0;
-  for (let i = 0; i < n; i++) cost += M.teachCostBase + i * M.teachCostIncrement;
-  return cost;
+  return n * currentEra().mechanics.teachCostBase;
 }
 
 function renderTeachPane() {
   const c = S.char;
   if (!c.teachChildIndices) c.teachChildIndices = [];
   const n = c.teachChildIndices.length;
-  const { teachCostBase, teachCostIncrement } = currentEra().mechanics;
+  const { teachCostBase } = currentEra().mechanics;
   const cost = calcTeachCost(Math.max(1, n));
   const costBreakdown = n > 1
-    ? Array.from({ length: n }, (_, i) => teachCostBase + i * teachCostIncrement).join('+') + ` = ${calcTeachCost(n)}`
-    : n === 1 ? String(teachCostBase) : `${teachCostBase} per fill`;
+    ? `${teachCostBase} × ${n} = ${calcTeachCost(n)}`
+    : `${teachCostBase} per fill`;
   el('teach-cost-label').textContent = `Cost: ${costBreakdown} · Temps: ${S.timeLeft}`;
 
   // Skill picker
@@ -1972,8 +2099,8 @@ function renderTeachPane() {
     const ch0 = eligibleChildren[0];
     const idx0 = c.children.indexOf(ch0);
     if (!c.teachChildIndices.includes(idx0)) c.teachChildIndices = [idx0];
-    const bornInfo0 = ch0.bornEraCycle != null ? ` · cicle era ${ch0.bornEraCycle}` : '';
-    childList.innerHTML = `<p style="font-size:0.82rem;color:var(--text)">${childAvatar(ch0)} ${ch0.name}${bornInfo0} aprendrà l'habilitat.</p>`;
+    const p0 = (ch0.physical||0).toFixed(0), i0 = (ch0.intelligence||0).toFixed(0), s0 = (ch0.social||0).toFixed(0);
+    childList.innerHTML = `<p style="font-size:0.82rem;color:var(--text)">${childAvatar(ch0)} ${ch0.name} — 💪${p0} 🧠${i0} 🗣️${s0} — aprendrà l'habilitat.</p>`;
   } else {
     childSection.style.display = 'block';
     for (const child of eligibleChildren) {
@@ -1981,8 +2108,10 @@ function renderTeachPane() {
       const selected = c.teachChildIndices.includes(idx);
       const btn = document.createElement('button');
       btn.className = 'teach-child-btn' + (selected ? ' active' : '');
-      const bornInfo = child.bornEraCycle != null ? ` · era ${child.bornEraCycle}` : '';
-      btn.textContent = childAvatar(child) + ' ' + child.name + bornInfo;
+      const phys = (child.physical || 0).toFixed(0);
+      const intel = (child.intelligence || 0).toFixed(0);
+      const soc = (child.social || 0).toFixed(0);
+      btn.textContent = childAvatar(child) + ' ' + child.name + ` — 💪${phys} 🧠${intel} 🗣️${soc}`;
       btn.onclick = () => {
         const i = c.teachChildIndices.indexOf(idx);
         if (i === -1) {
@@ -2020,14 +2149,29 @@ function executeTeach() {
 
   const n = indices.length;
   const fx = { happiness: 8 * n, familyReputation: 3, '_gain_social': 0.2, '_gain_intelligence': 0.1 };
-  applyFx(fx);
-  accumulateFloaters(fx);
-
   S.timeLeft = Math.max(0, S.timeLeft - cost);
   c.teachSkillId = null;
   c.teachChildIndices = [];
 
-  afterNotifications();
+  const proj = S.activeProject || { icon: '📚', name: 'Educar Fills' };
+  addLog(proj.icon, proj.name, 'action');
+  S.phase = 'select';
+  renderAll();
+
+  showDonutAnimation(proj, null, () => {
+    const oldRes = snapshotResources();
+    applyFx(fx);
+    accumulateFloaters(fx);
+    renderStats();
+    renderTimePips();
+    renderStatsAnimated(oldRes);
+    const floaters = S.pendingFloaters;
+    S.pendingFloaters = {};
+    showFxFloaters(floaters);
+    checkMilestones();
+    saveGame();
+    setTimeout(() => afterNotifications(), 700);
+  });
 }
 
 // ── Discovery & notification helpers ─────────────────────────────────────────
@@ -2080,7 +2224,7 @@ function afterNotifications() {
     requestAnimationFrame(() => showFxFloaters(floaters));
   } else {
     S.pendingFloaters = {};
-    showTurnTransition(endCycle);
+    showDonutAnimation({ icon: '⏱️' }, 'Finalitzant torn', endCycle);
   }
 }
 
