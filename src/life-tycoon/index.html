@@ -501,6 +501,31 @@
       </div>
     </div>
 
+    <!-- OVERLAY: Loading splash -->
+    <div id="overlay-loading" class="overlay hidden">
+      <div id="loading-card">
+        <svg id="loading-donut-svg" viewBox="0 0 40 40" width="72" height="72">
+          <circle cx="20" cy="20" r="17" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="4"/>
+          <circle id="loading-ring" cx="20" cy="20" r="17" fill="none" stroke="var(--gold)"
+                  stroke-width="4" stroke-dasharray="36 71" stroke-linecap="round"/>
+        </svg>
+        <div id="loading-title">Life Tycoon</div>
+      </div>
+    </div>
+
+    <!-- OVERLAY: Death summary -->
+    <div id="overlay-death-summary" class="overlay hidden">
+      <div id="ds-card">
+        <div id="ds-era-label"></div>
+        <img id="ds-bust" src="" alt="">
+        <div id="ds-name"></div>
+        <div id="ds-subtitle"></div>
+        <div id="ds-cause"></div>
+        <div id="ds-grid"></div>
+        <button id="ds-btn-continue">Continuar →</button>
+      </div>
+    </div>
+
     <!-- OVERLAY: Nova Partida -->
     <div id="overlay-new-game" class="overlay hidden">
       <div class="overlay-card new-game-card">

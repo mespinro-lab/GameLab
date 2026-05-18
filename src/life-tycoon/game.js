@@ -45,13 +45,23 @@ function hasSave() {
   return !!localStorage.getItem(SAVE_KEY);
 }
 
+function showSplashThen(fn) {
+  show('overlay-loading');
+  const t0 = Date.now();
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    fn();
+    const remaining = 700 - (Date.now() - t0);
+    setTimeout(() => hide('overlay-loading'), Math.max(0, remaining));
+  }));
+}
+
 function loadSavedGame() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return false;
     S = JSON.parse(raw);
     hide('overlay-menu');
-    renderAll();
+    showSplashThen(() => renderAll());
     return true;
   } catch(e) { return false; }
 }
@@ -746,6 +756,40 @@ function endCycle() {
   }
 }
 
+function showDeathSummary(onContinue) {
+  const era = currentEra();
+  el('ds-era-label').textContent = `${era.icon} ${era.name}`;
+  el('ds-bust').src = bustImgSrc();
+  el('ds-name').textContent = `${S.char.name} ${S.dynastyName}`;
+  const genderLabel = S.char.gender === 'M' ? 'Home' : 'Dona';
+  el('ds-subtitle').textContent = `Generació ${S.generation} · ${genderLabel} · ${S.char.age} anys`;
+  el('ds-cause').textContent = S.cycle >= S.maxCycles ? '☽ Mort natural' : '💀 Salut esgotada';
+
+  const grid = el('ds-grid');
+  grid.innerHTML = '';
+  [
+    ['Cicles viscuts', S.cycle],
+    ['Fills', S.char.children.length],
+    ['Technologies', S.char.knowledgeIds.length],
+    ['Destreses', S.char.learnedSkillIds.length],
+    ['💪 Força', S.char.physical.toFixed(1)],
+    ['🧠 Intel·lect', S.char.intelligence.toFixed(1)],
+    ['🗣️ Social', S.char.social.toFixed(1)],
+    ['👑 Reputació', Math.round(S.resources.familyReputation.value)],
+  ].forEach(([label, val]) => {
+    const div = document.createElement('div');
+    div.className = 'ds-stat';
+    div.innerHTML = `<strong>${val}</strong><span>${label}</span>`;
+    grid.appendChild(div);
+  });
+
+  el('ds-btn-continue').onclick = () => {
+    hide('overlay-death-summary');
+    onContinue();
+  };
+  show('overlay-death-summary');
+}
+
 function triggerDeath() {
   S.resources.health.value = 0;
 
@@ -757,6 +801,8 @@ function triggerDeath() {
     era: currentEra().name,
     cause: S.cycle >= S.maxCycles ? 'Mort natural' : 'Salut esgotada',
     knowledgeIds: [...S.char.knowledgeIds],
+    race: S.char.race,
+    bustSrc: bustImgSrc(),
   });
 
   const hasChildren = S.char.children.length > 0;
@@ -765,11 +811,13 @@ function triggerDeath() {
   hide('overlay-zone-actions');
   renderMenuEra();
   updateContinueBtn();
-  if (hasChildren) {
-    renderAll();
-  } else {
-    show('overlay-menu');
-  }
+  showDeathSummary(() => {
+    if (hasChildren) {
+      renderAll();
+    } else {
+      show('overlay-menu');
+    }
+  });
 }
 
 // ── Succession ────────────────────────────────────────────────────────────────
@@ -889,7 +937,7 @@ function showNewGeneration(onDone) {
   ancestors.forEach(anc => {
     const div = document.createElement('div');
     div.className = 'ng-ancestor';
-    div.innerHTML = `<span class="ng-anc-name">${anc.name}</span><span class="ng-anc-age">${anc.age} anys</span>`;
+    div.innerHTML = `${anc.bustSrc ? `<img class="ng-anc-bust" src="${anc.bustSrc}" alt="">` : ''}<span class="ng-anc-name">${anc.name}</span><span class="ng-anc-age">${anc.age} anys</span>`;
     lineageEl.appendChild(div);
   });
   el('new-gen-lineage-wrap').classList.toggle('hidden', ancestors.length === 0);
@@ -3229,7 +3277,7 @@ function startGame(customDynastyName, race) {
   initDiscoveredZones();
   S.phase = 'select';
   hide('overlay-menu');
-  renderAll();
+  showSplashThen(() => renderAll());
 }
 
 document.addEventListener('DOMContentLoaded', () => {

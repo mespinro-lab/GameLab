@@ -2662,3 +2662,120 @@ body.donut-active * { pointer-events: none !important; }
   font-size: 0.62rem;
   color: rgba(120,100,70,0.8);
 }
+.ng-anc-bust {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.04);
+}
+
+/* ── Loading splash ───────────────────────────────────────────────────────────── */
+#overlay-loading {
+  background: var(--bg);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#overlay-loading.hidden { display: none; }
+#loading-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.4rem;
+}
+#loading-ring {
+  transform-origin: center;
+  animation: loading-spin 1.1s linear infinite;
+}
+@keyframes loading-spin { to { transform: rotate(360deg); } }
+#loading-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--gold);
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 24px rgba(200,160,80,0.4);
+}
+
+/* ── Death summary ────────────────────────────────────────────────────────────── */
+#overlay-death-summary {
+  background: rgba(10,8,5,0.88);
+}
+#ds-card {
+  background: var(--surface);
+  border: 1px solid rgba(180,140,80,0.25);
+  border-radius: 1rem;
+  padding: 1.8rem 1.4rem;
+  max-width: 360px;
+  width: 92%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  text-align: center;
+}
+#ds-era-label {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 0.2rem;
+}
+#ds-bust {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.04);
+  filter: grayscale(50%) brightness(0.85);
+  margin: 0.2rem 0;
+}
+#ds-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+#ds-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+#ds-cause {
+  font-size: 0.78rem;
+  color: rgba(200,100,80,0.9);
+  font-style: italic;
+  margin: 0.2rem 0 0.5rem;
+}
+#ds-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem 1.2rem;
+  margin: 0.3rem 0 0.8rem;
+  width: 100%;
+}
+.ds-stat {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.05rem;
+}
+.ds-stat strong {
+  font-size: 1rem;
+  color: var(--gold);
+  font-weight: 700;
+}
+#ds-btn-continue {
+  background: rgba(160,110,55,0.16);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  padding: 0.55rem 2rem;
+  border-radius: 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: background 0.15s;
+}
+#ds-btn-continue:hover { background: rgba(160,110,55,0.3); }
