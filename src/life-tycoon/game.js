@@ -49,7 +49,7 @@ function showSplashThen(fn) {
   show('overlay-loading');
   const t0 = Date.now();
   requestAnimationFrame(() => requestAnimationFrame(() => {
-    fn();
+    try { fn(); } catch(e) { console.error('[splash]', e); }
     const remaining = 700 - (Date.now() - t0);
     setTimeout(() => hide('overlay-loading'), Math.max(0, remaining));
   }));
@@ -1347,7 +1347,6 @@ function renderHeader() {
   el('hdr-name').textContent = S.char.name;
   el('hdr-age').textContent = `· ${S.char.age} anys`;
   el('hdr-gen').textContent = `Cicle ${S.cycle}`;
-  el('hdr-c').textContent = S.cycle;
   el('hdr-ec').textContent = S.eraCycle + 1;
   const ptInfo = el('panel-turn-info');
   if (ptInfo) ptInfo.textContent = `Gen. ${S.generation} · ${currentEra().name}`;
