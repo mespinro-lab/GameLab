@@ -66,6 +66,24 @@
     <!-- MAP ZONE: interactive map with zone nodes (3/6 screen) -->
     <div id="map-zone">
       <!-- Zone nodes rendered dynamically by JS -->
+
+      <!-- ZONE ACTIONS: inline panel over map when a zone is selected -->
+      <div id="overlay-zone-actions" class="hidden">
+        <div class="zone-actions-sheet">
+          <div id="zone-sheet-header">
+            <span id="zone-sheet-icon"></span>
+            <span id="zone-sheet-name"></span>
+            <button id="btn-close-zone-sheet">×</button>
+          </div>
+          <div id="zone-carousel-viewport"></div>
+          <div id="zc-dots"></div>
+          <div id="zone-carousel-info">
+            <div id="zc-name"></div>
+            <div id="zc-benefits"></div>
+            <div id="zc-desc"></div>
+          </div>
+        </div>
+      </div>
     </div>
     <div id="no-time-banner" class="hidden">
       ⏰ No queden accions disponibles — <strong>Passa torn →</strong>
@@ -327,25 +345,6 @@
       </div>
     </div>
 
-    <!-- OVERLAY: Zone actions -->
-    <div id="overlay-zone-actions" class="overlay hidden">
-      <div class="zone-actions-sheet">
-        <div id="zone-sheet-header">
-          <span id="zone-sheet-icon"></span>
-          <span id="zone-sheet-name"></span>
-          <button id="btn-close-zone-sheet">×</button>
-        </div>
-        <div id="zone-carousel-viewport"></div>
-        <div id="zc-dots"></div>
-        <div id="zone-carousel-info">
-          <div id="zc-name"></div>
-          <div id="zc-benefits"></div>
-          <div id="zc-desc"></div>
-        </div>
-        <button id="btn-zc-select">Executar →</button>
-      </div>
-    </div>
-
     <!-- Donut execution timer -->
     <div id="exec-donut-overlay" class="hidden">
       <div id="exec-donut-wrap">
@@ -503,6 +502,18 @@
             <div id="char-card-family" class="char-card-section"></div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- OVERLAY: Taller (Workshop) -->
+    <div id="overlay-taller" class="overlay hidden">
+      <div class="overlay-card taller-card">
+        <div class="overlay-tech-header">
+          <h3>🔨 Taller</h3>
+          <button id="btn-close-taller" class="btn-close-x">×</button>
+        </div>
+        <p class="taller-subtitle">Aprèn tècniques noves i millora les existents amb els teus recursos.</p>
+        <div id="taller-list"></div>
       </div>
     </div>
 

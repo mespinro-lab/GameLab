@@ -218,6 +218,40 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 }
 .tech-btn:hover { opacity: 1; }
 
+/* ── Taller (Workshop) Overlay ───────────────────────────────────────── */
+.taller-card { max-height: 85dvh; display: flex; flex-direction: column; }
+.taller-subtitle { font-size: 0.78rem; color: var(--text-dim); margin: 0 0 0.6rem; }
+#taller-list { overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 0.5rem; }
+.taller-empty { font-size: 0.82rem; color: var(--text-dim); text-align: center; padding: 1rem 0; }
+.taller-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+}
+.taller-item.taller-item-poor { opacity: 0.55; }
+.taller-item-icon { font-size: 2rem; flex-shrink: 0; }
+.taller-item-info { flex: 1; min-width: 0; }
+.taller-item-name { font-size: 0.9rem; font-weight: 700; color: var(--gold); }
+.taller-item-desc { font-size: 0.7rem; color: var(--text-dim); line-height: 1.3; }
+.taller-item-cost { font-size: 0.8rem; color: var(--text); margin-top: 0.2rem; letter-spacing: 0.03em; }
+.taller-buy-btn {
+  background: var(--accent);
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.taller-buy-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
 /* ── Technology Overlay ──────────────────────────────────────────────── */
 .tech-card { max-height: 80dvh; overflow-y: auto; }
 .overlay-tech-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
@@ -364,14 +398,13 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 }
 .rest-btn:active { background: var(--surface2); }
 
-/* ── Zone Actions bottom sheet ───────────────────────────────────────── */
+/* ── Zone Actions inline panel (inside #map-zone) ────────────────────── */
 #overlay-zone-actions {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.65);
+  background: rgba(14, 8, 2, 0.92);
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
+  flex-direction: column;
   z-index: 50;
 }
 #overlay-zone-actions.hidden { display: none; }
@@ -386,6 +419,13 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+#overlay-zone-actions > .zone-actions-sheet {
+  flex: 1;
+  max-width: 100%;
+  max-height: none;
+  border-radius: 0;
+  background: transparent;
 }
 #zone-sheet-header {
   display: flex;
@@ -490,19 +530,6 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 #zc-name { font-size: 1rem; font-weight: 700; color: var(--gold); }
 #zc-benefits { font-size: 0.8rem; color: var(--text); letter-spacing: 0.05em; min-height: 1.1em; }
 #zc-desc { font-size: 0.7rem; color: var(--text-dim); line-height: 1.3; }
-#btn-zc-select {
-  width: 100%;
-  background: var(--accent);
-  border: 1px solid var(--gold);
-  border-radius: 10px;
-  font-weight: 700;
-  padding: 0.65rem;
-  font-size: 0.95rem;
-  color: var(--text);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-#btn-zc-select:disabled { opacity: 0.38; cursor: not-allowed; }
 
 /* ── Donut execution timer ───────────────────────────────────────────── */
 #exec-donut-overlay {

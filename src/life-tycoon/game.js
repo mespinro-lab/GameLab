@@ -391,6 +391,10 @@ function calcResult(proj) {
     const toGrant = proj.grantKnowledge.filter(kId => !hasKnowledge(kId));
     if (toGrant.length) fx._grantKnowledge = toGrant;
   }
+  if (quality !== 'poor' && proj.discoversSkill) {
+    const skill = pickDiscoverableSkill();
+    if (skill) fx._discoverSkill = skill;
+  }
   return { fx, finalMult, riskFailed, quality, narrative: texts ? pick(texts) : '' };
 }
 
@@ -401,8 +405,15 @@ function applyFx(fx) {
       if (!c.knowledgeIds.includes(kId)) c.knowledgeIds.push(kId);
     }
   }
+  if (fx._discoverSkill) {
+    const skill = fx._discoverSkill;
+    if (!hasUnlockedSkill(skill.id)) {
+      S.unlockedSkillIds.push(skill.id);
+      S.pendingDiscoveries.push({ ...skill, _type: 'habilitat' });
+    }
+  }
   for (const [k, v] of Object.entries(fx)) {
-    if (k === '_grantKnowledge') continue;
+    if (k === '_grantKnowledge' || k === '_discoverSkill') continue;
     if (k.startsWith('_gain_')) {
       const stat = k.slice(6);
       const caps = currentEra().mechanics.statGainCaps || {};
@@ -629,16 +640,29 @@ function getGameSkill(id)    { return (currentEra().skills || []).find(s => s.id
 function hasUnlockedSkill(id){ return S.unlockedSkillIds.includes(id); }
 
 function checkSkillUnlock() {
-  for (const skill of (currentEra().skills || [])) {
-    if (hasUnlockedSkill(skill.id)) continue;
-    if (skill.requiresTech && !hasKnowledge(skill.requiresTech)) continue;
-    if (skill.requiresMinStat) {
-      const unmet = Object.entries(skill.requiresMinStat).some(([k, v]) => (S.char[k] || 0) < v);
-      if (unmet) continue;
+  // Skills are now discovered via "Escoltar Estrangers" action — not auto-unlocked
+}
+
+function pickDiscoverableSkill() {
+  const candidates = (currentEra().skills || []).filter(s => {
+    if (hasUnlockedSkill(s.id)) return false;
+    if (s.requiresTech && !hasKnowledge(s.requiresTech)) return false;
+    if (s.requiresMinStat) {
+      if (Object.entries(s.requiresMinStat).some(([k, v]) => (S.char[k] || 0) < v)) return false;
     }
-    S.unlockedSkillIds.push(skill.id);
-    S.pendingDiscoveries.push({ ...skill, _type: 'habilitat' });
-  }
+    return true;
+  });
+  if (!candidates.length) return null;
+  // Pick the skill where requirements are just barely met (lowest excess = most recently earned)
+  const scored = candidates.map(s => {
+    let excess = 0;
+    if (s.requiresMinStat) {
+      for (const [k, v] of Object.entries(s.requiresMinStat)) excess += (S.char[k] || 0) - v;
+    }
+    return { skill: s, excess };
+  });
+  scored.sort((a, b) => a.excess - b.excess);
+  return scored[0].skill;
 }
 
 // ── Zone discovery ────────────────────────────────────────────────────────────
@@ -1637,11 +1661,11 @@ function openZoneSheet(zoneId) {
   el('zone-sheet-icon').textContent = zone.icon;
   el('zone-sheet-name').textContent = zone.name;
   if (!S.unlockedActionIds) S.unlockedActionIds = [];
-  const available   = currentEra().actions.filter(p => p.zone === zoneId && isProjectUnlocked(p));
-  const purchasable = currentEra().actions.filter(p =>
-    p.zone === zoneId && p.locked && !isProjectUnlocked(p) && isProjectUnlockedIgnoreSkill(p)
+  const purchased = S.unlockedActionIds;
+  const available = currentEra().actions.filter(p =>
+    p.zone === zoneId && isProjectUnlocked(p) && (!p.locked || purchased.includes(p.id))
   );
-  CAROUSEL.actions = [...available, ...purchasable];
+  CAROUSEL.actions = [...available];
   CAROUSEL.idx      = 0;
   CAROUSEL.zoneId   = zoneId;
   CAROUSEL.dragDelta = 0;
@@ -1743,18 +1767,21 @@ function updateCarouselInfo() {
       (tk.saber    || 0) >= (cost.saber    || 0) &&
       (tk.prestigi || 0) >= (cost.prestigi || 0);
     el('zc-name').textContent = `🔒 ${proj.name}`;
-    el('zc-desc').textContent = proj.description || '';
     const costParts = [];
     if (cost.vigor    > 0) costParts.push(`💪 ${cost.vigor}`);
     if (cost.saber    > 0) costParts.push(`🧠 ${cost.saber}`);
     if (cost.prestigi > 0) costParts.push(`👑 ${cost.prestigi}`);
     el('zc-benefits').textContent = costParts.join('  ');
-    const btn = el('btn-zc-select');
-    btn.disabled    = !canAfford;
-    btn.textContent = canAfford ? 'Aprendre →' : '🔒 Tokens insuficients';
+    el('zc-desc').textContent = canAfford ? proj.description || '' : '🔒 Tokens insuficients';
     return;
   }
 
+  if (proj.opensTaller) {
+    el('zc-name').textContent     = proj.name;
+    el('zc-benefits').textContent = `${tallerCandidates().length} disponibles`;
+    el('zc-desc').textContent     = proj.description || '';
+    return;
+  }
   const blocked = blockedReason(proj);
   const timeCost = currentEra().mechanics.intensityTimeCosts[1];
   const noTime  = S.timeLeft < timeCost;
@@ -1767,13 +1794,10 @@ function updateCarouselInfo() {
     ...Object.entries(proj.statGain || {}).filter(([,v]) => v).map(([s]) => statIcons[s] || s),
   ];
   if (proj.healthRisk > 0) parts.push('⚠️');
+  if (proj.discoversSkill) parts.push('✨ Habilitat');
   el('zc-name').textContent     = proj.name;
   el('zc-benefits').textContent = parts.join('  ');
-  el('zc-desc').textContent     = blocked ? `🔒 ${blocked}` : (proj.description || '');
-  const btn = el('btn-zc-select');
-  const canRun = !blocked && !noTime;
-  btn.disabled    = !canRun;
-  btn.textContent = blocked ? '🔒 Bloquejat' : noTime ? '⏰ Sense temps aquest torn' : 'Executar →';
+  el('zc-desc').textContent     = blocked ? `🔒 ${blocked}` : noTime ? '⏰ Sense temps aquest torn' : (proj.description || '');
 }
 
 function carouselNavigate(newIdx) {
@@ -1796,13 +1820,13 @@ function carouselNavigate(newIdx) {
 function carouselOpenCurrent() {
   const proj = CAROUSEL.actions[CAROUSEL.idx];
   if (!proj) return;
-  if (isTokenLocked(proj)) { unlockAction(proj); return; }
+  if (proj.opensTaller) { hide('overlay-zone-actions'); openTallerOverlay(); return; }
   if (blockedReason(proj)) return;
   const timeCost = currentEra().mechanics.intensityTimeCosts[1];
   if (S.timeLeft < timeCost) return;
   hide('overlay-zone-actions');
   if (proj.teachesSkill) {
-    selectProject(proj.id); // teach pane still needed
+    selectProject(proj.id);
   } else {
     executeActionDirect(proj);
   }
@@ -1837,13 +1861,66 @@ function unlockAction(proj) {
   S.shopTokens.vigor    -= (cost.vigor    || 0);
   S.shopTokens.saber    -= (cost.saber    || 0);
   S.shopTokens.prestigi -= (cost.prestigi || 0);
+  if (!S.unlockedActionIds) S.unlockedActionIds = [];
+  if (!S.unlockedActionIds.includes(proj.id)) S.unlockedActionIds.push(proj.id);
   if (proj.requiresSkill && !hasUnlockedSkill(proj.requiresSkill)) {
     S.unlockedSkillIds.push(proj.requiresSkill);
   }
   addLog(proj.icon, `Has après: ${proj.name}`, 'skill');
   saveGame();
   renderShopTokens();
-  openZoneSheet(CAROUSEL.zoneId);
+  renderTallerList();
+}
+
+// ── Taller (Workshop) overlay ──────────────────────────────────────────────────
+function openTallerOverlay() {
+  renderTallerList();
+  show('overlay-taller');
+}
+
+function tallerCandidates() {
+  const purchased = S.unlockedActionIds || [];
+  return currentEra().actions.filter(p =>
+    p.locked && !purchased.includes(p.id) && isProjectUnlocked(p)
+  );
+}
+
+function renderTallerList() {
+  const list = el('taller-list');
+  if (!list) return;
+  const items = tallerCandidates();
+  const tk = S.shopTokens || { vigor: 0, saber: 0, prestigi: 0 };
+  if (!items.length) {
+    list.innerHTML = '<p class="taller-empty">No hi ha res per aprendre ara. Descobreix noves habilitats primer.</p>';
+    return;
+  }
+  list.innerHTML = '';
+  items.forEach(proj => {
+    const cost = proj.tokenCost || {};
+    const canAfford =
+      (tk.vigor    || 0) >= (cost.vigor    || 0) &&
+      (tk.saber    || 0) >= (cost.saber    || 0) &&
+      (tk.prestigi || 0) >= (cost.prestigi || 0);
+    const costParts = [];
+    if (cost.vigor    > 0) costParts.push(`💪 ${cost.vigor}`);
+    if (cost.saber    > 0) costParts.push(`🧠 ${cost.saber}`);
+    if (cost.prestigi > 0) costParts.push(`👑 ${cost.prestigi}`);
+    const row = document.createElement('div');
+    row.className = 'taller-item' + (canAfford ? '' : ' taller-item-poor');
+    row.innerHTML = `
+      <span class="taller-item-icon">${proj.icon}</span>
+      <div class="taller-item-info">
+        <div class="taller-item-name">${proj.name}</div>
+        <div class="taller-item-desc">${proj.description || ''}</div>
+        <div class="taller-item-cost">${costParts.join('  ') || '—'}</div>
+      </div>
+      <button class="taller-buy-btn" ${canAfford ? '' : 'disabled'}>Aprendre →</button>
+    `;
+    row.querySelector('.taller-buy-btn').addEventListener('click', () => {
+      unlockAction(proj);
+    });
+    list.appendChild(row);
+  });
 }
 
 function renderShopTokens() {
@@ -3282,10 +3359,6 @@ function bindEvents() {
 
   // Zone carousel
   el('btn-close-zone-sheet').addEventListener('click', () => hide('overlay-zone-actions'));
-  el('overlay-zone-actions').addEventListener('click', e => {
-    if (e.target === el('overlay-zone-actions')) hide('overlay-zone-actions');
-  });
-  el('btn-zc-select').addEventListener('click', carouselOpenCurrent);
 
   // Carousel touch
   const carVp = el('zone-carousel-viewport');
@@ -3357,6 +3430,7 @@ function bindEvents() {
   el('btn-close-pill').addEventListener('click', () => hide('overlay-pill'));
   el('btn-milestones').addEventListener('click', () => { renderMilestonesOverlay(); });
   el('btn-close-milestones').addEventListener('click', () => hide('overlay-milestones'));
+  el('btn-close-taller').addEventListener('click', () => hide('overlay-taller'));
   el('btn-tech').addEventListener('click', () => { renderTechOverlay('techs'); });
   el('btn-close-tech').addEventListener('click', () => hide('overlay-tech'));
   el('tab-techs').addEventListener('click', () => renderTechOverlay('techs'));
