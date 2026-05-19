@@ -251,6 +251,17 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   flex-shrink: 0;
 }
 .taller-buy-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.taller-info-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  padding: 0.3rem 0.45rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.taller-info-btn:active { background: var(--surface2); }
 
 /* ── Technology Overlay ──────────────────────────────────────────────── */
 .tech-card { max-height: 80dvh; overflow-y: auto; }
@@ -799,35 +810,14 @@ body.donut-active * { pointer-events: none !important; }
   margin-top: auto;
 }
 
-/* ── Discovery — overlay backdrop + cream card ───────────────────────── */
-#pane-discovery {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.55);
-  display: flex !important;
-  align-items: center;
-  justify-content: center;
-  padding: 1.25rem;
-  z-index: 450;
-  gap: 0;
-}
-#pane-discovery.hidden { display: none !important; }
+/* ── Discovery — card inside #overlay-action ─────────────────────────── */
+#pane-discovery.hidden { display: none; }
 
 .disc-card {
-  background: #f5efde;
-  border-radius: 14px;
-  padding: 1.25rem 1.1rem;
-  max-width: 340px;
-  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.4);
-  animation: discCardIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-@keyframes discCardIn {
-  from { opacity: 0; transform: scale(0.88) translateY(12px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+  flex: 1;
 }
 #disc-header {
   display: flex;
@@ -835,7 +825,7 @@ body.donut-active * { pointer-events: none !important; }
   gap: 0.5rem;
   font-size: 1.1rem;
   font-weight: 700;
-  color: #6b4200;
+  color: var(--gold);
 }
 #disc-icon { font-size: 1.8rem; }
 .disc-badge {
@@ -843,21 +833,21 @@ body.donut-active * { pointer-events: none !important; }
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: #9a6200;
+  color: var(--text-dim);
   opacity: 0.85;
 }
-#disc-desc { font-size: 0.88rem; line-height: 1.5; color: #3d2200; }
+#disc-desc { font-size: 0.88rem; line-height: 1.5; color: var(--text); }
 #disc-effects { display: flex; flex-direction: column; gap: 0.3rem; }
 #btn-dismiss-discovery {
   align-self: stretch;
-  background: #8b5000;
+  background: var(--accent);
   border: none;
-  color: #fff;
+  color: var(--text);
   font-weight: 700;
   padding: 0.65rem;
   font-size: 0.9rem;
   border-radius: 8px;
-  margin-top: 0.25rem;
+  margin-top: auto;
   cursor: pointer;
 }
 /* Auto-advance progress bars */
@@ -1266,37 +1256,17 @@ body.donut-active * { pointer-events: none !important; }
   to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 .pane:not(.hidden) { animation: fadeInUp 0.2s ease; }
-#pane-event:not(.hidden)     { animation: slideInRight 0.25s ease; }
-#pane-discovery:not(.hidden) { animation: none; }
-#pane-birth:not(.hidden) { animation: none; }
+#pane-event:not(.hidden) { animation: slideInRight 0.25s ease; }
 
-/* ── Birth card ────────────────────────────────────────────────── */
-#pane-birth {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.72);
-  display: flex !important;
-  align-items: center;
-  justify-content: center;
-  padding: 1.25rem;
-  z-index: 460;
-  gap: 0;
-}
-#pane-birth.hidden { display: none !important; }
+/* ── Birth card — inside #overlay-action ────────────────────────── */
+#pane-birth.hidden { display: none; }
 
 .birth-card {
-  background: #2a1d08;
-  border: 1px solid #c8952a;
-  border-radius: 16px;
-  padding: 1.6rem 1.4rem 1.3rem;
-  max-width: 340px;
-  width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.6rem;
-  box-shadow: 0 0 60px rgba(200,149,42,0.25), 0 12px 48px rgba(0,0,0,0.6);
-  animation: birthCardIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  flex: 1;
   text-align: center;
 }
 @keyframes birthCardIn {
@@ -1361,7 +1331,7 @@ body.donut-active * { pointer-events: none !important; }
   color: #d4aa5a;
 }
 #btn-dismiss-birth {
-  margin-top: 0.6rem;
+  margin-top: auto;
   background: #c8952a;
   color: #1c1208;
   border: none;

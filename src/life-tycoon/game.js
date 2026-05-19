@@ -325,6 +325,7 @@ function blockedReason(proj) {
     return `😔 Felicitat insuficient (cal ${proj.requiresMinHappiness}+)`;
   if (proj.requiresMinFamilyReputation && S.resources.familyReputation.value < proj.requiresMinFamilyReputation)
     return `🏛️ Reputació insuficient (cal ${proj.requiresMinFamilyReputation}+)`;
+  if (proj.discoversSkill && !pickDiscoverableSkill()) return 'No hi ha habilitats noves per descobrir';
   return null;
 }
 
@@ -1879,10 +1880,27 @@ function openTallerOverlay() {
 }
 
 function tallerCandidates() {
-  const purchased = S.unlockedActionIds || [];
-  return currentEra().actions.filter(p =>
-    p.locked && !purchased.includes(p.id) && isProjectUnlocked(p)
-  );
+  return (currentEra().skills || []).filter(s => !hasUnlockedSkill(s.id));
+}
+
+function buySkill(skill) {
+  const cost = skill.tokenCost || {};
+  if (!S.shopTokens) S.shopTokens = { vigor: 0, saber: 0, prestigi: 0 };
+  if ((S.shopTokens.vigor    || 0) < (cost.vigor    || 0) ||
+      (S.shopTokens.saber    || 0) < (cost.saber    || 0) ||
+      (S.shopTokens.prestigi || 0) < (cost.prestigi || 0)) return;
+  S.shopTokens.vigor    -= (cost.vigor    || 0);
+  S.shopTokens.saber    -= (cost.saber    || 0);
+  S.shopTokens.prestigi -= (cost.prestigi || 0);
+  if (!S.unlockedSkillIds.includes(skill.id)) S.unlockedSkillIds.push(skill.id);
+  if (!S.unlockedActionIds) S.unlockedActionIds = [];
+  for (const aId of (skill.unlocksActionIds || [])) {
+    if (!S.unlockedActionIds.includes(aId)) S.unlockedActionIds.push(aId);
+  }
+  addLog(skill.icon, `Has après: ${skill.name}`, 'skill');
+  saveGame();
+  renderShopTokens();
+  renderTallerList();
 }
 
 function renderTallerList() {
@@ -1891,12 +1909,12 @@ function renderTallerList() {
   const items = tallerCandidates();
   const tk = S.shopTokens || { vigor: 0, saber: 0, prestigi: 0 };
   if (!items.length) {
-    list.innerHTML = '<p class="taller-empty">No hi ha res per aprendre ara. Descobreix noves habilitats primer.</p>';
+    list.innerHTML = '<p class="taller-empty">Ja heu après totes les habilitats disponibles.</p>';
     return;
   }
   list.innerHTML = '';
-  items.forEach(proj => {
-    const cost = proj.tokenCost || {};
+  items.forEach(skill => {
+    const cost = skill.tokenCost || {};
     const canAfford =
       (tk.vigor    || 0) >= (cost.vigor    || 0) &&
       (tk.saber    || 0) >= (cost.saber    || 0) &&
@@ -1908,16 +1926,24 @@ function renderTallerList() {
     const row = document.createElement('div');
     row.className = 'taller-item' + (canAfford ? '' : ' taller-item-poor');
     row.innerHTML = `
-      <span class="taller-item-icon">${proj.icon}</span>
+      <span class="taller-item-icon">${skill.icon}</span>
       <div class="taller-item-info">
-        <div class="taller-item-name">${proj.name}</div>
-        <div class="taller-item-desc">${proj.description || ''}</div>
+        <div class="taller-item-name">${skill.name}</div>
+        <div class="taller-item-desc">${skill.effectDesc || ''}</div>
         <div class="taller-item-cost">${costParts.join('  ') || '—'}</div>
       </div>
+      <button class="taller-info-btn" aria-label="Info">ⓘ</button>
       <button class="taller-buy-btn" ${canAfford ? '' : 'disabled'}>Aprendre →</button>
     `;
+    const lines = (skill.unlocksActionIds || []).map(aId => {
+      const a = getProject(aId);
+      return a ? `🔓 ${a.icon} ${a.name}` : '';
+    }).filter(Boolean);
+    row.querySelector('.taller-info-btn').addEventListener('click', () => {
+      showPillDetail(skill.icon, skill.name, skill.description || '', lines, skill.quote, skill.quoteAttribution);
+    });
     row.querySelector('.taller-buy-btn').addEventListener('click', () => {
-      unlockAction(proj);
+      buySkill(skill);
     });
     list.appendChild(row);
   });
