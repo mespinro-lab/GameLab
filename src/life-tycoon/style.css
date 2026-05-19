@@ -234,6 +234,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 }
 .taller-item.taller-item-poor { opacity: 0.55; }
 .taller-item-icon { font-size: 2rem; flex-shrink: 0; }
+.taller-icon-btn { cursor: pointer; border-radius: 8px; padding: 0.1rem; transition: opacity 0.15s; }
+.taller-icon-btn:active { opacity: 0.6; }
 .taller-item-info { flex: 1; min-width: 0; }
 .taller-item-name { font-size: 0.9rem; font-weight: 700; color: var(--gold); }
 .taller-item-desc { font-size: 0.7rem; color: var(--text-dim); line-height: 1.3; }
@@ -251,17 +253,6 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   flex-shrink: 0;
 }
 .taller-buy-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-.taller-info-btn {
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-dim);
-  font-size: 0.85rem;
-  padding: 0.3rem 0.45rem;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.taller-info-btn:active { background: var(--surface2); }
 
 /* ── Technology Overlay ──────────────────────────────────────────────── */
 .tech-card { max-height: 80dvh; overflow-y: auto; }
@@ -409,23 +400,25 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 }
 .rest-btn:active { background: var(--surface2); }
 
-/* ── Zone Actions panel (anchored above bottom bar, child of #app) ────── */
+/* ── Zone Actions panel (centered in map zone, child of #app) ────── */
 #overlay-zone-actions {
   position: absolute;
+  top: calc(100dvh / 3);
   bottom: calc(100dvh / 6);
   left: 0; right: 0;
   background: transparent;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   z-index: 40;
+  padding: 0 10px;
 }
 #overlay-zone-actions.hidden { display: none; }
 .zone-actions-sheet {
   width: 100%;
   max-width: 430px;
   background: var(--surface);
-  border-radius: 16px 16px 0 0;
+  border-radius: 14px;
   padding: 0.75rem 0.75rem 0.5rem;
   overflow: hidden;
   display: flex;
@@ -434,7 +427,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 }
 #overlay-zone-actions > .zone-actions-sheet {
   max-width: 100%;
-  border-radius: 14px 14px 0 0;
+  border-radius: 14px;
 }
 #zone-sheet-header {
   display: flex;
@@ -2414,11 +2407,11 @@ body.donut-active * { pointer-events: none !important; }
   overflow: hidden;
 }
 
-/* ── Overlay d'acció: cobreix la zona del mapa ── */
+/* ── Overlay d'acció: centrat a la zona del mapa (20% menys alt) ── */
 #overlay-action {
   position: absolute;
-  top: calc(100dvh / 3 + 8px);
-  bottom: calc(100dvh / 6 + 8px);
+  top: calc(100dvh / 3 + 5dvh);
+  bottom: calc(100dvh / 6 + 5dvh);
   left: var(--panel-side);
   right: var(--panel-side);
   z-index: 20;

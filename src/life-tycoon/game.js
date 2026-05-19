@@ -1880,10 +1880,17 @@ function openTallerOverlay() {
 }
 
 function tallerCandidates() {
-  return (currentEra().skills || []).filter(s => !hasUnlockedSkill(s.id));
+  return (currentEra().skills || []).filter(s => {
+    if (hasUnlockedSkill(s.id)) return false;
+    if (s.requiresTech && !hasKnowledge(s.requiresTech)) return false;
+    if (s.requiresMinStat) {
+      if (Object.entries(s.requiresMinStat).some(([k, v]) => (S.char[k] || 0) < v)) return false;
+    }
+    return true;
+  });
 }
 
-function buySkill(skill) {
+function buySkillAndLearn(skill) {
   const cost = skill.tokenCost || {};
   if (!S.shopTokens) S.shopTokens = { vigor: 0, saber: 0, prestigi: 0 };
   if ((S.shopTokens.vigor    || 0) < (cost.vigor    || 0) ||
@@ -1897,10 +1904,21 @@ function buySkill(skill) {
   for (const aId of (skill.unlocksActionIds || [])) {
     if (!S.unlockedActionIds.includes(aId)) S.unlockedActionIds.push(aId);
   }
-  addLog(skill.icon, `Has après: ${skill.name}`, 'skill');
+  const timeCost = currentEra().mechanics.intensityTimeCosts[1];
+  S.timeLeft = Math.max(0, S.timeLeft - timeCost);
   saveGame();
+  hide('overlay-taller');
+  hide('overlay-zone-actions');
+  S.phase = 'select';
+  renderAll();
   renderShopTokens();
-  renderTallerList();
+  setTimeout(() => {
+    showDonutAnimation({ icon: skill.icon }, `Aprenent: ${skill.name}`, () => {
+      S.pendingDiscoveries.unshift({ ...skill, _type: 'habilitat' });
+      S.phase = 'discovery';
+      renderAll();
+    });
+  }, 300);
 }
 
 function renderTallerList() {
@@ -1909,7 +1927,7 @@ function renderTallerList() {
   const items = tallerCandidates();
   const tk = S.shopTokens || { vigor: 0, saber: 0, prestigi: 0 };
   if (!items.length) {
-    list.innerHTML = '<p class="taller-empty">Ja heu après totes les habilitats disponibles.</p>';
+    list.innerHTML = '<p class="taller-empty">Ja heu après totes les habilitats disponibles o no tens els prerequisits.</p>';
     return;
   }
   list.innerHTML = '';
@@ -1923,27 +1941,26 @@ function renderTallerList() {
     if (cost.vigor    > 0) costParts.push(`💪 ${cost.vigor}`);
     if (cost.saber    > 0) costParts.push(`🧠 ${cost.saber}`);
     if (cost.prestigi > 0) costParts.push(`👑 ${cost.prestigi}`);
+    const lines = (skill.unlocksActionIds || []).map(aId => {
+      const a = getProject(aId);
+      return a ? `🔓 ${a.icon} ${a.name}` : '';
+    }).filter(Boolean);
     const row = document.createElement('div');
     row.className = 'taller-item' + (canAfford ? '' : ' taller-item-poor');
     row.innerHTML = `
-      <span class="taller-item-icon">${skill.icon}</span>
+      <span class="taller-item-icon taller-icon-btn">${skill.icon}</span>
       <div class="taller-item-info">
         <div class="taller-item-name">${skill.name}</div>
         <div class="taller-item-desc">${skill.effectDesc || ''}</div>
         <div class="taller-item-cost">${costParts.join('  ') || '—'}</div>
       </div>
-      <button class="taller-info-btn" aria-label="Info">ⓘ</button>
       <button class="taller-buy-btn" ${canAfford ? '' : 'disabled'}>Aprendre →</button>
     `;
-    const lines = (skill.unlocksActionIds || []).map(aId => {
-      const a = getProject(aId);
-      return a ? `🔓 ${a.icon} ${a.name}` : '';
-    }).filter(Boolean);
-    row.querySelector('.taller-info-btn').addEventListener('click', () => {
+    row.querySelector('.taller-icon-btn').addEventListener('click', () => {
       showPillDetail(skill.icon, skill.name, skill.description || '', lines, skill.quote, skill.quoteAttribution);
     });
     row.querySelector('.taller-buy-btn').addEventListener('click', () => {
-      buySkill(skill);
+      buySkillAndLearn(skill);
     });
     list.appendChild(row);
   });
