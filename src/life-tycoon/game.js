@@ -661,7 +661,7 @@ function pickDiscoverableSkill() {
     }
     return { skill: s, excess };
   });
-  scored.sort((a, b) => a.excess - b.excess);
+  scored.sort((a, b) => b.excess - a.excess);
   return scored[0].skill;
 }
 
@@ -3359,6 +3359,9 @@ function bindEvents() {
 
   // Zone carousel
   el('btn-close-zone-sheet').addEventListener('click', () => hide('overlay-zone-actions'));
+  el('overlay-zone-actions').addEventListener('click', e => {
+    if (e.target === el('overlay-zone-actions')) hide('overlay-zone-actions');
+  });
 
   // Carousel touch
   const carVp = el('zone-carousel-viewport');
