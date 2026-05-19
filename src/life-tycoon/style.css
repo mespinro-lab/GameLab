@@ -2821,6 +2821,22 @@ body.donut-active * { pointer-events: none !important; }
   color: var(--gold);
   font-weight: 700;
 }
+#ds-score {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: var(--gold);
+  letter-spacing: 0.02em;
+  margin: 0.1rem 0 0.4rem;
+}
+#ds-score small {
+  display: block;
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-top: -0.3rem;
+}
 #ds-btn-continue {
   background: rgba(160,110,55,0.16);
   border: 1px solid var(--gold);

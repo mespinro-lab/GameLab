@@ -383,12 +383,22 @@ function calcResult(proj) {
 
   const quality = finalMult > 1.0 ? 'good' : finalMult > 0.6 ? 'ok' : 'poor';
   const texts = quality === 'poor' ? proj.failTexts : proj.successTexts;
+  if (quality !== 'poor' && proj.grantKnowledge) {
+    const toGrant = proj.grantKnowledge.filter(kId => !hasKnowledge(kId));
+    if (toGrant.length) fx._grantKnowledge = toGrant;
+  }
   return { fx, finalMult, riskFailed, quality, narrative: texts ? pick(texts) : '' };
 }
 
 function applyFx(fx) {
   const c = S.char;
+  if (fx._grantKnowledge) {
+    for (const kId of fx._grantKnowledge) {
+      if (!c.knowledgeIds.includes(kId)) c.knowledgeIds.push(kId);
+    }
+  }
   for (const [k, v] of Object.entries(fx)) {
+    if (k === '_grantKnowledge') continue;
     if (k.startsWith('_gain_')) {
       const stat = k.slice(6);
       const caps = currentEra().mechanics.statGainCaps || {};
@@ -785,6 +795,8 @@ function showDeathSummary(onContinue) {
     grid.appendChild(div);
   });
 
+  el('ds-score').innerHTML = `${calcCharScore().toLocaleString()}<small>Puntuació de vida</small>`;
+
   el('ds-btn-continue').onclick = () => {
     hide('overlay-death-summary');
     onContinue();
@@ -805,6 +817,7 @@ function triggerDeath() {
     knowledgeIds: [...S.char.knowledgeIds],
     race: S.char.race,
     bustSrc: bustImgSrc(),
+    lifeScore: calcCharScore(),
   });
 
   const hasChildren = S.char.children.length > 0;
@@ -1016,6 +1029,17 @@ function transitionEra(newEraId) {
 }
 
 // ── Scoring ───────────────────────────────────────────────────────────────────
+function calcCharScore() {
+  return Math.round(
+    S.cycle * 8 +
+    (S.char.physical + S.char.intelligence + S.char.social) * 50 +
+    S.char.children.length * 120 +
+    (S.char.learnedSkillIds || []).length * 80 +
+    S.char.knowledgeIds.length * 15 +
+    S.resources.familyReputation.value * 2
+  );
+}
+
 function calcScore() {
   const era = currentEra() || GAME_DATA.eras[GAME_DATA.eras.length - 1];
   const M = era.mechanics;
