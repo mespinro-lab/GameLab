@@ -365,11 +365,15 @@ function calcResult(proj) {
 
   let riskFailed = false;
   if (proj.healthRisk > 0) {
+    let baseChance    = proj.baseRiskChance !== undefined ? proj.baseRiskChance : M.intensityFailChances[S.intensity - 1];
     let effectiveRisk = proj.healthRisk;
     for (const [kId, reduction] of Object.entries(proj.riskReductions || {})) {
-      if (hasKnowledge(kId)) effectiveRisk = Math.round(effectiveRisk * (1 - reduction));
+      if (hasKnowledge(kId)) {
+        baseChance    = baseChance * (1 - reduction);
+        effectiveRisk = Math.round(effectiveRisk * (1 - reduction));
+      }
     }
-    const failChance = M.intensityFailChances[S.intensity - 1] / Math.max(1, statMod);
+    const failChance = baseChance / Math.max(1, statMod);
     if (Math.random() < failChance) {
       fx.health = (fx.health || 0) - Math.round(effectiveRisk * riskMult);
       riskFailed = true;
@@ -2183,11 +2187,17 @@ function calcImpactPreview(proj, intensity) {
     }
   }
   const hasTracking = skillEffectSum('huntMultBonus') > 0 && (proj.id === 'hunt' || proj.id === 'explore');
+  const M2 = currentEra().mechanics;
+  let baseChance2   = proj.baseRiskChance !== undefined ? proj.baseRiskChance : M2.intensityFailChances[intensity - 1];
   let effectiveRisk = proj.healthRisk;
   for (const [kId, reduction] of Object.entries(proj.riskReductions || {})) {
-    if (hasKnowledge(kId)) effectiveRisk = Math.round(effectiveRisk * (1 - reduction));
+    if (hasKnowledge(kId)) {
+      baseChance2   = baseChance2 * (1 - reduction);
+      effectiveRisk = Math.round(effectiveRisk * (1 - reduction));
+    }
   }
-  return { preview, flatBonuses, hasTracking, mults, hasRisk: effectiveRisk > 0, riskReduced: effectiveRisk < proj.healthRisk };
+  const origChance = proj.baseRiskChance !== undefined ? proj.baseRiskChance : M2.intensityFailChances[intensity - 1];
+  return { preview, flatBonuses, hasTracking, mults, hasRisk: effectiveRisk > 0, riskReduced: effectiveRisk < proj.healthRisk || baseChance2 < origChance };
 }
 
 function renderImpactPreview(proj) {
