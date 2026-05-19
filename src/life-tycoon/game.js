@@ -1683,15 +1683,22 @@ function updateCarouselPositions(dragPx) {
 }
 
 function springEffect(dir) {
+  const n = CAROUSEL.actions.length;
+  if (n === 1) return; // single card: static, no bounce
   const items = Array.from(el('zone-carousel-viewport').querySelectorAll('.zc-item'));
   if (!items.length) return;
-  // Overshoot slightly in dir, then snap back to center
+  const wrappedOffset = i => {
+    let o = i - CAROUSEL.idx;
+    while (o >  n / 2) o -= n;
+    while (o < -n / 2) o += n;
+    return o;
+  };
   items.forEach(item => {
     item.style.transition = 'none';
-    applyCarouselItem(item, 0, dir * 22);
+    applyCarouselItem(item, wrappedOffset(parseInt(item.dataset.idx)), dir * 14);
   });
   requestAnimationFrame(() => requestAnimationFrame(() => {
-    items.forEach(item => applyCarouselItem(item, 0, 0));
+    items.forEach(item => applyCarouselItem(item, wrappedOffset(parseInt(item.dataset.idx)), 0));
   }));
 }
 
@@ -1912,6 +1919,7 @@ function executeActionDirect(proj) {
   const tokens = generateShopTokens(proj);
   setTimeout(() => spawnTokenBalls(tokens), 400);
   showDonutAnimation(proj, null, () => {
+    document.body.classList.add('donut-active'); // block during 700ms visual phase
     const oldRes = snapshotResources();
     applyFx(result.fx);
     accumulateFloaters(result.fx);
@@ -1927,7 +1935,7 @@ function executeActionDirect(proj) {
     showFxFloaters(floaters);
     checkMilestones();
     saveGame();
-    setTimeout(() => handlePostAction(), 700);
+    setTimeout(() => { document.body.classList.remove('donut-active'); handlePostAction(); }, 700);
   });
 }
 
@@ -2007,8 +2015,8 @@ function handlePostAction() {
   } else if (canContinue) {
     S.phase = 'select'; renderAll();
   } else {
-    // Always show map before turn-end donut
     S.phase = 'select'; renderAll();
+    document.body.classList.add('donut-active');
     setTimeout(() => showDonutAnimation({ icon: '⏱️' }, 'Finalitzant torn', endCycle), 400);
   }
 }
@@ -2392,6 +2400,7 @@ function executeTeach() {
   renderAll();
 
   showDonutAnimation(proj, null, () => {
+    document.body.classList.add('donut-active'); // block during 700ms visual phase
     const oldRes = snapshotResources();
     applyFx(fx);
     accumulateFloaters(fx);
@@ -2403,7 +2412,7 @@ function executeTeach() {
     showFxFloaters(floaters);
     checkMilestones();
     saveGame();
-    setTimeout(() => afterNotifications(), 700);
+    setTimeout(() => { document.body.classList.remove('donut-active'); afterNotifications(); }, 700);
   });
 }
 
@@ -2457,6 +2466,7 @@ function afterNotifications() {
     requestAnimationFrame(() => showFxFloaters(floaters));
   } else {
     S.pendingFloaters = {};
+    document.body.classList.add('donut-active');
     setTimeout(() => showDonutAnimation({ icon: '⏱️' }, 'Finalitzant torn', endCycle), 400);
   }
 }
