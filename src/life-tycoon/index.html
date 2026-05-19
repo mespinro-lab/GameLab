@@ -66,22 +66,22 @@
     <!-- MAP ZONE: interactive map with zone nodes (3/6 screen) -->
     <div id="map-zone">
       <!-- Zone nodes rendered dynamically by JS -->
+    </div>
 
-      <!-- ZONE ACTIONS: inline panel over map when a zone is selected -->
-      <div id="overlay-zone-actions" class="hidden">
-        <div class="zone-actions-sheet">
-          <div id="zone-sheet-header">
-            <span id="zone-sheet-icon"></span>
-            <span id="zone-sheet-name"></span>
-            <button id="btn-close-zone-sheet">×</button>
-          </div>
-          <div id="zone-carousel-viewport"></div>
-          <div id="zc-dots"></div>
-          <div id="zone-carousel-info">
-            <div id="zc-name"></div>
-            <div id="zc-benefits"></div>
-            <div id="zc-desc"></div>
-          </div>
+    <!-- ZONE ACTIONS: positioned over map zone (survives renderZoneNodes innerHTML clear) -->
+    <div id="overlay-zone-actions" class="hidden">
+      <div class="zone-actions-sheet">
+        <div id="zone-sheet-header">
+          <span id="zone-sheet-icon"></span>
+          <span id="zone-sheet-name"></span>
+          <button id="btn-close-zone-sheet">×</button>
+        </div>
+        <div id="zone-carousel-viewport"></div>
+        <div id="zc-dots"></div>
+        <div id="zone-carousel-info">
+          <div id="zc-name"></div>
+          <div id="zc-benefits"></div>
+          <div id="zc-desc"></div>
         </div>
       </div>
     </div>
