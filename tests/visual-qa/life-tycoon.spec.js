@@ -3,7 +3,24 @@
 const { test, expect } = require('@playwright/test');
 const { analyzeScreenshot, formatResult } = require('./helpers/claude-vision');
 
+const TURNS_TO_PLAY = parseInt(process.env.TURNS || '20');
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** Clicks the first available action button N times, waiting between each. */
+async function playTurns(page, turns) {
+  for (let i = 0; i < turns; i++) {
+    const btn = page.locator('.action-btn:not([disabled])').first();
+    const visible = await btn.isVisible().catch(() => false);
+    if (!visible) break;
+    await btn.click();
+    await page.waitForTimeout(300);
+    // Dismiss any result/discovery overlay before the next turn
+    const dismiss = page.locator('#btn-continue, #btn-next, .btn-ok, .btn-continue').first();
+    if (await dismiss.isVisible().catch(() => false)) await dismiss.click();
+    await page.waitForTimeout(150);
+  }
+}
 
 function viewportLabel(testInfo) {
   return `${testInfo.project.name} (${testInfo.project.use.viewport?.width ?? '?'}px)`;
@@ -53,6 +70,7 @@ test.describe('Life Tycoon — Visual QA', () => {
 
   test('resource bar — icons and values legible', async ({ page }, testInfo) => {
     const label = viewportLabel(testInfo);
+    await playTurns(page, TURNS_TO_PLAY);
     await page.waitForSelector('#panel-top-resources', { state: 'visible' });
 
     const bar = await page.locator('#panel-top-resources').screenshot();
@@ -68,6 +86,7 @@ test.describe('Life Tycoon — Visual QA', () => {
 
   test('action list — tap targets and labels', async ({ page }, testInfo) => {
     const label = viewportLabel(testInfo);
+    await playTurns(page, TURNS_TO_PLAY);
 
     // The action list panel — wait for at least one action button
     await page.waitForSelector('#panel-actions', { state: 'visible', timeout: 8000 })
