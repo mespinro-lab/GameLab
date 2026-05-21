@@ -37,7 +37,7 @@ module.exports = defineConfig({
     },
     {
       name: 'mobile-390',
-      use: { ...devices['iPhone 14'] },   // 390×844
+      use: { ...devices['Pixel 5'] },     // 393×851, Chromium-based
     },
     {
       name: 'desktop-1440',

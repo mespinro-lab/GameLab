@@ -59,7 +59,7 @@ jobs:
           REPORT="production/playtests/visual-qa-results.json"
           if [ -f "$REPORT" ]; then
             node -e "
-              const r = require('./\${REPORT}');
+              const r = require('./${REPORT}');
               const counts = { passed:0, failed:0, skipped:0 };
               const failures = [];
               (r.suites||[]).forEach(s=>(s.suites||[]).forEach(p=>(p.specs||[]).forEach(sp=>(sp.tests||[]).forEach(t=>{
