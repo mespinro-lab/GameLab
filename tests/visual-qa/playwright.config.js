@@ -1,6 +1,9 @@
 'use strict';
 
+const path = require('path');
 const { defineConfig, devices } = require('@playwright/test');
+
+const ROOT = path.resolve(__dirname, '../..');
 
 module.exports = defineConfig({
   testDir: '.',
@@ -9,7 +12,7 @@ module.exports = defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: [
     ['list'],
-    ['json', { outputFile: 'production/playtests/visual-qa-results.json' }],
+    ['json', { outputFile: path.join(ROOT, 'production/playtests/visual-qa-results.json') }],
   ],
 
   use: {
@@ -19,7 +22,8 @@ module.exports = defineConfig({
   },
 
   webServer: {
-    command: 'python3 -m http.server 3000 --directory src/life-tycoon',
+    // cwd defaults to the config file directory — use ROOT so paths resolve correctly
+    command: `python3 -m http.server 3000 --directory ${path.join(ROOT, 'src/life-tycoon')}`,
     port: 3000,
     reuseExistingServer: !process.env.CI,
     timeout: 15_000,
