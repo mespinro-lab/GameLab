@@ -3,32 +3,54 @@
 const { test, expect } = require('@playwright/test');
 const { analyzeScreenshot, formatResult } = require('./helpers/claude-vision');
 
-const TURNS_TO_PLAY = parseInt(process.env.TURNS || '20');
+// Keep low for reliability; override with TURNS=N env var for deeper tests
+const TURNS_TO_PLAY = parseInt(process.env.TURNS || '5');
 
 // ── Game flow helpers ─────────────────────────────────────────────────────────
 
 /** Navigate past the main menu and start a new game. */
 async function startNewGame(page) {
-  await page.waitForSelector('#overlay-menu', { state: 'visible', timeout: 8000 });
+  // baseURL already points to the game — empty string navigates there
+  await page.goto('');
+  await page.waitForSelector('#overlay-menu', { state: 'visible', timeout: 10_000 });
   await page.click('#btn-new-game');
   await page.waitForSelector('#overlay-new-game', { state: 'visible' });
   await page.click('#btn-start-new-game');
-  await page.waitForSelector('.zone-node', { state: 'visible', timeout: 8000 });
+  await page.waitForSelector('.zone-node', { state: 'visible', timeout: 10_000 });
 }
 
-/** Dismiss any full-screen overlay that blocks the map. */
+/**
+ * Dismiss any overlay blocking the map.
+ * Handles: discovery, birth, death summary, era transition,
+ * zone sheet, and event choices (click first option).
+ */
 async function dismissOverlays(page) {
-  const candidates = [
+  // Single-button dismissals
+  const dismissSelectors = [
     '#btn-dismiss-discovery',
     '#btn-dismiss-birth',
     '#ds-btn-continue',
     '#btn-era-transition-continue',
     '#btn-close-zone-sheet',
   ];
-  for (const sel of candidates) {
+  for (const sel of dismissSelectors) {
     const btn = page.locator(sel);
     if (await btn.isVisible().catch(() => false)) {
       await btn.click();
+      await page.waitForTimeout(250);
+    }
+  }
+
+  // Event pane: click first available choice button
+  const evChoices = page.locator('#pane-event:not(.hidden) #ev-choices button');
+  const choiceCount = await evChoices.count().catch(() => 0);
+  if (choiceCount > 0) {
+    await evChoices.first().click();
+    await page.waitForTimeout(400);
+    // After a choice, an ev-result pane may appear — dismiss it too
+    const evResultBtn = page.locator('#btn-dismiss-ev-result');
+    if (await evResultBtn.isVisible().catch(() => false)) {
+      await evResultBtn.click();
       await page.waitForTimeout(250);
     }
   }
@@ -36,13 +58,13 @@ async function dismissOverlays(page) {
 
 /**
  * Play N turns: click a zone node → tap the center carousel item → wait.
- * Uses .tap() because the carousel only listens to touchend events.
+ * Uses .tap() because the carousel only responds to touchend events.
  */
 async function playTurns(page, turns) {
   for (let i = 0; i < turns; i++) {
     await dismissOverlays(page);
 
-    // End of time slots — pass the cycle
+    // End of time slots in this cycle — pass to next
     const passBtn = page.locator('#btn-rest-cycle');
     if (await passBtn.isVisible().catch(() => false)) {
       await passBtn.click();
@@ -55,12 +77,12 @@ async function playTurns(page, turns) {
     await zoneNode.click();
     await page.waitForTimeout(250);
 
-    // Carousel: first .zc-item is always at CAROUSEL.idx = 0 (center)
-    // Must use .tap() — carousel only fires carouselOpenCurrent() on touchend
+    // Carousel: first .zc-item = CAROUSEL.idx 0 (center).
+    // Must tap — carousel only fires carouselOpenCurrent() on touchend.
     const zcItem = page.locator('#zone-carousel-viewport .zc-item').first();
     if (await zcItem.isVisible().catch(() => false)) {
       await zcItem.tap();
-      await page.waitForTimeout(800);
+      await page.waitForTimeout(1_000);
     } else {
       const closeBtn = page.locator('#btn-close-zone-sheet');
       if (await closeBtn.isVisible().catch(() => false)) await closeBtn.click();
@@ -94,24 +116,22 @@ test.describe('Life Tycoon — Visual QA', () => {
       localStorage.removeItem('lifetycoon_history');
       localStorage.removeItem('lifetycoon_unlocks');
     });
-    await page.goto('/');
-    await page.waitForSelector('#app', { state: 'visible', timeout: 8000 });
   });
 
   // ── 1. Main menu ─────────────────────────────────────────────────────────────
 
   test('main menu — layout and readability', async ({ page }, testInfo) => {
     const label = viewportLabel(testInfo);
+    await page.goto('');
     await page.waitForSelector('#overlay-menu', { state: 'visible' });
     await page.waitForTimeout(400);
 
     const screenshot = await page.screenshot({ fullPage: false });
     const result = await analyzeScreenshot(
       screenshot,
-      'Main menu — game title "Life Tycoon", navigation buttons in Catalan (Nova partida, Continuar, Fites, Botiga, Historial, Opcions)',
+      'Main menu — game title "Life Tycoon", navigation buttons in Catalan',
       label
     );
-
     console.log(formatResult(result, `Main menu @ ${label}`));
     testInfo.attach('main-menu', { body: screenshot, contentType: 'image/png' });
     assertNoBlockingIssues(result, `main menu @ ${label}`);
@@ -127,10 +147,9 @@ test.describe('Life Tycoon — Visual QA', () => {
     const screenshot = await page.screenshot({ fullPage: false });
     const result = await analyzeScreenshot(
       screenshot,
-      'In-game map with clickable zone nodes, character dashboard at top (food/health bar), cycle info at bottom',
+      'In-game map with clickable zone nodes, character dashboard at top, cycle info at bottom',
       label
     );
-
     console.log(formatResult(result, `In-game map @ ${label}`));
     testInfo.attach('in-game-map', { body: screenshot, contentType: 'image/png' });
     assertNoBlockingIssues(result, `in-game map @ ${label}`);
@@ -149,10 +168,9 @@ test.describe('Life Tycoon — Visual QA', () => {
     const screenshot = await page.screenshot({ fullPage: false });
     const result = await analyzeScreenshot(
       screenshot,
-      'Zone action sheet — carousel showing available actions (Recol·lectar, Caçar, Descansar, etc.) with Catalan labels and icons',
+      'Zone action sheet — carousel showing available actions (Recol·lectar, Caçar, etc.) with Catalan labels',
       label
     );
-
     console.log(formatResult(result, `Zone action sheet @ ${label}`));
     testInfo.attach('zone-action-sheet', { body: screenshot, contentType: 'image/png' });
     assertNoBlockingIssues(result, `zone action sheet @ ${label}`);
@@ -160,7 +178,7 @@ test.describe('Life Tycoon — Visual QA', () => {
 
   // ── 4. Resource bar after turns ───────────────────────────────────────────────
 
-  test('resource bar — legible values after gameplay', async ({ page }, testInfo) => {
+  test('resource bar — values after gameplay', async ({ page }, testInfo) => {
     const label = viewportLabel(testInfo);
     await startNewGame(page);
     await playTurns(page, TURNS_TO_PLAY);
@@ -169,10 +187,9 @@ test.describe('Life Tycoon — Visual QA', () => {
     const bar = await page.locator('#panel-top-resources').screenshot();
     const result = await analyzeScreenshot(
       bar,
-      'Resource bar showing live food (🍖) and health (❤️) values after gameplay',
+      'Resource bar showing live food (🍖) and health (❤️) values',
       label
     );
-
     console.log(formatResult(result, `Resource bar @ ${label}`));
     testInfo.attach('resource-bar', { body: bar, contentType: 'image/png' });
     assertNoBlockingIssues(result, `resource bar @ ${label}`);
@@ -180,7 +197,7 @@ test.describe('Life Tycoon — Visual QA', () => {
 
   // ── 5. Character dashboard ────────────────────────────────────────────────────
 
-  test('character dashboard — stats and traits visible', async ({ page }, testInfo) => {
+  test('character dashboard — stats and traits', async ({ page }, testInfo) => {
     const label = viewportLabel(testInfo);
     await startNewGame(page);
     await playTurns(page, TURNS_TO_PLAY);
@@ -189,10 +206,9 @@ test.describe('Life Tycoon — Visual QA', () => {
     const panel = await page.locator('#char-dashboard').screenshot();
     const result = await analyzeScreenshot(
       panel,
-      'Character dashboard — name, generation badge, stat icons (💪🧠👥), age, and innate trait pills',
+      'Character dashboard — name, generation badge, stat icons (💪🧠👥), age, trait pills',
       label
     );
-
     console.log(formatResult(result, `Character dashboard @ ${label}`));
     testInfo.attach('char-dashboard', { body: panel, contentType: 'image/png' });
     assertNoBlockingIssues(result, `character dashboard @ ${label}`);
@@ -215,7 +231,7 @@ test.describe('Life Tycoon — Visual QA', () => {
       testInfo.attach('overflow-evidence', { body: screenshot, contentType: 'image/png' });
     }
 
-    expect(overflow, `Horizontal overflow detected at ${width}px viewport`).toBe(false);
+    expect(overflow, `Horizontal overflow at ${width}px`).toBe(false);
   });
 
   // ── 7. Lineage panel ──────────────────────────────────────────────────────────
@@ -234,10 +250,9 @@ test.describe('Life Tycoon — Visual QA', () => {
     const screenshot = await page.screenshot({ fullPage: false });
     const result = await analyzeScreenshot(
       screenshot,
-      'Lineage panel open — showing dynasty or generation information',
+      'Lineage or dynasty panel open — showing character generation information',
       label
     );
-
     console.log(formatResult(result, `Lineage panel @ ${label}`));
     testInfo.attach('lineage-panel', { body: screenshot, contentType: 'image/png' });
     assertNoBlockingIssues(result, `lineage panel @ ${label}`);

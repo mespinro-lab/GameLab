@@ -16,15 +16,16 @@ module.exports = defineConfig({
   ],
 
   use: {
-    baseURL: 'http://localhost:3000',
-    screenshot: 'only-on-failure',
-    trace: 'off',
+    baseURL: 'http://localhost:3000/src/life-tycoon/',
+    // Screenshots on every test so the artifact shows what actually happened
+    screenshot: 'on',
+    trace: 'retain-on-failure',
   },
 
   webServer: {
-    // cwd defaults to the config file directory — use ROOT so paths resolve correctly
-    command: `python3 -m http.server 3000 --directory ${path.join(ROOT, 'src/life-tycoon')}`,
-    port: 3000,
+    // Serve repo root so ../../design/life-tycoon/ paths resolve correctly
+    command: `python3 -m http.server 3000 --directory ${ROOT}`,
+    url: 'http://localhost:3000/src/life-tycoon/',
     reuseExistingServer: !process.env.CI,
     timeout: 15_000,
   },
