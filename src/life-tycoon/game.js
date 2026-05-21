@@ -262,75 +262,145 @@ function applyTrait(traitId) {
   }
 }
 
-function isProjectUnlocked(proj) {
+// ── Unified prerequisite engine ────────────────────────────────────────────────
+function getEffectiveRequires(proj) {
+  if (proj.requires !== undefined) return proj.requires;
+  const reqs = [];
   const r = proj.requirements || {};
-  if (r.physical && S.char.physical < r.physical) return false;
-  if (r.intelligence && S.char.intelligence < r.intelligence) return false;
-  if (r.social && S.char.social < r.social) return false;
-  if (r.health && S.resources.health.value < r.health) return false;
-  if (r.requiresPartner && !S.char.partner) return false;
-  if (r.requiresChild && S.char.children.length === 0) return false;
-  if (proj.generatesChild && S.char.children.length >= (currentEra().maxChildren || 99)) return false;
-  if (r.requiresLearnedSkill) {
-    const teachable = S.char.learnedSkillIds.filter(sId =>
-      S.char.children.some(c => (c.learnedSkillIds || []).length < 2 && !(c.learnedSkillIds || []).includes(sId))
-    );
-    if (teachable.length === 0) return false;
+  if (r.physical)              reqs.push({ type: 'stat', stat: 'physical',     min: r.physical });
+  if (r.intelligence)          reqs.push({ type: 'stat', stat: 'intelligence', min: r.intelligence });
+  if (r.social)                reqs.push({ type: 'stat', stat: 'social',       min: r.social });
+  if (r.health)                reqs.push({ type: 'resource', key: 'health',    min: r.health });
+  if (r.requiresPartner)       reqs.push({ type: 'partner' });
+  if (r.requiresChild)         reqs.push({ type: 'child' });
+  if (r.requiresLearnedSkill)  reqs.push({ type: 'teachable' });
+  if (r.knowledgeIds)          for (const id of r.knowledgeIds) reqs.push({ type: 'tech', id });
+  if (proj.requiresTech)       reqs.push({ type: 'tech',  id: proj.requiresTech });
+  if (proj.requiresSkill)      reqs.push({ type: 'skill', id: proj.requiresSkill });
+  if (proj.requiresNoPartner)  reqs.push({ type: 'noPartner' });
+  if (proj.generatesChild)     reqs.push({ type: 'maxChildren' });
+  if (proj.minCyclePct !== undefined)           reqs.push({ type: 'cycle', min: proj.minCyclePct });
+  if (proj.maxCyclePct !== undefined)           reqs.push({ type: 'cycle', max: proj.maxCyclePct });
+  if (proj.requiresMinHappiness)                reqs.push({ type: 'resource', key: 'happiness',        min: proj.requiresMinHappiness });
+  if (proj.requiresMinFamilyReputation)         reqs.push({ type: 'resource', key: 'familyReputation', min: proj.requiresMinFamilyReputation });
+  if (proj.discoversSkill)     reqs.push({ type: 'discoversSkill' });
+  return reqs;
+}
+
+function getEffectiveSkillRequires(skill) {
+  if (skill.requires !== undefined) return skill.requires;
+  const reqs = [];
+  if (skill.requiresTech)    reqs.push({ type: 'tech', id: skill.requiresTech });
+  if (skill.requiresMinStat) {
+    for (const [stat, min] of Object.entries(skill.requiresMinStat)) {
+      reqs.push({ type: 'stat', stat, min });
+    }
   }
-  if (r.knowledgeIds) {
-    for (const k of r.knowledgeIds) { if (!hasKnowledge(k)) return false; }
+  return reqs;
+}
+
+function _checkReq(req) {
+  const fail = (reason, isBlock = false) => ({ met: false, reason, isBlock });
+  switch (req.type) {
+    case 'tech': {
+      if (!hasKnowledge(req.id)) {
+        const t = getKnowledge(req.id);
+        return fail(`Necessites: ${t ? t.name : req.id}`);
+      }
+      break;
+    }
+    case 'skill': {
+      if (!hasUnlockedSkill(req.id)) {
+        const sk = getGameSkill(req.id);
+        return fail(`Necessites habilitat: ${sk ? sk.name : req.id}`);
+      }
+      break;
+    }
+    case 'stat': {
+      if ((S.char[req.stat] || 0) < req.min) {
+        const labels = { physical: 'Físic', intelligence: 'Intel·lect', social: 'Social' };
+        const icons  = { physical: '💪', intelligence: '🧠', social: '👥' };
+        return fail(`${icons[req.stat] || ''} ${labels[req.stat] || req.stat} ${req.min}+`);
+      }
+      break;
+    }
+    case 'resource': {
+      const val = S.resources[req.key]?.value || 0;
+      if (val < req.min) {
+        const rd = GAME_DATA.resources.find(r => r.id === req.key);
+        const isBlock = (req.key === 'happiness' || req.key === 'familyReputation');
+        return fail(`${rd?.icon || ''} ${rd?.name || req.key} ${req.min}+`, isBlock);
+      }
+      break;
+    }
+    case 'partner':     { if (!S.char.partner)                    return fail('Necessites parella'); break; }
+    case 'noPartner':   { if (S.char.partner)                     return fail('Ja tens parella'); break; }
+    case 'child':       { if (S.char.children.length === 0)       return fail('Necessites un fill'); break; }
+    case 'maxChildren': {
+      const max = currentEra().maxChildren || 99;
+      if (S.char.children.length >= max) return fail(`Màxim de fills assolit (${max})`);
+      break;
+    }
+    case 'teachable': {
+      if (S.char.learnedSkillIds.length === 0) return fail('No tens habilitats per ensenyar');
+      const teachable = S.char.learnedSkillIds.filter(sId =>
+        S.char.children.some(c => (c.learnedSkillIds || []).length < 2 && !(c.learnedSkillIds || []).includes(sId))
+      );
+      if (teachable.length === 0) return fail('Els fills ja saben tot el que els pots ensenyar');
+      break;
+    }
+    case 'cycle': {
+      const pct = S.cycle / S.maxCycles;
+      if (req.min !== undefined && pct < req.min) return fail('🌱 Massa jove per a aquesta acció', true);
+      if (req.max !== undefined && pct > req.max) return fail('🌿 Massa gran per a aquesta acció', true);
+      break;
+    }
+    case 'discoversSkill': {
+      if (!pickDiscoverableSkill()) return fail('No hi ha habilitats noves per descobrir', true);
+      break;
+    }
   }
-  if (proj.requiresTech && !hasKnowledge(proj.requiresTech)) return false;
-  if (proj.requiresSkill && !hasUnlockedSkill(proj.requiresSkill)) return false;
-  if (proj.requiresNoPartner && S.char.partner) return false;
+  return { met: true, reason: null, isBlock: false };
+}
+
+function isProjectUnlocked(proj) {
+  for (const req of getEffectiveRequires(proj)) {
+    const r = _checkReq(req);
+    if (!r.met && !r.isBlock) return false;
+  }
   return true;
 }
 
 function lockedReason(proj) {
-  const r = proj.requirements || {};
-  if (r.physical && S.char.physical < r.physical) return `Físic ${r.physical}+`;
-  if (r.intelligence && S.char.intelligence < r.intelligence) return `Intel ${r.intelligence}+`;
-  if (r.social && S.char.social < r.social) return `Social ${r.social}+`;
-  if (r.health && S.resources.health.value < r.health) return `Salut ${r.health}+`;
-  if (r.requiresPartner && !S.char.partner) return 'Necessites parella';
-  if (r.requiresChild && S.char.children.length === 0) return 'Necessites un fill';
-  if (proj.generatesChild && S.char.children.length >= (currentEra().maxChildren || 99)) return `Màxim de fills assolit (${currentEra().maxChildren})`;
-  if (r.requiresLearnedSkill && S.char.learnedSkillIds.length === 0) return 'No tens habilitats per ensenyar';
-  if (r.requiresLearnedSkill) return 'Els fills ja saben tot el que els pots ensenyar';
-  if (r.knowledgeIds) {
-    for (const k of r.knowledgeIds) {
-      if (!hasKnowledge(k)) {
-        const kd = getKnowledge(k);
-        return `Necessites: ${kd ? kd.name : k}`;
-      }
-    }
+  for (const req of getEffectiveRequires(proj)) {
+    const r = _checkReq(req);
+    if (!r.met && !r.isBlock) return r.reason || '';
   }
-  if (proj.requiresTech && !hasKnowledge(proj.requiresTech)) {
-    const t = getKnowledge(proj.requiresTech);
-    return `Necessites: ${t ? t.name : proj.requiresTech}`;
-  }
-  if (proj.requiresSkill && !hasUnlockedSkill(proj.requiresSkill)) {
-    const sk = getGameSkill(proj.requiresSkill);
-    return `Necessites habilitat: ${sk ? sk.name : proj.requiresSkill}`;
-  }
-  if (proj.requiresNoPartner && S.char.partner) return 'Ja tens parella';
   return '';
 }
 
 function blockedReason(proj) {
-  const pct = S.cycle / S.maxCycles;
-  if (proj.minCyclePct && pct < proj.minCyclePct) return '🌱 Massa jove per a aquesta acció';
-  if (proj.maxCyclePct && pct > proj.maxCyclePct) return '🌿 Massa gran per a aquesta acció';
-  if (proj.requiresMinHappiness && S.resources.happiness.value < proj.requiresMinHappiness)
-    return `😔 Felicitat insuficient (cal ${proj.requiresMinHappiness}+)`;
-  if (proj.requiresMinFamilyReputation && S.resources.familyReputation.value < proj.requiresMinFamilyReputation)
-    return `🏛️ Reputació insuficient (cal ${proj.requiresMinFamilyReputation}+)`;
-  if (proj.discoversSkill && !pickDiscoverableSkill()) return 'No hi ha habilitats noves per descobrir';
+  for (const req of getEffectiveRequires(proj)) {
+    const r = _checkReq(req);
+    if (!r.met) return r.reason;
+  }
   return null;
+}
+
+// ── Action upgrade resolution ─────────────────────────────────────────────────
+function getEffectiveAction(proj) {
+  if (!proj.upgrades || !proj.upgrades.length) return proj;
+  const overrides = {};
+  for (const tier of proj.upgrades) {
+    const { when = [], ...fields } = tier;
+    if (when.every(r => _checkReq(r).met)) Object.assign(overrides, fields);
+  }
+  return Object.keys(overrides).length ? { ...proj, ...overrides } : proj;
 }
 
 // ── Formula ───────────────────────────────────────────────────────────────────
 function calcResult(proj) {
+  proj = getEffectiveAction(proj);
   const M = currentEra().mechanics;
   const mult     = M.intensityOutputMults[S.intensity - 1];
   const riskMult = M.intensityRiskMults[S.intensity - 1];
@@ -647,18 +717,16 @@ function checkSkillUnlock() {
 function pickDiscoverableSkill() {
   const candidates = (currentEra().skills || []).filter(s => {
     if (hasUnlockedSkill(s.id)) return false;
-    if (s.requiresTech && !hasKnowledge(s.requiresTech)) return false;
-    if (s.requiresMinStat) {
-      if (Object.entries(s.requiresMinStat).some(([k, v]) => (S.char[k] || 0) < v)) return false;
+    for (const req of getEffectiveSkillRequires(s)) {
+      if (!_checkReq(req).met) return false;
     }
     return true;
   });
   if (!candidates.length) return null;
-  // Pick the skill where requirements are just barely met (lowest excess = most recently earned)
   const scored = candidates.map(s => {
     let excess = 0;
-    if (s.requiresMinStat) {
-      for (const [k, v] of Object.entries(s.requiresMinStat)) excess += (S.char[k] || 0) - v;
+    for (const req of getEffectiveSkillRequires(s)) {
+      if (req.type === 'stat') excess += (S.char[req.stat] || 0) - req.min;
     }
     return { skill: s, excess };
   });
@@ -773,6 +841,7 @@ function endCycle() {
   S.eraCycle++;
   S.timeTotal = calcTimeTotal();
   S.timeLeft = S.timeTotal;
+  S.pendingEvent = null;
   checkTechUnlock();
   checkSkillUnlock();
   saveGame();
@@ -1576,7 +1645,7 @@ function renderPhase() {
 
 // ── Select pane ───────────────────────────────────────────────────────────────
 function renderExecutingPane() {
-  const proj = S.activeProject;
+  const proj = getEffectiveAction(S.activeProject);
   el('exec-project-label').textContent = proj.icon + ' ' + proj.name;
   const fill = el('exec-progress-fill');
   fill.style.transition = 'none';
@@ -1661,10 +1730,8 @@ function openZoneSheet(zoneId) {
   const zone = currentEra().zones.find(z => z.id === zoneId);
   el('zone-sheet-icon').textContent = zone.icon;
   el('zone-sheet-name').textContent = zone.name;
-  if (!S.unlockedActionIds) S.unlockedActionIds = [];
-  const purchased = S.unlockedActionIds;
   const available = currentEra().actions.filter(p =>
-    p.zone === zoneId && isProjectUnlocked(p) && (!p.locked || purchased.includes(p.id))
+    p.zone === zoneId && isProjectUnlocked(p)
   );
   CAROUSEL.actions = [...available];
   CAROUSEL.idx      = 0;
@@ -1682,18 +1749,14 @@ function buildCarouselItems() {
   vp.innerHTML = '';
   const timeCost = currentEra().mechanics.intensityTimeCosts[1];
   CAROUSEL.actions.forEach((proj, i) => {
-    const tokenLocked = isTokenLocked(proj);
-    const blocked = !tokenLocked && !!blockedReason(proj);
-    const noTime  = !tokenLocked && S.timeLeft < timeCost;
+    const blocked = !!blockedReason(proj);
+    const noTime  = S.timeLeft < timeCost;
     const item = document.createElement('div');
     item.className = 'zc-item'
-      + (tokenLocked ? ' zc-locked' : '')
       + (blocked ? ' zc-blocked' : '')
-      + (noTime   ? ' zc-no-time' : '');
+      + (noTime  ? ' zc-no-time' : '');
     item.dataset.idx = i;
-    item.innerHTML = tokenLocked
-      ? `<span class="zc-icon">${proj.icon}</span><span class="zc-lock-badge">🔒</span>`
-      : `<span class="zc-icon">${proj.icon}</span><button class="zc-info-btn" aria-label="Info">ⓘ</button>`;
+    item.innerHTML = `<span class="zc-icon">${getEffectiveAction(proj).icon}</span><button class="zc-info-btn" aria-label="Info">ⓘ</button>`;
     vp.appendChild(item);
   });
   const dotsEl = el('zc-dots');
@@ -1758,24 +1821,7 @@ function springEffect(dir) {
 function updateCarouselInfo() {
   const { actions, idx } = CAROUSEL;
   if (!actions.length) return;
-  const proj = actions[idx];
-
-  if (isTokenLocked(proj)) {
-    const cost = proj.tokenCost || {};
-    const tk = S.shopTokens || { vigor: 0, saber: 0, prestigi: 0 };
-    const canAfford =
-      (tk.vigor    || 0) >= (cost.vigor    || 0) &&
-      (tk.saber    || 0) >= (cost.saber    || 0) &&
-      (tk.prestigi || 0) >= (cost.prestigi || 0);
-    el('zc-name').textContent = `🔒 ${proj.name}`;
-    const costParts = [];
-    if (cost.vigor    > 0) costParts.push(`💪 ${cost.vigor}`);
-    if (cost.saber    > 0) costParts.push(`🧠 ${cost.saber}`);
-    if (cost.prestigi > 0) costParts.push(`👑 ${cost.prestigi}`);
-    el('zc-benefits').textContent = costParts.join('  ');
-    el('zc-desc').textContent = canAfford ? proj.description || '' : '🔒 Tokens insuficients';
-    return;
-  }
+  const proj = getEffectiveAction(actions[idx]);
 
   if (proj.opensTaller) {
     el('zc-name').textContent     = proj.name;
@@ -1834,44 +1880,6 @@ function carouselOpenCurrent() {
 }
 
 // ── Direct execution (no intensity pane) ──────────────────────────────────────
-function isProjectUnlockedIgnoreSkill(proj) {
-  const r = proj.requirements || {};
-  if (r.physical     && S.char.physical     < r.physical)     return false;
-  if (r.intelligence && S.char.intelligence < r.intelligence) return false;
-  if (r.social       && S.char.social       < r.social)       return false;
-  if (r.health       && S.resources.health.value < r.health)  return false;
-  if (r.requiresPartner && !S.char.partner)                   return false;
-  if (r.requiresChild   && S.char.children.length === 0)      return false;
-  if (proj.generatesChild && S.char.children.length >= (currentEra().maxChildren || 99)) return false;
-  if (r.knowledgeIds) { for (const k of r.knowledgeIds) { if (!hasKnowledge(k)) return false; } }
-  if (proj.requiresTech    && !hasKnowledge(proj.requiresTech)) return false;
-  if (proj.requiresNoPartner && S.char.partner)                 return false;
-  return true;
-}
-
-function isTokenLocked(proj) {
-  return proj.locked === true && !isProjectUnlocked(proj);
-}
-
-function unlockAction(proj) {
-  const cost = proj.tokenCost || {};
-  if (!S.shopTokens) S.shopTokens = { vigor: 0, saber: 0, prestigi: 0 };
-  if ((S.shopTokens.vigor    || 0) < (cost.vigor    || 0) ||
-      (S.shopTokens.saber    || 0) < (cost.saber    || 0) ||
-      (S.shopTokens.prestigi || 0) < (cost.prestigi || 0)) return;
-  S.shopTokens.vigor    -= (cost.vigor    || 0);
-  S.shopTokens.saber    -= (cost.saber    || 0);
-  S.shopTokens.prestigi -= (cost.prestigi || 0);
-  if (!S.unlockedActionIds) S.unlockedActionIds = [];
-  if (!S.unlockedActionIds.includes(proj.id)) S.unlockedActionIds.push(proj.id);
-  if (proj.requiresSkill && !hasUnlockedSkill(proj.requiresSkill)) {
-    S.unlockedSkillIds.push(proj.requiresSkill);
-  }
-  addLog(proj.icon, `Has après: ${proj.name}`, 'skill');
-  saveGame();
-  renderShopTokens();
-  renderTallerList();
-}
 
 // ── Taller (Workshop) overlay ──────────────────────────────────────────────────
 function openTallerOverlay() {
@@ -1882,9 +1890,8 @@ function openTallerOverlay() {
 function tallerCandidates() {
   return (currentEra().skills || []).filter(s => {
     if (hasUnlockedSkill(s.id)) return false;
-    if (s.requiresTech && !hasKnowledge(s.requiresTech)) return false;
-    if (s.requiresMinStat) {
-      if (Object.entries(s.requiresMinStat).some(([k, v]) => (S.char[k] || 0) < v)) return false;
+    for (const req of getEffectiveSkillRequires(s)) {
+      if (!_checkReq(req).met) return false;
     }
     return true;
   });
@@ -1900,10 +1907,6 @@ function buySkillAndLearn(skill) {
   S.shopTokens.saber    -= (cost.saber    || 0);
   S.shopTokens.prestigi -= (cost.prestigi || 0);
   if (!S.unlockedSkillIds.includes(skill.id)) S.unlockedSkillIds.push(skill.id);
-  if (!S.unlockedActionIds) S.unlockedActionIds = [];
-  for (const aId of (skill.unlocksActionIds || [])) {
-    if (!S.unlockedActionIds.includes(aId)) S.unlockedActionIds.push(aId);
-  }
   const timeCost = currentEra().mechanics.intensityTimeCosts[1];
   S.timeLeft = Math.max(0, S.timeLeft - timeCost);
   saveGame();
@@ -2035,6 +2038,7 @@ function spawnTokenBalls(tokens) {
 function executeActionDirect(proj) {
   S.intensity     = 2;
   S.activeProject = proj;
+  const eff = getEffectiveAction(proj);
 
   const result = calcResult(proj);
 
@@ -2058,7 +2062,7 @@ function executeActionDirect(proj) {
   if (event) S.pendingEvent = event;
 
   const fxStr = fxSummary(result.fx);
-  addLog(proj.icon, proj.name + (fxStr ? ' — ' + fxStr : ''), 'action');
+  addLog(eff.icon, eff.name + (fxStr ? ' — ' + fxStr : ''), 'action');
 
   S.phase = 'select';
   renderAll(); // render with PRE-action stats
@@ -2170,6 +2174,7 @@ function handlePostAction() {
 }
 
 function showDonutAnimation(proj, label, onComplete) {
+  proj = getEffectiveAction(proj);
   el('exec-donut-icon').textContent = proj.icon;
   const labelEl = el('exec-donut-label');
   if (labelEl) labelEl.textContent = label || '';
@@ -2194,6 +2199,7 @@ function showDonutAnimation(proj, label, onComplete) {
 }
 
 function showActionInfo(proj) {
+  proj = getEffectiveAction(proj);
   const outIcons  = { food: '🍖', health: '❤️', happiness: '😊', familyReputation: '🏛️' };
   const statIcons = { physical: '💪', intelligence: '🧠', social: '👥' };
   el('ai-icon').textContent = proj.icon;
@@ -2236,7 +2242,7 @@ function selectProject(projId) {
 
 // ── Intensity pane ────────────────────────────────────────────────────────────
 function renderIntensityPane() {
-  const proj = S.activeProject;
+  const proj = getEffectiveAction(S.activeProject);
   el('sl-proj-icon').textContent = proj.icon;
   el('sl-proj-name').textContent = proj.name;
 
@@ -2272,6 +2278,7 @@ function setIntensity(n) {
 }
 
 function calcImpactPreview(proj, intensity) {
+  proj = getEffectiveAction(proj);
   const M = currentEra().mechanics;
   const mult    = M.intensityOutputMults[intensity - 1];
   const statVal = S.char[proj.statKey] || 1;
@@ -2399,6 +2406,7 @@ function renderImpactPreview(proj) {
 // ── Execute ───────────────────────────────────────────────────────────────────
 function executeProject() {
   const proj = S.activeProject;
+  const eff  = getEffectiveAction(proj);
   const timeCostCheck = currentEra().mechanics.intensityTimeCosts[S.intensity - 1];
   if (S.timeLeft < timeCostCheck) return;
   S.phase = 'executing';
@@ -2442,7 +2450,7 @@ function executeProject() {
     S.lastResult = { proj, result };
     S.phase = 'result';
     const fxStr = fxSummary(result.fx);
-    addLog(proj.icon, proj.name + (fxStr ? ' — ' + fxStr : ''), 'action');
+    addLog(eff.icon, eff.name + (fxStr ? ' — ' + fxStr : ''), 'action');
     renderAll();
 
     const floaters = S.pendingFloaters;
@@ -2647,6 +2655,8 @@ function setDiscQuote(item) {
 
 function renderDiscoveryPane() {
   const item = S.pendingDiscoveries[0];
+  el('pane-discovery').querySelector('.disc-card').className =
+    'disc-card disc-type-' + (item._type || 'technology');
   if (!item._logged) {
     item._logged = true;
     const typeIcon = { zone: '🗺️', skill: '📚', habilitat: '🔓', technology: '✨' };
@@ -2683,9 +2693,10 @@ function renderDiscoveryPane() {
     el('disc-name').textContent = item.name;
     el('disc-desc').textContent = item.description;
     setDiscQuote(item);
-    for (const actionId of (item.unlocksActionIds || [])) {
-      const action = getProject(actionId);
-      if (!action) continue;
+    const gatedBySkill = currentEra().actions.filter(a =>
+      getEffectiveRequires(a).some(r => r.type === 'skill' && r.id === item.id)
+    );
+    for (const action of gatedBySkill) {
       const div = document.createElement('div');
       div.className = 'fx-line';
       div.innerHTML = `<span>🔓 Desbloqueja</span><span class="fx-pos">${action.icon} ${action.name}</span>`;
@@ -2710,12 +2721,22 @@ function renderDiscoveryPane() {
       div.innerHTML = `<span>${statLabels[stat] || stat}</span><span class="fx-pos">+${val} permanent</span>`;
       efxEl.appendChild(div);
     }
-    for (const actionId of (item.unlocksActionIds || [])) {
-      const action = getProject(actionId);
-      if (!action) continue;
+    const gatedActions = currentEra().actions.filter(a =>
+      getEffectiveRequires(a).some(r => r.type === 'tech' && r.id === item.id)
+    );
+    for (const action of gatedActions) {
       const div = document.createElement('div');
       div.className = 'fx-line';
       div.innerHTML = `<span>🔓 Desbloqueja</span><span class="fx-pos">${action.icon} ${action.name}</span>`;
+      efxEl.appendChild(div);
+    }
+    const gatedSkills = (currentEra().skills || []).filter(s =>
+      getEffectiveSkillRequires(s).some(r => r.type === 'tech' && r.id === item.id)
+    );
+    for (const skill of gatedSkills) {
+      const div = document.createElement('div');
+      div.className = 'fx-line';
+      div.innerHTML = `<span>🔑 Permet aprendre</span><span class="fx-pos">${skill.icon} ${skill.name}</span>`;
       efxEl.appendChild(div);
     }
   }
@@ -2777,7 +2798,8 @@ function advanceFromDiscovery() {
 
 // ── Result pane ───────────────────────────────────────────────────────────────
 function renderResultPane() {
-  const { proj, result } = S.lastResult;
+  const { proj: rawProj, result } = S.lastResult;
+  const proj = getEffectiveAction(rawProj);
   el('result-proj-label').textContent = proj.icon + ' ' + proj.name;
   const barPct = result.quality === 'good' ? 80 : result.quality === 'ok' ? 50 : 20;
   el('result-score-fill').style.width = barPct + '%';
