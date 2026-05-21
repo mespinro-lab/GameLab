@@ -170,3 +170,113 @@ jobs:
             fi
           fi
           echo "No S1 Critical issues — playtest passed."
+
+      - name: Build Catalan email summary
+        if: always()
+        id: email
+        run: |
+          REPORT="${{ steps.report.outputs.path }}"
+          SWEEP="${{ steps.sweep.outputs.type }}"
+          DATE=$(date +'%d/%m/%Y')
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          STATUS="${{ job.status }}"
+
+          # Translate status to Catalan
+          case "$STATUS" in
+            success) STATUS_CA="✅ Correcte" ;;
+            failure) STATUS_CA="❌ Fallit" ;;
+            cancelled) STATUS_CA="⚠️ Cancel·lat" ;;
+            *)        STATUS_CA="⚠️ Desconegut" ;;
+          esac
+
+          # Translate sweep type to Catalan
+          case "$SWEEP" in
+            full)       SWEEP_CA="Completa (tots els agents)" ;;
+            casual)     SWEEP_CA="Jugador casual mòbil" ;;
+            dynasty)    SWEEP_CA="Constructor de dinastia" ;;
+            optimizer)  SWEEP_CA="Optimitzador / caça-exploits" ;;
+            new-player) SWEEP_CA="Jugador nou" ;;
+            speed-runner) SWEEP_CA="Corredor de velocitat" ;;
+            *)          SWEEP_CA="$SWEEP" ;;
+          esac
+
+          # Extract issue counts and recommended actions from report
+          S1_COUNT=0; S2_COUNT=0; S3_COUNT=0; S4_COUNT=0
+          NEXT_ACTIONS="(sense informe disponible)"
+          CRITICAL_DETAIL=""
+
+          if [ -f "$REPORT" ]; then
+            S1_COUNT=$(grep -c "^- \*\*ID\*\*:" "$REPORT" 2>/dev/null || true)
+            # Rough per-severity counts from summary line
+            SUMMARY_LINE=$(grep "S1:" "$REPORT" | head -1)
+            S1_COUNT=$(echo "$SUMMARY_LINE" | grep -oP 'S1: \K[0-9]+' || echo 0)
+            S2_COUNT=$(echo "$SUMMARY_LINE" | grep -oP 'S2: \K[0-9]+' || echo 0)
+            S3_COUNT=$(echo "$SUMMARY_LINE" | grep -oP 'S3: \K[0-9]+' || echo 0)
+            S4_COUNT=$(echo "$SUMMARY_LINE" | grep -oP 'S4: \K[0-9]+' || echo 0)
+            NEXT_ACTIONS=$(awk '/## Recommended Next Actions/,/^## /' "$REPORT" \
+              | grep -v "^##" | head -6 | sed 's/^/  /' || echo "  (no disponible)")
+            CRITICAL_DETAIL=$(awk '/## S1 — Critical/,/## S2/' "$REPORT" \
+              | grep -v "^##" | grep -v "^$" | head -10 | sed 's/^/  /' || true)
+          fi
+
+          # Build plain-text body
+          BODY="Informe de playtest automatitzat — Life Tycoon
+          ================================================
+
+          Data:   $DATE
+          Estat:  $STATUS_CA
+          Tipus:  $SWEEP_CA
+          Execució: $RUN_URL
+
+          RESUM D'INCIDÈNCIES
+          -------------------
+          S1 Crítiques (bloquegen publicació): $S1_COUNT
+          S2 Importants (cal corregir abans del fita): $S2_COUNT
+          S3 Menors (corregir quan hi hagi capacitat): $S3_COUNT
+          S4 Trivials (backlog de poliment): $S4_COUNT"
+
+          if [ -n "$CRITICAL_DETAIL" ]; then
+            BODY="$BODY
+
+          PROBLEMES CRÍTICS (S1)
+          ----------------------
+          $CRITICAL_DETAIL"
+          fi
+
+          BODY="$BODY
+
+          PROPERES ACCIONS RECOMANADES
+          ----------------------------
+          $NEXT_ACTIONS
+
+          ================================================
+          Generat automàticament per Claude Code Game Studios.
+          Repositori: ${{ github.repository }}"
+
+          # Write to file so the mail action can read it
+          echo "$BODY" > /tmp/email-body.txt
+          echo "body_path=/tmp/email-body.txt" >> "$GITHUB_OUTPUT"
+
+          # Subject line
+          if [ "$S1_COUNT" -gt 0 ] 2>/dev/null; then
+            SUBJECT="🔴 [Life Tycoon] Playtest $DATE — $S1_COUNT problema(es) crític(s) detectat(s)"
+          elif [ "$STATUS" != "success" ]; then
+            SUBJECT="⚠️ [Life Tycoon] Playtest $DATE — execució fallida"
+          else
+            SUBJECT="✅ [Life Tycoon] Playtest $DATE — cap problema crític"
+          fi
+          echo "subject=$SUBJECT" >> "$GITHUB_OUTPUT"
+
+      - name: Send Catalan email summary
+        if: always()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.MAIL_SERVER }}
+          server_port: ${{ secrets.MAIL_PORT || 465 }}
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          to: ${{ secrets.MAIL_TO }}
+          from: "Claude Code Game Studios <${{ secrets.MAIL_USERNAME }}>"
+          subject: ${{ steps.email.outputs.subject }}
+          body: file:///tmp/email-body.txt
