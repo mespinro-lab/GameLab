@@ -5,28 +5,77 @@ const { analyzeScreenshot, formatResult } = require('./helpers/claude-vision');
 
 const TURNS_TO_PLAY = parseInt(process.env.TURNS || '20');
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Game flow helpers ─────────────────────────────────────────────────────────
 
-/** Clicks the first available action button N times, waiting between each. */
-async function playTurns(page, turns) {
-  for (let i = 0; i < turns; i++) {
-    const btn = page.locator('.action-btn:not([disabled])').first();
-    const visible = await btn.isVisible().catch(() => false);
-    if (!visible) break;
-    await btn.click();
-    await page.waitForTimeout(300);
-    // Dismiss any result/discovery overlay before the next turn
-    const dismiss = page.locator('#btn-continue, #btn-next, .btn-ok, .btn-continue').first();
-    if (await dismiss.isVisible().catch(() => false)) await dismiss.click();
-    await page.waitForTimeout(150);
+/** Navigate past the main menu and start a new game. */
+async function startNewGame(page) {
+  await page.waitForSelector('#overlay-menu', { state: 'visible', timeout: 8000 });
+  await page.click('#btn-new-game');
+  await page.waitForSelector('#overlay-new-game', { state: 'visible' });
+  await page.click('#btn-start-new-game');
+  await page.waitForSelector('.zone-node', { state: 'visible', timeout: 8000 });
+}
+
+/** Dismiss any full-screen overlay that blocks the map. */
+async function dismissOverlays(page) {
+  const candidates = [
+    '#btn-dismiss-discovery',
+    '#btn-dismiss-birth',
+    '#ds-btn-continue',
+    '#btn-era-transition-continue',
+    '#btn-close-zone-sheet',
+  ];
+  for (const sel of candidates) {
+    const btn = page.locator(sel);
+    if (await btn.isVisible().catch(() => false)) {
+      await btn.click();
+      await page.waitForTimeout(250);
+    }
   }
 }
+
+/**
+ * Play N turns: click a zone node → tap the center carousel item → wait.
+ * Uses .tap() because the carousel only listens to touchend events.
+ */
+async function playTurns(page, turns) {
+  for (let i = 0; i < turns; i++) {
+    await dismissOverlays(page);
+
+    // End of time slots — pass the cycle
+    const passBtn = page.locator('#btn-rest-cycle');
+    if (await passBtn.isVisible().catch(() => false)) {
+      await passBtn.click();
+      await page.waitForTimeout(400);
+      continue;
+    }
+
+    const zoneNode = page.locator('.zone-node').first();
+    if (!await zoneNode.isVisible().catch(() => false)) break;
+    await zoneNode.click();
+    await page.waitForTimeout(250);
+
+    // Carousel: first .zc-item is always at CAROUSEL.idx = 0 (center)
+    // Must use .tap() — carousel only fires carouselOpenCurrent() on touchend
+    const zcItem = page.locator('#zone-carousel-viewport .zc-item').first();
+    if (await zcItem.isVisible().catch(() => false)) {
+      await zcItem.tap();
+      await page.waitForTimeout(800);
+    } else {
+      const closeBtn = page.locator('#btn-close-zone-sheet');
+      if (await closeBtn.isVisible().catch(() => false)) await closeBtn.click();
+    }
+
+    await dismissOverlays(page);
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function viewportLabel(testInfo) {
   return `${testInfo.project.name} (${testInfo.project.use.viewport?.width ?? '?'}px)`;
 }
 
-/** Fails the test if any S1 or S2 issues are present. */
 function assertNoBlockingIssues(result, label) {
   const blocking = result.issues.filter(i => i.severity === 'S1' || i.severity === 'S2');
   if (blocking.length > 0) {
@@ -40,139 +89,158 @@ function assertNoBlockingIssues(result, label) {
 test.describe('Life Tycoon — Visual QA', () => {
 
   test.beforeEach(async ({ page }) => {
-    // Clear localStorage so every test starts from a fresh game state
     await page.addInitScript(() => {
       localStorage.removeItem('lifetycoon_autosave');
       localStorage.removeItem('lifetycoon_history');
       localStorage.removeItem('lifetycoon_unlocks');
     });
     await page.goto('/');
-    // Wait for the app to finish initialising (action list or map must be visible)
     await page.waitForSelector('#app', { state: 'visible', timeout: 8000 });
   });
 
-  // ── 1. Initial load ─────────────────────────────────────────────────────────
+  // ── 1. Main menu ─────────────────────────────────────────────────────────────
 
-  test('initial load — layout and readability', async ({ page }, testInfo) => {
+  test('main menu — layout and readability', async ({ page }, testInfo) => {
     const label = viewportLabel(testInfo);
-    await page.waitForTimeout(500); // let CSS transitions settle
-
-    const screenshot = await page.screenshot({ fullPage: false });
-    const result = await analyzeScreenshot(screenshot, 'Initial game load — first character generated, action list visible', label);
-
-    console.log(formatResult(result, `Initial load @ ${label}`));
-    testInfo.attach('initial-load', { body: screenshot, contentType: 'image/png' });
-
-    assertNoBlockingIssues(result, `initial load @ ${label}`);
-  });
-
-  // ── 2. Resource bar ─────────────────────────────────────────────────────────
-
-  test('resource bar — icons and values legible', async ({ page }, testInfo) => {
-    const label = viewportLabel(testInfo);
-    await playTurns(page, TURNS_TO_PLAY);
-    await page.waitForSelector('#panel-top-resources', { state: 'visible' });
-
-    const bar = await page.locator('#panel-top-resources').screenshot();
-    const result = await analyzeScreenshot(bar, 'Top resource bar showing food (🍖), health (❤️) values', label);
-
-    console.log(formatResult(result, `Resource bar @ ${label}`));
-    testInfo.attach('resource-bar', { body: bar, contentType: 'image/png' });
-
-    assertNoBlockingIssues(result, `resource bar @ ${label}`);
-  });
-
-  // ── 3. Action list tap targets ───────────────────────────────────────────────
-
-  test('action list — tap targets and labels', async ({ page }, testInfo) => {
-    const label = viewportLabel(testInfo);
-    await playTurns(page, TURNS_TO_PLAY);
-
-    // The action list panel — wait for at least one action button
-    await page.waitForSelector('#panel-actions', { state: 'visible', timeout: 8000 })
-      .catch(() => page.waitForSelector('.action-btn', { state: 'visible', timeout: 8000 }));
+    await page.waitForSelector('#overlay-menu', { state: 'visible' });
+    await page.waitForTimeout(400);
 
     const screenshot = await page.screenshot({ fullPage: false });
     const result = await analyzeScreenshot(
       screenshot,
-      'Action selection panel — list of available actions (Recol·lectar, Caçar, Descansar, etc.) with Catalan labels',
+      'Main menu — game title "Life Tycoon", navigation buttons in Catalan (Nova partida, Continuar, Fites, Botiga, Historial, Opcions)',
       label
     );
 
-    console.log(formatResult(result, `Action list @ ${label}`));
-    testInfo.attach('action-list', { body: screenshot, contentType: 'image/png' });
-
-    assertNoBlockingIssues(result, `action list @ ${label}`);
+    console.log(formatResult(result, `Main menu @ ${label}`));
+    testInfo.attach('main-menu', { body: screenshot, contentType: 'image/png' });
+    assertNoBlockingIssues(result, `main menu @ ${label}`);
   });
 
-  // ── 4. Character stats panel ─────────────────────────────────────────────────
+  // ── 2. In-game map ────────────────────────────────────────────────────────────
+
+  test('in-game map — zone nodes and dashboard', async ({ page }, testInfo) => {
+    const label = viewportLabel(testInfo);
+    await startNewGame(page);
+    await page.waitForTimeout(400);
+
+    const screenshot = await page.screenshot({ fullPage: false });
+    const result = await analyzeScreenshot(
+      screenshot,
+      'In-game map with clickable zone nodes, character dashboard at top (food/health bar), cycle info at bottom',
+      label
+    );
+
+    console.log(formatResult(result, `In-game map @ ${label}`));
+    testInfo.attach('in-game-map', { body: screenshot, contentType: 'image/png' });
+    assertNoBlockingIssues(result, `in-game map @ ${label}`);
+  });
+
+  // ── 3. Zone action sheet ──────────────────────────────────────────────────────
+
+  test('zone action sheet — carousel and action labels', async ({ page }, testInfo) => {
+    const label = viewportLabel(testInfo);
+    await startNewGame(page);
+
+    await page.locator('.zone-node').first().click();
+    await page.waitForSelector('#overlay-zone-actions', { state: 'visible' });
+    await page.waitForTimeout(400);
+
+    const screenshot = await page.screenshot({ fullPage: false });
+    const result = await analyzeScreenshot(
+      screenshot,
+      'Zone action sheet — carousel showing available actions (Recol·lectar, Caçar, Descansar, etc.) with Catalan labels and icons',
+      label
+    );
+
+    console.log(formatResult(result, `Zone action sheet @ ${label}`));
+    testInfo.attach('zone-action-sheet', { body: screenshot, contentType: 'image/png' });
+    assertNoBlockingIssues(result, `zone action sheet @ ${label}`);
+  });
+
+  // ── 4. Resource bar after turns ───────────────────────────────────────────────
+
+  test('resource bar — legible values after gameplay', async ({ page }, testInfo) => {
+    const label = viewportLabel(testInfo);
+    await startNewGame(page);
+    await playTurns(page, TURNS_TO_PLAY);
+
+    await page.waitForSelector('#panel-top-resources', { state: 'visible' });
+    const bar = await page.locator('#panel-top-resources').screenshot();
+    const result = await analyzeScreenshot(
+      bar,
+      'Resource bar showing live food (🍖) and health (❤️) values after gameplay',
+      label
+    );
+
+    console.log(formatResult(result, `Resource bar @ ${label}`));
+    testInfo.attach('resource-bar', { body: bar, contentType: 'image/png' });
+    assertNoBlockingIssues(result, `resource bar @ ${label}`);
+  });
+
+  // ── 5. Character dashboard ────────────────────────────────────────────────────
 
   test('character dashboard — stats and traits visible', async ({ page }, testInfo) => {
     const label = viewportLabel(testInfo);
-    await page.waitForSelector('#char-dashboard', { state: 'visible' });
+    await startNewGame(page);
+    await playTurns(page, TURNS_TO_PLAY);
 
+    await page.waitForSelector('#char-dashboard', { state: 'visible' });
     const panel = await page.locator('#char-dashboard').screenshot();
     const result = await analyzeScreenshot(
       panel,
-      'Character dashboard showing name, stats (💪🧠👥), and innate traits',
+      'Character dashboard — name, generation badge, stat icons (💪🧠👥), age, and innate trait pills',
       label
     );
 
     console.log(formatResult(result, `Character dashboard @ ${label}`));
     testInfo.attach('char-dashboard', { body: panel, contentType: 'image/png' });
-
     assertNoBlockingIssues(result, `character dashboard @ ${label}`);
   });
 
-  // ── 5. No horizontal overflow at 360px ───────────────────────────────────────
+  // ── 6. No horizontal overflow (mobile only) ───────────────────────────────────
 
   test('no horizontal overflow', async ({ page }, testInfo) => {
-    // Only meaningful on narrow viewports
     const width = testInfo.project.use.viewport?.width ?? 1440;
-    if (width > 480) {
-      test.skip();
-      return;
-    }
+    if (width > 480) { test.skip(); return; }
 
-    const overflow = await page.evaluate(() => {
-      return document.documentElement.scrollWidth > document.documentElement.clientWidth;
-    });
+    await startNewGame(page);
+
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth
+    );
 
     if (overflow) {
       const screenshot = await page.screenshot({ fullPage: true });
       testInfo.attach('overflow-evidence', { body: screenshot, contentType: 'image/png' });
     }
 
-    expect(overflow, 'Page has horizontal overflow at 360px — some element is wider than the viewport').toBe(false);
+    expect(overflow, `Horizontal overflow detected at ${width}px viewport`).toBe(false);
   });
 
-  // ── 6. Lineage tech panel ────────────────────────────────────────────────────
+  // ── 7. Lineage panel ──────────────────────────────────────────────────────────
 
-  test('lineage tech panel (📜) opens correctly', async ({ page }, testInfo) => {
+  test('lineage panel — opens and readable', async ({ page }, testInfo) => {
     const label = viewportLabel(testInfo);
+    await startNewGame(page);
+    await playTurns(page, TURNS_TO_PLAY);
 
-    const techBtn = page.locator('#btn-lineage-toggle, [id*="lineage"], [id*="tech"]').first();
-    const btnVisible = await techBtn.isVisible().catch(() => false);
+    const btn = page.locator('#btn-lineage-toggle');
+    if (!await btn.isVisible().catch(() => false)) { test.skip(); return; }
 
-    if (!btnVisible) {
-      test.skip();
-      return;
-    }
-
-    await techBtn.click();
-    await page.waitForTimeout(400); // animation
+    await btn.click();
+    await page.waitForTimeout(400);
 
     const screenshot = await page.screenshot({ fullPage: false });
     const result = await analyzeScreenshot(
       screenshot,
-      'Lineage tech panel open — showing dynasty technologies and knowledge tree',
+      'Lineage panel open — showing dynasty or generation information',
       label
     );
 
-    console.log(formatResult(result, `Tech panel @ ${label}`));
-    testInfo.attach('tech-panel', { body: screenshot, contentType: 'image/png' });
-
-    assertNoBlockingIssues(result, `tech panel @ ${label}`);
+    console.log(formatResult(result, `Lineage panel @ ${label}`));
+    testInfo.attach('lineage-panel', { body: screenshot, contentType: 'image/png' });
+    assertNoBlockingIssues(result, `lineage panel @ ${label}`);
   });
 
 });
