@@ -178,6 +178,7 @@ function initState() {
     timeTotal: startEra.timeTotal,
     timeLeft: startEra.timeTotal,
     eraCycle: 0,
+    gameCycle: 1,
     actionMastery: {},
     activeProject: null,
     pendingEvent: null,
@@ -602,6 +603,20 @@ function generatePartner() {
 }
 
 // ── Child generation ──────────────────────────────────────────────────────────
+function childInheritStat(parentVal, partnerVal) {
+  // Base is parent's accumulated stat; partner pulls upward only (max +20% influence)
+  const base = partnerVal > parentVal
+    ? parentVal + (partnerVal - parentVal) * 0.2
+    : parentVal;
+  const r = Math.random();
+  let pct;
+  if      (r < 0.60) pct =  Math.random() * 0.10;        // 60%: 0-10% millora
+  else if (r < 0.75) pct = -Math.random() * 0.10;        // 15%: 0-10% empitjora
+  else if (r < 0.90) pct =  0.10 + Math.random() * 0.10; // 15%: 10-20% millora
+  else               pct = -0.10 - Math.random() * 0.10; // 10%: 10-20% empitjora
+  return clamp(Math.floor(base * (1 + pct)), 1, 8);
+}
+
 function generateChild() {
   const gender = Math.random() > 0.5 ? 'M' : 'F';
   const usedNames = new Set([S.char.name, ...S.char.children.map(c => c.name)]);
@@ -609,9 +624,9 @@ function generateChild() {
   const name = pick(pool.length > 0 ? pool : (gender === 'M' ? GAME_DATA.namesMasc : GAME_DATA.namesFem));
   const ps = S.char.partner?.stats || { physical: 2, intelligence: 2, social: 2 };
 
-  const physical     = clamp(Math.round((S.char.physical     + ps.physical)     / 2 + rand(-1, 1)), 1, 8);
-  const intelligence = clamp(Math.round((S.char.intelligence + ps.intelligence) / 2 + rand(-1, 1)), 1, 8);
-  const social       = clamp(Math.round((S.char.social       + ps.social)       / 2 + rand(-1, 1)), 1, 8);
+  const physical     = childInheritStat(S.char.physical,     ps.physical);
+  const intelligence = childInheritStat(S.char.intelligence, ps.intelligence);
+  const social       = childInheritStat(S.char.social,       ps.social);
 
   const inheritedKnowledge = S.char.knowledgeIds.filter(kId => {
     const k = getKnowledge(kId);
@@ -839,6 +854,7 @@ function endCycle() {
 
   S.cycle++;
   S.eraCycle++;
+  S.gameCycle = (S.gameCycle || 1) + 1;
   S.timeTotal = calcTimeTotal();
   S.timeLeft = S.timeTotal;
   S.pendingEvent = null;
@@ -1231,6 +1247,9 @@ function syncStatVisibility() {
     if (!chip) continue;
     chip.classList.toggle('hidden', !(!stat.visibleAfterTech || hasKnowledge(stat.visibleAfterTech)));
   }
+  // Reputation col-stat: hidden until tribal_organization
+  const colRep = el('col-stat-reputation');
+  if (colRep) colRep.classList.toggle('hidden', !hasKnowledge('tribal_organization'));
   // Progressive UI: hide header elements and buttons until relevant progress
   const hasTechs = S.char.knowledgeIds.length > 0;
   const hasMilestones = S.milestones.length > 0;
@@ -1467,12 +1486,21 @@ function renderCycleForecast() {
 }
 
 function renderHeader() {
-  el('hdr-name').textContent = S.char.name;
-  el('hdr-age').textContent = `· ${S.char.age} anys`;
-  el('hdr-gen').textContent = `Cicle ${S.cycle}`;
-  el('hdr-ec').textContent = S.eraCycle + 1;
+  el('char-name-inlay').textContent = S.char.name;
+  el('char-age-inlay').textContent  = `${S.char.age} anys`;
+  el('char-gen-inlay').textContent  = `Gen. ${S.generation}`;
+  el('hdr-gen-badge').textContent   = `G${S.generation}`;
+  el('hdr-gen').textContent         = `C${S.cycle}`;
+  el('hdr-ec').textContent          = S.eraCycle + 1;
+  // top-bar compact resources
+  const food = S.resources.food.value;
+  const hp   = S.resources.health.value;
+  const hap  = S.resources.happiness.value;
+  el('top-food').textContent     = Math.round(food);
+  el('top-health').textContent   = Math.round(hp);
+  el('top-happiness').textContent = Math.round(hap);
   const ptInfo = el('panel-turn-info');
-  if (ptInfo) ptInfo.textContent = `Gen. ${S.generation} · ${currentEra().name}`;
+  if (ptInfo) ptInfo.textContent = `Cicle ${S.gameCycle} · ${currentEra().name}`;
   renderShopTokens();
 }
 
@@ -1496,7 +1524,7 @@ function renderStats() {
   el('s-social').textContent           = S.char.social.toFixed(1);
   renderCycleForecast();
 
-  // Hex stats (new mobile layout)
+  // Hex stats (column layout)
   el('hex-health').textContent       = Math.round(hp);
   el('hex-happiness').textContent    = Math.round(S.resources.happiness.value);
   el('hex-reputation').textContent   = Math.round(S.resources.familyReputation.value);
@@ -1504,6 +1532,10 @@ function renderStats() {
   el('hex-intelligence').textContent = S.char.intelligence.toFixed(1);
   el('hex-social').textContent       = S.char.social.toFixed(1);
   el('panel-food-val').textContent   = Math.round(food);
+  // top-bar compact resources
+  el('top-food').textContent      = Math.round(food);
+  el('top-health').textContent    = Math.round(hp);
+  el('top-happiness').textContent = Math.round(S.resources.happiness.value);
   const pffc = el('panel-food-fc');
   if (pffc) { const fc = el('fc-food'); pffc.textContent = fc ? fc.textContent : ''; }
 }
@@ -1554,7 +1586,11 @@ function renderTraits() {
     leftGroup.appendChild(pill);
   }
 
+  const pendingSkillIds = new Set(
+    (S.pendingDiscoveries || []).filter(d => d._type === 'skill').map(d => d.id)
+  );
   for (const sId of S.char.learnedSkillIds) {
+    if (pendingSkillIds.has(sId)) continue;
     const s = getSkillGlobal(sId);
     if (!s) continue;
     const pill = document.createElement('button');
@@ -2135,6 +2171,9 @@ function renderStatsAnimated(oldSnap) {
     el('hex-intelligence').textContent   = lerp(oldSnap.intelligence, cur.intelligence).toFixed(1);
     el('hex-social').textContent         = lerp(oldSnap.social, cur.social).toFixed(1);
     el('panel-food-val').textContent     = Math.round(lerp(oldSnap.food, cur.food));
+    el('top-food').textContent           = Math.round(lerp(oldSnap.food, cur.food));
+    el('top-health').textContent         = Math.round(lerp(oldSnap.health, cur.health));
+    el('top-happiness').textContent      = Math.round(lerp(oldSnap.happiness, cur.happiness));
     if (t < 1) requestAnimationFrame(tick);
     else renderStats();
   }

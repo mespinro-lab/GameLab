@@ -18,10 +18,13 @@
     <!-- TOP PANEL: Character dashboard (2/6 screen) -->
     <div id="panel-top">
       <div id="panel-top-bar">
-        <button id="btn-lineage-toggle">⚔ <span id="hdr-name">—</span></button>
-        <div id="panel-top-center">
-          <span id="hdr-gen">Cicle 1</span>
+        <button id="btn-lineage-toggle">⚔ <span id="hdr-gen-badge"></span></button>
+        <div id="panel-top-resources">
+          <span class="top-res"><span class="top-res-icon">🍖</span><span id="top-food">—</span></span>
+          <span class="top-res"><span class="top-res-icon">❤️</span><span id="top-health">—</span></span>
+          <span class="top-res"><span class="top-res-icon">😊</span><span id="top-happiness">—</span></span>
         </div>
+        <span id="hdr-gen" class="hdr-cycle-badge">C1</span>
         <button id="btn-open-menu">☰</button>
       </div>
       <div id="shop-token-bar">
@@ -30,33 +33,28 @@
         <span class="shop-token" id="tok-prestigi">👑 <span class="shop-token-val" id="tok-prestigi-val">0</span></span>
       </div>
       <div id="char-dashboard">
-        <div id="char-hex-grid">
-          <div class="hex-stat hex-top">
-            <img class="hex-icon" src="../../design/life-tycoon/icons/ICON-SALUT.svg" alt="">
-            <span id="hex-health">—</span>
+        <div id="char-section">
+          <div id="char-section-top">
+            <span id="char-name-inlay">—</span>
+            <span id="char-gen-inlay" class="char-gen-badge">—</span>
           </div>
-          <div class="hex-stat hex-mid-l">
-            <img class="hex-icon" src="../../design/life-tycoon/icons/ICON-FELICITAT.svg" alt="">
-            <span id="hex-happiness">—</span>
+          <div id="char-tricolumn">
+            <div id="char-col-left">
+              <div class="col-stat"><img class="col-icon" src="../../design/life-tycoon/icons/ICON-SALUT.svg" alt=""><span id="hex-health">—</span></div>
+              <div class="col-stat"><img class="col-icon" src="../../design/life-tycoon/icons/ICON-FELICITAT.svg" alt=""><span id="hex-happiness">—</span></div>
+              <div class="col-stat" id="col-stat-reputation"><img class="col-icon" src="../../design/life-tycoon/icons/ICON-REPUTACIO.svg" alt=""><span id="hex-reputation">—</span></div>
+            </div>
+            <div id="char-bust-wrap">
+              <img id="char-bust-img" src="../../design/life-tycoon/characters/PRE-MED-M.png" alt="">
+            </div>
+            <div id="char-col-right">
+              <div class="col-stat"><img class="col-icon" src="../../design/life-tycoon/icons/ICON-FORCA.svg" alt=""><span id="hex-physical">—</span></div>
+              <div class="col-stat"><img class="col-icon" src="../../design/life-tycoon/icons/ICON-INTELIGENCIA.svg" alt=""><span id="hex-intelligence">—</span></div>
+              <div class="col-stat"><img class="col-icon" src="../../design/life-tycoon/icons/ICON-SOCIAL.svg" alt=""><span id="hex-social">—</span></div>
+            </div>
           </div>
-          <div id="char-bust-wrap">
-            <img id="char-bust-img" src="../../design/life-tycoon/characters/PRE-MED-M.png" alt="">
-          </div>
-          <div class="hex-stat hex-mid-r">
-            <img class="hex-icon" src="../../design/life-tycoon/icons/ICON-REPUTACIO.svg" alt="">
-            <span id="hex-reputation">—</span>
-          </div>
-          <div class="hex-stat hex-low-l">
-            <img class="hex-icon" src="../../design/life-tycoon/icons/ICON-FORCA.svg" alt="">
-            <span id="hex-physical">—</span>
-          </div>
-          <div class="hex-stat hex-low-r">
-            <img class="hex-icon" src="../../design/life-tycoon/icons/ICON-SOCIAL.svg" alt="">
-            <span id="hex-social">—</span>
-          </div>
-          <div class="hex-stat hex-bot">
-            <img class="hex-icon" src="../../design/life-tycoon/icons/ICON-INTELIGENCIA.svg" alt="">
-            <span id="hex-intelligence">—</span>
+          <div id="char-section-bot">
+            <span id="char-age-inlay">—</span>
           </div>
         </div>
         <div id="knowledge-row"></div>
