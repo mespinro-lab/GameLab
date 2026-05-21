@@ -1,0 +1,108 @@
+name: Visual QA
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/life-tycoon/**'
+      - 'tests/visual-qa/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/life-tycoon/**'
+      - 'tests/visual-qa/**'
+  workflow_dispatch:
+
+concurrency:
+  group: visual-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  visual-qa:
+    name: Visual QA — Playwright + Claude Vision
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Playwright browsers (Chromium only)
+        run: npx playwright install --with-deps chromium
+
+      - name: Run visual QA
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CI: true
+        run: npx playwright test tests/visual-qa/ --config tests/visual-qa/playwright.config.js
+
+      - name: Upload screenshots and results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-qa-${{ github.run_number }}
+          path: |
+            test-results/
+            production/playtests/visual-qa-results.json
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Post PR comment with findings
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const resultsPath = 'production/playtests/visual-qa-results.json';
+
+            let body = '## Visual QA — Playwright + Claude Vision\n\n';
+            body += `**Run**: [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\n`;
+
+            if (fs.existsSync(resultsPath)) {
+              const raw = JSON.parse(fs.readFileSync(resultsPath, 'utf8'));
+              const suites = raw.suites ?? [];
+              let passed = 0, failed = 0, skipped = 0;
+              const failures = [];
+
+              for (const suite of suites) {
+                for (const project of (suite.suites ?? [])) {
+                  for (const spec of (project.specs ?? [])) {
+                    for (const test of (spec.tests ?? [])) {
+                      const status = test.results?.[0]?.status;
+                      if (status === 'passed') passed++;
+                      else if (status === 'skipped') skipped++;
+                      else {
+                        failed++;
+                        const err = test.results?.[0]?.error?.message ?? '(no message)';
+                        failures.push(`- **${spec.title}** (${project.title}): ${err.split('\n')[0]}`);
+                      }
+                    }
+                  }
+                }
+              }
+
+              const icon = failed > 0 ? '❌' : '✅';
+              body += `${icon} **${passed} passed · ${failed} failed · ${skipped} skipped**\n\n`;
+              if (failures.length > 0) {
+                body += '### Failures\n' + failures.join('\n') + '\n\n';
+              }
+              body += '_Screenshots attached as workflow artifact._';
+            } else {
+              body += '_No results file found — check workflow logs._';
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body,
+            });
