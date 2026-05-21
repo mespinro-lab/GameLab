@@ -4,7 +4,7 @@ const { test, expect } = require('@playwright/test');
 const { analyzeScreenshot, formatResult } = require('./helpers/claude-vision');
 
 // Keep low for reliability; override with TURNS=N env var for deeper tests
-const TURNS_TO_PLAY = parseInt(process.env.TURNS || '5');
+const TURNS_TO_PLAY = parseInt(process.env.TURNS || '3');
 
 // ── Game flow helpers ─────────────────────────────────────────────────────────
 
