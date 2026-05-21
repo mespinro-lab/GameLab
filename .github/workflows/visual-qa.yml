@@ -58,9 +58,7 @@ jobs:
         if: always()
         with:
           name: visual-qa-${{ github.run_number }}
-          path: |
-            test-results/
-            production/playtests/visual-qa-results.json
+          path: production/playtests/visual-qa-results.json
           if-no-files-found: warn
           retention-days: 30
 

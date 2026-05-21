@@ -19,7 +19,7 @@ module.exports = defineConfig({
   },
 
   webServer: {
-    command: 'npx serve src/life-tycoon --listen tcp:3000',
+    command: 'python3 -m http.server 3000 --directory src/life-tycoon',
     port: 3000,
     reuseExistingServer: !process.env.CI,
     timeout: 15_000,

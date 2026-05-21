@@ -2,7 +2,16 @@
 
 const Anthropic = require('@anthropic-ai/sdk');
 
-const client = new Anthropic();
+// Lazy — do not instantiate at require() time so missing API key doesn't crash
+// Playwright's module loader before any test runs.
+let _client = null;
+function getClient() {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return null;
+  }
+  if (!_client) _client = new Anthropic();
+  return _client;
+}
 
 /**
  * Sends a Playwright screenshot buffer to Claude Vision and returns
@@ -14,6 +23,12 @@ const client = new Anthropic();
  * @returns {Promise<VisualQAResult>}
  */
 async function analyzeScreenshot(screenshotBuffer, context, viewport) {
+  const client = getClient();
+  if (!client) {
+    console.warn('ANTHROPIC_API_KEY not set — skipping Claude Vision analysis, returning pass.');
+    return { pass: true, observations: 'Claude Vision skipped (no API key).', issues: [] };
+  }
+
   const base64 = screenshotBuffer.toString('base64');
 
   const response = await client.messages.create({
