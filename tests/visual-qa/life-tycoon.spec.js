@@ -25,6 +25,11 @@ async function startNewGame(page) {
  * zone sheet, and event choices (click first option).
  */
 async function dismissOverlays(page) {
+  await page.waitForFunction(
+    () => !document.body.classList.contains('donut-active'),
+    { timeout: 30_000 }
+  ).catch(() => {});
+
   // Single-button dismissals
   const dismissSelectors = [
     '#btn-dismiss-discovery',
