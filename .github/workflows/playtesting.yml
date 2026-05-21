@@ -1,6 +1,8 @@
 name: Automated Playtesting
 
 on:
+  schedule:
+    - cron: '0 22 * * *'
   push:
     branches: [main]
     paths:
