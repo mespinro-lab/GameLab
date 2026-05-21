@@ -2205,6 +2205,8 @@ function handlePostAction() {
     S.phase = 'discovery'; renderAll();
   } else if (canContinue) {
     S.phase = 'select'; renderAll();
+  } else if (S.pendingDiscoveries.length > 0) {
+    S.phase = 'discovery'; renderAll();
   } else {
     S.phase = 'select'; renderAll();
     document.body.classList.add('donut-active');
@@ -2825,9 +2827,10 @@ function advanceFromBirth() {
 
 function advanceFromDiscovery() {
   S.pendingDiscoveries.shift();
+  const actionCost = currentEra().mechanics.intensityTimeCosts[1];
   if (S.pendingDiscoveries.length > 0) {
     renderAll();
-  } else if (S.pendingEvent) {
+  } else if (S.timeLeft >= actionCost && S.pendingEvent) {
     S.phase = 'event';
     renderAll();
   } else {
