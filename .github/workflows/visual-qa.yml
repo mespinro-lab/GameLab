@@ -86,6 +86,108 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
+      - name: Build email summary
+        if: always()
+        id: email
+        run: |
+          REPORT="production/playtests/visual-qa-results.json"
+          DATE=$(date +'%d/%m/%Y')
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          STATUS="${{ job.status }}"
+
+          case "$STATUS" in
+            success) STATUS_CA="✅ Correcte" ;;
+            failure) STATUS_CA="❌ Fallit" ;;
+            cancelled) STATUS_CA="⚠️ Cancel·lat" ;;
+            *)        STATUS_CA="⚠️ Desconegut" ;;
+          esac
+
+          PASSED=0; FAILED=0; SKIPPED=0
+          FAILURES_DETAIL=""
+
+          if [ -f "$REPORT" ]; then
+            PASSED=$(node -e "
+              const r=require('./${REPORT}');
+              let n=0;
+              (r.suites||[]).forEach(s=>(s.suites||[]).forEach(p=>(p.specs||[]).forEach(sp=>(sp.tests||[]).forEach(t=>{ if(t.results?.[0]?.status==='passed') n++; }))));
+              console.log(n);
+            " 2>/dev/null || echo 0)
+            FAILED=$(node -e "
+              const r=require('./${REPORT}');
+              let n=0;
+              (r.suites||[]).forEach(s=>(s.suites||[]).forEach(p=>(p.specs||[]).forEach(sp=>(sp.tests||[]).forEach(t=>{ const st=t.results?.[0]?.status; if(st!=='passed'&&st!=='skipped') n++; }))));
+              console.log(n);
+            " 2>/dev/null || echo 0)
+            SKIPPED=$(node -e "
+              const r=require('./${REPORT}');
+              let n=0;
+              (r.suites||[]).forEach(s=>(s.suites||[]).forEach(p=>(p.specs||[]).forEach(sp=>(sp.tests||[]).forEach(t=>{ if(t.results?.[0]?.status==='skipped') n++; }))));
+              console.log(n);
+            " 2>/dev/null || echo 0)
+            FAILURES_DETAIL=$(node -e "
+              const r=require('./${REPORT}');
+              const lines=[];
+              (r.suites||[]).forEach(s=>(s.suites||[]).forEach(p=>(p.specs||[]).forEach(sp=>(sp.tests||[]).forEach(t=>{
+                const st=t.results?.[0]?.status;
+                if(st!=='passed'&&st!=='skipped') lines.push('  - '+p.title+' > '+sp.title+': '+(t.results?.[0]?.error?.message||'').split('\n')[0]);
+              }))));
+              console.log(lines.join('\n'));
+            " 2>/dev/null || true)
+          fi
+
+          BODY="Informe de Visual QA automatitzat — Life Tycoon
+          ================================================
+
+          Data:     $DATE
+          Estat:    $STATUS_CA
+          Execució: $RUN_URL
+
+          RESUM DE PROVES
+          ---------------
+          Passades: $PASSED
+          Fallades: $FAILED
+          Omeses:   $SKIPPED"
+
+          if [ -n "$FAILURES_DETAIL" ]; then
+            BODY="$BODY
+
+          PROVES FALLADES
+          ---------------
+          $FAILURES_DETAIL"
+          fi
+
+          BODY="$BODY
+
+          ================================================
+          Generat automàticament per Claude Code Game Studios.
+          Repositori: ${{ github.repository }}"
+
+          echo "$BODY" > /tmp/vqa-email-body.txt
+          echo "body_path=/tmp/vqa-email-body.txt" >> "$GITHUB_OUTPUT"
+
+          if [ "$FAILED" -gt 0 ] 2>/dev/null; then
+            SUBJECT="❌ [Life Tycoon] Visual QA $DATE — $FAILED prova(es) fallida(es)"
+          elif [ "$STATUS" != "success" ]; then
+            SUBJECT="⚠️ [Life Tycoon] Visual QA $DATE — execució fallida"
+          else
+            SUBJECT="✅ [Life Tycoon] Visual QA $DATE — totes les proves han passat"
+          fi
+          echo "subject=$SUBJECT" >> "$GITHUB_OUTPUT"
+
+      - name: Send email summary
+        if: always()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.MAIL_SERVER }}
+          server_port: ${{ secrets.MAIL_PORT || 465 }}
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          to: ${{ secrets.MAIL_TO }}
+          from: "Claude Code Game Studios <${{ secrets.MAIL_USERNAME }}>"
+          subject: ${{ steps.email.outputs.subject }}
+          body: file:///tmp/vqa-email-body.txt
+
       - name: Post PR comment with findings
         if: github.event_name == 'pull_request' && always()
         uses: actions/github-script@v7
