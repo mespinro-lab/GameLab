@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Life Tycoon — Editor de Dades</title>
+  <script src="../src/life-tycoon/data.js"></script>
   <style>
 /* ── Reset & Tokens ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -299,7 +300,8 @@ html,body { height:100%; overflow:hidden; background:var(--bg); color:var(--text
     <span id="hdr-title">🎮 LT Editor</span>
     <select id="era-select"></select>
     <button class="hbtn" id="btn-io" title="Import/Export">⬆⬇</button>
-    <button class="hbtn" id="btn-reset" title="Reiniciar dades">↺</button>
+    <button class="hbtn" id="btn-migrate" title="Migrar dades del joc" style="background:#27ae60;border-color:#27ae60;color:#fff;font-weight:700">⬇ Migrar</button>
+    <button class="hbtn" id="btn-reset" title="Reiniciar dades seed">↺</button>
     <button class="hbtn" id="btn-menu-open">≡</button>
   </header>
 
@@ -1333,6 +1335,219 @@ function showToast(msg) {
   t.textContent = msg; t.classList.add('on');
   clearTimeout(_toastT); _toastT = setTimeout(() => t.classList.remove('on'), 2200);
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MIGRACIÓ DES DE GAME_DATA (data.js carregat com a <script>)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function migrateFromGameData() {
+  if (typeof GAME_DATA === 'undefined') {
+    alert('No s\'ha pogut llegir GAME_DATA. Comprova que data.js s\'ha carregat correctament.');
+    return;
+  }
+  if (!confirm('Això substituirà totes les dades actuals per les del joc. Continuar?')) return;
+
+  DB = { entities: [], deps: [], effects: [], mechanics: [] };
+  _nid = 1;
+
+  // Maps per resoldre cross-references
+  const eraMap   = {};  // eraId → entity.id
+  const zoneMap  = {};  // 'eraId:zoneId' → entity.id
+  const techMap  = {};  // 'eraId:techId' → entity.id
+  const skillMap = {};  // 'eraId:skillId' → entity.id
+  const destMap  = {};  // 'eraId:destId' → entity.id
+
+  // Resolució diferida per crear deps quan tots els targets existeixen
+  const pending = [];
+
+  // ── Eres ──
+  (GAME_DATA.eras || []).forEach(era => {
+    const le = era.lifeExpectancy || {};
+    const m  = era.mechanics      || {};
+    const e  = addEntity('era', {
+      name:              era.name,
+      icon:              era.icon,
+      description:       era.description || '',
+      life_base:         le.base ?? 30,
+      life_max:          le.max  ?? 50,
+      health_loss_cycle: m.agingCurve ? (m.agingCurve.baseLoss ?? 2) : 2,
+      subsistence:       era.foodPerTimePoint ?? 5,
+    });
+    eraMap[era.id] = e.id;
+
+    // Mecàniques de l'era
+    if (era.timeTotal)      addMechanic(e.id, 'time_total',     era.timeTotal);
+    if (era.maxChildren)    addMechanic(e.id, 'max_children',   era.maxChildren);
+    if (m.intensityTimeCosts) addMechanic(e.id, 'intensity_time_costs', JSON.stringify(m.intensityTimeCosts));
+    if (m.statGainCaps) Object.entries(m.statGainCaps).forEach(([k,v]) => addMechanic(e.id, `stat_cap_${k}`, v));
+    if (m.happinessDrift)   addMechanic(e.id, 'happiness_drift', m.happinessDrift);
+    if (m.childrenFoodCost) addMechanic(e.id, 'children_food_cost', m.childrenFoodCost);
+
+    // ── Zones de l'era ──
+    (era.zones || []).forEach(z => {
+      const ze = addEntity('zone', {
+        name:        z.name,
+        icon:        z.icon,
+        description: z.description || '',
+        era_id:      e.id,
+      });
+      zoneMap[`${era.id}:${z.id}`] = ze.id;
+    });
+
+    // ── Tecnologies de l'era ──
+    (era.techs || []).forEach(t => {
+      const te = addEntity('tech', {
+        name:        t.name,
+        icon:        t.icon,
+        description: t.description || '',
+        quote:       t.quote || '',
+        cycle_appears: t.eraCycleAppears ?? null,
+        effect_desc: t.effectDesc || '',
+        cost_vigor:    (t.tokenCost && t.tokenCost.vigor)    || 0,
+        cost_saber:    (t.tokenCost && t.tokenCost.saber)    || 0,
+        cost_prestigi: (t.tokenCost && t.tokenCost.prestigi) || 0,
+      });
+      techMap[`${era.id}:${t.id}`] = te.id;
+      // Efectes de la tech (statBonus)
+      if (t.statBonus) Object.entries(t.statBonus).forEach(([k,v]) => {
+        if (v) addEffect(te.id, 'tech', 'bonus', k, v);
+      });
+      // Dep de prerequisit tech
+      if (t.requiresTech) {
+        pending.push({ type:'dep', ownerId:te.id, ownerType:'tech',
+          reqKey:`${era.id}:${t.requiresTech}`, reqType:'tech', cond:'requires' });
+      }
+    });
+
+    // ── Habilitats (Taller) de l'era ──
+    (era.skills || []).forEach(sk => {
+      const se = addEntity('skill', {
+        name:        sk.name,
+        icon:        sk.icon,
+        description: sk.description || '',
+        quote:       sk.quote || '',
+        disc_chance:   sk.discoveryChance ?? 0,
+        effect_desc:   sk.effectDesc || '',
+        transversal:   sk.transversal || false,
+        cost_vigor:    (sk.tokenCost && sk.tokenCost.vigor)    || 0,
+        cost_saber:    (sk.tokenCost && sk.tokenCost.saber)    || 0,
+        cost_prestigi: (sk.tokenCost && sk.tokenCost.prestigi) || 0,
+      });
+      skillMap[`${era.id}:${sk.id}`] = se.id;
+      // Efecte de la habilitat
+      if (sk.effect) Object.entries(sk.effect).forEach(([k,v]) => {
+        if (v && typeof v === 'number') addEffect(se.id,'skill','bonus',k,v);
+      });
+      // Deps de la habilitat
+      if (sk.requiresTech) {
+        pending.push({ type:'dep', ownerId:se.id, ownerType:'skill',
+          reqKey:`${era.id}:${sk.requiresTech}`, reqType:'tech', cond:'requires' });
+      }
+      if (sk.requires && sk.requires.techIds) {
+        sk.requires.techIds.forEach(tid => pending.push({ type:'dep', ownerId:se.id, ownerType:'skill',
+          reqKey:`${era.id}:${tid}`, reqType:'tech', cond:'requires' }));
+      }
+    });
+
+    // ── Destreses de l'era ──
+    (era.destreses || []).forEach(d => {
+      const de = addEntity('destresa', {
+        name:        d.name,
+        icon:        d.icon,
+        description: d.description || '',
+        quote:       d.quote || '',
+        disc_chance: d.discoveryChance ?? 0.2,
+        effect_desc: d.effectDesc || '',
+        transversal: d.transversal || false,
+      });
+      destMap[`${era.id}:${d.id}`] = de.id;
+      if (d.effect) Object.entries(d.effect).forEach(([k,v]) => {
+        if (v && typeof v === 'number') addEffect(de.id,'destresa','bonus',k,v);
+      });
+      if (d.requires && d.requires.techIds) {
+        d.requires.techIds.forEach(tid => pending.push({ type:'dep', ownerId:de.id, ownerType:'destresa',
+          reqKey:`${era.id}:${tid}`, reqType:'tech', cond:'requires' }));
+      }
+    });
+
+    // ── Accions de l'era ──
+    (era.actions || []).forEach(a => {
+      const zoneEntityId = zoneMap[`${era.id}:${a.zone}`] || null;
+      const ae = addEntity('action', {
+        name:             a.name,
+        icon:             a.icon,
+        description:      a.description || '',
+        quote:            a.quote || '',
+        zone_id:          zoneEntityId,
+        era_id:           e.id,
+        stat_key:         a.statKey || '',
+        health_risk:      a.healthRisk     ?? 0,
+        base_risk:        a.baseRiskChance ?? 1.0,
+        opens_taller:     a.opensTaller     || false,
+        discovers_skill:  a.discoversSkill  || false,
+        teaches_skill:    a.teachesSkill    || false,
+        generates_partner:a.generatesPartner|| false,
+        generates_child:  a.generatesChild  || false,
+        min_cycle_pct:    a.minCyclePct  ?? null,
+        max_cycle_pct:    a.maxCyclePct  ?? null,
+      });
+
+      // Outputs
+      if (a.outputs) Object.entries(a.outputs).forEach(([k,v]) => { if(v) addEffect(ae.id,'action','output',k,v); });
+      if (a.statGain) Object.entries(a.statGain).forEach(([k,v]) => { if(v) addEffect(ae.id,'action','stat_gain',k,v); });
+
+      // Destreses descobertes per aquesta acció
+      (a.destreseDiscovery || []).forEach(did => {
+        pending.push({ type:'eff', ownerId:ae.id, ownerType:'action',
+          effectType:'discovers_destresa', targetKey:`${era.id}:${did}`, targetMap:'destresa', value:0 });
+      });
+
+      // Deps de l'acció
+      const r = a.requirements || {};
+      if (r.physical)     addDep(ae.id,'action','physical','characteristic','min_stat',r.physical);
+      if (r.intelligence) addDep(ae.id,'action','intelligence','characteristic','min_stat',r.intelligence);
+      if (r.social)       addDep(ae.id,'action','social','characteristic','min_stat',r.social);
+      if (r.health)       addDep(ae.id,'action','health','indicator','min_value',r.health);
+      if (r.requiresPartner)      addDep(ae.id,'action','has_partner','family_state','requires');
+      if (r.requiresChild)        addDep(ae.id,'action','has_child','family_state','requires');
+      if (r.requiresLearnedSkill) addDep(ae.id,'action','has_learned_skill','family_state','requires');
+      if (a.requiresNoPartner)    addDep(ae.id,'action','no_partner','family_state','requires_not');
+      if (a.requiresMinHappiness)       addDep(ae.id,'action','happiness','indicator','min_value',a.requiresMinHappiness);
+      if (a.requiresMinFamilyReputation) addDep(ae.id,'action','familyRep','indicator','min_value',a.requiresMinFamilyReputation);
+
+      if (a.requiresTech) {
+        pending.push({ type:'dep', ownerId:ae.id, ownerType:'action',
+          reqKey:`${era.id}:${a.requiresTech}`, reqType:'tech', cond:'requires' });
+      }
+      if (a.requiresSkill) {
+        pending.push({ type:'dep', ownerId:ae.id, ownerType:'action',
+          reqKey:`${era.id}:${a.requiresSkill}`, reqType:'skill', cond:'requires_skill' });
+      }
+    });
+  });
+
+  // ── Resolució deps i efectes diferits ──
+  const allMaps = { tech: techMap, skill: skillMap, destresa: destMap, zone: zoneMap, era: eraMap };
+  pending.forEach(p => {
+    if (p.type === 'dep') {
+      const rid = allMaps[p.reqType]?.[p.reqKey] || techMap[p.reqKey] || skillMap[p.reqKey];
+      if (rid) addDep(p.ownerId, p.ownerType, rid, p.reqType, p.cond, p.value ?? null);
+    } else if (p.type === 'eff') {
+      const map = p.targetMap === 'destresa' ? destMap : allMaps[p.targetMap] || {};
+      const tid = map[p.targetKey];
+      if (tid) addEffect(p.ownerId, p.ownerType, p.effectType, tid, p.value ?? 0);
+    }
+  });
+
+  saveDB();
+  const counts = TYPES.map(t => `${t.label}: ${getAll(t.id).length}`).join(' · ');
+  showToast(`Migrat ✓ — ${DB.entities.length} entitats`);
+  console.log('Migració completa:', counts);
+  console.log(`Deps: ${DB.deps.length} · Efectes: ${DB.effects.length} · Mecàniques: ${DB.mechanics.length}`);
+  renderAll();
+}
+
+document.getElementById('btn-migrate').addEventListener('click', migrateFromGameData);
 
 // ═══════════════════════════════════════════════════════════════════════════
 // INIT
