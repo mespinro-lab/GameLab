@@ -301,6 +301,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); color:var(--text
     <select id="era-select"></select>
     <button class="hbtn" id="btn-io" title="Import/Export">⬆⬇</button>
     <button class="hbtn" id="btn-migrate" title="Migrar dades del joc" style="background:#27ae60;border-color:#27ae60;color:#fff;font-weight:700">⬇ Migrar</button>
+    <button class="hbtn" id="btn-export-game" title="Exportar per al joc (JSON per integrar a data.js)" style="background:#2980b9;border-color:#2980b9;color:#fff;font-weight:700">📤 Joc</button>
     <button class="hbtn" id="btn-reset" title="Reiniciar dades seed">↺</button>
     <button class="hbtn" id="btn-menu-open">≡</button>
   </header>
@@ -1365,6 +1366,7 @@ function migrateFromGameData() {
     const le = era.lifeExpectancy || {};
     const m  = era.mechanics      || {};
     const e  = addEntity('era', {
+      game_id:           era.id,
       name:              era.name,
       icon:              era.icon,
       description:       era.description || '',
@@ -1386,6 +1388,7 @@ function migrateFromGameData() {
     // ── Zones de l'era ──
     (era.zones || []).forEach(z => {
       const ze = addEntity('zone', {
+        game_id:     z.id,
         name:        z.name,
         icon:        z.icon,
         description: z.description || '',
@@ -1397,6 +1400,8 @@ function migrateFromGameData() {
     // ── Tecnologies de l'era ──
     (era.techs || []).forEach(t => {
       const te = addEntity('tech', {
+        game_id:     t.id,
+        era_id:      e.id,
         name:        t.name,
         icon:        t.icon,
         description: t.description || '',
@@ -1406,6 +1411,8 @@ function migrateFromGameData() {
         cost_vigor:    (t.tokenCost && t.tokenCost.vigor)    || 0,
         cost_saber:    (t.tokenCost && t.tokenCost.saber)    || 0,
         cost_prestigi: (t.tokenCost && t.tokenCost.prestigi) || 0,
+        is_gate_tech:  t.isGateTech || false,
+        next_era:      t.nextEra || '',
       });
       techMap[`${era.id}:${t.id}`] = te.id;
       // Efectes de la tech (statBonus)
@@ -1422,6 +1429,8 @@ function migrateFromGameData() {
     // ── Habilitats (Taller) de l'era ──
     (era.skills || []).forEach(sk => {
       const se = addEntity('skill', {
+        game_id:     sk.id,
+        era_id:      e.id,
         name:        sk.name,
         icon:        sk.icon,
         description: sk.description || '',
@@ -1452,6 +1461,8 @@ function migrateFromGameData() {
     // ── Destreses de l'era ──
     (era.destreses || []).forEach(d => {
       const de = addEntity('destresa', {
+        game_id:     d.id,
+        era_id:      e.id,
         name:        d.name,
         icon:        d.icon,
         description: d.description || '',
@@ -1474,6 +1485,7 @@ function migrateFromGameData() {
     (era.actions || []).forEach(a => {
       const zoneEntityId = zoneMap[`${era.id}:${a.zone}`] || null;
       const ae = addEntity('action', {
+        game_id:          a.id,
         name:             a.name,
         icon:             a.icon,
         description:      a.description || '',
@@ -1548,6 +1560,188 @@ function migrateFromGameData() {
 }
 
 document.getElementById('btn-migrate').addEventListener('click', migrateFromGameData);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EXPORTAR PER AL JOC — reconstrueix estructura GAME_DATA des del DB pla
+// ═══════════════════════════════════════════════════════════════════════════
+
+function slugify(name) {
+  return (name || 'entity').toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+}
+function getGameId(e) { return e.game_id || slugify(e.name); }
+
+function denormalizeToGameData() {
+  const byId = {};
+  DB.entities.forEach(e => byId[e.id] = e);
+
+  const depsOf  = id => DB.deps.filter(d => d.owner_id === id);
+  const effsOf  = id => DB.effects.filter(ef => ef.owner_id === id);
+  const mechsOf = eraId => {
+    const m = {};
+    DB.mechanics.filter(mx => mx.era_id === eraId).forEach(mx => m[mx.key] = mx.value);
+    return m;
+  };
+
+  const compact = obj => {
+    Object.keys(obj).forEach(k => { if (obj[k] === undefined || obj[k] === null || obj[k] === '' || obj[k] === false) delete obj[k]; });
+    return obj;
+  };
+
+  const eras = DB.entities.filter(e => e.type === 'era').map(eraEnt => {
+    const m = mechsOf(eraEnt.id);
+
+    const zones = DB.entities.filter(e => e.type === 'zone' && e.era_id === eraEnt.id).map(z =>
+      compact({ id: getGameId(z), name: z.name, icon: z.icon, description: z.description || undefined })
+    );
+
+    const techs = DB.entities.filter(e => e.type === 'tech' && e.era_id === eraEnt.id).map(t => {
+      const reqTech = depsOf(t.id).find(d => d.req_type === 'tech' && d.cond === 'requires');
+      const statBonus = {};
+      effsOf(t.id).filter(ef => ef.effect_type === 'bonus').forEach(ef => { statBonus[ef.target_id] = ef.value; });
+      return compact({
+        id: getGameId(t), name: t.name, icon: t.icon,
+        eraCycleAppears: t.cycle_appears ?? undefined,
+        description: t.description || undefined, quote: t.quote || undefined,
+        effectDesc: t.effect_desc || undefined,
+        requiresTech: (reqTech && byId[reqTech.req_id]) ? getGameId(byId[reqTech.req_id]) : undefined,
+        tokenCost: (t.cost_vigor||t.cost_saber||t.cost_prestigi) ? {vigor:t.cost_vigor||0,saber:t.cost_saber||0,prestigi:t.cost_prestigi||0} : undefined,
+        statBonus: Object.keys(statBonus).length ? statBonus : undefined,
+        isGateTech: t.is_gate_tech || undefined, nextEra: t.next_era || undefined,
+        inheritanceRate: 1.0,
+      });
+    });
+
+    const skills = DB.entities.filter(e => e.type === 'skill' && e.era_id === eraEnt.id).map(sk => {
+      const reqTechs = depsOf(sk.id).filter(d => d.req_type === 'tech').map(d => byId[d.req_id]).filter(Boolean).map(getGameId);
+      const effect = {};
+      effsOf(sk.id).filter(ef => ef.effect_type === 'bonus').forEach(ef => { if (typeof ef.value === 'number') effect[ef.target_id] = ef.value; });
+      return compact({
+        id: getGameId(sk), name: sk.name, icon: sk.icon,
+        description: sk.description || undefined, quote: sk.quote || undefined,
+        discoveryChance: sk.disc_chance || undefined, effectDesc: sk.effect_desc || undefined,
+        transversal: sk.transversal || undefined,
+        requiresTech: reqTechs.length === 1 ? reqTechs[0] : undefined,
+        requires: reqTechs.length > 1 ? { techIds: reqTechs } : undefined,
+        tokenCost: (sk.cost_vigor||sk.cost_saber||sk.cost_prestigi) ? {vigor:sk.cost_vigor||0,saber:sk.cost_saber||0,prestigi:sk.cost_prestigi||0} : undefined,
+        effect: Object.keys(effect).length ? effect : undefined,
+      });
+    });
+
+    const destreses = DB.entities.filter(e => e.type === 'destresa' && e.era_id === eraEnt.id).map(d => {
+      const reqTechs = depsOf(d.id).filter(dep => dep.req_type === 'tech').map(dep => byId[dep.req_id]).filter(Boolean).map(getGameId);
+      const effect = {};
+      effsOf(d.id).filter(ef => ef.effect_type === 'bonus').forEach(ef => { if (typeof ef.value === 'number') effect[ef.target_id] = ef.value; });
+      return compact({
+        id: getGameId(d), name: d.name, icon: d.icon,
+        description: d.description || undefined, quote: d.quote || undefined,
+        discoveryChance: d.disc_chance || undefined, effectDesc: d.effect_desc || undefined,
+        transversal: d.transversal || undefined,
+        effect: Object.keys(effect).length ? effect : undefined,
+        requires: reqTechs.length ? { techIds: reqTechs } : undefined,
+      });
+    });
+
+    const actions = DB.entities.filter(e => e.type === 'action' && e.era_id === eraEnt.id).map(a => {
+      const deps = depsOf(a.id);
+      const effs = effsOf(a.id);
+      const zoneEnt = a.zone_id ? byId[a.zone_id] : null;
+      const reqTechDep  = deps.find(d => d.req_type === 'tech'  && d.cond === 'requires');
+      const reqSkillDep = deps.find(d => d.req_type === 'skill' && d.cond === 'requires_skill');
+
+      const requirements = {};
+      let requiresNoPartner = false, requiresMinHappiness = null, requiresMinFamilyReputation = null;
+      deps.forEach(d => {
+        if (d.req_type === 'characteristic' && d.cond === 'min_stat') requirements[d.req_id] = d.value;
+        if (d.req_type === 'indicator' && d.cond === 'min_value') {
+          if (d.req_id === 'health')      requirements.health = d.value;
+          else if (d.req_id === 'happiness') requiresMinHappiness = d.value;
+          else if (d.req_id === 'familyRep') requiresMinFamilyReputation = d.value;
+        }
+        if (d.req_type === 'family_state' && d.cond === 'requires') {
+          if (d.req_id === 'has_partner')      requirements.requiresPartner = true;
+          if (d.req_id === 'has_child')        requirements.requiresChild = true;
+          if (d.req_id === 'has_learned_skill') requirements.requiresLearnedSkill = true;
+        }
+        if (d.req_type === 'family_state' && d.cond === 'requires_not' && d.req_id === 'no_partner')
+          requiresNoPartner = true;
+      });
+
+      const outputs = {}, statGain = {}, destreseDiscovery = [];
+      effs.forEach(ef => {
+        if (ef.effect_type === 'output') outputs[ef.target_id] = ef.value;
+        if (ef.effect_type === 'stat_gain') statGain[ef.target_id] = ef.value;
+        if (ef.effect_type === 'discovers_destresa' && byId[ef.target_id])
+          destreseDiscovery.push(getGameId(byId[ef.target_id]));
+      });
+
+      return compact({
+        id: getGameId(a), name: a.name, icon: a.icon,
+        zone: zoneEnt ? getGameId(zoneEnt) : undefined,
+        description: a.description || undefined, quote: a.quote || undefined,
+        statKey: a.stat_key || undefined,
+        healthRisk: a.health_risk || undefined,
+        baseRiskChance: (a.base_risk != null && a.base_risk !== 1.0) ? a.base_risk : undefined,
+        opensTaller: a.opens_taller || undefined,
+        discoversSkill: a.discovers_skill || undefined,
+        teachesSkill: a.teaches_skill || undefined,
+        generatesPartner: a.generates_partner || undefined,
+        generatesChild: a.generates_child || undefined,
+        minCyclePct: a.min_cycle_pct ?? undefined,
+        maxCyclePct: a.max_cycle_pct ?? undefined,
+        requirements: Object.keys(requirements).length ? requirements : undefined,
+        requiresNoPartner: requiresNoPartner || undefined,
+        requiresMinHappiness: requiresMinHappiness ?? undefined,
+        requiresMinFamilyReputation: requiresMinFamilyReputation ?? undefined,
+        requiresTech:  (reqTechDep && byId[reqTechDep.req_id])  ? getGameId(byId[reqTechDep.req_id])  : undefined,
+        requiresSkill: (reqSkillDep && byId[reqSkillDep.req_id]) ? getGameId(byId[reqSkillDep.req_id]) : undefined,
+        outputs: Object.keys(outputs).length ? outputs : undefined,
+        statGain: Object.keys(statGain).length ? statGain : undefined,
+        destreseDiscovery: destreseDiscovery.length ? destreseDiscovery : undefined,
+      });
+    });
+
+    const statGainCaps = {};
+    Object.entries(m).forEach(([k,v]) => { if (k.startsWith('stat_cap_')) statGainCaps[k.replace('stat_cap_','')] = Number(v); });
+
+    const mechanics = compact({
+      intensityTimeCosts: m.intensity_time_costs ? JSON.parse(m.intensity_time_costs) : undefined,
+      happinessDrift:     m.happiness_drift     != null ? Number(m.happiness_drift)     : undefined,
+      childrenFoodCost:   m.children_food_cost  != null ? Number(m.children_food_cost)  : undefined,
+      statGainCaps:       Object.keys(statGainCaps).length ? statGainCaps : undefined,
+    });
+
+    return compact({
+      id: getGameId(eraEnt), name: eraEnt.name, icon: eraEnt.icon,
+      description: eraEnt.description || undefined,
+      lifeExpectancy: { base: eraEnt.life_base ?? 30, max: eraEnt.life_max ?? 50 },
+      maxChildren:     m.max_children    != null ? Number(m.max_children)    : undefined,
+      timeTotal:       m.time_total      != null ? Number(m.time_total)      : undefined,
+      foodPerTimePoint: eraEnt.subsistence ?? undefined,
+      mechanics:       Object.keys(mechanics).length ? mechanics : undefined,
+      zones:    zones.length    ? zones    : undefined,
+      techs:    techs.length    ? techs    : undefined,
+      skills:   skills.length   ? skills   : undefined,
+      destreses:destreses.length? destreses: undefined,
+      actions:  actions.length  ? actions  : undefined,
+    });
+  });
+
+  return { eras };
+}
+
+document.getElementById('btn-export-game').addEventListener('click', () => {
+  try {
+    const gameData = denormalizeToGameData();
+    const json = JSON.stringify(gameData, null, 2);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+    a.download = `lt-eres-export-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    showToast(`Exportat ✓ — ${gameData.eras.length} eres`);
+  } catch(err) { alert('Error en exportar: ' + err.message); console.error(err); }
+});
 
 // ═══════════════════════════════════════════════════════════════════════════
 // INIT
