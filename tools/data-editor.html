@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Life Tycoon — Editor de Dades</title>
+  <style>
+/* ── Reset & Tokens ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:   #0f0a04; --bg2: #1c1208; --bg3: #2a1c0c; --bg4: #3a2810;
+  --gold: #e8a840; --text: #e8dcc8; --dim: #8a7458;
+  --bdr:  rgba(160,110,55,0.3);
+  --c-era:      #f39c12; --c-zone:     #3498db; --c-tech:    #e67e22;
+  --c-skill:    #9b59b6; --c-action:   #27ae60; --c-event:   #e74c3c;
+  --c-destresa: #00bcd4; --c-learning: #fd79a8;
+  --hdr: 52px; --fbar: 46px;
+}
+html,body { height:100%; overflow:hidden; background:var(--bg); color:var(--text);
+  font-family:system-ui,-apple-system,sans-serif; font-size:16px; }
+
+/* ── Layout ── */
+#app { display:flex; flex-direction:column; height:100%; }
+
+/* Header */
+#hdr {
+  display:flex; align-items:center; gap:0.45rem;
+  padding:0 0.7rem; height:var(--hdr); flex-shrink:0;
+  background:var(--bg2); border-bottom:1px solid var(--bdr); z-index:10;
+}
+#hdr-title { font-weight:700; color:var(--gold); font-size:0.85rem; flex:1; white-space:nowrap; }
+#era-select {
+  background:var(--bg3); border:1px solid var(--bdr); color:var(--text);
+  border-radius:8px; padding:0.28rem 0.45rem; font-size:0.78rem; max-width:130px;
+}
+.hbtn {
+  background:var(--bg3); border:1px solid var(--bdr); color:var(--text);
+  border-radius:8px; padding:0.3rem 0.55rem; font-size:0.82rem; cursor:pointer;
+  white-space:nowrap; flex-shrink:0;
+}
+
+/* Graph viewport */
+#gvp {
+  flex:1; overflow:hidden; position:relative; touch-action:none;
+  background:radial-gradient(ellipse at 50% 40%, #1a1006 0%, #080401 100%);
+}
+#gc { position:absolute; top:0; left:0; transform-origin:0 0; will-change:transform; }
+#csvg { position:absolute; top:0; left:0; pointer-events:none; overflow:visible; }
+
+/* Type filter bar */
+#fbar {
+  display:flex; gap:0.35rem; padding:0.45rem 0.7rem;
+  overflow-x:auto; flex-shrink:0; height:var(--fbar);
+  background:var(--bg2); border-top:1px solid var(--bdr);
+  scrollbar-width:none;
+}
+#fbar::-webkit-scrollbar { display:none; }
+.tychip {
+  display:flex; align-items:center; gap:0.22rem;
+  padding:0.18rem 0.55rem; border-radius:20px; font-size:0.72rem;
+  border:1.5px solid transparent; cursor:pointer; white-space:nowrap;
+  transition:opacity 0.15s; user-select:none;
+}
+.tychip.on  { border-color:currentColor; opacity:1; }
+.tychip.off { opacity:0.35; }
+
+/* ── Graph nodes ── */
+.gnode {
+  position:absolute; display:flex; flex-direction:column;
+  align-items:center; cursor:pointer; user-select:none; touch-action:none;
+  transition:filter 0.15s;
+}
+.gnode:active { filter:brightness(1.3); }
+.nrow { display:flex; align-items:center; gap:5px; }
+.nshape {
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.25rem; flex-shrink:0; position:relative;
+  transition:transform 0.12s;
+}
+.gnode:active .nshape { transform:scale(0.88); }
+.nlabel {
+  font-size:0.56rem; color:var(--dim); text-align:center; margin-top:2px;
+  max-width:72px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.nbadges { display:flex; flex-direction:column; gap:3px; align-items:center; min-width:28px; }
+.nbadge {
+  display:flex; align-items:center; gap:2px;
+  font-size:0.58rem; background:rgba(255,255,255,0.06);
+  border-radius:7px; padding:1px 5px; white-space:nowrap; color:var(--dim);
+}
+
+/* Shapes */
+.sh-circle {
+  width:52px; height:52px; border-radius:50%;
+  border:2px solid var(--nc); background:color-mix(in srgb,var(--nc) 14%,var(--bg));
+  box-shadow:0 0 14px color-mix(in srgb,var(--nc) 28%,transparent);
+}
+.sh-diamond {
+  width:46px; height:46px;
+  border:2px solid var(--nc); background:color-mix(in srgb,var(--nc) 14%,var(--bg));
+  transform:rotate(45deg);
+  box-shadow:0 0 14px color-mix(in srgb,var(--nc) 28%,transparent);
+}
+.sh-diamond .ni { transform:rotate(-45deg); width:100%; height:100%;
+  display:flex; align-items:center; justify-content:center; }
+.sh-roundsq {
+  width:48px; height:48px; border-radius:11px;
+  border:2px solid var(--nc); background:color-mix(in srgb,var(--nc) 14%,var(--bg));
+  box-shadow:0 0 14px color-mix(in srgb,var(--nc) 28%,transparent);
+}
+.sh-smallc {
+  width:38px; height:38px; border-radius:50%;
+  border:1.5px solid var(--nc); background:color-mix(in srgb,var(--nc) 10%,var(--bg));
+  box-shadow:0 0 10px color-mix(in srgb,var(--nc) 22%,transparent);
+}
+.sh-hex {
+  width:54px; height:54px;
+  background:color-mix(in srgb,var(--nc) 14%,var(--bg));
+  clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  filter:drop-shadow(0 0 5px color-mix(in srgb,var(--nc) 45%,transparent));
+}
+
+/* Connections */
+.cline { stroke:rgba(140,100,50,0.3); stroke-width:1.5; fill:none; stroke-dasharray:5 3; }
+.cline.hard { stroke:rgba(160,115,55,0.55); stroke-dasharray:none; }
+.cline.gate { stroke:rgba(232,168,40,0.6); stroke-dasharray:none; stroke-width:2; }
+
+/* ── Overlays backdrop ── */
+.backdrop {
+  position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:40; display:none;
+}
+.backdrop.on { display:block; }
+
+/* ── Side menu ── */
+#smenu {
+  position:fixed; top:0; right:0; bottom:0; width:270px;
+  background:var(--bg2); border-left:1px solid var(--bdr);
+  z-index:50; transform:translateX(100%); transition:transform 0.25s;
+  display:flex; flex-direction:column; overflow-y:auto;
+}
+#smenu.on { transform:translateX(0); }
+.smenu-hdr {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0.9rem 1rem; border-bottom:1px solid var(--bdr); flex-shrink:0;
+}
+.smenu-hdr span { font-weight:700; color:var(--gold); }
+.xbtn { background:none; border:none; color:var(--dim); font-size:1.15rem; cursor:pointer; padding:0.2rem; }
+.mtype-row {
+  display:flex; align-items:center; gap:0.6rem;
+  padding:0.65rem 1rem; cursor:pointer; font-size:0.83rem;
+  border-bottom:1px solid rgba(255,255,255,0.035);
+}
+.mtype-row:active { background:rgba(255,255,255,0.04); }
+.mtype-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+.mtype-ct { margin-left:auto; font-size:0.7rem; color:var(--dim); }
+#smenu-foot { padding:0.9rem 1rem; border-top:1px solid var(--bdr); margin-top:auto; }
+#smenu-stats { font-size:0.68rem; color:var(--dim); text-align:center; line-height:1.5; }
+
+/* ── Entity list panel ── */
+#elpanel {
+  position:fixed; inset:0; background:var(--bg); z-index:55;
+  transform:translateX(100%); transition:transform 0.25s;
+  display:flex; flex-direction:column;
+}
+#elpanel.on { transform:translateX(0); }
+#el-hdr {
+  display:flex; align-items:center; gap:0.55rem;
+  padding:0.7rem 1rem; background:var(--bg2); border-bottom:1px solid var(--bdr);
+  flex-shrink:0;
+}
+#el-title { font-size:0.92rem; font-weight:700; flex:1; }
+#btn-add-e {
+  background:var(--gold); color:var(--bg); border:none;
+  border-radius:8px; padding:0.28rem 0.65rem; font-size:0.8rem; font-weight:700; cursor:pointer;
+}
+#el-list { flex:1; overflow-y:auto; }
+.eli {
+  display:flex; align-items:center; gap:0.7rem;
+  padding:0.75rem 1rem; border-bottom:1px solid rgba(255,255,255,0.035); cursor:pointer;
+}
+.eli:active { background:rgba(255,255,255,0.04); }
+.eli-ico { font-size:1.2rem; }
+.eli-name { font-size:0.86rem; flex:1; }
+.eli-sub  { font-size:0.7rem; color:var(--dim); }
+.eli-del  { background:none; border:none; color:var(--dim); font-size:0.95rem; cursor:pointer; padding:0.3rem; }
+
+/* ── Detail card ── */
+#dcard {
+  position:fixed; bottom:0; left:0; right:0;
+  background:var(--bg2); border-top:2px solid var(--bdr);
+  border-radius:20px 20px 0 0; z-index:45;
+  max-height:82dvh; transform:translateY(100%);
+  transition:transform 0.3s; display:flex; flex-direction:column;
+  box-shadow:0 -8px 40px rgba(0,0,0,0.75);
+}
+#dcard.on { transform:translateY(0); }
+#dcard-handle { width:36px; height:4px; border-radius:2px;
+  background:rgba(255,255,255,0.18); margin:10px auto 0; flex-shrink:0; }
+#dcard-hdr {
+  display:flex; align-items:center; gap:0.55rem;
+  padding:0.5rem 1rem 0.65rem; flex-shrink:0;
+}
+#dc-icon { font-size:1.55rem; }
+#dc-name { font-size:0.97rem; font-weight:700; color:var(--gold); flex:1; }
+#dc-badge { font-size:0.62rem; padding:0.12rem 0.45rem; border-radius:8px; border:1px solid currentColor; }
+#dc-scroll { overflow-y:auto; padding:0 1rem 0.5rem; }
+.dsec { margin-bottom:1rem; }
+.dsec-title { font-size:0.68rem; color:var(--dim); text-transform:uppercase;
+  letter-spacing:0.07em; margin-bottom:0.45rem; }
+.dfield { margin-bottom:0.55rem; }
+.dfield label { font-size:0.7rem; color:var(--dim); display:block; margin-bottom:0.18rem; }
+.dfield input, .dfield textarea, .dfield select {
+  width:100%; background:var(--bg3); border:1px solid var(--bdr); color:var(--text);
+  border-radius:8px; padding:0.42rem 0.58rem; font-size:0.83rem; font-family:inherit;
+}
+.dfield textarea { resize:vertical; min-height:56px; }
+.dfield input[type=number] { max-width:120px; }
+.chips { display:flex; flex-wrap:wrap; gap:0.3rem; }
+.chip {
+  display:inline-flex; align-items:center; gap:0.22rem;
+  padding:0.22rem 0.55rem; border-radius:18px; font-size:0.72rem; cursor:pointer;
+}
+.chip-req  { background:rgba(52,152,219,0.13); border:1px solid rgba(52,152,219,0.35); color:#5dade2; }
+.chip-eff  { background:rgba(39,174,96,0.13);  border:1px solid rgba(39,174,96,0.35);  color:#55c87a; }
+.chip-add  { background:rgba(255,255,255,0.05); border:1px dashed rgba(255,255,255,0.2); color:var(--dim); }
+.chip-rm   { font-size:0.6rem; opacity:0.55; }
+.dcard-save {
+  width:calc(100% - 2rem); margin:0.6rem 1rem 1rem;
+  background:var(--gold); color:var(--bg); border:none; border-radius:10px;
+  padding:0.68rem; font-size:0.88rem; font-weight:700; cursor:pointer; flex-shrink:0;
+}
+
+/* ── Picker dialog ── */
+#picker { position:fixed; inset:0; z-index:80; display:none; align-items:flex-end; background:rgba(0,0,0,0.6); }
+#picker.on { display:flex; }
+#picker-panel {
+  background:var(--bg2); border-radius:20px 20px 0 0; width:100%; max-height:62dvh;
+  display:flex; flex-direction:column;
+}
+#picker-hdr { padding:0.75rem 1rem; font-weight:700; border-bottom:1px solid var(--bdr); flex-shrink:0; }
+#picker-search {
+  width:calc(100% - 2rem); margin:0.5rem 1rem;
+  background:var(--bg3); border:1px solid var(--bdr); color:var(--text);
+  border-radius:8px; padding:0.38rem 0.58rem; font-size:0.83rem;
+}
+#picker-list { overflow-y:auto; flex:1; }
+.pitem {
+  display:flex; align-items:center; gap:0.7rem;
+  padding:0.65rem 1rem; border-bottom:1px solid rgba(255,255,255,0.035); cursor:pointer;
+}
+.pitem:active { background:rgba(255,255,255,0.05); }
+.pitem-ico { font-size:1.15rem; flex-shrink:0; }
+.pitem-name { font-size:0.84rem; flex:1; }
+.pitem-sub  { font-size:0.7rem; color:var(--dim); }
+
+/* ── I/O Panel ── */
+#iopanel {
+  position:fixed; inset:0; background:var(--bg); z-index:60;
+  transform:translateY(100%); transition:transform 0.25s;
+  display:flex; flex-direction:column;
+}
+#iopanel.on { transform:translateY(0); }
+.io-hdr {
+  display:flex; align-items:center; gap:0.6rem; padding:0.75rem 1rem;
+  background:var(--bg2); border-bottom:1px solid var(--bdr); flex-shrink:0;
+}
+#io-ta {
+  flex:1; width:100%; background:var(--bg3); border:none; color:var(--text);
+  font-family:monospace; font-size:0.72rem; padding:1rem; resize:none; outline:none;
+}
+.io-foot { display:flex; gap:0.5rem; padding:0.7rem; background:var(--bg2); border-top:1px solid var(--bdr); }
+.iobtn { flex:1; background:var(--bg3); border:1px solid var(--bdr); color:var(--text);
+  border-radius:8px; padding:0.58rem; font-size:0.83rem; cursor:pointer; }
+.iobtn.pri { background:var(--gold); color:var(--bg); border-color:var(--gold); font-weight:700; }
+
+/* ── Toast ── */
+#toast {
+  position:fixed; bottom:72px; left:50%; transform:translateX(-50%);
+  background:rgba(36,26,10,0.96); border:1px solid var(--bdr); color:var(--text);
+  padding:0.45rem 0.9rem; border-radius:20px; font-size:0.8rem;
+  z-index:100; opacity:0; transition:opacity 0.2s; pointer-events:none; white-space:nowrap;
+}
+#toast.on { opacity:1; }
+
+/* ── Empty state ── */
+#empty-state {
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  flex-direction:column; gap:0.5rem; pointer-events:none; display:none;
+}
+#empty-state.on { display:flex; }
+#empty-state p { color:var(--dim); font-size:0.85rem; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HEADER -->
+  <header id="hdr">
+    <span id="hdr-title">🎮 LT Editor</span>
+    <select id="era-select"></select>
+    <button class="hbtn" id="btn-io" title="Import/Export">⬆⬇</button>
+    <button class="hbtn" id="btn-reset" title="Reiniciar dades">↺</button>
+    <button class="hbtn" id="btn-menu-open">≡</button>
+  </header>
+
+  <!-- GRAPH VIEWPORT -->
+  <div id="gvp">
+    <div id="gc">
+      <svg id="csvg"></svg>
+    </div>
+    <div id="empty-state">
+      <span style="font-size:2rem">🗺️</span>
+      <p>Cap entitat visible. Activa tipus al filtre o afegeix-ne al menú.</p>
+    </div>
+  </div>
+
+  <!-- TYPE FILTER BAR -->
+  <div id="fbar"></div>
+
+  <!-- BACKDROP -->
+  <div class="backdrop" id="backdrop"></div>
+
+  <!-- SIDE MENU -->
+  <div id="smenu">
+    <div class="smenu-hdr">
+      <span>Tipus d'Entitat</span>
+      <button class="xbtn" id="btn-menu-close">✕</button>
+    </div>
+    <div id="smenu-types"></div>
+    <div id="smenu-foot"><div id="smenu-stats"></div></div>
+  </div>
+
+  <!-- ENTITY LIST PANEL -->
+  <div id="elpanel">
+    <div id="el-hdr">
+      <button class="xbtn" id="btn-el-back">←</button>
+      <span id="el-title"></span>
+      <button id="btn-add-e">+ Nova</button>
+    </div>
+    <div id="el-list"></div>
+  </div>
+
+  <!-- DETAIL CARD -->
+  <div id="dcard">
+    <div id="dcard-handle"></div>
+    <div id="dcard-hdr">
+      <span id="dc-icon"></span>
+      <span id="dc-name"></span>
+      <span id="dc-badge"></span>
+      <button class="xbtn" id="btn-dcard-close">✕</button>
+    </div>
+    <div id="dc-scroll"></div>
+    <button class="dcard-save" id="btn-save-detail">Guardar canvis</button>
+  </div>
+
+  <!-- PICKER DIALOG -->
+  <div id="picker">
+    <div id="picker-panel">
+      <div id="picker-hdr"></div>
+      <input id="picker-search" placeholder="Cerca..." autocomplete="off">
+      <div id="picker-list"></div>
+    </div>
+  </div>
+
+  <!-- I/O PANEL -->
+  <div id="iopanel">
+    <div class="io-hdr">
+      <button class="xbtn" id="btn-io-close">←</button>
+      <span style="font-weight:700;flex:1">Import / Export JSON</span>
+    </div>
+    <textarea id="io-ta" placeholder="Enganxa JSON aquí per importar..."></textarea>
+    <div class="io-foot">
+      <button class="iobtn" id="btn-export">⬇ Exportar</button>
+      <button class="iobtn pri" id="btn-import">⬆ Importar</button>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+</div><!-- #app -->
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+const TYPES = [
+  { id:'era',      label:'Eres',          icon:'🌍', color:'#f39c12', shape:'hex'     },
+  { id:'zone',     label:'Zones',         icon:'🗺️',  color:'#3498db', shape:'roundsq' },
+  { id:'tech',     label:'Tecnologies',   icon:'📜', color:'#e67e22', shape:'diamond' },
+  { id:'skill',    label:'Habilitats',    icon:'🔨', color:'#9b59b6', shape:'roundsq' },
+  { id:'action',   label:'Accions',       icon:'⚡', color:'#27ae60', shape:'circle'  },
+  { id:'event',    label:'Events',        icon:'🎭', color:'#e74c3c', shape:'circle'  },
+  { id:'destresa', label:'Destreses',     icon:'✨', color:'#00bcd4', shape:'smallc'  },
+  { id:'learning', label:'Aprenentatges', icon:'📚', color:'#fd79a8', shape:'smallc'  },
+];
+const TMAP  = Object.fromEntries(TYPES.map(t => [t.id, t]));
+const LS    = 'lt_gamedata_editor';
+
+// Fixed resource/stat targets used in effects
+const FIXED = [
+  { id:'food',            icon:'🍖', name:'Menjar',           group:'recurs' },
+  { id:'health',          icon:'❤️', name:'Salut',            group:'indicador' },
+  { id:'happiness',       icon:'😊', name:'Felicitat',        group:'indicador' },
+  { id:'familyRep',       icon:'👑', name:'Reputació família',group:'indicador' },
+  { id:'physical',        icon:'💪', name:'Força física',     group:'stat' },
+  { id:'intelligence',    icon:'🧠', name:'Intel·ligència',   group:'stat' },
+  { id:'social',          icon:'🤝', name:'Social',           group:'stat' },
+  { id:'vigor',           icon:'⚡', name:'Vigor (compra)',   group:'compra' },
+  { id:'saber',           icon:'📚', name:'Saber (compra)',   group:'compra' },
+  { id:'prestigi',        icon:'🌟', name:'Prestigi (compra)',group:'compra' },
+  { id:'money',           icon:'💰', name:'Diners',           group:'recurs' },
+];
+const FMAP = Object.fromEntries(FIXED.map(f => [f.id, f]));
+
+// Node geometry
+const NW = 130, NH = 94, HGAP = 90, VGAP = 18;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DATA MODEL  (normalized — scalable to a real DB)
+// ═══════════════════════════════════════════════════════════════════════════
+// DB.entities  — all game entities (flat)
+// DB.deps      — requirements/dependencies  {owner_id → req_id}
+// DB.effects   — outputs/effects            {owner_id → target}
+// DB.mechanics — era-level config values    {era_id, key, value}
+// ═══════════════════════════════════════════════════════════════════════════
+
+let DB = { entities:[], deps:[], effects:[], mechanics:[] };
+let _nid = 1;
+const uid = () => 'e' + String(_nid++).padStart(4,'0');
+
+function loadDB() {
+  try {
+    const raw = localStorage.getItem(LS);
+    if (raw) {
+      DB = JSON.parse(raw);
+      const mx = Math.max(0, ...[...DB.entities,...DB.deps,...DB.effects,...DB.mechanics]
+        .map(x => parseInt((x.id||'e0').slice(1))||0));
+      _nid = mx + 1;
+      return true;
+    }
+  } catch(e) { console.warn('DB load error', e); }
+  return false;
+}
+function saveDB() { localStorage.setItem(LS, JSON.stringify(DB)); }
+
+// Entity CRUD
+const getAll  = (type)   => DB.entities.filter(e => e.type === type);
+const getById = (id)     => DB.entities.find(e => e.id === id);
+const getDeps = (oid)    => DB.deps.filter(d => d.owner_id === oid);
+const getEff  = (oid)    => DB.effects.filter(e => e.owner_id === oid);
+
+function addEntity(type, props) {
+  const e = { id:uid(), type, ...props };
+  DB.entities.push(e); saveDB(); return e;
+}
+function updateEntity(id, props) {
+  const i = DB.entities.findIndex(e => e.id === id);
+  if (i >= 0) { Object.assign(DB.entities[i], props); saveDB(); }
+}
+function deleteEntity(id) {
+  DB.entities = DB.entities.filter(e => e.id !== id);
+  DB.deps     = DB.deps.filter(d => d.owner_id !== id && d.req_id !== id);
+  DB.effects  = DB.effects.filter(e => e.owner_id !== id);
+  DB.mechanics= DB.mechanics.filter(m => m.era_id !== id);
+  saveDB();
+}
+function addDep(ownerId, ownerType, reqId, reqType, cond, value) {
+  const d = { id:uid(), owner_id:ownerId, owner_type:ownerType,
+              req_id:reqId, req_type:reqType, cond:cond||'requires', value:value??null };
+  DB.deps.push(d); saveDB(); return d;
+}
+function removeDep(id)    { DB.deps    = DB.deps.filter(d=>d.id!==id);    saveDB(); }
+function addEffect(ownerId, ownerType, effectType, targetId, value, formula) {
+  const e = { id:uid(), owner_id:ownerId, owner_type:ownerType,
+              effect_type:effectType, target_id:targetId, value:value??0, formula:formula||null };
+  DB.effects.push(e); saveDB(); return e;
+}
+function removeEffect(id) { DB.effects = DB.effects.filter(e=>e.id!==id); saveDB(); }
+function addMechanic(eraId, key, value) {
+  const m = { id:uid(), era_id:eraId, key, value };
+  DB.mechanics.push(m); saveDB(); return m;
+}
+function updateMechanic(id, value) {
+  const m = DB.mechanics.find(x=>x.id===id);
+  if (m) { m.value = value; saveDB(); }
+}
+function removeMechanic(id) { DB.mechanics = DB.mechanics.filter(m=>m.id!==id); saveDB(); }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SEED DATA  (minimal representative subset of Prehistòria)
+// ═══════════════════════════════════════════════════════════════════════════
+function _e(type,p){ const e={id:uid(),type,...p}; DB.entities.push(e); return e; }
+function _d(oid,ot,rid,rt,c,v){ DB.deps.push({id:uid(),owner_id:oid,owner_type:ot,req_id:rid,req_type:rt,cond:c||'requires',value:v??null}); }
+function _f(oid,ot,ft,tid,val){ DB.effects.push({id:uid(),owner_id:oid,owner_type:ot,effect_type:ft,target_id:tid,value:val??0,formula:null}); }
+function _m(eraId,key,val){ DB.mechanics.push({id:uid(),era_id:eraId,key,value:val}); }
+
+function seedDB() {
+  DB = { entities:[], deps:[], effects:[], mechanics:[] };
+  _nid = 1;
+
+  // Eres
+  const preh = _e('era',{ name:'Prehistòria',  icon:'🦴', description:'Supervivència i primers coneixements.',
+    life_base:30, life_max:45, health_loss_cycle:2, subsistence:5 });
+  const neol = _e('era',{ name:'Neolític',     icon:'🌾', description:'Agricultura i primers assentaments.',
+    life_base:35, life_max:55, health_loss_cycle:1.5, subsistence:4 });
+  const anti = _e('era',{ name:'Edat Antiga',  icon:'🏛️', description:'Civilitzacions i imperis.',
+    life_base:40, life_max:65, health_loss_cycle:1.2, subsistence:6 });
+
+  // Mecàniques d'era
+  _m(preh.id,'action_slots',3);    _m(preh.id,'max_children',6);  _m(preh.id,'stat_cap_physical',6);  _m(preh.id,'stat_cap_intel',5);
+  _m(neol.id,'action_slots',4);    _m(neol.id,'max_children',4);  _m(neol.id,'stat_cap_physical',7);  _m(neol.id,'stat_cap_intel',7);
+  _m(anti.id,'action_slots',5);    _m(anti.id,'max_children',3);  _m(anti.id,'stat_cap_physical',8);  _m(anti.id,'stat_cap_intel',10);
+
+  // Tecnologies
+  const tFire  = _e('tech',{ name:'Foc',               icon:'🔥', description:'Control i ús del foc.' });
+  const tStone = _e('tech',{ name:'Eines de Pedra',    icon:'🪨', description:'Talla de sílex i os.' });
+  const tLang  = _e('tech',{ name:'Llengua Bàsica',    icon:'👄', description:'Comunicació rudimentària.' });
+  const tSymb  = _e('tech',{ name:'Pensament Simbòlic',icon:'🧠', description:'Abstracció i símbols.' });
+  const tTrib  = _e('tech',{ name:'Organitz. Tribal',  icon:'👥', description:'Estructura social bàsica.' });
+  const tAg    = _e('tech',{ name:'Agricultura',       icon:'🌱', description:'Cultiu sistemàtic de plantes.' });
+
+  // Dependencies de techs
+  _d(tSymb.id,'tech', tLang.id,'tech','requires');
+  _d(tTrib.id,'tech', tLang.id,'tech','requires');
+  _d(tAg.id,  'tech', tStone.id,'tech','requires');
+
+  // Era gate: Neolític s'obre quan s'obté Agricultura; Antiga quan s'obté Pensament Simbòlic
+  _d(neol.id,'era', tAg.id,'tech','gate_tech');
+  _d(anti.id,'era', tSymb.id,'tech','gate_tech');
+
+  // Destreses
+  const dMed   = _e('destresa',{ name:'Plantes Medicinals',icon:'🌿', description:'Reconèixer i usar plantes curatives.', disc_chance:0.3 });
+  const dTrack = _e('destresa',{ name:'Rastreig',          icon:'🐾', description:'Seguir rastres d\'animals.', disc_chance:0.25 });
+  const dCook  = _e('destresa',{ name:'Cuina',             icon:'🍳', description:'Cuinar amb tècnica.', disc_chance:0.2 });
+  const dFish  = _e('destresa',{ name:'Pesca',             icon:'🎣', description:'Pescar amb mètode.', disc_chance:0.2 });
+
+  // Efectes de destreses (bonus passiu)
+  _f(dMed.id,  'destresa','bonus','health',   5);
+  _f(dTrack.id,'destresa','bonus_pct','food', 0.5);
+  _f(dCook.id, 'destresa','bonus','health',   8);
+  _f(dFish.id, 'destresa','bonus','food',     15);
+
+  // Habilitats (Taller)
+  const sPers  = _e('skill',{ name:'Persuasió',         icon:'🗣️', description:'Art de convèncer.', cost_saber:3 });
+  const sChief = _e('skill',{ name:'Cap de Tribu',      icon:'👑', description:'Lideratge tribal.', cost_prestigi:5 });
+  const sOral  = _e('skill',{ name:'Tradició Oral',     icon:'📖', description:'Narrar gestes.', cost_saber:4 });
+  const sProto = _e('skill',{ name:'Proto-Agricultura', icon:'🌱', description:'Primers conreus.', cost_saber:6 });
+
+  // Deps habilitats
+  _d(sPers.id, 'skill', tLang.id, 'tech','requires');
+  _d(sChief.id,'skill', sPers.id, 'skill','requires_skill');
+  _d(sOral.id, 'skill', tLang.id, 'tech','requires');
+  _d(sProto.id,'skill', tStone.id,'tech','requires');
+
+  // Zones (Prehistòria)
+  const zWild  = _e('zone',{ name:'Natura Salvatge', icon:'🌲', description:'Bosc i camps oberts.', era_id:preh.id, map_x:20, map_y:30 });
+  const zForest= _e('zone',{ name:'Bosc de Caça',   icon:'🏹', description:'Zona de caça major.',  era_id:preh.id, map_x:25, map_y:60 });
+  const zTown  = _e('zone',{ name:'Poble',           icon:'🏕️', description:'Assentament tribal.',  era_id:preh.id, map_x:50, map_y:45 });
+  const zHome  = _e('zone',{ name:'Llar',            icon:'🏠', description:'Espai domèstic.',      era_id:preh.id, map_x:75, map_y:60 });
+
+  // Accions
+  const aGather = _e('action',{ name:'Recol·lectar',     icon:'🫐', zone_id:zWild.id,   stat_key:'intelligence', health_risk:0,  base_risk:1.0,  description:'Baies, arrels i bolets.' });
+  const aObserve= _e('action',{ name:'Observar Natura',  icon:'🦋', zone_id:zWild.id,   stat_key:'intelligence', health_risk:0,  description:'Contemplar l\'entorn.' });
+  const aHunt   = _e('action',{ name:'Caçar',            icon:'🏹', zone_id:zForest.id, stat_key:'physical',     health_risk:15, base_risk:0.95, description:'Sortir a caçar.' });
+  const aCraft  = _e('action',{ name:'Fabricar Eines',   icon:'🪓', zone_id:zTown.id,   stat_key:'intelligence', health_risk:0,  description:'Treballa la pedra i l\'os.' });
+  const aListen = _e('action',{ name:'Escoltar Estrangers',icon:'👂',zone_id:zTown.id,  stat_key:'social',       health_risk:0,  discovers_skill:true, description:'Aprendre de viatgers.' });
+  const aTaller = _e('action',{ name:'Taller',           icon:'🔨', zone_id:zTown.id,   stat_key:'intelligence', health_risk:0,  opens_taller:true, description:'Aprendre tècniques noves.' });
+  const aCook   = _e('action',{ name:'Cuinar',           icon:'🥘', zone_id:zHome.id,   stat_key:'intelligence', health_risk:0,  description:'Cuinar sobre el foc.' });
+  const aExplore= _e('action',{ name:'Explorar',         icon:'🧭', zone_id:zForest.id, stat_key:'physical',     health_risk:20, base_risk:0.70, description:'Aventurar-se lluny.' });
+  const aNeg    = _e('action',{ name:'Negociar',         icon:'🤝', zone_id:zTown.id,   stat_key:'social',       health_risk:0,  description:'Acords beneficiosos.' });
+  const aStories= _e('action',{ name:'Contar Gestes',    icon:'🔥', zone_id:zTown.id,   stat_key:'intelligence', health_risk:0,  description:'Narrar gestes al voltant del foc.' });
+  const aLeadH  = _e('action',{ name:'Caça Organitzada', icon:'🦬', zone_id:zForest.id, stat_key:'physical',     health_risk:18, base_risk:0.65, description:'Caça col·lectiva.' });
+
+  // Deps accions
+  _d(aHunt.id,   'action','physical','characteristic','min_stat',2);
+  _d(aCook.id,   'action', tFire.id,  'tech','requires');
+  _d(aExplore.id,'action', tStone.id, 'tech','requires');
+  _d(aExplore.id,'action','physical','characteristic','min_stat',3);
+  _d(aNeg.id,    'action', sPers.id,  'skill','requires_skill');
+  _d(aStories.id,'action', sOral.id,  'skill','requires_skill');
+  _d(aLeadH.id,  'action', sChief.id, 'skill','requires_skill');
+  _d(aLeadH.id,  'action','physical','characteristic','min_stat',2);
+
+  // Efectes d'accions
+  _f(aGather.id, 'action','output',   'food',         15);
+  _f(aGather.id, 'action','output',   'happiness',     5);
+  _f(aGather.id, 'action','output',   'health',        2);
+  _f(aGather.id, 'action','stat_gain','intelligence', 0.3);
+
+  _f(aObserve.id,'action','output',   'happiness',    18);
+  _f(aObserve.id,'action','stat_gain','intelligence', 0.6);
+
+  _f(aHunt.id,   'action','output',   'food',         22);
+  _f(aHunt.id,   'action','stat_gain','physical',     0.4);
+
+  _f(aCraft.id,  'action','output',   'happiness',     8);
+  _f(aCraft.id,  'action','output',   'familyRep',     3);
+  _f(aCraft.id,  'action','stat_gain','intelligence', 0.5);
+  _f(aCraft.id,  'action','discovers_tech', tStone.id, 0.4);
+
+  _f(aCook.id,   'action','output',   'health',       12);
+  _f(aCook.id,   'action','output',   'happiness',    15);
+  _f(aCook.id,   'action','stat_gain','intelligence', 0.2);
+
+  _f(aExplore.id,'action','output',   'food',          8);
+  _f(aExplore.id,'action','stat_gain','physical',     0.5);
+  _f(aExplore.id,'action','stat_gain','intelligence', 0.2);
+
+  _f(aNeg.id,    'action','output',   'familyRep',    18);
+  _f(aNeg.id,    'action','output',   'happiness',    12);
+  _f(aNeg.id,    'action','output',   'vigor',         3);
+
+  _f(aStories.id,'action','output',   'happiness',    20);
+  _f(aStories.id,'action','output',   'familyRep',    10);
+  _f(aStories.id,'action','output',   'saber',         2);
+
+  _f(aLeadH.id,  'action','output',   'food',         35);
+  _f(aLeadH.id,  'action','output',   'familyRep',    15);
+  _f(aLeadH.id,  'action','output',   'prestigi',      4);
+
+  saveDB();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GRAPH STATE
+// ═══════════════════════════════════════════════════════════════════════════
+
+let visTypes   = new Set(TYPES.map(t => t.id));
+let eraFilter  = null;
+let panX = 0, panY = 0, zoom = 1;
+
+function visEntities() {
+  return DB.entities.filter(e => {
+    if (!visTypes.has(e.type)) return false;
+    if (eraFilter) {
+      if (e.type === 'era' && e.id !== eraFilter) return false;
+      if (e.type === 'zone' && e.era_id !== eraFilter) return false;
+      if (e.type === 'action') {
+        const z = getById(e.zone_id);
+        if (z && z.era_id && z.era_id !== eraFilter) return false;
+      }
+    }
+    return true;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LAYOUT ENGINE  (level-based topological sort)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function computeLayout(entities) {
+  const eid  = new Set(entities.map(e => e.id));
+  const out  = {}; // id → [ids that depend on it]
+  const inc  = {}; // id → count of dependencies within visible set
+
+  entities.forEach(e => { out[e.id] = []; inc[e.id] = 0; });
+
+  // Explicit deps
+  DB.deps.forEach(d => {
+    if (!eid.has(d.owner_id) || !eid.has(d.req_id)) return;
+    out[d.req_id].push(d.owner_id);
+    inc[d.owner_id]++;
+  });
+
+  // Implicit structural deps (zone→era, action→zone)
+  entities.forEach(e => {
+    if (e.type === 'zone' && e.era_id && eid.has(e.era_id)) {
+      out[e.era_id].push(e.id); inc[e.id]++;
+    }
+    if (e.type === 'action' && e.zone_id && eid.has(e.zone_id)) {
+      out[e.zone_id].push(e.id); inc[e.id]++;
+    }
+  });
+
+  // Kahn BFS — compute level for each node
+  const level = {};
+  const inC   = { ...inc };
+  const queue = entities.filter(e => inC[e.id] === 0).map(e => e.id);
+  let lvl = 0;
+  let batch = [...queue];
+  while (batch.length) {
+    batch.forEach(id => { level[id] = Math.max(level[id] ?? 0, lvl); });
+    const next = [];
+    batch.forEach(id => (out[id]||[]).forEach(dep => {
+      level[dep] = Math.max(level[dep] ?? 0, lvl + 1);
+      if (--inC[dep] === 0) next.push(dep);
+    }));
+    batch = next; lvl++;
+  }
+  // Orphans → max level
+  entities.forEach(e => { if (level[e.id] === undefined) level[e.id] = lvl; });
+
+  // Group by level, sort within (era < zone < tech < skill < action < destresa < event < learning)
+  const TO = { era:0, zone:1, tech:2, skill:3, action:4, destresa:5, event:6, learning:7 };
+  const byLvl = {};
+  entities.forEach(e => { const l = level[e.id]; (byLvl[l]||(byLvl[l]=[])).push(e); });
+  Object.values(byLvl).forEach(arr => arr.sort((a,b) => (TO[a.type]??9)-(TO[b.type]??9)));
+
+  // Assign positions
+  const pos = {};
+  const lvls = Object.keys(byLvl).map(Number).sort((a,b)=>a-b);
+  lvls.forEach((l, li) => {
+    const nodes = byLvl[l];
+    const totalH = nodes.length * NH + Math.max(0, nodes.length-1) * VGAP;
+    nodes.forEach((e, i) => {
+      pos[e.id] = { x: li * (NW + HGAP) + 20, y: -totalH/2 + i*(NH+VGAP) + NH/2 };
+    });
+  });
+  return pos;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GRAPH RENDERER
+// ═══════════════════════════════════════════════════════════════════════════
+
+let pos = {};
+
+function renderGraph() {
+  const gc  = document.getElementById('gc');
+  const svg = document.getElementById('csvg');
+  gc.querySelectorAll('.gnode').forEach(n => n.remove());
+  svg.innerHTML = '';
+
+  const ents = visEntities();
+  document.getElementById('empty-state').classList.toggle('on', ents.length === 0);
+  if (!ents.length) return;
+
+  pos = computeLayout(ents);
+  const eid = new Set(ents.map(e => e.id));
+
+  // Canvas bounds
+  const xs = Object.values(pos).map(p=>p.x), ys = Object.values(pos).map(p=>p.y);
+  const minX = Math.min(...xs), minY = Math.min(...ys);
+  const maxX = Math.max(...xs) + NW, maxY = Math.max(...ys) + NH;
+  const offX = -minX + 100, offY = -minY + 120;
+  const cW = Math.max(maxX - minX + 200, window.innerWidth);
+  const cH = Math.max(maxY - minY + 240, window.innerHeight - 100);
+
+  gc.style.width  = cW + 'px';
+  gc.style.height = cH + 'px';
+  svg.setAttribute('width', cW);
+  svg.setAttribute('height', cH);
+
+  // Arrow marker
+  svg.innerHTML = `<defs><marker id="arr" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+    <polygon points="0 0,7 3.5,0 7" fill="rgba(140,100,50,0.45)"/></marker></defs>`;
+
+  // Connections
+  const drawn = new Set();
+  DB.deps.forEach(d => {
+    if (!eid.has(d.owner_id) || !eid.has(d.req_id)) return;
+    const key = d.req_id + '|' + d.owner_id;
+    if (drawn.has(key)) return; drawn.add(key);
+    const from = pos[d.req_id], to = pos[d.owner_id];
+    if (!from || !to) return;
+    const x1=from.x+offX+28, y1=from.y+offY, x2=to.x+offX-8, y2=to.y+offY;
+    const mx=(x1+x2)/2;
+    const cls = d.cond==='gate_tech' ? 'gate' : d.cond==='requires' ? 'hard' : '';
+    const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d', `M${x1} ${y1} C${mx} ${y1} ${mx} ${y2} ${x2} ${y2}`);
+    p.setAttribute('class', 'cline ' + cls);
+    p.setAttribute('marker-end', 'url(#arr)');
+    svg.appendChild(p);
+  });
+  // Implicit zone→era and action→zone connections
+  ents.forEach(e => {
+    let fromId = null, toId = e.id;
+    if (e.type==='zone'   && e.era_id  && eid.has(e.era_id))  fromId = e.era_id;
+    if (e.type==='action' && e.zone_id && eid.has(e.zone_id)) fromId = e.zone_id;
+    if (!fromId) return;
+    const key = fromId + '|' + toId;
+    if (drawn.has(key)) return; drawn.add(key);
+    const from = pos[fromId], to = pos[toId];
+    if (!from || !to) return;
+    const x1=from.x+offX+28, y1=from.y+offY, x2=to.x+offX-8, y2=to.y+offY;
+    const mx=(x1+x2)/2;
+    const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d', `M${x1} ${y1} C${mx} ${y1} ${mx} ${y2} ${x2} ${y2}`);
+    p.setAttribute('class', 'cline');
+    svg.appendChild(p);
+  });
+
+  // Nodes
+  ents.forEach(e => {
+    const p = pos[e.id]; if (!p) return;
+    const td  = TMAP[e.type];
+    const col = td.color;
+    const effs = getEff(e.id).slice(0,3);
+    const deps = getDeps(e.id).filter(d => eid.has(d.req_id) || d.req_type==='characteristic').slice(0,3);
+
+    const node = document.createElement('div');
+    node.className = 'gnode';
+    node.dataset.id = e.id;
+    node.style.left = (p.x + offX - NW/2) + 'px';
+    node.style.top  = (p.y + offY - NH/2) + 'px';
+    node.style.width = NW + 'px';
+    node.style.setProperty('--nc', col);
+
+    node.appendChild(makeReqBadges(deps));
+    const shape = makeShape(e, td);
+    node.appendChild(shape);
+    node.appendChild(makeEffBadges(effs));
+
+    const lbl = document.createElement('div');
+    lbl.className = 'nlabel'; lbl.textContent = e.name;
+
+    const nrow = document.createElement('div');
+    nrow.className = 'nrow';
+    nrow.appendChild(makeReqBadges(deps));
+    nrow.appendChild(shape);
+    nrow.appendChild(makeEffBadges(effs));
+    node.innerHTML = '';
+    node.appendChild(nrow);
+    node.appendChild(lbl);
+
+    node.addEventListener('click', ev => { ev.stopPropagation(); openDetail(e.id); });
+    gc.appendChild(node);
+  });
+}
+
+function makeShape(e, td) {
+  const wrap = document.createElement('div');
+  wrap.className = 'nshape sh-' + td.shape;
+  if (td.shape === 'diamond') {
+    const inner = document.createElement('div');
+    inner.className = 'ni';
+    inner.textContent = e.icon || td.icon;
+    wrap.appendChild(inner);
+  } else {
+    wrap.textContent = e.icon || td.icon;
+  }
+  return wrap;
+}
+
+function makeReqBadges(deps) {
+  const wrap = document.createElement('div');
+  wrap.className = 'nbadges';
+  deps.forEach(d => {
+    const b = document.createElement('div');
+    b.className = 'nbadge';
+    if (d.req_type === 'characteristic' || d.req_type === 'indicator') {
+      const f = FMAP[d.req_id];
+      b.textContent = (f ? f.icon : '?') + (d.value != null ? d.value : '');
+    } else {
+      const req = getById(d.req_id);
+      b.textContent = (req ? req.icon||TMAP[req.type]?.icon||'?' : '?');
+    }
+    wrap.appendChild(b);
+  });
+  return wrap;
+}
+
+function makeEffBadges(effs) {
+  const wrap = document.createElement('div');
+  wrap.className = 'nbadges';
+  effs.forEach(eff => {
+    const b = document.createElement('div');
+    b.className = 'nbadge';
+    const f = FMAP[eff.target_id];
+    const ent = f ? null : getById(eff.target_id);
+    const ico = f ? f.icon : (ent ? ent.icon || '?' : '?');
+    const val = eff.value !== 0 ? (eff.value > 0 ? '+':'') + eff.value : '';
+    b.textContent = ico + val;
+    wrap.appendChild(b);
+  });
+  return wrap;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PAN / ZOOM
+// ═══════════════════════════════════════════════════════════════════════════
+
+function applyXform() {
+  document.getElementById('gc').style.transform = `translate(${panX}px,${panY}px) scale(${zoom})`;
+}
+
+function initPanZoom() {
+  const vp = document.getElementById('gvp');
+  let isPan=false, sx=0, sy=0;
+  let pinchDist=0, pinchZoom=1;
+
+  vp.addEventListener('mousedown', e => {
+    if (e.target.closest('.gnode')) return;
+    isPan=true; sx=e.clientX-panX; sy=e.clientY-panY; vp.style.cursor='grabbing';
+  });
+  window.addEventListener('mousemove', e => {
+    if (!isPan) return; panX=e.clientX-sx; panY=e.clientY-sy; applyXform();
+  });
+  window.addEventListener('mouseup', () => { isPan=false; vp.style.cursor=''; });
+
+  vp.addEventListener('wheel', e => {
+    e.preventDefault();
+    const f = e.deltaY > 0 ? 0.88 : 1.14;
+    const r = vp.getBoundingClientRect();
+    const mx=e.clientX-r.left, my=e.clientY-r.top;
+    zoom = Math.max(0.25, Math.min(3.5, zoom*f));
+    panX = mx - (mx-panX)*f; panY = my - (my-panY)*f;
+    applyXform();
+  }, { passive:false });
+
+  let pts = [];
+  vp.addEventListener('touchstart', e => {
+    pts = [...e.touches];
+    if (pts.length===1 && !e.target.closest('.gnode')) {
+      sx=pts[0].clientX-panX; sy=pts[0].clientY-panY;
+    }
+    if (pts.length===2) {
+      pinchDist = Math.hypot(pts[0].clientX-pts[1].clientX, pts[0].clientY-pts[1].clientY);
+      pinchZoom = zoom;
+    }
+  }, { passive:true });
+
+  vp.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const t = [...e.touches];
+    if (t.length===1 && !e.target.closest('.gnode')) {
+      panX=t[0].clientX-sx; panY=t[0].clientY-sy;
+    } else if (t.length===2) {
+      const d = Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY);
+      const f = d / pinchDist;
+      zoom = Math.max(0.25, Math.min(3.5, pinchZoom*f));
+      const mx=(t[0].clientX+t[1].clientX)/2, my=(t[0].clientY+t[1].clientY)/2;
+      panX = mx-(mx-panX)*f; panY = my-(my-panY)*f;
+    }
+    applyXform();
+  }, { passive:false });
+}
+
+function centerGraph() {
+  const vp = document.getElementById('gvp');
+  panX = 40; panY = vp.clientHeight / 2 - 40;
+  applyXform();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DETAIL CARD
+// ═══════════════════════════════════════════════════════════════════════════
+
+let curDetailId = null;
+
+function openDetail(id) {
+  curDetailId = id;
+  const e = getById(id); if (!e) return;
+  const td = TMAP[e.type];
+  document.getElementById('dc-icon').textContent = e.icon || td.icon;
+  document.getElementById('dc-name').textContent = e.name;
+  const badge = document.getElementById('dc-badge');
+  badge.textContent = td.label; badge.style.color = td.color;
+  renderDetailBody(e);
+  document.getElementById('dcard').classList.add('on');
+}
+
+function closeDetail() {
+  document.getElementById('dcard').classList.remove('on');
+  curDetailId = null;
+}
+
+function renderDetailBody(e) {
+  const scroll = document.getElementById('dc-scroll');
+  scroll.innerHTML = '';
+
+  // — Propietats bàsiques —
+  const s1 = sec('Propietats');
+  s1.appendChild(field('Nom',      'text',    e.name        || '', 'name'));
+  s1.appendChild(field('Icona',    'text',    e.icon        || '', 'icon'));
+  s1.appendChild(field('Descripció','textarea',e.description|| '', 'description'));
+
+  if (e.type === 'era') {
+    s1.appendChild(field('Vida màx. base',          'number', e.life_base        ?? 30, 'life_base'));
+    s1.appendChild(field('Vida màx. màxim',         'number', e.life_max         ?? 50, 'life_max'));
+    s1.appendChild(field('Pèrdua salut per cicle',  'number', e.health_loss_cycle?? 2,  'health_loss_cycle'));
+    s1.appendChild(field('Cost alimentació/cicle',  'number', e.subsistence      ?? 5,  'subsistence'));
+  }
+  if (e.type === 'action') {
+    s1.appendChild(field('Stat clau',         'text',   e.stat_key    || '',   'stat_key'));
+    s1.appendChild(field('Risc salut',        'number', e.health_risk ?? 0,    'health_risk'));
+    s1.appendChild(field('Prob. èxit base',   'number', e.base_risk   ?? 1.0,  'base_risk'));
+  }
+  if (e.type === 'destresa') {
+    s1.appendChild(field('Prob. descoberta', 'number', e.disc_chance ?? 0.2, 'disc_chance'));
+  }
+  if (e.type === 'skill') {
+    s1.appendChild(field('Cost Vigor',    'number', e.cost_vigor    ?? 0, 'cost_vigor'));
+    s1.appendChild(field('Cost Saber',    'number', e.cost_saber    ?? 0, 'cost_saber'));
+    s1.appendChild(field('Cost Prestigi', 'number', e.cost_prestigi ?? 0, 'cost_prestigi'));
+  }
+  scroll.appendChild(s1);
+
+  // — Requisits —
+  const s2 = sec('Requisits (necessita...)');
+  const depChips = document.createElement('div'); depChips.className = 'chips';
+  getDeps(e.id).forEach(d => {
+    let lbl;
+    if (d.req_type === 'characteristic' || d.req_type === 'indicator' || d.req_type === 'game_resource') {
+      const f = FMAP[d.req_id]; lbl = `${f?f.icon:'?'} ${d.req_id}${d.value!=null?' ≥ '+d.value:''}`;
+    } else {
+      const req = getById(d.req_id); lbl = req ? `${req.icon||''} ${req.name}${d.value!=null?' ≥ '+d.value:''}` : d.req_id;
+    }
+    depChips.appendChild(chip(lbl, 'chip-req', () => {
+      if (confirm(`Eliminar requisit "${lbl}"?`)) { removeDep(d.id); openDetail(e.id); renderGraph(); }
+    }));
+  });
+  depChips.appendChild(addChip('+ Requisit', () => openPicker('Afegir requisit', e.id, 'dep')));
+  s2.appendChild(depChips); scroll.appendChild(s2);
+
+  // — Efectes —
+  const s3 = sec('Efectes (produeix...)');
+  const effChips = document.createElement('div'); effChips.className = 'chips';
+  getEff(e.id).forEach(eff => {
+    const f = FMAP[eff.target_id]; const ent = f ? null : getById(eff.target_id);
+    const ico = f ? f.icon : (ent ? ent.icon||'?' : '?');
+    const nm  = f ? f.name : (ent ? ent.name : eff.target_id);
+    const val = eff.value !== 0 ? ` ${eff.value>0?'+':''}${eff.value}` : '';
+    const lbl = `${ico} ${nm}${val}`;
+    effChips.appendChild(chip(lbl, 'chip-eff', () => {
+      if (confirm(`Eliminar efecte "${lbl}"?`)) { removeEffect(eff.id); openDetail(e.id); renderGraph(); }
+    }));
+  });
+  effChips.appendChild(addChip('+ Efecte', () => openPicker('Afegir efecte', e.id, 'effect')));
+  s3.appendChild(effChips); scroll.appendChild(s3);
+
+  // — Mecàniques (per eres) —
+  if (e.type === 'era') {
+    const s4 = sec('Mecàniques de l\'era');
+    DB.mechanics.filter(m => m.era_id === e.id).forEach(m => {
+      const row = document.createElement('div'); row.className = 'dfield';
+      const lbl2 = document.createElement('label'); lbl2.textContent = m.key;
+      const inp = document.createElement('input'); inp.type='number'; inp.value = m.value;
+      inp.dataset.mechId = m.id;
+      inp.style.maxWidth='120px';
+      row.appendChild(lbl2); row.appendChild(inp); s4.appendChild(row);
+
+      const rmBtn = document.createElement('button');
+      rmBtn.textContent='✕ Eliminar mecànica';
+      rmBtn.style.cssText='font-size:0.72rem;background:none;border:none;color:var(--dim);cursor:pointer;margin-left:0.4rem;';
+      rmBtn.onclick=()=>{ if(confirm(`Eliminar mecànica "${m.key}"?`)){removeMechanic(m.id);openDetail(e.id);} };
+      row.appendChild(rmBtn);
+    });
+    const addM = document.createElement('button');
+    addM.textContent = '+ Nova mecànica';
+    addM.style.cssText='margin-top:0.35rem;background:var(--bg4);border:1px dashed var(--bdr);color:var(--dim);border-radius:8px;padding:0.3rem 0.7rem;font-size:0.78rem;cursor:pointer;';
+    addM.onclick = () => {
+      const k = prompt('Nom de la mecànica (ex: action_slots):'); if (!k) return;
+      const v = parseFloat(prompt('Valor:') || '0');
+      addMechanic(e.id, k, v); openDetail(e.id);
+    };
+    s4.appendChild(addM); scroll.appendChild(s4);
+  }
+}
+
+// Save detail
+document.getElementById('btn-save-detail').addEventListener('click', () => {
+  if (!curDetailId) return;
+  const updates = {};
+  document.getElementById('dc-scroll').querySelectorAll('[data-field-key]').forEach(f => {
+    updates[f.dataset.fieldKey] = f.type==='number' ? parseFloat(f.value) : f.value;
+  });
+  document.getElementById('dc-scroll').querySelectorAll('[data-mech-id]').forEach(inp => {
+    updateMechanic(inp.dataset.mechId, parseFloat(inp.value));
+  });
+  updateEntity(curDetailId, updates);
+  // Update header
+  document.getElementById('dc-icon').textContent = updates.icon || getById(curDetailId)?.icon || '';
+  document.getElementById('dc-name').textContent = updates.name || getById(curDetailId)?.name || '';
+  showToast('Guardat ✓'); renderGraph();
+});
+
+document.getElementById('btn-dcard-close').addEventListener('click', closeDetail);
+document.getElementById('gvp').addEventListener('click', e => {
+  if (!e.target.closest('.gnode') && !e.target.closest('#dcard')) closeDetail();
+});
+
+// Helpers
+function sec(title) {
+  const s=document.createElement('div'); s.className='dsec';
+  const h=document.createElement('div'); h.className='dsec-title'; h.textContent=title;
+  s.appendChild(h); return s;
+}
+function field(label, type, value, key) {
+  const w=document.createElement('div'); w.className='dfield';
+  const l=document.createElement('label'); l.textContent=label; w.appendChild(l);
+  const i=document.createElement(type==='textarea'?'textarea':'input');
+  if(type!=='textarea') i.type=type; i.value=value; i.dataset.fieldKey=key;
+  w.appendChild(i); return w;
+}
+function chip(label, cls, onRemove) {
+  const c=document.createElement('div'); c.className=`chip ${cls}`; c.textContent=label;
+  if (onRemove) {
+    const r=document.createElement('span'); r.className='chip-rm'; r.textContent=' ✕';
+    r.onclick=e=>{e.stopPropagation();onRemove();}; c.appendChild(r);
+  }
+  return c;
+}
+function addChip(label, onClick) {
+  const c=document.createElement('div'); c.className='chip chip-add';
+  c.textContent=label; c.onclick=onClick; return c;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PICKER DIALOG
+// ═══════════════════════════════════════════════════════════════════════════
+
+let _pickCb = null;
+let _pickMode = null;
+let _pickOwnerId = null;
+
+function openPicker(title, ownerId, mode) {
+  _pickOwnerId = ownerId; _pickMode = mode;
+  document.getElementById('picker-hdr').textContent = title;
+  document.getElementById('picker-search').value = '';
+  _renderPickerList('');
+  document.getElementById('picker').classList.add('on');
+  setTimeout(() => document.getElementById('picker-search').focus(), 150);
+}
+
+document.getElementById('picker-search').addEventListener('input', e => _renderPickerList(e.target.value));
+document.getElementById('picker').addEventListener('click', e => {
+  if (e.target === document.getElementById('picker')) document.getElementById('picker').classList.remove('on');
+});
+
+function _renderPickerList(filter) {
+  const list = document.getElementById('picker-list');
+  list.innerHTML = '';
+  let items;
+  if (_pickMode === 'dep') {
+    const entityItems = DB.entities
+      .filter(e => e.id !== _pickOwnerId)
+      .map(e => ({ id:e.id, icon:e.icon||TMAP[e.type]?.icon||'?', name:e.name, sub:TMAP[e.type]?.label||e.type, isEntity:true }));
+    const fixedItems = FIXED.map(f => ({ id:f.id, icon:f.icon, name:f.name, sub:f.group, isFixed:true }));
+    items = [...entityItems, ...fixedItems];
+  } else {
+    const entityItems = DB.entities
+      .filter(e => e.id !== _pickOwnerId)
+      .map(e => ({ id:e.id, icon:e.icon||TMAP[e.type]?.icon||'?', name:e.name, sub:TMAP[e.type]?.label||e.type, isEntity:true }));
+    items = [...FIXED.map(f=>({id:f.id,icon:f.icon,name:f.name,sub:f.group,isFixed:true})), ...entityItems];
+  }
+  const q = filter.toLowerCase();
+  items.filter(i => !q || i.name.toLowerCase().includes(q) || i.sub.toLowerCase().includes(q)).forEach(item => {
+    const row = document.createElement('div'); row.className = 'pitem';
+    row.innerHTML = `<span class="pitem-ico">${item.icon}</span>
+      <div style="flex:1"><div class="pitem-name">${item.name}</div><div class="pitem-sub">${item.sub}</div></div>`;
+    row.addEventListener('click', () => {
+      document.getElementById('picker').classList.remove('on');
+      if (_pickMode === 'dep') {
+        const needsValue = item.isFixed && ['characteristic','indicator','stat'].includes(item.sub);
+        let val = null;
+        if (needsValue) { val = prompt(`Valor mínim per a ${item.name} (o deixa buit):`); }
+        const reqType = item.isFixed ? item.sub : getById(item.id)?.type || 'entity';
+        const cond = item.isFixed ? 'min_stat' : (item.sub === 'Tecnologies' ? 'requires' : item.sub === 'Habilitats' ? 'requires_skill' : item.sub === 'Eres' ? 'gate_tech' : 'requires');
+        addDep(_pickOwnerId, getById(_pickOwnerId)?.type || 'unknown', item.id, reqType, cond, val ? parseFloat(val) : null);
+      } else {
+        const v = parseFloat(prompt(`Valor per a ${item.name} (ex: 15, 0.3, -5):`)||'0');
+        const effectType = item.isFixed ? 'output' : 'discovers';
+        addEffect(_pickOwnerId, getById(_pickOwnerId)?.type||'unknown', effectType, item.id, v);
+      }
+      openDetail(_pickOwnerId); renderGraph();
+    });
+    list.appendChild(row);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TYPE FILTER BAR
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderFbar() {
+  const bar = document.getElementById('fbar'); bar.innerHTML = '';
+  TYPES.forEach(t => {
+    const c = document.createElement('div');
+    c.className = 'tychip ' + (visTypes.has(t.id) ? 'on' : 'off');
+    c.style.color = t.color;
+    c.textContent = `${t.icon} ${t.label}`;
+    c.addEventListener('click', () => {
+      visTypes.has(t.id) ? visTypes.delete(t.id) : visTypes.add(t.id);
+      renderFbar(); renderGraph();
+    });
+    bar.appendChild(c);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ERA FILTER
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderEraSelect() {
+  const sel = document.getElementById('era-select');
+  sel.innerHTML = '<option value="">Totes les eres</option>';
+  getAll('era').forEach(e => {
+    const o = document.createElement('option');
+    o.value = e.id; o.textContent = `${e.icon||''} ${e.name}`;
+    sel.appendChild(o);
+  });
+  sel.value = eraFilter || '';
+}
+document.getElementById('era-select').addEventListener('change', e => {
+  eraFilter = e.target.value || null; renderGraph();
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SIDE MENU
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderMenu() {
+  const ct = document.getElementById('smenu-types'); ct.innerHTML = '';
+  TYPES.forEach(t => {
+    const cnt = getAll(t.id).length;
+    const row = document.createElement('div'); row.className = 'mtype-row';
+    row.innerHTML = `<div class="mtype-dot" style="background:${t.color}"></div>
+      <span>${t.icon} ${t.label}</span><span class="mtype-ct">${cnt}</span>`;
+    row.addEventListener('click', () => openEntityList(t.id));
+    ct.appendChild(row);
+  });
+  document.getElementById('smenu-stats').innerHTML =
+    `${DB.entities.length} entitats<br>${DB.deps.length} relacions · ${DB.effects.length} efectes`;
+}
+function openMenu()  { renderMenu(); document.getElementById('smenu').classList.add('on'); document.getElementById('backdrop').classList.add('on'); }
+function closeMenu() { document.getElementById('smenu').classList.remove('on'); document.getElementById('backdrop').classList.remove('on'); }
+document.getElementById('btn-menu-open').addEventListener('click', openMenu);
+document.getElementById('btn-menu-close').addEventListener('click', closeMenu);
+document.getElementById('backdrop').addEventListener('click', closeMenu);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ENTITY LIST PANEL
+// ═══════════════════════════════════════════════════════════════════════════
+
+let curListType = null;
+
+function openEntityList(typeId) {
+  curListType = typeId;
+  const td = TMAP[typeId];
+  document.getElementById('el-title').textContent = `${td.icon} ${td.label}`;
+  renderEntityList();
+  document.getElementById('elpanel').classList.add('on');
+  closeMenu();
+}
+
+function renderEntityList() {
+  const list = document.getElementById('el-list'); list.innerHTML = '';
+  const ents = getAll(curListType);
+  if (!ents.length) {
+    list.innerHTML = '<p style="padding:1.5rem;text-align:center;color:var(--dim);font-size:0.83rem">Cap entitat. Crea-ne una amb "+ Nova".</p>';
+    return;
+  }
+  ents.forEach(e => {
+    const row = document.createElement('div'); row.className = 'eli';
+    const dct = getDeps(e.id).length, ect = getEff(e.id).length;
+    row.innerHTML = `<span class="eli-ico">${e.icon||TMAP[e.type].icon}</span>
+      <div style="flex:1">
+        <div class="eli-name">${e.name}</div>
+        <div class="eli-sub">${dct} requisits · ${ect} efectes</div>
+      </div>
+      <button class="eli-del" data-del="${e.id}">🗑</button>`;
+    row.querySelector('[data-del]').addEventListener('click', ev => {
+      ev.stopPropagation();
+      if (confirm(`Eliminar "${e.name}" i totes les seves relacions?`)) {
+        deleteEntity(e.id); renderEntityList(); renderGraph(); renderEraSelect(); renderMenu();
+      }
+    });
+    row.addEventListener('click', ev => {
+      if (ev.target.closest('[data-del]')) return;
+      document.getElementById('elpanel').classList.remove('on');
+      openDetail(e.id);
+    });
+    list.appendChild(row);
+  });
+}
+
+document.getElementById('btn-el-back').addEventListener('click', () =>
+  document.getElementById('elpanel').classList.remove('on'));
+
+document.getElementById('btn-add-e').addEventListener('click', () => {
+  const td = TMAP[curListType];
+  const name = prompt(`Nom de la nova ${td.label.toLowerCase().slice(0,-1)}:`);
+  if (!name) return;
+  const icon = prompt('Icona (emoji):') || td.icon;
+  const e = addEntity(curListType, { name, icon, description:'' });
+  renderEntityList(); renderGraph(); renderEraSelect(); renderMenu();
+  document.getElementById('elpanel').classList.remove('on');
+  openDetail(e.id);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// IMPORT / EXPORT
+// ═══════════════════════════════════════════════════════════════════════════
+
+document.getElementById('btn-io').addEventListener('click', () => {
+  document.getElementById('io-ta').value = JSON.stringify(DB, null, 2);
+  document.getElementById('iopanel').classList.add('on');
+});
+document.getElementById('btn-io-close').addEventListener('click', () =>
+  document.getElementById('iopanel').classList.remove('on'));
+
+document.getElementById('btn-export').addEventListener('click', () => {
+  const json = JSON.stringify(DB, null, 2);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([json],{type:'application/json'}));
+  a.download = `lt-gamedata-${new Date().toISOString().slice(0,10)}.json`;
+  a.click(); showToast('JSON exportat ✓');
+});
+
+document.getElementById('btn-import').addEventListener('click', () => {
+  const raw = document.getElementById('io-ta').value.trim();
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed.entities)||!Array.isArray(parsed.deps)||!Array.isArray(parsed.effects))
+      throw new Error('Format incorrecte (falten camps entities/deps/effects)');
+    DB = parsed;
+    if (!DB.mechanics) DB.mechanics = [];
+    const allIds=[...DB.entities,...DB.deps,...DB.effects,...DB.mechanics].map(x=>parseInt((x.id||'e0').slice(1))||0);
+    _nid = Math.max(0,...allIds)+1;
+    saveDB();
+    document.getElementById('iopanel').classList.remove('on');
+    renderAll(); showToast('Importat ✓');
+  } catch(err) { alert('Error: ' + err.message); }
+});
+
+// Reset
+document.getElementById('btn-reset').addEventListener('click', () => {
+  if (confirm('Reiniciar totes les dades? Es perdran els canvis no exportats.')) {
+    seedDB(); renderAll(); showToast('Dades reiniciades ✓');
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════════════════════
+
+let _toastT = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(_toastT); _toastT = setTimeout(() => t.classList.remove('on'), 2200);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderAll() {
+  renderEraSelect(); renderFbar(); renderGraph();
+}
+
+if (!loadDB()) seedDB();
+initPanZoom();
+renderAll();
+setTimeout(centerGraph, 80);
+</script>
+</body>
+</html>
