@@ -881,54 +881,80 @@ function applyXform() {
 
 function initPanZoom() {
   const vp = document.getElementById('gvp');
-  let isPan=false, sx=0, sy=0;
-  let pinchDist=0, pinchZoom=1;
+  let isPan = false, sx = 0, sy = 0;
+  let rafPending = false;
 
+  function scheduleApply() {
+    if (rafPending) return;
+    rafPending = true;
+    requestAnimationFrame(() => { applyXform(); rafPending = false; });
+  }
+
+  // ── Mouse pan ──
   vp.addEventListener('mousedown', e => {
-    if (e.target.closest('.gnode')) return;
-    isPan=true; sx=e.clientX-panX; sy=e.clientY-panY; vp.style.cursor='grabbing';
+    if (e.button !== 0 || e.target.closest('.gnode,.dcard,#iopanel,#elpanel,#dcard')) return;
+    isPan = true; sx = e.clientX - panX; sy = e.clientY - panY;
+    vp.style.cursor = 'grabbing';
   });
   window.addEventListener('mousemove', e => {
-    if (!isPan) return; panX=e.clientX-sx; panY=e.clientY-sy; applyXform();
+    if (!isPan) return;
+    panX = e.clientX - sx; panY = e.clientY - sy; scheduleApply();
   });
-  window.addEventListener('mouseup', () => { isPan=false; vp.style.cursor=''; });
+  window.addEventListener('mouseup', () => { isPan = false; vp.style.cursor = ''; });
 
+  // ── Wheel zoom — suau per trackpad i ratolí ──
   vp.addEventListener('wheel', e => {
     e.preventDefault();
-    const f = e.deltaY > 0 ? 0.88 : 1.14;
+    let delta = e.deltaY;
+    if (e.deltaMode === 1) delta *= 20;   // DOM_DELTA_LINE
+    if (e.deltaMode === 2) delta *= 400;  // DOM_DELTA_PAGE
+    // Clamp per evitar salts massa grans en un sol event (ratolí amb inèrcia)
+    delta = Math.max(-150, Math.min(150, delta));
+    const f = Math.pow(0.998, delta);
+    const newZoom = Math.max(0.15, Math.min(5, zoom * f));
+    const scale = newZoom / zoom;
     const r = vp.getBoundingClientRect();
-    const mx=e.clientX-r.left, my=e.clientY-r.top;
-    zoom = Math.max(0.25, Math.min(3.5, zoom*f));
-    panX = mx - (mx-panX)*f; panY = my - (my-panY)*f;
-    applyXform();
-  }, { passive:false });
+    const mx = e.clientX - r.left, my = e.clientY - r.top;
+    panX = mx - (mx - panX) * scale;
+    panY = my - (my - panY) * scale;
+    zoom = newZoom;
+    scheduleApply();
+  }, { passive: false });
 
+  // ── Touch pan + pinch ──
   let pts = [];
+  let pinchDist0 = 1, pinchZoom0 = 1, pinchMx = 0, pinchMy = 0, panX0 = 0, panY0 = 0;
+
   vp.addEventListener('touchstart', e => {
     pts = [...e.touches];
-    if (pts.length===1 && !e.target.closest('.gnode')) {
-      sx=pts[0].clientX-panX; sy=pts[0].clientY-panY;
+    if (pts.length === 1) {
+      sx = pts[0].clientX - panX; sy = pts[0].clientY - panY;
     }
-    if (pts.length===2) {
-      pinchDist = Math.hypot(pts[0].clientX-pts[1].clientX, pts[0].clientY-pts[1].clientY);
-      pinchZoom = zoom;
+    if (pts.length === 2) {
+      pinchDist0 = Math.hypot(pts[0].clientX - pts[1].clientX, pts[0].clientY - pts[1].clientY) || 1;
+      pinchZoom0 = zoom;
+      pinchMx = (pts[0].clientX + pts[1].clientX) / 2;
+      pinchMy = (pts[0].clientY + pts[1].clientY) / 2;
+      panX0 = panX; panY0 = panY;
     }
-  }, { passive:true });
+  }, { passive: true });
 
   vp.addEventListener('touchmove', e => {
     e.preventDefault();
     const t = [...e.touches];
-    if (t.length===1 && !e.target.closest('.gnode')) {
-      panX=t[0].clientX-sx; panY=t[0].clientY-sy;
-    } else if (t.length===2) {
-      const d = Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY);
-      const f = d / pinchDist;
-      zoom = Math.max(0.25, Math.min(3.5, pinchZoom*f));
-      const mx=(t[0].clientX+t[1].clientX)/2, my=(t[0].clientY+t[1].clientY)/2;
-      panX = mx-(mx-panX)*f; panY = my-(my-panY)*f;
+    if (t.length === 1 && !e.target.closest('.gnode')) {
+      panX = t[0].clientX - sx; panY = t[0].clientY - sy;
+    } else if (t.length === 2) {
+      const d = Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+      const scale = d / pinchDist0;
+      const newZoom = Math.max(0.15, Math.min(5, pinchZoom0 * scale));
+      const actualScale = newZoom / pinchZoom0;
+      panX = pinchMx - (pinchMx - panX0) * actualScale;
+      panY = pinchMy - (pinchMy - panY0) * actualScale;
+      zoom = newZoom;
     }
-    applyXform();
-  }, { passive:false });
+    scheduleApply();
+  }, { passive: false });
 }
 
 function centerGraph() {
