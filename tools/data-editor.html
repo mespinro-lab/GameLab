@@ -976,6 +976,9 @@ function renderDetailBody(e) {
     s1.appendChild(field('Pèrdua salut per cicle',  'number', e.health_loss_cycle?? 2,  'health_loss_cycle'));
     s1.appendChild(field('Cost alimentació/cicle',  'number', e.subsistence      ?? 5,  'subsistence'));
   }
+  if (e.type === 'tech') {
+    s1.appendChild(field('Cicle d\'aparició', 'number', e.cycle_appears ?? '', 'cycle_appears'));
+  }
   if (e.type === 'action') {
     s1.appendChild(field('Stat clau',         'text',   e.stat_key    || '',   'stat_key'));
     s1.appendChild(field('Risc salut',        'number', e.health_risk ?? 0,    'health_risk'));
@@ -1058,7 +1061,7 @@ document.getElementById('btn-save-detail').addEventListener('click', () => {
   if (!curDetailId) return;
   const updates = {};
   document.getElementById('dc-scroll').querySelectorAll('[data-field-key]').forEach(f => {
-    updates[f.dataset.fieldKey] = f.type==='number' ? parseFloat(f.value) : f.value;
+    updates[f.dataset.fieldKey] = f.type==='number' ? (f.value==='' ? null : parseFloat(f.value)) : f.value;
   });
   document.getElementById('dc-scroll').querySelectorAll('[data-mech-id]').forEach(inp => {
     updateMechanic(inp.dataset.mechId, parseFloat(inp.value));
