@@ -18,26 +18,15 @@
     <!-- TOP PANEL: Character dashboard (2/6 screen) -->
     <div id="panel-top">
       <div id="panel-top-bar">
-        <button id="btn-lineage-toggle">⚔ <span id="hdr-gen-badge"></span></button>
-        <div id="panel-top-resources">
-          <span class="top-res"><span class="top-res-icon">🍖</span><span id="top-food">—</span></span>
-          <span class="top-res"><span class="top-res-icon">❤️</span><span id="top-health">—</span></span>
-          <span class="top-res"><span class="top-res-icon">😊</span><span id="top-happiness">—</span></span>
+        <div id="panel-top-tokens">
+          <span class="shop-token" id="tok-vigor">💪 <span class="shop-token-val" id="tok-vigor-val">0</span></span>
+          <span class="shop-token" id="tok-saber">🧠 <span class="shop-token-val" id="tok-saber-val">0</span></span>
+          <span class="shop-token" id="tok-prestigi">👑 <span class="shop-token-val" id="tok-prestigi-val">0</span></span>
         </div>
-        <span id="hdr-gen" class="hdr-cycle-badge">C1</span>
         <button id="btn-open-menu">☰</button>
-      </div>
-      <div id="shop-token-bar">
-        <span class="shop-token" id="tok-vigor">💪 <span class="shop-token-val" id="tok-vigor-val">0</span></span>
-        <span class="shop-token" id="tok-saber">🧠 <span class="shop-token-val" id="tok-saber-val">0</span></span>
-        <span class="shop-token" id="tok-prestigi">👑 <span class="shop-token-val" id="tok-prestigi-val">0</span></span>
       </div>
       <div id="char-dashboard">
         <div id="char-section">
-          <div id="char-section-top">
-            <span id="char-name-inlay">—</span>
-            <span id="char-gen-inlay" class="char-gen-badge">—</span>
-          </div>
           <div id="char-tricolumn">
             <div id="char-col-left">
               <div class="col-stat"><img class="col-icon" src="../../design/life-tycoon/icons/ICON-SALUT.svg" alt=""><span id="hex-health">—</span></div>
@@ -46,6 +35,7 @@
             </div>
             <div id="char-bust-wrap">
               <img id="char-bust-img" src="../../design/life-tycoon/characters/PRE-MED-M.png" alt="">
+              <span id="char-name-inlay">—</span>
             </div>
             <div id="char-col-right">
               <div class="col-stat"><img class="col-icon" src="../../design/life-tycoon/icons/ICON-FORCA.svg" alt=""><span id="hex-physical">—</span></div>
@@ -221,6 +211,12 @@
       <button id="btn-milestones">🏅</button>
       <button id="btn-tech">📜</button>
       <button id="btn-save">💾</button>
+      <span id="top-food"></span>
+      <span id="top-health"></span>
+      <span id="top-happiness"></span>
+      <span id="hdr-gen"></span>
+      <span id="hdr-gen-badge"></span>
+      <span id="char-gen-inlay"></span>
       <!-- Select pane for JS compatibility -->
       <div id="pane-select">
         <p id="select-header"></p>

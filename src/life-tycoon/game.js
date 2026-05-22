@@ -1331,12 +1331,14 @@ function renderZoneNodes() {
     node.addEventListener('touchend', (e) => {
       e.preventDefault();
       node.classList.remove('zone-node-pressed');
+      if (document.querySelector('.overlay:not(.hidden), #overlay-zone-actions:not(.hidden), #overlay-action:not(.hidden)')) return;
       openZoneSheet(zone.id);
     });
     node.addEventListener('touchcancel', () => node.classList.remove('zone-node-pressed'));
     node.addEventListener('mousedown', () => node.classList.add('zone-node-pressed'));
     node.addEventListener('mouseup', () => {
       node.classList.remove('zone-node-pressed');
+      if (document.querySelector('.overlay:not(.hidden), #overlay-zone-actions:not(.hidden), #overlay-action:not(.hidden)')) return;
       openZoneSheet(zone.id);
     });
     node.addEventListener('mouseleave', () => node.classList.remove('zone-node-pressed'));
@@ -1494,17 +1496,7 @@ function renderCycleForecast() {
 function renderHeader() {
   el('char-name-inlay').textContent = S.char.name;
   el('char-age-inlay').textContent  = `${S.char.age} anys`;
-  el('char-gen-inlay').textContent  = `Gen. ${S.generation}`;
-  el('hdr-gen-badge').textContent   = `G${S.generation}`;
-  el('hdr-gen').textContent         = `C${S.cycle}`;
   el('hdr-ec').textContent          = S.eraCycle + 1;
-  // top-bar compact resources
-  const food = S.resources.food.value;
-  const hp   = S.resources.health.value;
-  const hap  = S.resources.happiness.value;
-  el('top-food').textContent     = Math.round(food);
-  el('top-health').textContent   = Math.round(hp);
-  el('top-happiness').textContent = Math.round(hap);
   const ptInfo = el('panel-turn-info');
   if (ptInfo) ptInfo.textContent = `Cicle ${S.gameCycle} · ${currentEra().name}`;
   renderShopTokens();
@@ -1538,10 +1530,6 @@ function renderStats() {
   el('hex-intelligence').textContent = S.char.intelligence.toFixed(1);
   el('hex-social').textContent       = S.char.social.toFixed(1);
   el('panel-food-val').textContent   = Math.round(food);
-  // top-bar compact resources
-  el('top-food').textContent      = Math.round(food);
-  el('top-health').textContent    = Math.round(hp);
-  el('top-happiness').textContent = Math.round(S.resources.happiness.value);
   const pffc = el('panel-food-fc');
   if (pffc) { const fc = el('fc-food'); pffc.textContent = fc ? fc.textContent : ''; }
 }
@@ -2184,9 +2172,6 @@ function renderStatsAnimated(oldSnap) {
     el('hex-intelligence').textContent   = lerp(oldSnap.intelligence, cur.intelligence).toFixed(1);
     el('hex-social').textContent         = lerp(oldSnap.social, cur.social).toFixed(1);
     el('panel-food-val').textContent     = Math.round(lerp(oldSnap.food, cur.food));
-    el('top-food').textContent           = Math.round(lerp(oldSnap.food, cur.food));
-    el('top-health').textContent         = Math.round(lerp(oldSnap.health, cur.health));
-    el('top-happiness').textContent      = Math.round(lerp(oldSnap.happiness, cur.happiness));
     if (t < 1) requestAnimationFrame(tick);
     else renderStats();
   }
