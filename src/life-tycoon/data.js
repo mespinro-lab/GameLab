@@ -2393,7 +2393,7 @@ const GAME_DATA = {
         scorePerGeneration: 900,
         scorePerRep:        10,
         scorePerKnowledge:  180,
-        statGainCaps: { physical: 0.8, intelligence: 3.0, social: 3.0 },
+        statGainCaps: { physical: 1.2, intelligence: 3.0, social: 3.0 },
         preserveDecay: 4,
         maxFoodPreserve: 90,
       },

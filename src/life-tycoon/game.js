@@ -845,6 +845,11 @@ function endCycle() {
   // Family reputation bonus for 2+ children
   if (S.char.children.length >= 2) S.resources.familyReputation.value = clamp(S.resources.familyReputation.value + M.familyRepBonus, 0, 100);
 
+  // Reputation decay above 75 — prevents reputation from becoming a dead stat
+  if (S.resources.familyReputation.value > 75) {
+    S.resources.familyReputation.value = Math.max(75, S.resources.familyReputation.value - 2);
+  }
+
   checkMilestones();
 
   if (S.resources.health.value <= 0 || S.cycle >= S.maxCycles) {
@@ -1137,7 +1142,6 @@ function transitionEra(newEraId) {
   S.eraCycle = 0;
   S.pendingEraTransition = null;
   S.discoveredZoneIds = [];
-  S.unlockedSkillIds = [];
   checkSkillUnlock();
   checkZoneDiscoveries();
 }
@@ -1158,7 +1162,9 @@ function calcScore() {
   const era = currentEra() || GAME_DATA.eras[GAME_DATA.eras.length - 1];
   const M = era.mechanics;
   let score = 0;
-  score += S.generation * M.scorePerGeneration;
+  const eraIdx  = GAME_DATA.eras.findIndex(e => e.id === S.currentEraId);
+  const eraMult = 1 + Math.max(0, eraIdx) * 0.5;
+  score += S.generation * M.scorePerGeneration * eraMult;
   score += S.resources.familyReputation.value * M.scorePerRep;
   score += S.char.knowledgeIds.length * M.scorePerKnowledge;
   for (const mId of S.milestones) {
@@ -1172,11 +1178,11 @@ function calcScore() {
 function dynastyTitle() {
   const m = S.milestones;
   for (const t of GAME_DATA.dynastyTitles) {
-    if (t.default) return t.label;
+    if (t.default) continue;
     if (t.minMilestones && m.length >= t.minMilestones) return t.label;
     if (t.requires && t.requires.every(id => m.includes(id))) return t.label;
   }
-  return '';
+  return GAME_DATA.dynastyTitles.find(t => t.default)?.label ?? '';
 }
 
 function renderStatChips() {
@@ -1878,6 +1884,13 @@ function updateCarouselInfo() {
   ];
   if (proj.healthRisk > 0) parts.push('⚠️');
   if (proj.discoversSkill) parts.push('✨ Habilitat');
+  const rawProj = actions[idx];
+  const mLvl  = getMasteryLevel(rawProj.id);
+  const mUses = getMasteryUses(rawProj.id);
+  if (mLvl < 3 && mUses > 0) {
+    const nextT = MASTERY_THRESHOLDS[mLvl];
+    parts.push(`⭐${mUses}/${nextT}`);
+  }
   el('zc-name').textContent     = proj.name;
   el('zc-benefits').textContent = parts.join('  ');
   el('zc-desc').textContent     = blocked ? `🔒 ${blocked}` : noTime ? '⏰ Sense temps aquest torn' : (proj.description || '');
