@@ -433,7 +433,7 @@ const FIXED = [
 const FMAP = Object.fromEntries(FIXED.map(f => [f.id, f]));
 
 // Node geometry
-const NW = 130, NH = 94, HGAP = 90, VGAP = 18;
+const NW = 130, NH = 94, HGAP = 36, VGAP = 80;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // DATA MODEL  (normalized — scalable to a real DB)
@@ -722,9 +722,9 @@ function computeLayout(entities) {
   const lvls = Object.keys(byLvl).map(Number).sort((a,b)=>a-b);
   lvls.forEach((l, li) => {
     const nodes = byLvl[l];
-    const totalH = nodes.length * NH + Math.max(0, nodes.length-1) * VGAP;
+    const totalW = nodes.length * NW + Math.max(0, nodes.length-1) * HGAP;
     nodes.forEach((e, i) => {
-      pos[e.id] = { x: li * (NW + HGAP) + 20, y: -totalH/2 + i*(NH+VGAP) + NH/2 };
+      pos[e.id] = { x: -totalW/2 + i*(NW+HGAP) + NW/2, y: li * (NH + VGAP) };
     });
   });
   return pos;
@@ -753,9 +753,9 @@ function renderGraph() {
   const xs = Object.values(pos).map(p=>p.x), ys = Object.values(pos).map(p=>p.y);
   const minX = Math.min(...xs), minY = Math.min(...ys);
   const maxX = Math.max(...xs) + NW, maxY = Math.max(...ys) + NH;
-  const offX = -minX + 100, offY = -minY + 120;
-  const cW = Math.max(maxX - minX + 200, window.innerWidth);
-  const cH = Math.max(maxY - minY + 240, window.innerHeight - 100);
+  const offX = -minX + 160, offY = -minY + 80;
+  const cW = Math.max(maxX - minX + 320, window.innerWidth);
+  const cH = Math.max(maxY - minY + 200, window.innerHeight - 100);
 
   gc.style.width  = cW + 'px';
   gc.style.height = cH + 'px';
@@ -763,8 +763,8 @@ function renderGraph() {
   svg.setAttribute('height', cH);
 
   // Arrow marker
-  svg.innerHTML = `<defs><marker id="arr" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
-    <polygon points="0 0,7 3.5,0 7" fill="rgba(140,100,50,0.45)"/></marker></defs>`;
+  svg.innerHTML = `<defs><marker id="arr" markerWidth="7" markerHeight="7" refX="3.5" refY="0" orient="auto">
+    <polygon points="0 7,3.5 0,7 7" fill="rgba(140,100,50,0.45)"/></marker></defs>`;
 
   let hiSet = null;
   if (focusedNodeId && pos[focusedNodeId]) {
@@ -791,12 +791,12 @@ function renderGraph() {
     if (drawn.has(key)) return; drawn.add(key);
     const from = pos[d.req_id], to = pos[d.owner_id];
     if (!from || !to) return;
-    const x1=from.x+offX+28, y1=from.y+offY, x2=to.x+offX-8, y2=to.y+offY;
-    const mx=(x1+x2)/2;
+    const x1=from.x+offX, y1=from.y+offY+30, x2=to.x+offX, y2=to.y+offY-30;
+    const my=(y1+y2)/2;
     const baseCls = d.cond==='gate_tech' ? 'gate' : d.cond==='requires' ? 'hard' : '';
     const hiCls = hiSet ? (hiSet.has(d.req_id) && hiSet.has(d.owner_id) ? ' hi' : ' dim') : '';
     const p = document.createElementNS('http://www.w3.org/2000/svg','path');
-    p.setAttribute('d', `M${x1} ${y1} C${mx} ${y1} ${mx} ${y2} ${x2} ${y2}`);
+    p.setAttribute('d', `M${x1} ${y1} C${x1} ${my} ${x2} ${my} ${x2} ${y2}`);
     p.setAttribute('class', 'cline ' + baseCls + hiCls);
     p.setAttribute('marker-end', 'url(#arr)');
     svg.appendChild(p);
@@ -811,11 +811,11 @@ function renderGraph() {
     if (drawn.has(key)) return; drawn.add(key);
     const from = pos[fromId], to = pos[toId];
     if (!from || !to) return;
-    const x1=from.x+offX+28, y1=from.y+offY, x2=to.x+offX-8, y2=to.y+offY;
-    const mx=(x1+x2)/2;
+    const x1=from.x+offX, y1=from.y+offY+30, x2=to.x+offX, y2=to.y+offY-30;
+    const my=(y1+y2)/2;
     const hiCls = hiSet ? (hiSet.has(fromId) && hiSet.has(toId) ? ' hi' : ' dim') : '';
     const p = document.createElementNS('http://www.w3.org/2000/svg','path');
-    p.setAttribute('d', `M${x1} ${y1} C${mx} ${y1} ${mx} ${y2} ${x2} ${y2}`);
+    p.setAttribute('d', `M${x1} ${y1} C${x1} ${my} ${x2} ${my} ${x2} ${y2}`);
     p.setAttribute('class', 'cline' + hiCls);
     svg.appendChild(p);
   });
@@ -1019,7 +1019,7 @@ function initPanZoom() {
 
 function centerGraph() {
   const vp = document.getElementById('gvp');
-  panX = 40; panY = vp.clientHeight / 2 - 40;
+  panX = vp.clientWidth / 2; panY = 40;
   applyXform();
 }
 
