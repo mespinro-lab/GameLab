@@ -290,6 +290,20 @@ html,body { height:100%; overflow:hidden; background:var(--bg); color:var(--text
 }
 #empty-state.on { display:flex; }
 #empty-state p { color:var(--dim); font-size:0.85rem; }
+
+/* ── Picker categories ── */
+.pcat { display:flex; align-items:center; gap:0.5rem; padding:0.65rem 0.9rem;
+  border-radius:10px; cursor:pointer; font-size:0.82rem; font-weight:600;
+  border:1.5px solid var(--bdr); background:var(--bg3); transition:background 0.12s; }
+.pcat:active { background:var(--bg4); }
+.pcats { display:flex; flex-wrap:wrap; gap:0.5rem; padding:0.7rem 0.9rem; overflow-y:auto; flex:1; }
+#picker-back { background:none; border:none; color:var(--gold); font-size:1.1rem; cursor:pointer; padding:0 0.5rem; }
+
+/* ── Node focus highlight ── */
+.gnode.hi { filter: drop-shadow(0 0 10px var(--nc)); z-index:2; }
+.gnode.dimmed { opacity: 0.1; pointer-events: none; }
+.cline.hi { opacity: 1 !important; stroke: rgba(200,160,80,0.9) !important; stroke-width: 2.5 !important; }
+.cline.dim { opacity: 0.05; }
   </style>
 </head>
 <body>
@@ -359,7 +373,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); color:var(--text
   <!-- PICKER DIALOG -->
   <div id="picker">
     <div id="picker-panel">
-      <div id="picker-hdr"></div>
+      <div id="picker-hdr" style="display:flex;align-items:center;gap:0.3rem;"><button id="picker-back">←</button><span id="picker-hdr-title"></span></div>
       <input id="picker-search" placeholder="Cerca..." autocomplete="off">
       <div id="picker-list"></div>
     </div>
@@ -414,6 +428,7 @@ const FIXED = [
   { id:'saber',           icon:'📚', name:'Saber (compra)',   group:'compra' },
   { id:'prestigi',        icon:'🌟', name:'Prestigi (compra)',group:'compra' },
   { id:'money',           icon:'💰', name:'Diners',           group:'recurs' },
+  { id:'era_cycle',       icon:'🕐', name:'Cicle',            group:'cicle' },
 ];
 const FMAP = Object.fromEntries(FIXED.map(f => [f.id, f]));
 
@@ -633,6 +648,7 @@ function seedDB() {
 let visTypes   = new Set(TYPES.map(t => t.id));
 let eraFilter  = null;
 let panX = 0, panY = 0, zoom = 1;
+let focusedNodeId = null;
 
 function visEntities() {
   return DB.entities.filter(e => {
@@ -750,6 +766,23 @@ function renderGraph() {
   svg.innerHTML = `<defs><marker id="arr" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
     <polygon points="0 0,7 3.5,0 7" fill="rgba(140,100,50,0.45)"/></marker></defs>`;
 
+  let hiSet = null;
+  if (focusedNodeId && pos[focusedNodeId]) {
+    hiSet = new Set([focusedNodeId]);
+    DB.deps.forEach(d => {
+      if (d.owner_id === focusedNodeId && eid.has(d.req_id)) hiSet.add(d.req_id);
+      if (d.req_id === focusedNodeId && eid.has(d.owner_id)) hiSet.add(d.owner_id);
+    });
+    ents.forEach(e => {
+      if (e.type==='zone'   && e.era_id  === focusedNodeId) hiSet.add(e.id);
+      if (e.type==='action' && e.zone_id === focusedNodeId) hiSet.add(e.id);
+      if (e.id === focusedNodeId) {
+        if (e.type==='zone'   && e.era_id)  hiSet.add(e.era_id);
+        if (e.type==='action' && e.zone_id) hiSet.add(e.zone_id);
+      }
+    });
+  }
+
   // Connections
   const drawn = new Set();
   DB.deps.forEach(d => {
@@ -760,10 +793,11 @@ function renderGraph() {
     if (!from || !to) return;
     const x1=from.x+offX+28, y1=from.y+offY, x2=to.x+offX-8, y2=to.y+offY;
     const mx=(x1+x2)/2;
-    const cls = d.cond==='gate_tech' ? 'gate' : d.cond==='requires' ? 'hard' : '';
+    const baseCls = d.cond==='gate_tech' ? 'gate' : d.cond==='requires' ? 'hard' : '';
+    const hiCls = hiSet ? (hiSet.has(d.req_id) && hiSet.has(d.owner_id) ? ' hi' : ' dim') : '';
     const p = document.createElementNS('http://www.w3.org/2000/svg','path');
     p.setAttribute('d', `M${x1} ${y1} C${mx} ${y1} ${mx} ${y2} ${x2} ${y2}`);
-    p.setAttribute('class', 'cline ' + cls);
+    p.setAttribute('class', 'cline ' + baseCls + hiCls);
     p.setAttribute('marker-end', 'url(#arr)');
     svg.appendChild(p);
   });
@@ -779,9 +813,10 @@ function renderGraph() {
     if (!from || !to) return;
     const x1=from.x+offX+28, y1=from.y+offY, x2=to.x+offX-8, y2=to.y+offY;
     const mx=(x1+x2)/2;
+    const hiCls = hiSet ? (hiSet.has(fromId) && hiSet.has(toId) ? ' hi' : ' dim') : '';
     const p = document.createElementNS('http://www.w3.org/2000/svg','path');
     p.setAttribute('d', `M${x1} ${y1} C${mx} ${y1} ${mx} ${y2} ${x2} ${y2}`);
-    p.setAttribute('class', 'cline');
+    p.setAttribute('class', 'cline' + hiCls);
     svg.appendChild(p);
   });
 
@@ -794,17 +829,14 @@ function renderGraph() {
     const deps = getDeps(e.id).filter(d => eid.has(d.req_id) || d.req_type==='characteristic').slice(0,3);
 
     const node = document.createElement('div');
-    node.className = 'gnode';
+    let nodeCls = 'gnode';
+    if (hiSet) nodeCls += hiSet.has(e.id) ? ' hi' : ' dimmed';
+    node.className = nodeCls;
     node.dataset.id = e.id;
     node.style.left = (p.x + offX - NW/2) + 'px';
     node.style.top  = (p.y + offY - NH/2) + 'px';
     node.style.width = NW + 'px';
     node.style.setProperty('--nc', col);
-
-    node.appendChild(makeReqBadges(deps));
-    const shape = makeShape(e, td);
-    node.appendChild(shape);
-    node.appendChild(makeEffBadges(effs));
 
     const lbl = document.createElement('div');
     lbl.className = 'nlabel'; lbl.textContent = e.name;
@@ -812,15 +844,43 @@ function renderGraph() {
     const nrow = document.createElement('div');
     nrow.className = 'nrow';
     nrow.appendChild(makeReqBadges(deps));
-    nrow.appendChild(shape);
+    nrow.appendChild(makeShape(e, td));
     nrow.appendChild(makeEffBadges(effs));
-    node.innerHTML = '';
     node.appendChild(nrow);
     node.appendChild(lbl);
 
-    node.addEventListener('click', ev => { ev.stopPropagation(); openDetail(e.id); });
+    let pressTimer = null;
+    let pressX = 0, pressY = 0, pressMoved = false;
+
+    function startPress(cx, cy) {
+      pressMoved = false; pressX = cx; pressY = cy;
+      pressTimer = setTimeout(() => { pressTimer = null; openDetail(e.id); }, 400);
+    }
+    function endPress(cx, cy) {
+      if (!pressTimer) return;
+      clearTimeout(pressTimer); pressTimer = null;
+      if (!pressMoved) focusNode(e.id);
+    }
+    function cancelPress() { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } }
+    function checkMove(cx, cy) {
+      if (Math.abs(cx - pressX) > 5 || Math.abs(cy - pressY) > 5) { pressMoved = true; cancelPress(); }
+    }
+
+    node.addEventListener('mousedown',  ev => { if (ev.button !== 0) return; ev.stopPropagation(); startPress(ev.clientX, ev.clientY); });
+    node.addEventListener('mousemove',  ev => checkMove(ev.clientX, ev.clientY));
+    node.addEventListener('mouseup',    ev => { ev.stopPropagation(); endPress(ev.clientX, ev.clientY); });
+    node.addEventListener('mouseleave', cancelPress);
+    node.addEventListener('touchstart', ev => { ev.stopPropagation(); const t=ev.touches[0]; startPress(t.clientX, t.clientY); }, { passive:true });
+    node.addEventListener('touchmove',  ev => { const t=ev.touches[0]; checkMove(t.clientX, t.clientY); }, { passive:true });
+    node.addEventListener('touchend',   ev => { ev.stopPropagation(); endPress(0,0); });
+
     gc.appendChild(node);
   });
+}
+
+function focusNode(id) {
+  focusedNodeId = (focusedNodeId === id) ? null : id;
+  renderGraph();
 }
 
 function makeShape(e, td) {
@@ -1025,7 +1085,9 @@ function renderDetailBody(e) {
   const depChips = document.createElement('div'); depChips.className = 'chips';
   getDeps(e.id).forEach(d => {
     let lbl;
-    if (d.req_type === 'characteristic' || d.req_type === 'indicator' || d.req_type === 'game_resource') {
+    if (d.req_id === 'era_cycle' || d.req_type === 'cicle') {
+      lbl = `🕐 Cicle ≥ ${d.value}`;
+    } else if (d.req_type === 'characteristic' || d.req_type === 'indicator' || d.req_type === 'game_resource') {
       const f = FMAP[d.req_id]; lbl = `${f?f.icon:'?'} ${d.req_id}${d.value!=null?' ≥ '+d.value:''}`;
     } else {
       const req = getById(d.req_id); lbl = req ? `${req.icon||''} ${req.name}${d.value!=null?' ≥ '+d.value:''}` : d.req_id;
@@ -1101,7 +1163,10 @@ document.getElementById('btn-save-detail').addEventListener('click', () => {
 
 document.getElementById('btn-dcard-close').addEventListener('click', closeDetail);
 document.getElementById('gvp').addEventListener('click', e => {
-  if (!e.target.closest('.gnode') && !e.target.closest('#dcard')) closeDetail();
+  if (!e.target.closest('.gnode') && !e.target.closest('#dcard')) {
+    closeDetail();
+    focusedNodeId = null; renderGraph();
+  }
 });
 
 // Helpers
@@ -1137,37 +1202,109 @@ function addChip(label, onClick) {
 let _pickCb = null;
 let _pickMode = null;
 let _pickOwnerId = null;
+let _pickerStep = 'cat';
+let _pickerCat = null;
+
+const _FIXED_GROUPS = [
+  { group:'indicador', label:'Indicadors',       icon:'❤️' },
+  { group:'stat',      label:'Característiques', icon:'💪' },
+  { group:'recurs',    label:'Recursos',         icon:'🍖' },
+];
 
 function openPicker(title, ownerId, mode) {
   _pickOwnerId = ownerId; _pickMode = mode;
-  document.getElementById('picker-hdr').textContent = title;
+  _pickerStep = 'cat'; _pickerCat = null;
+  document.getElementById('picker-hdr-title').textContent = title;
+  document.getElementById('picker-back').style.display = 'none';
+  document.getElementById('picker-search').style.display = 'none';
   document.getElementById('picker-search').value = '';
-  _renderPickerList('');
+  _renderPickerCats();
   document.getElementById('picker').classList.add('on');
-  setTimeout(() => document.getElementById('picker-search').focus(), 150);
 }
+
+document.getElementById('picker-back').addEventListener('click', () => {
+  _pickerStep = 'cat'; _pickerCat = null;
+  document.getElementById('picker-back').style.display = 'none';
+  document.getElementById('picker-search').style.display = 'none';
+  document.getElementById('picker-search').value = '';
+  _renderPickerCats();
+});
 
 document.getElementById('picker-search').addEventListener('input', e => _renderPickerList(e.target.value));
 document.getElementById('picker').addEventListener('click', e => {
   if (e.target === document.getElementById('picker')) document.getElementById('picker').classList.remove('on');
 });
 
+function _renderPickerCats() {
+  const list = document.getElementById('picker-list');
+  list.innerHTML = '';
+  const wrap = document.createElement('div'); wrap.className = 'pcats';
+
+  if (_pickMode === 'dep') {
+    const cycleBtn = document.createElement('div'); cycleBtn.className = 'pcat';
+    cycleBtn.innerHTML = '🕐 Cicle';
+    cycleBtn.addEventListener('click', () => {
+      document.getElementById('picker').classList.remove('on');
+      const raw = prompt('Cicle mínim (número enter):');
+      if (raw === null || raw.trim() === '') return;
+      const cycleNum = parseInt(raw, 10);
+      if (isNaN(cycleNum)) return;
+      addDep(_pickOwnerId, getById(_pickOwnerId)?.type || 'unknown', 'era_cycle', 'cicle', 'min_cycle', cycleNum);
+      openDetail(_pickOwnerId); renderGraph();
+    });
+    wrap.appendChild(cycleBtn);
+  }
+
+  TYPES.forEach(t => {
+    const btn = document.createElement('div'); btn.className = 'pcat';
+    btn.style.borderColor = t.color; btn.style.color = t.color;
+    btn.innerHTML = `${t.icon} ${t.label}`;
+    btn.addEventListener('click', () => {
+      _pickerCat = { kind:'entity', typeId:t.id };
+      _pickerStep = 'item';
+      document.getElementById('picker-back').style.display = '';
+      document.getElementById('picker-search').style.display = '';
+      document.getElementById('picker-search').value = '';
+      _renderPickerList('');
+      setTimeout(() => document.getElementById('picker-search').focus(), 80);
+    });
+    wrap.appendChild(btn);
+  });
+
+  _FIXED_GROUPS.forEach(fg => {
+    const btn = document.createElement('div'); btn.className = 'pcat';
+    btn.innerHTML = `${fg.icon} ${fg.label}`;
+    btn.addEventListener('click', () => {
+      _pickerCat = { kind:'fixed', group:fg.group };
+      _pickerStep = 'item';
+      document.getElementById('picker-back').style.display = '';
+      document.getElementById('picker-search').style.display = '';
+      document.getElementById('picker-search').value = '';
+      _renderPickerList('');
+      setTimeout(() => document.getElementById('picker-search').focus(), 80);
+    });
+    wrap.appendChild(btn);
+  });
+
+  list.appendChild(wrap);
+}
+
 function _renderPickerList(filter) {
   const list = document.getElementById('picker-list');
   list.innerHTML = '';
-  let items;
-  if (_pickMode === 'dep') {
-    const entityItems = DB.entities
-      .filter(e => e.id !== _pickOwnerId)
+  if (!_pickerCat) return;
+
+  let items = [];
+  if (_pickerCat.kind === 'entity') {
+    items = DB.entities
+      .filter(e => e.id !== _pickOwnerId && e.type === _pickerCat.typeId)
       .map(e => ({ id:e.id, icon:e.icon||TMAP[e.type]?.icon||'?', name:e.name, sub:TMAP[e.type]?.label||e.type, isEntity:true }));
-    const fixedItems = FIXED.map(f => ({ id:f.id, icon:f.icon, name:f.name, sub:f.group, isFixed:true }));
-    items = [...entityItems, ...fixedItems];
   } else {
-    const entityItems = DB.entities
-      .filter(e => e.id !== _pickOwnerId)
-      .map(e => ({ id:e.id, icon:e.icon||TMAP[e.type]?.icon||'?', name:e.name, sub:TMAP[e.type]?.label||e.type, isEntity:true }));
-    items = [...FIXED.map(f=>({id:f.id,icon:f.icon,name:f.name,sub:f.group,isFixed:true})), ...entityItems];
+    items = FIXED
+      .filter(f => f.group === _pickerCat.group)
+      .map(f => ({ id:f.id, icon:f.icon, name:f.name, sub:f.group, isFixed:true }));
   }
+
   const q = filter.toLowerCase();
   items.filter(i => !q || i.name.toLowerCase().includes(q) || i.sub.toLowerCase().includes(q)).forEach(item => {
     const row = document.createElement('div'); row.className = 'pitem';
@@ -1176,11 +1313,11 @@ function _renderPickerList(filter) {
     row.addEventListener('click', () => {
       document.getElementById('picker').classList.remove('on');
       if (_pickMode === 'dep') {
-        const needsValue = item.isFixed && ['characteristic','indicator','stat'].includes(item.sub);
+        const needsValue = item.isFixed && ['stat','indicador','recurs'].includes(item.sub);
         let val = null;
         if (needsValue) { val = prompt(`Valor mínim per a ${item.name} (o deixa buit):`); }
         const reqType = item.isFixed ? item.sub : getById(item.id)?.type || 'entity';
-        const cond = item.isFixed ? 'min_stat' : (item.sub === 'Tecnologies' ? 'requires' : item.sub === 'Habilitats' ? 'requires_skill' : item.sub === 'Eres' ? 'gate_tech' : 'requires');
+        const cond = item.isFixed ? 'min_stat' : (_pickerCat.typeId === 'tech' ? 'requires' : _pickerCat.typeId === 'skill' ? 'requires_skill' : _pickerCat.typeId === 'era' ? 'gate_tech' : 'requires');
         addDep(_pickOwnerId, getById(_pickOwnerId)?.type || 'unknown', item.id, reqType, cond, val ? parseFloat(val) : null);
       } else {
         const v = parseFloat(prompt(`Valor per a ${item.name} (ex: 15, 0.3, -5):`)||'0');
@@ -1627,11 +1764,12 @@ function denormalizeToGameData() {
 
     const techs = DB.entities.filter(e => e.type === 'tech' && e.era_id === eraEnt.id).map(t => {
       const reqTech = depsOf(t.id).find(d => d.req_type === 'tech' && d.cond === 'requires');
+      const cycleDep = depsOf(t.id).find(d => d.req_id === 'era_cycle' && d.cond === 'min_cycle');
       const statBonus = {};
       effsOf(t.id).filter(ef => ef.effect_type === 'bonus').forEach(ef => { statBonus[ef.target_id] = ef.value; });
       return compact({
         id: getGameId(t), name: t.name, icon: t.icon,
-        eraCycleAppears: t.cycle_appears ?? undefined,
+        eraCycleAppears: cycleDep ? cycleDep.value : (t.cycle_appears ?? undefined),
         description: t.description || undefined, quote: t.quote || undefined,
         effectDesc: t.effect_desc || undefined,
         requiresTech: (reqTech && byId[reqTech.req_id]) ? getGameId(byId[reqTech.req_id]) : undefined,
@@ -1644,6 +1782,7 @@ function denormalizeToGameData() {
 
     const skills = DB.entities.filter(e => e.type === 'skill' && e.era_id === eraEnt.id).map(sk => {
       const reqTechs = depsOf(sk.id).filter(d => d.req_type === 'tech').map(d => byId[d.req_id]).filter(Boolean).map(getGameId);
+      const cycleDep = depsOf(sk.id).find(d => d.req_id === 'era_cycle' && d.cond === 'min_cycle');
       const effect = {};
       effsOf(sk.id).filter(ef => ef.effect_type === 'bonus').forEach(ef => { if (typeof ef.value === 'number') effect[ef.target_id] = ef.value; });
       return compact({
@@ -1651,6 +1790,7 @@ function denormalizeToGameData() {
         description: sk.description || undefined, quote: sk.quote || undefined,
         discoveryChance: sk.disc_chance || undefined, effectDesc: sk.effect_desc || undefined,
         transversal: sk.transversal || undefined,
+        minCycle: cycleDep ? cycleDep.value : undefined,
         requiresTech: reqTechs.length === 1 ? reqTechs[0] : undefined,
         requires: reqTechs.length > 1 ? { techIds: reqTechs } : undefined,
         tokenCost: (sk.cost_vigor||sk.cost_saber||sk.cost_prestigi) ? {vigor:sk.cost_vigor||0,saber:sk.cost_saber||0,prestigi:sk.cost_prestigi||0} : undefined,
@@ -1660,6 +1800,7 @@ function denormalizeToGameData() {
 
     const destreses = DB.entities.filter(e => e.type === 'destresa' && e.era_id === eraEnt.id).map(d => {
       const reqTechs = depsOf(d.id).filter(dep => dep.req_type === 'tech').map(dep => byId[dep.req_id]).filter(Boolean).map(getGameId);
+      const cycleDep = depsOf(d.id).find(dep => dep.req_id === 'era_cycle' && dep.cond === 'min_cycle');
       const effect = {};
       effsOf(d.id).filter(ef => ef.effect_type === 'bonus').forEach(ef => { if (typeof ef.value === 'number') effect[ef.target_id] = ef.value; });
       return compact({
@@ -1667,6 +1808,7 @@ function denormalizeToGameData() {
         description: d.description || undefined, quote: d.quote || undefined,
         discoveryChance: d.disc_chance || undefined, effectDesc: d.effect_desc || undefined,
         transversal: d.transversal || undefined,
+        minCycle: cycleDep ? cycleDep.value : undefined,
         effect: Object.keys(effect).length ? effect : undefined,
         requires: reqTechs.length ? { techIds: reqTechs } : undefined,
       });
@@ -1678,6 +1820,7 @@ function denormalizeToGameData() {
       const zoneEnt = a.zone_id ? byId[a.zone_id] : null;
       const reqTechDep  = deps.find(d => d.req_type === 'tech'  && d.cond === 'requires');
       const reqSkillDep = deps.find(d => d.req_type === 'skill' && d.cond === 'requires_skill');
+      const cycleDep    = deps.find(d => d.req_id === 'era_cycle' && d.cond === 'min_cycle');
 
       const requirements = {};
       let requiresNoPartner = false, requiresMinHappiness = null, requiresMinFamilyReputation = null;
@@ -1717,6 +1860,7 @@ function denormalizeToGameData() {
         teachesSkill: a.teaches_skill || undefined,
         generatesPartner: a.generates_partner || undefined,
         generatesChild: a.generates_child || undefined,
+        minCycle: cycleDep ? cycleDep.value : undefined,
         minCyclePct: a.min_cycle_pct ?? undefined,
         maxCyclePct: a.max_cycle_pct ?? undefined,
         requirements: Object.keys(requirements).length ? requirements : undefined,
