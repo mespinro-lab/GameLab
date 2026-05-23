@@ -9,9 +9,9 @@
 /* ── Reset & Tokens ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --bg:   #0f0a04; --bg2: #1c1208; --bg3: #2a1c0c; --bg4: #3a2810;
-  --gold: #e8a840; --text: #e8dcc8; --dim: #8a7458;
-  --bdr:  rgba(160,110,55,0.3);
+  --bg:   #f4ead8; --bg2: #ede0c8; --bg3: #e2d0b4; --bg4: #d4bc98;
+  --gold: #7a4800; --text: #2c1608; --dim: #8a6848;
+  --bdr:  rgba(90,55,15,0.2);
   --c-era:      #f39c12; --c-zone:     #3498db; --c-tech:    #e67e22;
   --c-skill:    #9b59b6; --c-action:   #27ae60; --c-event:   #e74c3c;
   --c-destresa: #00bcd4; --c-learning: #fd79a8;
@@ -43,7 +43,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); color:var(--text
 /* Graph viewport */
 #gvp {
   flex:1; overflow:hidden; position:relative; touch-action:none;
-  background:radial-gradient(ellipse at 50% 40%, #1a1006 0%, #080401 100%);
+  background:radial-gradient(ellipse at 50% 30%, #ece0cc 0%, #f4ead8 100%);
 }
 #gc { position:absolute; top:0; left:0; transform-origin:0 0; will-change:transform; }
 #csvg { position:absolute; top:0; left:0; pointer-events:none; overflow:visible; }
@@ -86,7 +86,7 @@ html,body { height:100%; overflow:hidden; background:var(--bg); color:var(--text
 .nbadges { display:flex; flex-direction:column; gap:3px; align-items:center; min-width:28px; }
 .nbadge {
   display:flex; align-items:center; gap:2px;
-  font-size:0.58rem; background:rgba(255,255,255,0.06);
+  font-size:0.58rem; background:rgba(0,0,0,0.07);
   border-radius:7px; padding:1px 5px; white-space:nowrap; color:var(--dim);
 }
 
@@ -122,9 +122,9 @@ html,body { height:100%; overflow:hidden; background:var(--bg); color:var(--text
 }
 
 /* Connections */
-.cline { stroke:rgba(140,100,50,0.3); stroke-width:1.5; fill:none; stroke-dasharray:5 3; }
-.cline.hard { stroke:rgba(160,115,55,0.55); stroke-dasharray:none; }
-.cline.gate { stroke:rgba(232,168,40,0.6); stroke-dasharray:none; stroke-width:2; }
+.cline { stroke:rgba(90,55,15,0.28); stroke-width:1.5; fill:none; stroke-dasharray:5 3; }
+.cline.hard { stroke:rgba(90,55,15,0.55); stroke-dasharray:none; }
+.cline.gate { stroke:rgba(122,72,0,0.75); stroke-dasharray:none; stroke-width:2; }
 
 /* ── Overlays backdrop ── */
 .backdrop {
@@ -221,9 +221,9 @@ html,body { height:100%; overflow:hidden; background:var(--bg); color:var(--text
   display:inline-flex; align-items:center; gap:0.22rem;
   padding:0.22rem 0.55rem; border-radius:18px; font-size:0.72rem; cursor:pointer;
 }
-.chip-req  { background:rgba(52,152,219,0.13); border:1px solid rgba(52,152,219,0.35); color:#5dade2; }
-.chip-eff  { background:rgba(39,174,96,0.13);  border:1px solid rgba(39,174,96,0.35);  color:#55c87a; }
-.chip-add  { background:rgba(255,255,255,0.05); border:1px dashed rgba(255,255,255,0.2); color:var(--dim); }
+.chip-req  { background:rgba(52,120,219,0.1);  border:1px solid rgba(52,120,219,0.35); color:#1a5fa8; }
+.chip-eff  { background:rgba(39,140,80,0.1);   border:1px solid rgba(39,140,80,0.35);  color:#1a7a40; }
+.chip-add  { background:rgba(0,0,0,0.04); border:1px dashed rgba(0,0,0,0.22); color:var(--dim); }
 .chip-rm   { font-size:0.6rem; opacity:0.55; }
 .dcard-save {
   width:calc(100% - 2rem); margin:0.6rem 1rem 1rem;
@@ -301,9 +301,9 @@ html,body { height:100%; overflow:hidden; background:var(--bg); color:var(--text
 
 /* ── Node focus highlight ── */
 .gnode.hi { filter: drop-shadow(0 0 10px var(--nc)); z-index:2; }
-.gnode.dimmed { opacity: 0.1; pointer-events: none; }
-.cline.hi { opacity: 1 !important; stroke: rgba(200,160,80,0.9) !important; stroke-width: 2.5 !important; }
-.cline.dim { opacity: 0.05; }
+.gnode.dimmed { opacity: 0.12; pointer-events: none; }
+.cline.hi { opacity: 1 !important; stroke: rgba(90,55,15,0.85) !important; stroke-width: 2.5 !important; }
+.cline.dim { opacity: 0.06; }
   </style>
 </head>
 <body>
@@ -870,8 +870,14 @@ function renderGraph() {
     node.addEventListener('mousemove',  ev => checkMove(ev.clientX, ev.clientY));
     node.addEventListener('mouseup',    ev => { ev.stopPropagation(); endPress(ev.clientX, ev.clientY); });
     node.addEventListener('mouseleave', cancelPress);
-    node.addEventListener('touchstart', ev => { ev.stopPropagation(); const t=ev.touches[0]; startPress(t.clientX, t.clientY); }, { passive:true });
-    node.addEventListener('touchmove',  ev => { const t=ev.touches[0]; checkMove(t.clientX, t.clientY); }, { passive:true });
+    node.addEventListener('touchstart', ev => {
+      if (ev.touches.length >= 2) { cancelPress(); return; }
+      const t=ev.touches[0]; startPress(t.clientX, t.clientY);
+    }, { passive:true });
+    node.addEventListener('touchmove',  ev => {
+      if (ev.touches.length >= 2) { cancelPress(); return; }
+      const t=ev.touches[0]; checkMove(t.clientX, t.clientY);
+    }, { passive:true });
     node.addEventListener('touchend',   ev => { ev.stopPropagation(); endPress(0,0); });
 
     gc.appendChild(node);
