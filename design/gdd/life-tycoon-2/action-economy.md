@@ -90,6 +90,8 @@ Fitxer de referència: `data/eras/[era_id]/actions/[action_id].json`
 
   "event_pool_id": "event_pool_id",
 
+  "is_discovery_action": false,
+
   "discovery_condition": { "type": "branch_tech", "branch_tech_id": "branch_tech_id" },
 
   "upgrade_to": null,
@@ -107,6 +109,7 @@ Fitxer de referència: `data/eras/[era_id]/actions/[action_id].json`
 | `inclination_requirements` | object | Rang d'eixos dins del qual l'acció és visible i executable. Eixos absents = sense restricció. |
 | `base_output` | object | Rang de sortida base (indicadors i recursos). El resultat real s'obté per `lerp` dins del rang. |
 | `event_pool_id` | string\|null | Pool d'events que pot desencadenar aquesta acció. |
+| `is_discovery_action` | bool | `true` = acció era-específica de descoberta de branch techs. Vegeu §3.2.1. |
 | `discovery_condition` | object\|null | Com es descobreix si `is_hidden: true`. |
 | `upgrade_to` | string\|null | ID de l'acció que la substitueix quan es fa upgrade. |
 | `upgrade_cost` | object\|null | Recursos necessaris per fer l'upgrade. |
@@ -152,6 +155,36 @@ Jugador pot comprar les accions noves amb recursos
 | `action_executions` | Es descobreix quan una acció concreta s'ha executat N vegades. |
 | `event_trigger` | Es descobreix quan s'ha trigat un event concret. |
 | `destresa` | Es descobreix quan el personatge té una destresa específica. |
+
+### 3.2.1 Acció de Descoberta de Tecnologia de Branca
+
+Cada era té **exactament una** acció amb `is_discovery_action: true`. És
+l'eina activa del jugador per desbloquejar branch techs.
+
+**Comportament**:
+1. En executar-la, el motor avalua les branch techs elegibles (prereq descobert
+   + inclinació satisfeta + no desbloquejada).
+2. Desbloqueja la que té la **maduresa** més alta (veure `branch-system.md §4`).
+3. Si no n'hi ha cap d'elegible, consumeix el cicle sense efecte.
+
+**Visibilitat especial**: ignorant les regles d'`inclination_requirements`,
+l'acció de descoberta és `OCULTA` quan no hi ha cap branch tech elegible, i
+`ACTIVA` quan n'hi ha almenys una. No té `inclination_requirements` pròpis.
+
+**Notificació de disponibilitat**: quan l'acció passa de OCULTA a ACTIVA, la
+UI mostra un indicador narratiu era-específic (un text curt al panell de
+l'esquerra, ex.: "Hi ha estrangers al poblat que expliquen tècniques noves").
+Quan l'acció torna a OCULTA (totes les elegibles descobertes), la notificació
+desapareix.
+
+Exemples d'acció de descoberta per era:
+
+| Era | Nom | Narrativa |
+|---|---|---|
+| Paleolític | Escoltar els Estrangers | Grups forans visiten el campament |
+| Neolític | Observar el Veí | Tribus veïnes amb noves pràctiques |
+| Modern | Llegir la Premsa | Articles sobre noves tendències |
+| Futur | Cercar a la Xarxa | Comunitats online compartint tècniques |
 
 ### 3.3 Execució d'Accions
 

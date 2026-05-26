@@ -99,11 +99,15 @@ llista de referències.
       "requires_inclination": null,
       "requires_indicator_above": null,
       "requires_indicator_below": null,
-      "requires_destresa_id": null
+      "requires_destresa_id": null,
+      "requires_branch_tech_eligible": null
     }
   },
 
   "is_skippable": false,
+  "is_discovery_event": false,
+  "discovery_branch_tech_id": null,
+  "is_single_use": false,
 
   "options": [
     {
@@ -137,7 +141,11 @@ llista de referències.
 | `is_rare` | bool | Events rars aporten punts extra al score d'era i apareixen a la crònica. |
 | `trigger.base_probability` | float | Probabilitat base de disparar-se quan l'acció associada s'executa. |
 | `trigger.conditions` | object | Condicions addicionals que han de complir-se. Totes s'han de satisfer. |
+| `trigger.conditions.requires_branch_tech_eligible` | string\|null | Si definit, l'event NOMÉS apareix quan el jugador és elegible per desbloquejar aquella branch tech (prereq + inclinació satisfets + no descoberta). |
 | `is_skippable` | bool | `false` = el jugador ha de triar una opció obligatòriament. |
+| `is_discovery_event` | bool | `true` = event de descoberta de branch tech. Veure §3.9. |
+| `discovery_branch_tech_id` | string\|null | ID de la branch tech que pot desbloquejar-se. Requerit si `is_discovery_event: true`. |
+| `is_single_use` | bool | `true` = s'exclou del pool en quant la branch tech referenciada és descoberta. |
 | `option.requirement` | object | L'opció no és seleccionable si no es compleix el requisit. Es mostra però desactivada. |
 | `option.cost` | object | Recursos consumits en escollir l'opció. |
 | `option.chain_pool_id` | string\|null | Pool d'events del qual pot disparar-se un event encadenat. |
@@ -191,6 +199,66 @@ Els events amb `is_rare: true` son events poc comuns que:
 
 Els events rars haurien de tenir `trigger.base_probability` baix (< 0.10)
 i condicions específiques (inclinació, destreses, tecnologies).
+
+### 3.9 Events de Descoberta de Branch Tech
+
+Els events de descoberta son una subcategoria especial d'events ordinaris
+dissenyada per fer que la descoberta de tecnologies de branca emergeixi de
+forma narrativa i orgànica durant el joc.
+
+**Principis de disseny**:
+- Son **invisibles com a categoria**: per al jugador, semblen variants
+  contextuals d'events habituals. No hi ha cap indicador que sigui un event
+  especial.
+- Son **condicionals**: NOMÉS apareixen al pool quan el jugador és elegible per
+  desbloquejar la branch tech que referencien. Fora d'aquesta condició, no
+  existeixen.
+- Son **d'un sol ús** (`is_single_use: true`): un cop la branch tech és
+  descoberta (per qualsevol via), l'event queda exclòs del pool per sempre.
+  Garanteix que no es repeteixi un event que ja ha donat el seu fruit.
+- Sempre presenten **una tria activa** i **una opció passiva**:
+  - Opció activa: el jugador decideix conscienciosament (sovint amb un risc
+    menor o cost). Resulta en la descoberta.
+  - Opció passiva: sense risc, sense descoberta. El jugador pot "deixar passar"
+    l'oportunitat.
+
+**Estructura en JSON** (diferències respecte l'event ordinari):
+```json
+{
+  "is_discovery_event": true,
+  "discovery_branch_tech_id": "bt_punta_llanca",
+  "is_single_use": true,
+  "trigger": {
+    "base_probability": 0.20,
+    "conditions": {
+      "requires_branch_tech_eligible": "bt_punta_llanca"
+    }
+  },
+  "options": [
+    {
+      "id": "opt_seguir",
+      "text": "T'atures i escoltes el que explica.",
+      "cost": { "resources": { "primary": 2 } },
+      "effects": { "unlocks_branch_tech_id": "bt_punta_llanca" }
+    },
+    {
+      "id": "opt_ignorar",
+      "text": "Continues el camí sense aturar-te.",
+      "cost": {},
+      "effects": {}
+    }
+  ]
+}
+```
+
+**Integració al pool**: l'event de descoberta s'inclou directament al pool
+d'events d'una acció existent. El motor filtra els events del pool en temps
+real per excloure:
+1. Events de descoberta on `discovery_branch_tech_id` és ja desbloquejada.
+2. Events de descoberta on el jugador no és elegible per la branch tech.
+
+**Quantitat recomanada**: 1–2 events de descoberta per branch tech per era.
+Distribució entre pools distints per maximitzar la variació narrativa.
 
 ### 3.8 Events de Pressió del Món (referència)
 

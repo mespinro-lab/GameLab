@@ -186,6 +186,43 @@ Una tecnologia de branca accessible per a perfils híbrids (condicions sobre
 múltiples eixos) actua com a **pont**: el jugador en zona híbrida l'obté
 naturalment i accedeix a les accions de les dues orientacions.
 
+### 3.5.1 Vies de Descoberta d'una Tecnologia de Branca
+
+Una branch tech és **elegible** quan:
+- El seu `universal_prereq` ja ha estat descobert pel jugador.
+- L'`inclination_conditions` actual del jugador es satisfà.
+- Encara no ha estat desbloquejada en aquesta generació.
+
+Dues vies per desbloquejar-la:
+
+**Via 1 — Acció de Descoberta** (activa, era-específica)
+
+Cada era té exactament una acció de descoberta (`is_discovery_action: true`).
+Quan el jugador l'executa:
+1. S'avaluen totes les branch techs elegibles.
+2. Es desbloqueja la que té la **maduresa** més alta (fórmula a §4).
+3. Si cap és elegible, l'execució consumeix el cicle sense descoberta.
+
+**Visibilitat de l'acció de descoberta**: OCULTA quan no hi ha cap branch tech
+elegible. Visible quan n'hi ha almenys una. Quan passa a visible, la UI mostra
+una notificació narrativa era-específica (ex.: "Hi ha estrangers al poblat que
+expliquen tècniques noves"). La notificació desapareix quan totes les branch
+techs elegibles han estat descobertes.
+
+**Via 2 — Event de Descoberta** (passiva, narrativa)
+
+Alguns events dels pools d'acció son `is_discovery_event: true`. Apareixen al
+pool ÚNICAMENT quan el jugador és elegible per a la branch tech que referencien
+(`discovery_branch_tech_id`). Son d'un sol ús: s'exclouen del pool en quant la
+branch tech queda descoberta. El jugador no sap que l'event és especial —
+apareix com una variant narrativa d'un event ordinari.
+
+Un event de descoberta sempre té **almenys dues opcions**:
+- Una opció activa (tria conscient del jugador, sovint amb un risc menor).
+- Una opció passiva (sense descoberta, sense risc).
+
+La descoberta no és automàtica: el jugador ha de triar l'opció activa.
+
 ### 3.6 Accions i Visibilitat per Inclinació
 
 Les accions declaren `inclination_requirements`: el rang d'eixos dins del
@@ -246,21 +283,40 @@ per cada eix a:
 is_branch_active(branch) = evaluate(branch.inclination_conditions, inclinació)
 ```
 
-### Tecnologia de Branca Desbloquejable
+### Tecnologia de Branca Elegible
 
 ```
-can_unlock(tech) =
+is_eligible(tech) =
     tech.universal_prereq ∈ player.universal_techs
     AND evaluate(tech.inclination_conditions, inclinació)
+    AND tech.id ∉ player.branch_techs_discovered
 
 on_unlock(tech):
     player.branch_techs_discovered.add(tech.id)
     apply(tech.effects.indicator_modifiers)
     apply(tech.effects.action_modifiers)
     for action_id in tech.effects.unlocks_action_ids:
-        player.discovered_actions.add(action_id)   // acció ara comprable
+        player.discovered_actions.add(action_id)
     for pool_id in tech.effects.unlocks_event_pool_ids:
         player.available_event_pools.add(pool_id)
+```
+
+### Maduresa d'una Branch Tech
+
+La maduresa quantifica quant *supera* el jugador els requisits mínims d'una
+branch tech elegible. S'usa per triar quina desbloquejar via l'acció de descoberta.
+
+```
+maduresa(tech):
+    score = 0
+    per cada condició c en tech.inclination_conditions.conditions:
+        val = inclinació[c.axis]
+        si c.min definit: score += max(0, val − c.min)
+        si c.max definit: score += max(0, c.max − val)
+    return score
+
+tech_a_desbloquejar =
+    argmax(maduresa(t) per t en eligible_branch_techs)
 ```
 
 ### Visibilitat d'Acció

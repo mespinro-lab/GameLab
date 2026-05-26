@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<!-- PROTOTYPE - NOT FOR PRODUCTION -->
+<!-- Question: Does inclination-driven action visibility + branch tech discovery + succession feel engaging? -->
+<!-- Date: 2026-05-26 -->
+<html lang="ca">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Life Tycoon 2 — Prototip</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- TOP BAR -->
+  <header id="top-bar">
+    <h1>Life Tycoon 2 — Prototip</h1>
+    <span class="stat-badge" id="cycle-counter">Cicle 0</span>
+    <span class="stat-badge" id="gen-counter">Generació 1/5</span>
+    <span class="stat-badge" id="food-counter">15 Aliment</span>
+  </header>
+
+  <!-- MAIN LAYOUT -->
+  <main id="main">
+
+    <!-- LEFT PANEL: Inclination + Branches + Skills -->
+    <aside id="left-panel" class="panel">
+
+      <div class="panel-section">
+        <h2>Inclinació</h2>
+        <div id="inclination-bars"></div>
+      </div>
+
+      <div class="panel-section">
+        <h2>Branques actives</h2>
+        <div id="active-branches"></div>
+      </div>
+
+      <div class="panel-section">
+        <h2>Habilitats disponibles</h2>
+        <div id="unlocked-branch-techs"></div>
+      </div>
+
+      <div id="discovery-notification" class="discovery-notification hidden"></div>
+
+    </aside>
+
+    <!-- CENTER PANEL: Universal Techs + Actions -->
+    <section id="center-panel" class="panel">
+
+      <div class="panel-section">
+        <h2>Tecnologies universals</h2>
+        <div id="universal-techs-list"></div>
+      </div>
+
+      <div class="panel-section">
+        <h2>Accions</h2>
+        <div id="actions-list"></div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT PANEL: Log -->
+    <aside id="right-panel" class="panel">
+      <div class="panel-section">
+        <h2>Registre</h2>
+        <div id="action-log"></div>
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- EVENT MODAL -->
+  <div id="event-modal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <h2>Esdeveniment</h2>
+      <p id="event-text"></p>
+      <p class="modal-effect" id="event-effect"></p>
+      <div id="event-choices" class="event-choices hidden"></div>
+      <button class="btn-modal" id="btn-dismiss-event">Continua</button>
+    </div>
+  </div>
+
+  <!-- SUCCESSION MODAL -->
+  <div id="succession-modal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <h2>Successió</h2>
+      <p>El personatge ha completat la seva vida.</p>
+      <div class="modal-summary">
+        Generació: <span id="succ-gen"></span><br>
+        Cicles viscuts: <span id="succ-cycles"></span><br>
+        Eix dominant: <span id="succ-axis"></span>
+      </div>
+      <p>El fill hereta les tècniques i el <strong>65%</strong> de les inclinacions.</p>
+      <button class="btn-modal" id="btn-continue-succession">Continua amb el fill</button>
+    </div>
+  </div>
+
+  <!-- GAME OVER MODAL -->
+  <div id="gameover-modal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <h2>Fi del llinatge</h2>
+      <p>Cinc generacions han passat. El coneixement del teu llinatge queda gravat a les roques.</p>
+      <button class="btn-modal" id="btn-restart">Reiniciar</button>
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

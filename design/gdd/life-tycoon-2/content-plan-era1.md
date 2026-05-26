@@ -197,6 +197,7 @@ a les zones corresponents com a comprables.
 | Vigilar el Campament | `zone_home` | `sociabilitat` +0.02 | Protecció+, Vincles+ | Acció social/base. Qualsevol branca. |
 | Explorar els Voltants | `zone_wild` | `intel·lecte` -0.01 | _(desbloqueja zone_forest)_ | Primera vegada: descobreix el Bosc. |
 | Buscar Fruits del Bosc | `zone_forest` | `intel·lecte` -0.01 | Provisions+ | Disponible quan el Bosc es descobreix. |
+| **Escoltar els Estrangers** | `zone_home` | _(sense delta)_ | _(desbloqueja branch tech)_ | `is_discovery_action: true`. OCULTA si no hi ha branch techs elegibles. Quan és visible: notificació "Hi ha estrangers al poblat que expliquen tècniques noves". |
 
 ### Caçador — accions d'habilitat
 
@@ -434,6 +435,62 @@ Les restes d'un mamut o ós de les cavernes. Queden coses aprofitables.
 Has pujat a un punt elevat. Des d'aquí pots veure tot el territori.
 - **Memoritzar el paisatge**: → Protecció +8, Provisions +4 (coneixes millor on caçar)
 - **Buscar senyal de ramats**: → 60% Provisions +6 (coneixes on és la caça)
+
+---
+
+### Events de Descoberta (`is_discovery_event: true`)
+
+Variants narratives disfressades dins dels pools normals. Apareixen ÚNICAMENT
+quan el jugador és elegible per a la branch tech referenciada. D'un sol ús.
+
+#### En `pool_caca` — descobreix `bt_punta_llanca`
+
+**`ev_desc_caca_llancador`** (prob: 0.18, `req: bt_punta_llanca eligible`)
+Mentre espies el ramat, veus de lluny un caçador d'un altre grup. Llança
+una pedra amb un pal llarg i abat la presa des d'una distància increïble.
+- **Apropar-te a observar** _(cost: Provisions×2)_: → `unlocks: bt_punta_llanca`
+- **Seguir el teu camí**: → Provisions +2
+
+#### En `pool_recollecta` — descobreix `bt_rasclador_fi`
+
+**`ev_desc_rasclador`** (prob: 0.18, `req: bt_rasclador_fi eligible`)
+Recolles arrels prop d'un grup estranger. Una dona rasca una arrel amb
+un fragment de sílex molt fi que mai no havies vist —surt una polpa perfecta.
+- **Preguntar-li com ho fa** _(cost: Provisions×2)_: → `unlocks: bt_rasclador_fi`
+- **Continuar amb la teva tècnica**: → Provisions +2
+
+#### En `pool_artesania` — descobreix `bt_agulla_os`
+
+**`ev_desc_agulla`** (prob: 0.18, `req: bt_agulla_os eligible`)
+Mentre talles os, un fragment llarg i fi queda perfectament aguillonat.
+Un membre del grup el recull i pensa en veu alta: *"Amb un forat aquí..."*
+- **Experimentar plegats** _(cost: Provisions×2)_: → `unlocks: bt_agulla_os`
+- **Deixar-ho per a un altre moment**: → output +1 (el fragment és útil igualment)
+
+#### En `pool_ritual` — descobreix `bt_guariment_plantes`
+
+**`ev_desc_herbes`** (prob: 0.18, `req: bt_guariment_plantes eligible`)
+Durant el ritual, un vell del grup crema certes herbes que no has vist
+mai cremar. Olora diferent. Sembla que algú amb mal de ventre s'ha millorat.
+- **Demanar-li que t'ho expliqui**: → `unlocks: bt_guariment_plantes`
+- **Observar en silenci**: → Benestar +2
+
+#### En `pool_social` — descobreix `bt_ornaments`
+
+**`ev_desc_ornaments`** (prob: 0.18, `req: bt_ornaments eligible`)
+L'estranger que ha visitat el campament porta closques foradades lligades
+al coll. Tothom els mira. L'home somriu i te n'ofereix un.
+- **Acceptar-lo i preguntar-li** _(cost: Provisions×3)_: → `unlocks: bt_ornaments`
+- **Agrair-ho però declinar**: → Vincles +3
+
+#### En `pool_ritual` — descobreix `bt_pintura_rupestre`
+
+**`ev_desc_pintura`** (prob: 0.15, `req: bt_pintura_rupestre eligible`)
+En un moment de meditació prop d'una paret de roca, veus les ombres que
+fa el foc. Per un instant, sembles veure-hi formes d'animals. Ningú més ha
+estat aquí.
+- **Intentar fixar les formes amb fang**: → `unlocks: bt_pintura_rupestre`
+- **Guardar el moment per tu**: → Benestar +5, inclination `espiritualitat +0.02`
 
 ---
 
