@@ -24,9 +24,11 @@ body {
   font-size: 14px;
   background: var(--bg);
   color: var(--text);
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: contain;
 }
 
 /* ---- TOP BAR ---- */
@@ -276,6 +278,7 @@ button {
   cursor: pointer;
   transition: opacity 0.1s, transform 0.1s;
   white-space: nowrap;
+  touch-action: manipulation;
 }
 
 button:hover  { opacity: 0.85; transform: translateY(-1px); }
@@ -423,12 +426,103 @@ button:active { opacity: 1;    transform: translateY(0); }
 .btn-choice:hover { border-color: var(--accent); color: var(--accent); }
 
 /* ---- RESPONSIVE ---- */
-@media (max-width: 760px) {
+
+/* Tablet: compress side panels */
+@media (max-width: 900px) {
+  #left-panel  { flex: 0 0 220px; }
+  #right-panel { flex: 0 0 160px; }
+  .axis-label  { width: 80px; }
+}
+
+/* Mobile: single column, actions panel first */
+@media (max-width: 640px) {
+  body { font-size: 15px; }
+
+  /* Top bar */
+  #top-bar {
+    padding: 8px 12px;
+    gap: 6px;
+  }
+  #top-bar h1 {
+    font-size: 13px;
+    flex-basis: 100%;
+    order: -1;
+  }
+  .stat-badge { font-size: 12px; padding: 4px 8px; }
+  #food-counter { font-size: 15px; }
+
+  /* Layout */
   #main {
     flex-direction: column;
+    padding: 8px;
+    gap: 8px;
+    overflow-y: visible;
+    min-height: unset;
   }
-  #left-panel, #right-panel {
+  .panel {
+    overflow-y: visible;
     flex: none;
+  }
+
+  /* Reorder: actions first, inclination second, log last */
+  #center-panel { order: 1; }
+  #left-panel   { order: 2; }
+  #right-panel  { order: 3; }
+
+  /* Touch-friendly buttons */
+  button {
+    min-height: 44px;
+    font-size: 14px;
+    padding: 10px 16px;
+  }
+  .btn-discover {
+    min-height: 44px;
+    font-size: 13px;
+    padding: 8px 14px;
+  }
+  .btn-discovery {
+    min-height: 44px;
+    font-size: 13px;
+    padding: 8px 14px;
+  }
+  .btn-modal {
+    min-height: 48px;
+    font-size: 15px;
     width: 100%;
   }
+  .btn-choice {
+    min-height: 52px;
+    font-size: 14px;
+    padding: 12px 14px;
+  }
+
+  /* Action cards */
+  .action-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 10px 12px;
+  }
+  .action-name { font-size: 14px; }
+
+  /* Inclination bars */
+  .axis-label { width: 90px; font-size: 12px; }
+  .axis-track { height: 12px; }
+  .axis-value { font-size: 12px; }
+
+  /* Modals: near-full screen */
+  .modal-box {
+    width: 96%;
+    padding: 20px 16px;
+    max-height: 88dvh;
+    overflow-y: auto;
+  }
+  .modal-box h2 { font-size: 20px; }
+  .modal-box p  { font-size: 15px; }
+
+  /* Discovery */
+  .discovery-notification { font-size: 13px; padding: 10px 12px; }
+
+  /* Log: horizontal scroll on small screens if needed */
+  #right-panel { max-height: 180px; overflow-y: auto; }
 }
