@@ -41,6 +41,7 @@ function initState() {
     character: createCharacter(inclination, basePurchased, new Set()),
     discoveredUniversalTechIds: new Set(),
     log: [],
+    lastResult: null,
     pendingEvent: null,
     pendingSuccession: null,
     gameOver: false,
@@ -159,6 +160,7 @@ function performDiscoveryAction() {
     getBranchTechMaturity(a) >= getBranchTechMaturity(b) ? a : b
   );
   unlockBranchTech(best);
+  state.lastResult = `Habilitat nova apresa: ${best.name}`;
   state.cycle++;
 
   if (state.cycle >= LIFE_EXPECTANCY && !state.pendingEvent) triggerSuccession();
@@ -230,6 +232,7 @@ function executeAction(actionId) {
   state.cycle++;
 
   addLog(`[${state.cycle}] ${action.name}: +${output} Aliment`);
+  state.lastResult = `Cicle ${state.cycle} — ${action.name}: +${output} provisions`;
 
   // Trigger event
   if (action.event_pool_id && EVENT_POOLS[action.event_pool_id]) {
@@ -319,6 +322,7 @@ function continueSuccession() {
   state.cycle = 0;
   state.character = createCharacter(newInclination, inheritedPurchased, inheritedBranchTechs);
 
+  state.lastResult = null;
   addLog(`--- Generació ${state.generation} ---`);
   render();
 }
@@ -339,30 +343,80 @@ function addLog(msg) {
 }
 
 // --- Rendering ---
+
+const AXIS_LABELS = {
+  impuls:         { left: "Reflexiu",  right: "Impulsiu"  },
+  "intel·lecte":  { left: "Instintiu", right: "Analític"  },
+  espiritualitat: { left: "Pragmàtic", right: "Espiritual" },
+  sociabilitat:   { left: "Solitari",  right: "Social"    }
+};
+
+const FOOD_MAX_DISPLAY = 30;
+
+function inclinationToDotIndex(val) {
+  if (val < -0.5) return 0;
+  if (val < -0.1) return 1;
+  if (val <=  0.1) return 2;
+  if (val <=  0.5) return 3;
+  return 4;
+}
+
 function render() {
   renderTopBar();
-  renderLeftPanel();
-  renderCenterPanel();
-  renderRightPanel();
+  renderProfilePanel();
+  renderActionsPanel();
   renderModals();
 }
 
 function renderTopBar() {
   document.getElementById("cycle-counter").textContent = `Cicle ${state.cycle}`;
-  document.getElementById("gen-counter").textContent = `Generació ${state.generation}/${MAX_GENERATIONS}`;
-  document.getElementById("food-counter").textContent = `${state.food} Aliment`;
+  document.getElementById("gen-counter").textContent = `Gen ${state.generation}/${MAX_GENERATIONS}`;
 }
 
-function renderLeftPanel() {
-  // Inclination bars
-  const barsEl = document.getElementById("inclination-bars");
-  barsEl.innerHTML = "";
+function renderProfilePanel() {
+  // Food bar
+  const fill = document.getElementById("food-bar-fill");
+  document.getElementById("food-count").textContent = state.food;
+  fill.style.width = Math.min(100, Math.max(0, (state.food / FOOD_MAX_DISPLAY) * 100)) + "%";
+  fill.style.background = state.food < 4 ? "var(--accent)" : state.food < 8 ? "#f59e0b" : "var(--gold)";
+
+  // Inclination dots
+  const inclEl = document.getElementById("inclination-rows");
+  inclEl.innerHTML = "";
   for (const axis of AXES) {
     const val = state.character.inclination[axis];
-    barsEl.appendChild(buildAxisBar(axis, val));
+    const labels = AXIS_LABELS[axis];
+    const activeDot = inclinationToDotIndex(val);
+
+    const row = document.createElement("div");
+    row.className = "incl-row";
+
+    const leftLbl = document.createElement("span");
+    leftLbl.className = "incl-pole";
+    leftLbl.textContent = labels.left;
+
+    const dotsEl = document.createElement("span");
+    dotsEl.className = "incl-dots";
+    for (let i = 0; i < 5; i++) {
+      const dot = document.createElement("span");
+      dot.className = "incl-dot";
+      if (i === activeDot) {
+        dot.classList.add(i < 2 ? "active-left" : i === 2 ? "active-center" : "active-right");
+      }
+      dotsEl.appendChild(dot);
+    }
+
+    const rightLbl = document.createElement("span");
+    rightLbl.className = "incl-pole right";
+    rightLbl.textContent = labels.right;
+
+    row.appendChild(leftLbl);
+    row.appendChild(dotsEl);
+    row.appendChild(rightLbl);
+    inclEl.appendChild(row);
   }
 
-  // Active branch chips
+  // Branches
   const branchesEl = document.getElementById("active-branches");
   branchesEl.innerHTML = "";
   const activeBranches = getActiveBranches();
@@ -377,18 +431,7 @@ function renderLeftPanel() {
     }
   }
 
-  // Discovery notification
-  const notifEl = document.getElementById("discovery-notification");
-  if (notifEl) {
-    if (getEligibleBranchTechs().length > 0) {
-      notifEl.textContent = "Hi ha estrangers al poblat que expliquen tècniques noves.";
-      notifEl.classList.remove("hidden");
-    } else {
-      notifEl.classList.add("hidden");
-    }
-  }
-
-  // Unlocked branch techs
+  // Skills
   const btEl = document.getElementById("unlocked-branch-techs");
   btEl.innerHTML = "";
   if (state.character.unlockedBranchTechIds.size === 0) {
@@ -398,100 +441,71 @@ function renderLeftPanel() {
       const bt = BRANCH_TECHS.find(t => t.id === btId);
       if (!bt) continue;
       const div = document.createElement("div");
-      div.className = "bt-item";
+      div.className = "skill-item";
       div.textContent = bt.name;
       btEl.appendChild(div);
     }
   }
 }
 
-function buildAxisBar(axis, val) {
-  const wrap = document.createElement("div");
-  wrap.className = "axis-row";
-
-  const label = document.createElement("div");
-  label.className = "axis-label";
-  label.textContent = axis.charAt(0).toUpperCase() + axis.slice(1);
-  wrap.appendChild(label);
-
-  const track = document.createElement("div");
-  track.className = "axis-track";
-
-  // Center line
-  const center = document.createElement("div");
-  center.className = "axis-center";
-  track.appendChild(center);
-
-  // Fill bar
-  const fill = document.createElement("div");
-  fill.className = "axis-fill";
-  const pct = val * 50; // val in [-1,1] → [-50%, +50%] from center
-  if (val >= 0) {
-    fill.style.left = "50%";
-    fill.style.width = `${pct}%`;
-    fill.classList.add("positive");
+function renderActionsPanel() {
+  // Last result
+  const lrEl = document.getElementById("last-result");
+  if (state.lastResult) {
+    lrEl.innerHTML = `<div class="last-result-label">Últim resultat</div><div class="last-result-text">${state.lastResult}</div>`;
+    lrEl.classList.remove("hidden");
   } else {
-    fill.style.left = `${50 + pct}%`;
-    fill.style.width = `${-pct}%`;
-    fill.classList.add("negative");
+    lrEl.classList.add("hidden");
   }
-  track.appendChild(fill);
 
-  wrap.appendChild(track);
+  // Discovery notification
+  const notifEl = document.getElementById("discovery-notification");
+  if (getEligibleBranchTechs().length > 0) {
+    notifEl.textContent = "Hi ha estrangers al poblat que expliquen tècniques noves.";
+    notifEl.classList.remove("hidden");
+  } else {
+    notifEl.classList.add("hidden");
+  }
 
-  const valLabel = document.createElement("div");
-  valLabel.className = "axis-value";
-  valLabel.textContent = (val >= 0 ? "+" : "") + val.toFixed(2);
-  wrap.appendChild(valLabel);
-
-  return wrap;
-}
-
-function renderCenterPanel() {
   renderUniversalTechs();
   renderActions();
+  renderLog();
 }
 
 function renderUniversalTechs() {
+  const section = document.getElementById("universal-techs-section");
   const el = document.getElementById("universal-techs-list");
   el.innerHTML = "";
 
   const discoverable = getDiscoverableTechs();
   if (discoverable.length === 0) {
-    el.innerHTML = '<div class="dim">Cap tecnologia disponible ara</div>';
+    section.classList.add("empty");
     return;
   }
+  section.classList.remove("empty");
 
   for (const tech of discoverable) {
-    const div = document.createElement("div");
-    div.className = "tech-item";
+    const card = document.createElement("div");
+    card.className = "tech-card";
 
     const info = document.createElement("div");
     info.className = "tech-info";
-    info.innerHTML = `<span class="tech-name">${tech.name}</span><span class="tech-desc">${tech.description}</span>`;
+    info.innerHTML = `<div class="tech-name">${tech.name}</div><div class="tech-desc">${tech.description}</div>`;
 
     const btn = document.createElement("button");
-    btn.className = "btn-discover";
+    btn.className = "btn-discover-tech";
     btn.textContent = "Descobrir";
     btn.onclick = () => discoverTech(tech.id);
 
-    div.appendChild(info);
-    div.appendChild(btn);
-    el.appendChild(div);
+    card.appendChild(info);
+    card.appendChild(btn);
+    el.appendChild(card);
   }
 }
 
 function renderActions() {
   const el = document.getElementById("actions-list");
   el.innerHTML = "";
-
-  // Determine which actions to show and how
-  // Purchased + ACTIVE → green execute button
-  // Purchased + FADED  → grey, show but disabled
-  // Purchased + HIDDEN → not shown
-  // Not purchased, unlocked by branch tech, ACTIVE → blue buy button
-  // Not purchased, unlocked by branch tech, FADED/HIDDEN → not shown
-  // Base actions → always purchased from start
 
   const purchasableActionIds = new Set();
   for (const btId of state.character.unlockedBranchTechIds) {
@@ -500,20 +514,16 @@ function renderActions() {
     for (const aid of bt.unlocks_action_ids) purchasableActionIds.add(aid);
   }
 
-  // Separate sections: executable, faded, buyable, discovery
   const toShow = [];
   const hasEligibleBranchTechs = getEligibleBranchTechs().length > 0;
 
   for (const action of ACTIONS) {
-    // Discovery action: special visibility rule
     if (action.is_discovery_action) {
       if (hasEligibleBranchTechs) toShow.push({ action, purchased: true, vis: "ACTIVE", isDiscovery: true });
       continue;
     }
-
     const purchased = state.character.purchasedActionIds.has(action.id);
     const vis = getActionVisibility(action);
-
     if (purchased) {
       if (vis === "HIDDEN") continue;
       toShow.push({ action, purchased, vis });
@@ -529,12 +539,12 @@ function renderActions() {
     return;
   }
 
-  // Sort: ACTIVE purchased first, then FADED purchased, then buyable
   toShow.sort((a, b) => {
     const score = item => {
+      if (item.isDiscovery) return -1;
       if (item.purchased && item.vis === "ACTIVE") return 0;
       if (item.purchased && item.vis === "FADED")  return 1;
-      return 2; // buyable
+      return 2;
     };
     return score(a) - score(b);
   });
@@ -546,55 +556,63 @@ function renderActions() {
 
 function buildActionCard({ action, purchased, vis, isDiscovery }) {
   const card = document.createElement("div");
-  card.className = `action-card ${vis === "FADED" ? "faded" : ""} ${isDiscovery ? "discovery" : ""}`;
+  card.className = `action-card${vis === "FADED" ? " faded" : ""}${isDiscovery ? " discovery" : ""}`;
 
   const nameEl = document.createElement("div");
   nameEl.className = "action-name";
   nameEl.textContent = action.name;
   card.appendChild(nameEl);
 
+  if (action.description) {
+    const descEl = document.createElement("div");
+    descEl.className = "action-desc";
+    descEl.textContent = action.description;
+    card.appendChild(descEl);
+  }
+
+  const footer = document.createElement("div");
+  footer.className = "action-footer";
+
+  const metaEl = document.createElement("div");
+  metaEl.className = "action-meta";
+
+  const btnArea = document.createElement("div");
+
   if (isDiscovery) {
     const btn = document.createElement("button");
     btn.className = "btn-discovery";
     btn.textContent = "Escoltar";
     btn.onclick = () => performDiscoveryAction();
-    card.appendChild(btn);
-    return card;
-  }
-
-  if (purchased) {
-    if (vis === "ACTIVE") {
-      const btn = document.createElement("button");
-      btn.className = "btn-execute";
-      btn.textContent = `Executar (−${action.execute_cost})`;
-      btn.onclick = () => executeAction(action.id);
-      card.appendChild(btn);
-
-      // Show output range
-      const range = document.createElement("span");
-      range.className = "action-range";
-      range.textContent = `+${action.output_min}–${action.output_max}`;
-      card.appendChild(range);
-    } else {
-      // FADED
-      const note = document.createElement("span");
-      note.className = "faded-note";
-      note.textContent = "(fora del rang)";
-      card.appendChild(note);
-    }
+    btnArea.appendChild(btn);
+  } else if (purchased && vis === "ACTIVE") {
+    metaEl.innerHTML = `Cost: ${action.execute_cost}<span class="reward">+${action.output_min}–${action.output_max}</span>`;
+    const btn = document.createElement("button");
+    btn.className = "btn-execute";
+    btn.textContent = `Executar (−${action.execute_cost})`;
+    btn.onclick = () => executeAction(action.id);
+    btnArea.appendChild(btn);
+  } else if (purchased && vis === "FADED") {
+    metaEl.innerHTML = `Cost: ${action.execute_cost}<span class="reward">+${action.output_min}–${action.output_max}</span>`;
+    const note = document.createElement("span");
+    note.className = "faded-note";
+    note.textContent = "Fora de rang";
+    btnArea.appendChild(note);
   } else {
-    // Buyable
+    metaEl.textContent = `Comprar: ${action.purchase_cost} provisions`;
     const btn = document.createElement("button");
     btn.className = "btn-buy";
-    btn.textContent = `Comprar (−${action.purchase_cost} Aliment)`;
+    btn.textContent = `Comprar (−${action.purchase_cost})`;
     btn.onclick = () => purchaseAction(action.id);
-    card.appendChild(btn);
+    btnArea.appendChild(btn);
   }
 
+  footer.appendChild(metaEl);
+  footer.appendChild(btnArea);
+  card.appendChild(footer);
   return card;
 }
 
-function renderRightPanel() {
+function renderLog() {
   const el = document.getElementById("action-log");
   el.innerHTML = "";
   if (state.log.length === 0) {
@@ -619,7 +637,6 @@ function renderModals() {
     const dismissBtn = document.getElementById("btn-dismiss-event");
 
     if (ev.options) {
-      // Discovery event: show choice buttons
       dismissBtn.classList.add("hidden");
       choicesEl.innerHTML = "";
       choicesEl.classList.remove("hidden");
@@ -632,12 +649,11 @@ function renderModals() {
       });
       document.getElementById("event-effect").textContent = "";
     } else {
-      // Normal event
       dismissBtn.classList.remove("hidden");
       choicesEl.classList.add("hidden");
       const fx = ev.effects;
       document.getElementById("event-effect").textContent =
-        fx && fx.food ? `Efecte: ${fx.food >= 0 ? "+" : ""}${fx.food} Aliment` : "";
+        fx && fx.food ? `Efecte: ${fx.food >= 0 ? "+" : ""}${fx.food} provisions` : "";
     }
     eventModal.classList.remove("hidden");
   } else {

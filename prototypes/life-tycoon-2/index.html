@@ -11,68 +11,76 @@
 </head>
 <body>
 
-  <!-- TOP BAR -->
   <header id="top-bar">
-    <h1>Life Tycoon 2 — Prototip</h1>
-    <span class="stat-badge" id="cycle-counter">Cicle 0</span>
-    <span class="stat-badge" id="gen-counter">Generació 1/5</span>
-    <span class="stat-badge" id="food-counter">15 Aliment</span>
+    <h1>Life Tycoon 2</h1>
+    <div class="top-stats">
+      <span id="cycle-counter" class="stat-pill">Cicle 0</span>
+      <span id="gen-counter" class="stat-pill">Gen 1/5</span>
+    </div>
   </header>
 
-  <!-- MAIN LAYOUT -->
   <main id="main">
 
-    <!-- LEFT PANEL: Inclination + Branches + Skills -->
-    <aside id="left-panel" class="panel">
+    <!-- LEFT: Character profile -->
+    <aside id="profile-panel">
 
-      <div class="panel-section">
-        <h2>Inclinació</h2>
-        <div id="inclination-bars"></div>
+      <div class="profile-food">
+        <div class="profile-food-label">
+          <span>Provisions</span>
+          <strong id="food-count">15</strong>
+        </div>
+        <div id="food-bar-track">
+          <div id="food-bar-fill"></div>
+        </div>
       </div>
 
-      <div class="panel-section">
-        <h2>Branques actives</h2>
+      <div class="profile-section">
+        <div class="section-label">Inclinació</div>
+        <div id="inclination-rows"></div>
+      </div>
+
+      <div class="profile-section">
+        <div class="section-label">Branques</div>
         <div id="active-branches"></div>
       </div>
 
-      <div class="panel-section">
-        <h2>Habilitats disponibles</h2>
+      <div class="profile-section">
+        <div class="section-label">Habilitats</div>
         <div id="unlocked-branch-techs"></div>
       </div>
 
-      <div id="discovery-notification" class="discovery-notification hidden"></div>
-
     </aside>
 
-    <!-- CENTER PANEL: Universal Techs + Actions -->
-    <section id="center-panel" class="panel">
+    <!-- RIGHT: Actions + log -->
+    <section id="actions-panel">
 
-      <div class="panel-section">
-        <h2>Tecnologies universals</h2>
+      <div id="last-result" class="last-result hidden"></div>
+
+      <div id="discovery-notification" class="discovery-notification hidden"></div>
+
+      <div id="universal-techs-section" class="panel-block">
+        <div class="section-label">Tecnologies noves</div>
         <div id="universal-techs-list"></div>
       </div>
 
-      <div class="panel-section">
-        <h2>Accions</h2>
+      <div class="panel-block">
+        <div class="section-label">Accions</div>
         <div id="actions-list"></div>
       </div>
 
-    </section>
-
-    <!-- RIGHT PANEL: Log -->
-    <aside id="right-panel" class="panel">
-      <div class="panel-section">
-        <h2>Registre</h2>
+      <div class="panel-block log-block">
+        <div class="section-label">Registre</div>
         <div id="action-log"></div>
       </div>
-    </aside>
+
+    </section>
 
   </main>
 
   <!-- EVENT MODAL -->
   <div id="event-modal" class="modal-overlay hidden">
     <div class="modal-box">
-      <h2>Esdeveniment</h2>
+      <div class="modal-tag">Esdeveniment</div>
       <p id="event-text"></p>
       <p class="modal-effect" id="event-effect"></p>
       <div id="event-choices" class="event-choices hidden"></div>
@@ -83,14 +91,14 @@
   <!-- SUCCESSION MODAL -->
   <div id="succession-modal" class="modal-overlay hidden">
     <div class="modal-box">
-      <h2>Successió</h2>
+      <div class="modal-tag">Successió</div>
       <p>El personatge ha completat la seva vida.</p>
       <div class="modal-summary">
         Generació: <span id="succ-gen"></span><br>
         Cicles viscuts: <span id="succ-cycles"></span><br>
         Eix dominant: <span id="succ-axis"></span>
       </div>
-      <p>El fill hereta les tècniques i el <strong>65%</strong> de les inclinacions.</p>
+      <p>El fill hereta les habilitats i el <strong>65%</strong> de les inclinacions.</p>
       <button class="btn-modal" id="btn-continue-succession">Continua amb el fill</button>
     </div>
   </div>
@@ -98,7 +106,7 @@
   <!-- GAME OVER MODAL -->
   <div id="gameover-modal" class="modal-overlay hidden">
     <div class="modal-box">
-      <h2>Fi del llinatge</h2>
+      <div class="modal-tag">Fi del Llinatge</div>
       <p>Cinc generacions han passat. El coneixement del teu llinatge queda gravat a les roques.</p>
       <button class="btn-modal" id="btn-restart">Reiniciar</button>
     </div>
