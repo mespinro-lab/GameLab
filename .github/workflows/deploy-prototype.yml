@@ -1,9 +1,11 @@
-name: Deploy Prototype to GitHub Pages
+name: Deploy GameLab to GitHub Pages
 
 on:
   push:
     branches: [main]
-    paths: ['prototypes/life-tycoon-2/**']
+    paths:
+      - 'pages/**'
+      - 'prototypes/life-tycoon-2/**'
   workflow_dispatch:
 
 permissions:
@@ -24,11 +26,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Build pages
+        run: |
+          mkdir -p dist/life-tycoon-2
+          cp pages/index.html dist/
+          cp prototypes/life-tycoon-2/index.html  dist/life-tycoon-2/
+          cp prototypes/life-tycoon-2/style.css    dist/life-tycoon-2/
+          cp prototypes/life-tycoon-2/data.js      dist/life-tycoon-2/
+          cp prototypes/life-tycoon-2/game.js      dist/life-tycoon-2/
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: prototypes/life-tycoon-2/
+          path: dist/
 
       - uses: actions/deploy-pages@v4
         id: deployment
