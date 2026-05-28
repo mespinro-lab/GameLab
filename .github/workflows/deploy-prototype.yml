@@ -1,35 +1,11 @@
-name: Deploy GameLab to GitHub Pages
-
-on:
-  push:
-    branches: [main]
-    paths:
-      - 'prototypes/**'
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
-
-jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/configure-pages@v5
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: prototypes/
-
-      - uses: actions/deploy-pages@v4
-        id: deployment
+# GitHub Pages serves automatically from the main branch root.
+# No workflow needed for deployment — every push to main updates the site.
+# This file is kept as documentation only.
+#
+# Site structure:
+#   /index.html                        → portal (root index)
+#   /src/life-tycoon/                  → Life Tycoon v1
+#   /src/totcontrolat/                 → Tot Controlat
+#   /src/alchemix/                     → Alchemix
+#   /tools/data-editor.html            → Life Tycoon Editor
+#   /prototypes/life-tycoon-2/         → Life Tycoon 2 (prototip)
