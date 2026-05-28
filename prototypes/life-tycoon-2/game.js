@@ -206,14 +206,14 @@ function purchaseAction(actionId) {
     return;
   }
   if (state.materials < action.purchase_cost) {
-    addLog(`Materials insuficients per aprendre ${action.name}.`);
+    addLog(`Saber insuficient per aprendre ${action.name}.`);
     render();
     return;
   }
 
   state.materials -= action.purchase_cost;
   state.character.purchasedActionIds.add(actionId);
-  addLog(`Après: ${action.name} (−${action.purchase_cost} mat.)`);
+  addLog(`Après: ${action.name} (−${action.purchase_cost} 🧠)`);
   render();
 }
 
@@ -257,7 +257,7 @@ function executeAction(actionId) {
   // Advance cycle
   state.cycle++;
 
-  const resLabel = outRes === 'eines' ? 'Eines' : outRes === 'health' ? 'Salut' : 'Aliment';
+  const resLabel = outRes === 'eines' ? 'Saber' : outRes === 'health' ? 'Salut' : 'Aliment';
   addLog(`[${state.cycle}] ${action.name}: +${output} ${resLabel}`);
   state.lastResult = `Cicle ${state.cycle} — ${action.name}: +${output} ${resLabel}`;
 
@@ -435,16 +435,10 @@ function renderTopBar() {
   document.getElementById("cycle-counter").textContent = `Cicle ${state.cycle}`;
   document.getElementById("gen-counter").textContent = `Gen ${state.generation}/${MAX_GENERATIONS}`;
   document.getElementById("food-counter").textContent = `🌾 ${state.food}`;
-  document.getElementById("materials-counter").textContent = `🔧 ${state.materials}`;
+  document.getElementById("materials-counter").textContent = `🧠 ${state.materials}`;
 }
 
 function renderProfilePanel() {
-  // Food bar
-  const fill = document.getElementById("food-bar-fill");
-  document.getElementById("food-count").textContent = state.food;
-  fill.style.width = Math.min(100, Math.max(0, (state.food / FOOD_MAX_DISPLAY) * 100)) + "%";
-  fill.style.background = state.food < 4 ? "var(--accent)" : state.food < 8 ? "#f59e0b" : "var(--gold)";
-
   // Health bar
   const hfill = document.getElementById("health-bar-fill");
   document.getElementById("health-count").textContent = state.health;
@@ -701,7 +695,7 @@ function buildActionCard({ action, purchased, vis, isDiscovery }) {
   const btnArea = document.createElement("div");
 
   const outRes   = action.output_resource || 'food';
-  const resShort = outRes === 'eines' ? 'ein.' : outRes === 'health' ? 'salut' : 'alim.';
+  const resShort = outRes === 'eines' ? 'saber' : outRes === 'health' ? 'salut' : 'alim.';
   const resClass = outRes === 'eines' ? 'reward reward-eines' : outRes === 'health' ? 'reward reward-health' : 'reward';
   const costLabel = action.execute_cost > 0 ? `${action.execute_cost} alim. ` : '';
 
@@ -725,10 +719,10 @@ function buildActionCard({ action, purchased, vis, isDiscovery }) {
     note.textContent = "Fora de rang";
     btnArea.appendChild(note);
   } else {
-    metaEl.innerHTML = `${action.purchase_cost} eines <span class="${resClass}">+${action.output_min}–${action.output_max} ${resShort}</span>`;
+    metaEl.innerHTML = `${action.purchase_cost} saber <span class="${resClass}">+${action.output_min}–${action.output_max} ${resShort}</span>`;
     const btn = document.createElement("button");
     btn.className = "btn-buy";
-    btn.textContent = `Aprendre (−${action.purchase_cost} ein.)`;
+    btn.textContent = `Aprendre (−${action.purchase_cost} 🧠)`;
     btn.onclick = () => purchaseAction(action.id);
     btnArea.appendChild(btn);
   }
