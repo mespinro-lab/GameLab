@@ -13,7 +13,8 @@ const MAX_GENERATIONS = 5;
 const STARTING_FOOD = 15;
 
 const AXES = ["impuls", "intel·lecte", "espiritualitat", "sociabilitat"];
-const FOOD_UPKEEP = 1; // food consumed per cycle (clan sustenance)
+const FOOD_UPKEEP = 1;       // food consumed per cycle (clan sustenance)
+const MATERIALS_PER_ACTION = 1; // materials earned per executed action
 
 // --- Game State ---
 let state = null;
@@ -41,6 +42,7 @@ function initState() {
     cycle: 0,
     generation: 1,
     food: STARTING_FOOD,
+    materials: 0,
     character: createCharacter(inclination, basePurchased, new Set()),
     discoveredUniversalTechIds: new Set(),
     log: [],
@@ -195,15 +197,15 @@ function purchaseAction(actionId) {
     addLog("Acció no disponible en l'estat actual.");
     return;
   }
-  if (state.food < action.purchase_cost) {
-    addLog(`Aliment insuficient per comprar ${action.name}.`);
+  if (state.materials < action.purchase_cost) {
+    addLog(`Materials insuficients per aprendre ${action.name}.`);
     render();
     return;
   }
 
-  state.food -= action.purchase_cost;
+  state.materials -= action.purchase_cost;
   state.character.purchasedActionIds.add(actionId);
-  addLog(`Comprat: ${action.name} (−${action.purchase_cost} Aliment)`);
+  addLog(`Après: ${action.name} (−${action.purchase_cost} mat.)`);
   render();
 }
 
@@ -231,6 +233,9 @@ function executeAction(actionId) {
 
   // Apply inclination deltas
   applyInclinationDeltas(action.inclination_deltas);
+
+  // Earn materials for executing any action
+  state.materials += MATERIALS_PER_ACTION;
 
   // Advance cycle
   state.cycle++;
@@ -409,6 +414,7 @@ function render() {
 function renderTopBar() {
   document.getElementById("cycle-counter").textContent = `Cicle ${state.cycle}`;
   document.getElementById("gen-counter").textContent = `Gen ${state.generation}/${MAX_GENERATIONS}`;
+  document.getElementById("materials-counter").textContent = `Mat. ${state.materials}`;
 }
 
 function renderProfilePanel() {
@@ -617,10 +623,21 @@ function buildActionCard({ action, purchased, vis, isDiscovery }) {
   const card = document.createElement("div");
   card.className = `action-card${vis === "FADED" ? " faded" : ""}${isDiscovery ? " discovery" : ""}`;
 
+  const header = document.createElement("div");
+  header.className = "action-header";
+
   const nameEl = document.createElement("div");
   nameEl.className = "action-name";
   nameEl.textContent = action.name;
-  card.appendChild(nameEl);
+  header.appendChild(nameEl);
+
+  if (action.zona) {
+    const zoneEl = document.createElement("span");
+    zoneEl.className = `zone-badge zone-${action.zona.toLowerCase()}`;
+    zoneEl.textContent = action.zona;
+    header.appendChild(zoneEl);
+  }
+  card.appendChild(header);
 
   if (action.description) {
     const descEl = document.createElement("div");
@@ -665,10 +682,10 @@ function buildActionCard({ action, purchased, vis, isDiscovery }) {
     note.textContent = "Fora de rang";
     btnArea.appendChild(note);
   } else {
-    metaEl.textContent = `Comprar: ${action.purchase_cost} provisions`;
+    metaEl.innerHTML = `Mat: ${action.purchase_cost}<span class="reward">+${action.output_min}–${action.output_max}</span>`;
     const btn = document.createElement("button");
     btn.className = "btn-buy";
-    btn.textContent = `Comprar (−${action.purchase_cost})`;
+    btn.textContent = `Aprendre (−${action.purchase_cost} mat.)`;
     btn.onclick = () => purchaseAction(action.id);
     btnArea.appendChild(btn);
   }
