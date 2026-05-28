@@ -26,38 +26,62 @@
     <!-- LEFT: Character profile -->
     <aside id="profile-panel">
 
-      <div class="profile-health">
-        <div class="profile-health-label">
-          <span>Salut <span class="food-upkeep-label">−1/torn</span></span>
-          <strong id="health-count">20</strong>
+      <div id="profile-label" class="profile-label">Explorador</div>
+
+      <div class="tab-buttons">
+        <button id="tab-joc" class="tab-btn active">Joc</button>
+        <button id="tab-personatge" class="tab-btn">Personatge</button>
+      </div>
+
+      <!-- JOC TAB: health + stats + family -->
+      <div id="panel-joc" class="tab-panel">
+
+        <div class="profile-health">
+          <div class="profile-health-label">
+            <span>Salut <span class="food-upkeep-label">−1/torn</span></span>
+            <strong id="health-count">20</strong>
+          </div>
+          <div id="health-bar-track">
+            <div id="health-bar-fill"></div>
+          </div>
         </div>
-        <div id="health-bar-track">
-          <div id="health-bar-fill"></div>
+
+        <div class="profile-section">
+          <div class="section-label">Atributs</div>
+          <div id="stats-display"></div>
         </div>
+
+        <div class="panel-group-label">Llinatge</div>
+
+        <div class="profile-section">
+          <div class="section-label">Família</div>
+          <div id="family-status"></div>
+        </div>
+
       </div>
 
-      <div class="panel-group-label">Vitals</div>
+      <!-- PERSONATGE TAB: inclination + branches + skills -->
+      <div id="panel-personatge" class="tab-panel hidden">
 
-      <div class="profile-section">
-        <div class="section-label">Inclinació</div>
-        <div id="inclination-rows"></div>
-      </div>
+        <div class="panel-group-label">Vitals</div>
 
-      <div class="panel-group-label">Llinatge</div>
+        <div class="profile-section">
+          <div class="section-label">Inclinació</div>
+          <div id="inclination-rows"></div>
+        </div>
 
-      <div class="profile-section">
-        <div class="section-label">Família</div>
-        <div id="family-status"></div>
-      </div>
+        <div class="panel-group-label">Branques</div>
 
-      <div class="profile-section">
-        <div class="section-label">Branques</div>
-        <div id="active-branches"></div>
-      </div>
+        <div class="profile-section">
+          <div class="section-label">Branques actives</div>
+          <div id="active-branches"></div>
+        </div>
 
-      <div class="profile-section">
-        <div class="section-label">Habilitats</div>
-        <div id="unlocked-branch-techs"></div>
+        <div class="profile-section">
+          <div class="section-label">Habilitats</div>
+          <div id="unlocked-branch-techs"></div>
+        </div>
+
       </div>
 
     </aside>

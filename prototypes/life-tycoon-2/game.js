@@ -17,15 +17,17 @@ const FOOD_UPKEEP    = 1;  // food consumed per cycle
 const HEALTH_UPKEEP  = 1;  // health lost per cycle (aging)
 const STARTING_HEALTH = 20;
 const HEALTH_MAX      = 20;
+const STAT_MAX        = 5.0;
 
 // --- Game State ---
 let state = null;
 
-function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedBranchTechIds) {
+function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedBranchTechIds, inheritedStats) {
   return {
     inclination: { ...inheritedInclination },
     purchasedActionIds: new Set(inheritedPurchasedIds),
     unlockedBranchTechIds: new Set(inheritedBranchTechIds),
+    stats: inheritedStats ? { ...inheritedStats } : { forca: 1.0, enginy: 1.0, vincle: 1.0 },
     hasPartner: false,
     hasChildren: false,
   };
@@ -114,6 +116,11 @@ function evaluateConditions(condObj, inclination) {
 
 function getActiveBranches() {
   return BRANCHES.filter(b => evaluateConditions(b.conditions));
+}
+
+function getStatMultiplier(action) {
+  if (!action.stat_key) return 1;
+  return 1 + (state.character.stats[action.stat_key] - 1) * 0.15;
 }
 
 // --- Universal Tech Discovery ---
@@ -236,7 +243,7 @@ function executeAction(actionId) {
   state.food -= action.execute_cost;
 
   // Roll output and route to correct resource
-  const output = randInt(action.output_min, action.output_max);
+  const output = Math.round(randInt(action.output_min, action.output_max) * getStatMultiplier(action));
   const outRes = action.output_resource || 'food';
   if (outRes === 'eines') {
     state.materials += output;
@@ -253,6 +260,12 @@ function executeAction(actionId) {
 
   // Apply inclination deltas
   applyInclinationDeltas(action.inclination_deltas);
+
+  // Grow the relevant stat
+  if (action.stat_key && action.stat_gain) {
+    state.character.stats[action.stat_key] = Math.min(STAT_MAX,
+      state.character.stats[action.stat_key] + action.stat_gain);
+  }
 
   // Advance cycle
   state.cycle++;
@@ -368,9 +381,16 @@ function continueSuccession() {
   const inheritedPurchased = new Set(state.character.purchasedActionIds);
   const inheritedBranchTechs = new Set(state.character.unlockedBranchTechIds);
 
+  // Inherit stats with decay toward baseline
+  const parentStats = state.character.stats;
+  const inheritedStats = {};
+  for (const k of ['forca', 'enginy', 'vincle']) {
+    inheritedStats[k] = parentStats[k] * BRANCH_INHERITANCE_RATE + 1.0 * (1 - BRANCH_INHERITANCE_RATE);
+  }
+
   state.generation++;
   state.cycle = 0;
-  state.character = createCharacter(newInclination, inheritedPurchased, inheritedBranchTechs);
+  state.character = createCharacter(newInclination, inheritedPurchased, inheritedBranchTechs, inheritedStats);
 
   state.lastResult = null;
   addLog(`--- Generació ${state.generation} ---`);
@@ -439,6 +459,30 @@ function renderTopBar() {
 }
 
 function renderProfilePanel() {
+  // Profile label — dominant branch name or default
+  const activeBranchesNow = getActiveBranches();
+  document.getElementById("profile-label").textContent =
+    activeBranchesNow.length > 0 ? activeBranchesNow[0].name : "Explorador";
+
+  // Stats (Força / Enginy / Vincle)
+  const statsEl = document.getElementById("stats-display");
+  statsEl.innerHTML = "";
+  const statDefs = [
+    { key: "forca",  label: "Força" },
+    { key: "enginy", label: "Enginy" },
+    { key: "vincle", label: "Vincle" }
+  ];
+  for (const { key, label } of statDefs) {
+    const val = state.character.stats[key];
+    const pct = Math.min(100, Math.max(0, (val - 1.0) / (STAT_MAX - 1.0) * 100));
+    const row = document.createElement("div");
+    row.className = "stat-row";
+    row.innerHTML = `<span class="stat-name">${label}</span>` +
+      `<div class="stat-bar-track"><div class="stat-bar-fill" style="width:${pct.toFixed(1)}%"></div></div>` +
+      `<span class="stat-value">${val.toFixed(1)}</span>`;
+    statsEl.appendChild(row);
+  }
+
   // Health bar
   const hfill = document.getElementById("health-bar-fill");
   document.getElementById("health-count").textContent = state.health;
@@ -814,6 +858,20 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-dismiss-event").onclick = dismissEvent;
   document.getElementById("btn-continue-succession").onclick = continueSuccession;
   document.getElementById("btn-restart").onclick = restartGame;
+
+  // Wire profile tabs
+  document.getElementById("tab-joc").onclick = () => {
+    document.getElementById("panel-joc").classList.remove("hidden");
+    document.getElementById("panel-personatge").classList.add("hidden");
+    document.getElementById("tab-joc").classList.add("active");
+    document.getElementById("tab-personatge").classList.remove("active");
+  };
+  document.getElementById("tab-personatge").onclick = () => {
+    document.getElementById("panel-personatge").classList.remove("hidden");
+    document.getElementById("panel-joc").classList.add("hidden");
+    document.getElementById("tab-personatge").classList.add("active");
+    document.getElementById("tab-joc").classList.remove("active");
+  };
 
   initState();
   render();
