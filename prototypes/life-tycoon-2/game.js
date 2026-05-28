@@ -13,6 +13,7 @@ const MAX_GENERATIONS = 5;
 const STARTING_FOOD = 15;
 
 const AXES = ["impuls", "intel·lecte", "espiritualitat", "sociabilitat"];
+const FOOD_UPKEEP = 1; // food consumed per cycle (clan sustenance)
 
 // --- Game State ---
 let state = null;
@@ -22,6 +23,8 @@ function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedB
     inclination: { ...inheritedInclination },
     purchasedActionIds: new Set(inheritedPurchasedIds),
     unlockedBranchTechIds: new Set(inheritedBranchTechIds),
+    hasPartner: false,
+    hasChildren: false,
   };
 }
 
@@ -42,6 +45,7 @@ function initState() {
     discoveredUniversalTechIds: new Set(),
     log: [],
     lastResult: null,
+    gameOverReason: null,
     pendingEvent: null,
     pendingSuccession: null,
     gameOver: false,
@@ -234,6 +238,22 @@ function executeAction(actionId) {
   addLog(`[${state.cycle}] ${action.name}: +${output} Aliment`);
   state.lastResult = `Cicle ${state.cycle} — ${action.name}: +${output} provisions`;
 
+  // Special one-time family actions
+  if (actionId === 'act_cercar_parella' && !state.character.hasPartner) {
+    state.character.hasPartner = true;
+    state.lastResult = `Has trobat parella. Ara podeu tenir fills.`;
+    addLog(`Parella trobada.`);
+  }
+  if (actionId === 'act_tenir_fills' && !state.character.hasChildren) {
+    state.character.hasChildren = true;
+    state.lastResult = `Fills nascuts. La successió del llinatge és assegurada.`;
+    addLog(`Fills nascuts. Successió assegurada.`);
+  }
+
+  // Clan upkeep (food consumed this cycle regardless of action)
+  state.food = Math.max(0, state.food - FOOD_UPKEEP);
+  if (state.food === 0) addLog(`⚠ Provisions crítiques.`);
+
   // Trigger event
   if (action.event_pool_id && EVENT_POOLS[action.event_pool_id]) {
     const pool = getEligiblePoolEvents(EVENT_POOLS[action.event_pool_id]);
@@ -242,9 +262,8 @@ function executeAction(actionId) {
     }
   }
 
-  // Check succession
+  // Check succession / end of life
   if (state.cycle >= LIFE_EXPECTANCY) {
-    // Will be shown after event (or immediately if no event)
     if (!state.pendingEvent) triggerSuccession();
   }
 
@@ -286,8 +305,14 @@ function resolveDiscoveryOption(optionIndex) {
 }
 
 function triggerSuccession() {
+  if (!state.character.hasChildren) {
+    state.gameOver = true;
+    state.gameOverReason = 'no_heir';
+    return;
+  }
   if (state.generation >= MAX_GENERATIONS) {
     state.gameOver = true;
+    state.gameOverReason = 'max_generations';
     return;
   }
 
@@ -353,6 +378,19 @@ const AXIS_LABELS = {
 
 const FOOD_MAX_DISPLAY = 30;
 
+function getInclinationHint(action) {
+  const deltas = action.inclination_deltas;
+  const hints = Object.entries(deltas)
+    .filter(([, d]) => Math.abs(d) >= 0.01)
+    .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
+    .slice(0, 2)
+    .map(([axis, d]) => {
+      const labels = AXIS_LABELS[axis];
+      return d > 0 ? labels.right : labels.left;
+    });
+  return hints.length ? '→ ' + hints.join(' · ') : '';
+}
+
 function inclinationToDotIndex(val) {
   if (val < -0.5) return 0;
   if (val < -0.1) return 1;
@@ -416,6 +454,13 @@ function renderProfilePanel() {
     inclEl.appendChild(row);
   }
 
+  // Family status
+  const famEl = document.getElementById("family-status");
+  famEl.innerHTML = `
+    <span class="family-badge ${state.character.hasPartner ? 'achieved' : ''}">Parella</span>
+    <span class="family-badge ${state.character.hasChildren ? 'achieved' : ''}">Fills</span>
+  `;
+
   // Branches
   const branchesEl = document.getElementById("active-branches");
   branchesEl.innerHTML = "";
@@ -456,6 +501,16 @@ function renderActionsPanel() {
     lrEl.classList.remove("hidden");
   } else {
     lrEl.classList.add("hidden");
+  }
+
+  // Succession warning (approaching end of life without children)
+  const warnEl = document.getElementById("succession-warning");
+  const cyclesLeft = LIFE_EXPECTANCY - state.cycle;
+  if (cyclesLeft <= 4 && !state.character.hasChildren && !state.gameOver) {
+    warnEl.textContent = `⚠ Queden ${cyclesLeft} cicle${cyclesLeft === 1 ? '' : 's'}. Cal tenir fills per assegurar la successió.`;
+    warnEl.classList.remove("hidden");
+  } else {
+    warnEl.classList.add("hidden");
   }
 
   // Discovery notification
@@ -518,6 +573,10 @@ function renderActions() {
   const hasEligibleBranchTechs = getEligibleBranchTechs().length > 0;
 
   for (const action of ACTIONS) {
+    // Family actions: one-time, shown only when conditions met
+    if (action.id === 'act_cercar_parella' && state.character.hasPartner) continue;
+    if (action.id === 'act_tenir_fills' && (!state.character.hasPartner || state.character.hasChildren)) continue;
+
     if (action.is_discovery_action) {
       if (hasEligibleBranchTechs) toShow.push({ action, purchased: true, vis: "ACTIVE", isDiscovery: true });
       continue;
@@ -568,6 +627,14 @@ function buildActionCard({ action, purchased, vis, isDiscovery }) {
     descEl.className = "action-desc";
     descEl.textContent = action.description;
     card.appendChild(descEl);
+  }
+
+  const hint = getInclinationHint(action);
+  if (hint && !isDiscovery) {
+    const hintEl = document.createElement("div");
+    hintEl.className = "action-incl-hint";
+    hintEl.textContent = hint;
+    card.appendChild(hintEl);
   }
 
   const footer = document.createElement("div");
@@ -675,6 +742,12 @@ function renderModals() {
   // Game over modal
   const gameOverModal = document.getElementById("gameover-modal");
   if (state.gameOver) {
+    const reasons = {
+      max_generations: "Cinc generacions han passat. El coneixement del teu llinatge queda gravat a les roques.",
+      no_heir: "El personatge ha mort sense fills. El llinatge s'extingeix en aquesta generació.",
+    };
+    document.getElementById("gameover-text").textContent =
+      reasons[state.gameOverReason] || reasons.max_generations;
     gameOverModal.classList.remove("hidden");
   } else {
     gameOverModal.classList.add("hidden");

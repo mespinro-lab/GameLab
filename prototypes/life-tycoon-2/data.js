@@ -87,6 +87,22 @@ const ACTIONS = [
     event_pool_id: "pool_social"
   },
 
+  // FAMILY ACTIONS (base, sequential: partner first, then children)
+  {
+    id: "act_cercar_parella", name: "Cercar Parella", is_base: true,
+    description: "Busques company/a entre els grups veïns. Sense parella no hi ha successió.",
+    execute_cost: 1, output_min: 0, output_max: 2,
+    inclination_deltas: { impuls: -0.01, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.04 },
+    event_pool_id: "pool_social"
+  },
+  {
+    id: "act_tenir_fills", name: "Tenir Fills", is_base: true,
+    description: "Formeu família. Els fills hereten coneixement i inclinació del llinatge.",
+    execute_cost: 2, output_min: 0, output_max: 1,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.02, sociabilitat: +0.03 },
+    event_pool_id: "pool_social"
+  },
+
   // DISCOVERY ACTION (visible only when branch techs are eligible)
   {
     id: "act_escoltar_estrangers", name: "Escoltar els Estrangers", is_base: false, is_discovery_action: true,

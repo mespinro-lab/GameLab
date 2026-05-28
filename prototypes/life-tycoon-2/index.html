@@ -40,6 +40,11 @@
       </div>
 
       <div class="profile-section">
+        <div class="section-label">Família</div>
+        <div id="family-status"></div>
+      </div>
+
+      <div class="profile-section">
         <div class="section-label">Branques</div>
         <div id="active-branches"></div>
       </div>
@@ -55,6 +60,8 @@
     <section id="actions-panel">
 
       <div id="last-result" class="last-result hidden"></div>
+
+      <div id="succession-warning" class="succession-warning hidden"></div>
 
       <div id="discovery-notification" class="discovery-notification hidden"></div>
 
@@ -107,7 +114,7 @@
   <div id="gameover-modal" class="modal-overlay hidden">
     <div class="modal-box">
       <div class="modal-tag">Fi del Llinatge</div>
-      <p>Cinc generacions han passat. El coneixement del teu llinatge queda gravat a les roques.</p>
+      <p id="gameover-text">Cinc generacions han passat. El coneixement del teu llinatge queda gravat a les roques.</p>
       <button class="btn-modal" id="btn-restart">Reiniciar</button>
     </div>
   </div>

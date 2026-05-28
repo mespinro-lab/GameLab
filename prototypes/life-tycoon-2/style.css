@@ -161,6 +161,40 @@ body {
 .incl-dot.active-right  { background: var(--gold);  border-color: var(--gold);  box-shadow: 0 0 6px rgba(245,166,35,0.5); }
 .incl-dot.active-center { background: var(--dim);   border-color: var(--dim); }
 
+/* ---- FAMILY STATUS ---- */
+#family-status {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.family-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  color: var(--dim);
+  background: var(--surface2);
+}
+.family-badge.achieved {
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(74,222,128,0.08);
+}
+
+/* ---- SUCCESSION WARNING ---- */
+.succession-warning {
+  background: rgba(233,69,96,0.08);
+  border: 1px solid rgba(233,69,96,0.45);
+  border-radius: var(--r);
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 600;
+  line-height: 1.4;
+}
+.succession-warning.hidden { display: none; }
+
 /* ---- BRANCHES ---- */
 #active-branches {
   display: flex;
@@ -291,6 +325,13 @@ body {
   font-size: 11px;
   color: var(--dim);
   line-height: 1.45;
+}
+
+.action-incl-hint {
+  font-size: 10px;
+  color: var(--blue);
+  font-weight: 600;
+  letter-spacing: 0.3px;
 }
 
 .action-footer {
