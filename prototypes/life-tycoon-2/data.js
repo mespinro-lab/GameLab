@@ -5,45 +5,57 @@
 'use strict';
 
 const UNIVERSAL_TECHS = [
-  { id: "ut_talla_laminar", name: "Talla Laminar", description: "Tècnica de talla de sílex per làmines primes i regulars.", cycle: 2 },
-  { id: "ut_vestimenta", name: "Confecció de Vestimentes", description: "Costura amb agulles d'os per unir pells.", cycle: 4 },
-  { id: "ut_art_simbolic", name: "Art Simbòlic", description: "Representació simbòlica: gravats, pintures, figuretes.", cycle: 6 }
+  {
+    id: "ut_llengua", name: "Llengua Bàsica", icon: "🗣️", cycle: 2,
+    description: "Comunicar-se millor enforteix els llaços tribals. La tribu comença a organitzar-se.",
+    effect: null
+  },
+  {
+    id: "ut_eines_pedra", name: "Eines de Pedra", icon: "🪨", cycle: 5,
+    description: "Eines millorades per a la caça i l'artesania. Redueix el risc i augmenta la resistència.",
+    effect: { healthBonus: 2, desc: "+2 Salut permanent" }
+  },
+  {
+    id: "ut_foc", name: "Domini del Foc", icon: "🔥", cycle: 8,
+    description: "Dominar el foc canvia les possibilitats del clan: calor, cuina i protecció.",
+    effect: { healthBonus: 3, desc: "+3 Salut permanent" }
+  }
 ];
 
 const BRANCH_TECHS = [
   {
     id: "bt_cacera_coordinada", name: "Caça Coordinada",
-    universal_prereq: "ut_talla_laminar",
+    universal_prereq: "ut_llengua",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "impuls", min: 0.15 }, { axis: "sociabilitat", min: 0.10 }] },
     unlocks_action_ids: ["act_cacera_gran", "act_trampes_avancades"]
   },
   {
     id: "bt_punt_llanca", name: "Punta de Llança Composta",
-    universal_prereq: "ut_talla_laminar",
+    universal_prereq: "ut_eines_pedra",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "impuls", min: 0.25 }, { axis: "sociabilitat", max: 0.20 }] },
     unlocks_action_ids: ["act_caca_solitaria", "act_territori"]
   },
   {
     id: "bt_agulla_os", name: "Agulla d'Os i Costura de Pell",
-    universal_prereq: "ut_vestimenta",
+    universal_prereq: "ut_eines_pedra",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.15 }, { axis: "impuls", max: 0.20 }] },
     unlocks_action_ids: ["act_confeccio_roba", "act_utensilis_os"]
   },
   {
     id: "bt_curar_herbes", name: "Coneixement d'Herbes Medicinals",
-    universal_prereq: "ut_vestimenta",
+    universal_prereq: "ut_foc",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.20 }, { axis: "intel·lecte", min: 0.10 }] },
     unlocks_action_ids: ["act_curar_grup", "act_herbes_toxiques"]
   },
   {
     id: "bt_pintura_rupestre", name: "Pintura Rupestre",
-    universal_prereq: "ut_art_simbolic",
+    universal_prereq: "ut_llengua",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.30 }, { axis: "sociabilitat", min: 0.20 }] },
     unlocks_action_ids: ["act_ritual_caca", "act_narracio_llegendes"]
   },
   {
     id: "bt_figuretes_venus", name: "Figuretes i Talsmans",
-    universal_prereq: "ut_art_simbolic",
+    universal_prereq: "ut_foc",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.20 }, { axis: "espiritualitat", min: 0.25 }] },
     unlocks_action_ids: ["act_talismans", "act_bescanvi_simbolic"]
   }

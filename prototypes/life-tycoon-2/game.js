@@ -128,7 +128,12 @@ function discoverTech(techId) {
   state.discoveredUniversalTechIds.add(techId);
 
   const tech = UNIVERSAL_TECHS.find(t => t.id === techId);
-  addLog(`Descoberta universal: ${tech.name}.`);
+  addLog(`${tech.icon} Descoberta: ${tech.name}`);
+
+  if (tech.effect && tech.effect.healthBonus) {
+    state.health = Math.min(HEALTH_MAX, state.health + tech.effect.healthBonus);
+    addLog(`✨ ${tech.effect.desc}`);
+  }
 
   render();
 }
@@ -429,7 +434,8 @@ function render() {
 function renderTopBar() {
   document.getElementById("cycle-counter").textContent = `Cicle ${state.cycle}`;
   document.getElementById("gen-counter").textContent = `Gen ${state.generation}/${MAX_GENERATIONS}`;
-  document.getElementById("materials-counter").textContent = `Eines ${state.materials}`;
+  document.getElementById("food-counter").textContent = `🌾 ${state.food}`;
+  document.getElementById("materials-counter").textContent = `🔧 ${state.materials}`;
 }
 
 function renderProfilePanel() {
@@ -572,7 +578,8 @@ function renderUniversalTechs() {
 
     const info = document.createElement("div");
     info.className = "tech-info";
-    info.innerHTML = `<div class="tech-name">${tech.name}</div><div class="tech-desc">${tech.description}</div>`;
+    const effectText = tech.effect ? `<span class="tech-effect">${tech.effect.desc}</span>` : '';
+    info.innerHTML = `<div class="tech-name">${tech.icon || ''} ${tech.name}${effectText}</div><div class="tech-desc">${tech.description}</div>`;
 
     const btn = document.createElement("button");
     btn.className = "btn-discover-tech";
@@ -625,18 +632,32 @@ function renderActions() {
     return;
   }
 
-  toShow.sort((a, b) => {
-    const score = item => {
-      if (item.isDiscovery) return -1;
-      if (item.purchased && item.vis === "ACTIVE") return 0;
-      if (item.purchased && item.vis === "FADED")  return 1;
-      return 2;
-    };
-    return score(a) - score(b);
-  });
+  const actionScore = item => {
+    if (item.isDiscovery) return -1;
+    if (item.purchased && item.vis === "ACTIVE") return 0;
+    if (item.purchased && item.vis === "FADED")  return 1;
+    return 2;
+  };
+  toShow.sort((a, b) => actionScore(a) - actionScore(b));
 
+  // Group by zone
+  const ZONE_ORDER = ["Bosc", "Planes", "Campament", "Ritual"];
+  const byZone = {};
   for (const item of toShow) {
-    el.appendChild(buildActionCard(item));
+    const z = item.action.zona || "Campament";
+    if (!byZone[z]) byZone[z] = [];
+    byZone[z].push(item);
+  }
+
+  for (const zona of ZONE_ORDER) {
+    if (!byZone[zona]) continue;
+    const hdr = document.createElement("div");
+    hdr.className = `zone-section-header zone-${zona.toLowerCase()}`;
+    hdr.textContent = zona;
+    el.appendChild(hdr);
+    for (const item of byZone[zona]) {
+      el.appendChild(buildActionCard(item));
+    }
   }
 }
 
@@ -644,21 +665,10 @@ function buildActionCard({ action, purchased, vis, isDiscovery }) {
   const card = document.createElement("div");
   card.className = `action-card${vis === "FADED" ? " faded" : ""}${isDiscovery ? " discovery" : ""}`;
 
-  const header = document.createElement("div");
-  header.className = "action-header";
-
   const nameEl = document.createElement("div");
   nameEl.className = "action-name";
   nameEl.textContent = action.name;
-  header.appendChild(nameEl);
-
-  if (action.zona) {
-    const zoneEl = document.createElement("span");
-    zoneEl.className = `zone-badge zone-${action.zona.toLowerCase()}`;
-    zoneEl.textContent = action.zona;
-    header.appendChild(zoneEl);
-  }
-  card.appendChild(header);
+  card.appendChild(nameEl);
 
   if (action.description) {
     const descEl = document.createElement("div");
