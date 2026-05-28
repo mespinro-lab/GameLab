@@ -13,8 +13,10 @@ const MAX_GENERATIONS = 5;
 const STARTING_FOOD = 15;
 
 const AXES = ["impuls", "intel·lecte", "espiritualitat", "sociabilitat"];
-const FOOD_UPKEEP = 1;       // food consumed per cycle (clan sustenance)
-const MATERIALS_PER_ACTION = 1; // materials earned per executed action
+const FOOD_UPKEEP    = 1;  // food consumed per cycle
+const HEALTH_UPKEEP  = 1;  // health lost per cycle (aging)
+const STARTING_HEALTH = 20;
+const HEALTH_MAX      = 20;
 
 // --- Game State ---
 let state = null;
@@ -42,6 +44,7 @@ function initState() {
     cycle: 0,
     generation: 1,
     food: STARTING_FOOD,
+    health: STARTING_HEALTH,
     materials: 0,
     character: createCharacter(inclination, basePurchased, new Set()),
     discoveredUniversalTechIds: new Set(),
@@ -227,21 +230,31 @@ function executeAction(actionId) {
 
   state.food -= action.execute_cost;
 
-  // Roll output
+  // Roll output and route to correct resource
   const output = randInt(action.output_min, action.output_max);
-  state.food += output;
+  const outRes = action.output_resource || 'food';
+  if (outRes === 'eines') {
+    state.materials += output;
+  } else if (outRes === 'health') {
+    state.health = Math.min(HEALTH_MAX, state.health + output);
+  } else {
+    state.food += output;
+  }
+
+  // Side-effect health delta (risky / restorative actions)
+  if (action.health_delta) {
+    state.health = Math.max(0, Math.min(HEALTH_MAX, state.health + action.health_delta));
+  }
 
   // Apply inclination deltas
   applyInclinationDeltas(action.inclination_deltas);
 
-  // Earn materials for executing any action
-  state.materials += MATERIALS_PER_ACTION;
-
   // Advance cycle
   state.cycle++;
 
-  addLog(`[${state.cycle}] ${action.name}: +${output} Aliment`);
-  state.lastResult = `Cicle ${state.cycle} — ${action.name}: +${output} provisions`;
+  const resLabel = outRes === 'eines' ? 'Eines' : outRes === 'health' ? 'Salut' : 'Aliment';
+  addLog(`[${state.cycle}] ${action.name}: +${output} ${resLabel}`);
+  state.lastResult = `Cicle ${state.cycle} — ${action.name}: +${output} ${resLabel}`;
 
   // Special one-time family actions
   if (actionId === 'act_cercar_parella' && !state.character.hasPartner) {
@@ -255,9 +268,11 @@ function executeAction(actionId) {
     addLog(`Fills nascuts. Successió assegurada.`);
   }
 
-  // Clan upkeep (food consumed this cycle regardless of action)
-  state.food = Math.max(0, state.food - FOOD_UPKEEP);
-  if (state.food === 0) addLog(`⚠ Provisions crítiques.`);
+  // Upkeep (food + health lost to survival and aging)
+  state.food   = Math.max(0, state.food   - FOOD_UPKEEP);
+  state.health = Math.max(0, state.health - HEALTH_UPKEEP);
+  if (state.food   === 0) addLog(`⚠ Provisions crítiques.`);
+  if (state.health === 0) addLog(`💀 Salut crítica.`);
 
   // Trigger event
   if (action.event_pool_id && EVENT_POOLS[action.event_pool_id]) {
@@ -267,8 +282,8 @@ function executeAction(actionId) {
     }
   }
 
-  // Check succession / end of life
-  if (state.cycle >= LIFE_EXPECTANCY) {
+  // Check succession: end of life OR health depleted
+  if (state.cycle >= LIFE_EXPECTANCY || state.health <= 0) {
     if (!state.pendingEvent) triggerSuccession();
   }
 
@@ -279,13 +294,13 @@ function dismissEvent() {
   const ev = state.pendingEvent;
   if (!ev) return;
 
-  if (ev.effects && ev.effects.food) {
-    state.food += ev.effects.food;
-    addLog(`Esdeveniment: ${ev.effects.food >= 0 ? '+' : ''}${ev.effects.food} Aliment`);
+  if (ev.effects) {
+    if (ev.effects.food)   { state.food   = Math.max(0, state.food   + ev.effects.food);   addLog(`Esdeveniment: ${ev.effects.food   >= 0 ? '+' : ''}${ev.effects.food} Aliment`); }
+    if (ev.effects.health) { state.health = Math.max(0, Math.min(HEALTH_MAX, state.health + ev.effects.health)); addLog(`Esdeveniment: ${ev.effects.health >= 0 ? '+' : ''}${ev.effects.health} Salut`); }
   }
 
   state.pendingEvent = null;
-  if (state.cycle >= LIFE_EXPECTANCY) triggerSuccession();
+  if (state.cycle >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
   render();
 }
 
@@ -305,7 +320,7 @@ function resolveDiscoveryOption(optionIndex) {
   }
 
   state.pendingEvent = null;
-  if (state.cycle >= LIFE_EXPECTANCY) triggerSuccession();
+  if (state.cycle >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
   render();
 }
 
@@ -414,7 +429,7 @@ function render() {
 function renderTopBar() {
   document.getElementById("cycle-counter").textContent = `Cicle ${state.cycle}`;
   document.getElementById("gen-counter").textContent = `Gen ${state.generation}/${MAX_GENERATIONS}`;
-  document.getElementById("materials-counter").textContent = `Mat. ${state.materials}`;
+  document.getElementById("materials-counter").textContent = `Eines ${state.materials}`;
 }
 
 function renderProfilePanel() {
@@ -423,6 +438,12 @@ function renderProfilePanel() {
   document.getElementById("food-count").textContent = state.food;
   fill.style.width = Math.min(100, Math.max(0, (state.food / FOOD_MAX_DISPLAY) * 100)) + "%";
   fill.style.background = state.food < 4 ? "var(--accent)" : state.food < 8 ? "#f59e0b" : "var(--gold)";
+
+  // Health bar
+  const hfill = document.getElementById("health-bar-fill");
+  document.getElementById("health-count").textContent = state.health;
+  hfill.style.width = Math.min(100, Math.max(0, (state.health / HEALTH_MAX) * 100)) + "%";
+  hfill.style.background = state.health <= 4 ? "var(--accent)" : state.health <= 8 ? "#f59e0b" : "var(--green)";
 
   // Inclination dots
   const inclEl = document.getElementById("inclination-rows");
@@ -654,6 +675,13 @@ function buildActionCard({ action, purchased, vis, isDiscovery }) {
     card.appendChild(hintEl);
   }
 
+  if (action.health_delta && action.health_delta < 0) {
+    const riskEl = document.createElement("div");
+    riskEl.className = "action-risk";
+    riskEl.textContent = `⚠ ${action.health_delta} Salut`;
+    card.appendChild(riskEl);
+  }
+
   const footer = document.createElement("div");
   footer.className = "action-footer";
 
@@ -662,6 +690,11 @@ function buildActionCard({ action, purchased, vis, isDiscovery }) {
 
   const btnArea = document.createElement("div");
 
+  const outRes   = action.output_resource || 'food';
+  const resShort = outRes === 'eines' ? 'ein.' : outRes === 'health' ? 'salut' : 'alim.';
+  const resClass = outRes === 'eines' ? 'reward reward-eines' : outRes === 'health' ? 'reward reward-health' : 'reward';
+  const costLabel = action.execute_cost > 0 ? `${action.execute_cost} alim. ` : '';
+
   if (isDiscovery) {
     const btn = document.createElement("button");
     btn.className = "btn-discovery";
@@ -669,23 +702,23 @@ function buildActionCard({ action, purchased, vis, isDiscovery }) {
     btn.onclick = () => performDiscoveryAction();
     btnArea.appendChild(btn);
   } else if (purchased && vis === "ACTIVE") {
-    metaEl.innerHTML = `Cost: ${action.execute_cost}<span class="reward">+${action.output_min}–${action.output_max}</span>`;
+    metaEl.innerHTML = `${costLabel}<span class="${resClass}">+${action.output_min}–${action.output_max} ${resShort}</span>`;
     const btn = document.createElement("button");
     btn.className = "btn-execute";
-    btn.textContent = `Executar (−${action.execute_cost})`;
+    btn.textContent = action.execute_cost > 0 ? `Executar (−${action.execute_cost})` : `Executar`;
     btn.onclick = () => executeAction(action.id);
     btnArea.appendChild(btn);
   } else if (purchased && vis === "FADED") {
-    metaEl.innerHTML = `Cost: ${action.execute_cost}<span class="reward">+${action.output_min}–${action.output_max}</span>`;
+    metaEl.innerHTML = `${costLabel}<span class="${resClass}">+${action.output_min}–${action.output_max} ${resShort}</span>`;
     const note = document.createElement("span");
     note.className = "faded-note";
     note.textContent = "Fora de rang";
     btnArea.appendChild(note);
   } else {
-    metaEl.innerHTML = `Mat: ${action.purchase_cost}<span class="reward">+${action.output_min}–${action.output_max}</span>`;
+    metaEl.innerHTML = `${action.purchase_cost} eines <span class="${resClass}">+${action.output_min}–${action.output_max} ${resShort}</span>`;
     const btn = document.createElement("button");
     btn.className = "btn-buy";
-    btn.textContent = `Aprendre (−${action.purchase_cost} mat.)`;
+    btn.textContent = `Aprendre (−${action.purchase_cost} ein.)`;
     btn.onclick = () => purchaseAction(action.id);
     btnArea.appendChild(btn);
   }
