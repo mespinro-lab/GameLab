@@ -83,8 +83,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          claude --print "/playtest ${{ steps.sweep.outputs.type }}" \
-            --output-format text \
+          claude --dangerously-skip-permissions "/playtest ${{ steps.sweep.outputs.type }}" \
             2>&1 | tee /tmp/claude-output.txt
 
       - name: Find generated report
