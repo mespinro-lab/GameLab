@@ -18,16 +18,21 @@
     </div>
     <div class="top-divider"></div>
     <div class="top-section">
-      <span class="top-label">Vitals (-1/torn)</span>
+      <span class="top-label">Vitals</span>
       <div class="top-pills">
-        <span id="food-counter"   class="stat-pill stat-food">🌾 15</span>
-        <span id="health-counter" class="stat-pill stat-health">❤️ 20</span>
+        <span id="food-counter"   class="stat-pill stat-food">🌾 15<span class="stat-rate">-1/t</span></span>
+        <span id="health-counter" class="stat-pill stat-health">❤️ 20<span class="stat-rate">-1/t</span></span>
       </div>
     </div>
     <div class="top-divider"></div>
     <div class="top-section">
-      <span class="top-label">Saber</span>
-      <span id="materials-counter" class="stat-pill stat-materials">🧠 0</span>
+      <span class="top-label">Recursos</span>
+      <div class="top-pills">
+        <span id="materials-counter" class="stat-pill stat-materials">🧠 0</span>
+        <span class="stat-pill stat-dim" title="Benestar — Pendent d'implementació">✨ —</span>
+        <span class="stat-pill stat-dim" title="Protecció — Pendent d'implementació">🛡️ —</span>
+        <span class="stat-pill stat-dim" title="Vincles — Pendent d'implementació">👥 —</span>
+      </div>
     </div>
     <div class="top-divider"></div>
     <div class="top-section">
@@ -37,6 +42,7 @@
         <span id="gen-counter"   class="stat-pill">Gen 1/5</span>
       </div>
     </div>
+    <button id="btn-glossary" class="btn-glossary" title="Glossari del joc">?</button>
   </header>
 
   <main id="main">
@@ -127,8 +133,8 @@
         Cicles viscuts: <span id="succ-cycles"></span><br>
         Eix dominant: <span id="succ-axis"></span>
       </div>
-      <p>El fill hereta habilitats, destreses i stats (65%), i el <strong>65%</strong> de les inclinacions.</p>
-      <button class="btn-modal" id="btn-continue-succession">Continua amb el fill</button>
+      <p class="succ-desc">Tria qui continua el llinatge. Les habilitats, destreses i stats s'hereten al <strong>65%</strong>.</p>
+      <div id="succ-successors" class="succ-successors"></div>
     </div>
   </div>
 
@@ -138,6 +144,15 @@
       <div class="modal-tag">Fi del Llinatge</div>
       <p id="gameover-text">Cinc generacions han passat. El coneixement del teu llinatge queda gravat a les roques.</p>
       <button class="btn-modal" id="btn-restart">Reiniciar</button>
+    </div>
+  </div>
+
+  <!-- GLOSSARY MODAL -->
+  <div id="glossary-modal" class="modal-overlay hidden">
+    <div class="modal-box modal-box-wide">
+      <div class="modal-tag">Glossari del Joc</div>
+      <div id="glossary-content" class="glossary-content"></div>
+      <button class="btn-modal" id="btn-close-glossary">Tanca</button>
     </div>
   </div>
 

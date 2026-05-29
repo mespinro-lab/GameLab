@@ -76,8 +76,31 @@ body {
 .stat-food      { color: var(--gold);  border-color: rgba(245,166,35,0.3); }
 .stat-health    { color: var(--green); border-color: rgba(74,222,128,0.3); }
 .stat-materials { color: var(--blue);  border-color: rgba(96,165,250,0.3); }
+.stat-dim       { color: var(--dim); opacity: 0.45; cursor: default; }
 .stat-warning   { color: #f59e0b !important; border-color: rgba(245,158,11,0.4) !important; }
 .stat-critical  { color: var(--accent) !important; border-color: rgba(233,69,96,0.4) !important; }
+.stat-rate {
+  font-size: 9px;
+  opacity: 0.55;
+  margin-left: 4px;
+  font-weight: 600;
+}
+.btn-glossary {
+  margin-left: auto;
+  align-self: center;
+  margin-right: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  color: var(--dim);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.btn-glossary:hover { border-color: var(--accent); color: var(--accent); }
 
 /* ---- MAIN LAYOUT ---- */
 #main {
@@ -795,4 +818,96 @@ button:active { opacity: 1;    transform: translateY(0); }
 
   .incl-pole { width: 52px; font-size: 10px; }
   .profile-food-label strong { font-size: 18px; }
+}
+
+/* ---- SUCCESSION MULTI-CHILD ---- */
+.succ-desc { font-size: 13px; color: var(--dim); }
+.succ-successors { display: flex; flex-direction: column; gap: 8px; }
+.succ-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.succ-sibling { border-color: rgba(245,166,35,0.3); }
+.succ-option-info { display: flex; flex-direction: column; gap: 3px; flex: 1; }
+.succ-option-label { font-size: 13px; font-weight: 600; color: var(--text); }
+.succ-option-incl  { font-size: 11px; color: var(--dim); }
+.succ-tag-sibling {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--gold);
+  background: rgba(245,166,35,0.12);
+  border-radius: 4px;
+  padding: 1px 5px;
+  margin-left: 6px;
+}
+.btn-succ-choose {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.btn-succ-choose:hover { opacity: 0.85; }
+
+/* ---- GLOSSARY MODAL ---- */
+.modal-box-wide { max-width: 560px; }
+.glossary-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.glossary-section { display: flex; flex-direction: column; gap: 6px; }
+.glossary-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--dim);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.glossary-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+.glossary-item.pending { opacity: 0.45; }
+.glossary-icon { font-size: 16px; flex-shrink: 0; width: 20px; text-align: center; }
+.glossary-info { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.glossary-info strong { font-size: 13px; color: var(--text); }
+.glossary-info span   { font-size: 11px; color: var(--dim); line-height: 1.5; }
+.glossary-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--surface2);
+  color: var(--dim);
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 2px;
+}
+.glossary-badge.active {
+  background: rgba(74,222,128,0.12);
+  color: var(--green);
 }

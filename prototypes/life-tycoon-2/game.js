@@ -25,6 +25,7 @@ const DESTRESA_THRESHOLD  = 5;     // default uses needed to discover a destresa
 const DESTRESA_MAX        = 2;     // max destreses per character
 const DESTRESA_BONUS      = 1;     // flat output bonus when destresa is active
 const INCL_DOT_VALUES = [-1.0, -0.5, 0.0, 0.5, 1.0];
+const MAX_CHILDREN    = 3;
 
 // --- Game State ---
 let state = null;
@@ -40,7 +41,7 @@ function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedB
     actionUseCounts: {},
     firedSingleUseEventIds: new Set(),
     hasPartner: false,
-    hasChildren: false,
+    children: [],
   };
 }
 
@@ -66,6 +67,7 @@ function initState() {
     gameOverReason: null,
     pendingEvent: null,
     pendingSuccession: null,
+    siblingPool: [],
     gameOver: false,
   };
 }
@@ -317,7 +319,7 @@ function executeAction(actionId) {
   state.cycle++;
   autoDiscoverUniversalTechs();
 
-  const resLabel = outRes === 'eines' ? 'Saber' : outRes === 'health' ? 'Salut' : 'Aliment';
+  const resLabel = outRes === 'eines' ? 'Provisions' : outRes === 'health' ? 'Salut' : 'Aliment';
   addLog(`[${state.cycle}] ${action.name}: +${output} ${resLabel}`);
   state.lastResult = `Cicle ${state.cycle} — ${action.name}: +${output} ${resLabel}`;
 
@@ -327,10 +329,14 @@ function executeAction(actionId) {
     state.lastResult = `Has trobat parella. Ara podeu tenir fills.`;
     addLog(`Parella trobada.`);
   }
-  if (actionId === 'act_tenir_fills' && !state.character.hasChildren) {
-    state.character.hasChildren = true;
-    state.lastResult = `Fills nascuts. La successió del llinatge és assegurada.`;
-    addLog(`Fills nascuts. Successió assegurada.`);
+  if (actionId === 'act_tenir_fills' && state.character.hasPartner && state.character.children.length < MAX_CHILDREN) {
+    const child = { id: `child_${state.generation}_${state.cycle}`, label: `Fill (cicle ${state.cycle})` };
+    state.character.children.push(child);
+    const n = state.character.children.length;
+    state.lastResult = n === 1
+      ? `Primer fill nascut. La successió és assegurada.`
+      : `${n}è fill nascut. Podreu triar successor.`;
+    addLog(`Fill nascut (${n}/${MAX_CHILDREN}).`);
   }
 
   // Upkeep (food + health lost to survival and aging)
@@ -392,59 +398,86 @@ function resolveDiscoveryOption(optionIndex) {
 }
 
 function triggerSuccession() {
-  if (!state.character.hasChildren) {
-    state.gameOver = true;
-    state.gameOverReason = 'no_heir';
-    return;
-  }
   if (state.generation >= MAX_GENERATIONS) {
     state.gameOver = true;
     state.gameOverReason = 'max_generations';
     return;
   }
 
-  // Build succession summary
+  const children   = state.character.children;
+  const siblings   = state.siblingPool;
+
+  if (children.length === 0 && siblings.length === 0) {
+    state.gameOver = true;
+    state.gameOverReason = 'no_heir';
+    return;
+  }
+
   const topAxis = AXES.reduce((a, b) =>
     Math.abs(state.character.inclination[a]) > Math.abs(state.character.inclination[b]) ? a : b
   );
+
+  // Pre-compute inheritance from current character (same for all children)
+  const inheritedInclination = Object.fromEntries(
+    AXES.map(a => [a, state.character.inclination[a] * BRANCH_INHERITANCE_RATE])
+  );
+  const parentStats = state.character.stats;
+  const inheritedStats = Object.fromEntries(
+    ['forca', 'enginy', 'vincle'].map(k => [k, parentStats[k] * BRANCH_INHERITANCE_RATE + 1.0 * (1 - BRANCH_INHERITANCE_RATE)])
+  );
+  const inheritedPurchased    = new Set(state.character.purchasedActionIds);
+  const inheritedBranchTechs  = new Set(state.character.unlockedBranchTechIds);
+  const inheritedDestreses    = new Set(state.character.destreses);
+
+  const childSuccessors = children.map(c => ({
+    ...c,
+    is_sibling: false,
+    inheritedInclination,
+    inheritedStats,
+    inheritedPurchased,
+    inheritedBranchTechs,
+    inheritedDestreses,
+  }));
+
+  const siblingSuccessors = siblings.map(s => ({ ...s, is_sibling: true }));
 
   state.pendingSuccession = {
     generation: state.generation,
     cyclesLived: state.cycle,
     topAxis,
     topAxisVal: state.character.inclination[topAxis].toFixed(2),
+    successors: [...childSuccessors, ...siblingSuccessors],
   };
 }
 
-function continueSuccession() {
+function continueSuccession(successorId) {
   if (!state.pendingSuccession) return;
+  const s = state.pendingSuccession;
+
+  const chosen = s.successors.find(c => c.id === successorId);
+  if (!chosen) return;
+
+  // Unchosen children become siblings for the next generation
+  const unchosenChildren = s.successors.filter(c => !c.is_sibling && c.id !== successorId);
+  // Remove chosen sibling from pool; keep remaining siblings + add unchosen children
+  state.siblingPool = [
+    ...unchosenChildren,
+    ...state.siblingPool.filter(sib => sib.id !== successorId),
+  ];
+
   state.pendingSuccession = null;
   state.health    = STARTING_HEALTH;
   state.food      = STARTING_FOOD;
   state.materials = 0;
-
-  // Inherited inclination with decay
-  const newInclination = {};
-  for (const axis of AXES) {
-    newInclination[axis] = state.character.inclination[axis] * BRANCH_INHERITANCE_RATE;
-  }
-
-  // Carry over purchased actions and branch techs
-  const inheritedPurchased = new Set(state.character.purchasedActionIds);
-  const inheritedBranchTechs = new Set(state.character.unlockedBranchTechIds);
-
-  // Inherit stats with decay toward baseline
-  const parentStats = state.character.stats;
-  const inheritedStats = {};
-  for (const k of ['forca', 'enginy', 'vincle']) {
-    inheritedStats[k] = parentStats[k] * BRANCH_INHERITANCE_RATE + 1.0 * (1 - BRANCH_INHERITANCE_RATE);
-  }
-
-  const inheritedDestreses = new Set(state.character.destreses);
-
   state.generation++;
   state.cycle = 0;
-  state.character = createCharacter(newInclination, inheritedPurchased, inheritedBranchTechs, inheritedStats, inheritedDestreses);
+  state.character = createCharacter(
+    chosen.inheritedInclination,
+    chosen.inheritedPurchased,
+    chosen.inheritedBranchTechs,
+    chosen.inheritedStats,
+    chosen.inheritedDestreses
+  );
 
   state.lastResult = null;
   addLog(`--- Generació ${state.generation} ---`);
@@ -508,11 +541,12 @@ function render() {
 function renderTopBar() {
   document.getElementById("cycle-counter").textContent = `Cicle ${state.cycle}`;
   document.getElementById("gen-counter").textContent = `Gen ${state.generation}/${MAX_GENERATIONS}`;
-  document.getElementById("food-counter").textContent = `🌾 ${state.food}`;
+  document.getElementById("food-counter").innerHTML =
+    `🌾 ${state.food}<span class="stat-rate">-${FOOD_UPKEEP}/t</span>`;
   document.getElementById("materials-counter").textContent = `🧠 ${state.materials}`;
 
   const hc = document.getElementById("health-counter");
-  hc.textContent = `❤️ ${state.health}`;
+  hc.innerHTML = `❤️ ${state.health}<span class="stat-rate">-${HEALTH_UPKEEP}/t</span>`;
   hc.className = "stat-pill stat-health" +
     (state.health <= 4 ? " stat-critical" : state.health <= 8 ? " stat-warning" : "");
 }
@@ -584,7 +618,8 @@ function renderProfilePanel() {
   const famEl = document.getElementById("family-status");
   famEl.innerHTML = `
     <span class="family-badge ${state.character.hasPartner ? 'achieved' : ''}">Parella</span>
-    <span class="family-badge ${state.character.hasChildren ? 'achieved' : ''}">Fills</span>
+    <span class="family-badge ${state.character.children.length > 0 ? 'achieved' : ''}">Fills (${state.character.children.length}/${MAX_CHILDREN})</span>
+    ${state.siblingPool.length > 0 ? `<span class="family-badge achieved" style="background:rgba(245,166,35,0.15);border-color:rgba(245,166,35,0.3)">Germans (${state.siblingPool.length})</span>` : ''}
   `;
 
   // Branches
@@ -654,7 +689,7 @@ function renderActionsPanel() {
   // Succession warning
   const warnEl = document.getElementById("succession-warning");
   const cyclesLeft = LIFE_EXPECTANCY - state.cycle;
-  if (cyclesLeft <= 4 && !state.character.hasChildren && !state.gameOver) {
+  if (cyclesLeft <= 4 && state.character.children.length === 0 && !state.gameOver) {
     warnEl.textContent = `⚠ Queden ${cyclesLeft} cicle${cyclesLeft === 1 ? '' : 's'}. Cal tenir fills per assegurar la successió.`;
     warnEl.classList.remove("hidden");
   } else {
@@ -677,35 +712,9 @@ function renderActionsPanel() {
 }
 
 function renderUniversalTechs() {
-  const section = document.getElementById("universal-techs-section");
-  const el = document.getElementById("universal-techs-list");
-  el.innerHTML = "";
-
-  const discoverable = getDiscoverableTechs();
-  if (discoverable.length === 0) {
-    section.classList.add("empty");
-    return;
-  }
-  section.classList.remove("empty");
-
-  for (const tech of discoverable) {
-    const card = document.createElement("div");
-    card.className = "tech-card";
-
-    const info = document.createElement("div");
-    info.className = "tech-info";
-    const effectText = tech.effect ? `<span class="tech-effect">${tech.effect.desc}</span>` : '';
-    info.innerHTML = `<div class="tech-name">${tech.icon || ''} ${tech.name}${effectText}</div><div class="tech-desc">${tech.description}</div>`;
-
-    const btn = document.createElement("button");
-    btn.className = "btn-discover-tech";
-    btn.textContent = "Descobrir";
-    btn.onclick = () => discoverTech(tech.id);
-
-    card.appendChild(info);
-    card.appendChild(btn);
-    el.appendChild(card);
-  }
+  // Techs auto-discover via autoDiscoverUniversalTechs() — no player action needed.
+  // Section stays hidden; the tech strip and log show discovery status.
+  document.getElementById("universal-techs-section").classList.add("empty");
 }
 
 function renderTechStrip() {
@@ -766,7 +775,7 @@ function buildZoneCard(zona, { purchasableActionIds, upgradedBaseActionIds }) {
     if (action.zona !== zona) continue;
     if (action.is_discovery_action) continue;
     if (action.id === 'act_cercar_parella' && state.character.hasPartner) continue;
-    if (action.id === 'act_tenir_fills' && (!state.character.hasPartner || state.character.hasChildren)) continue;
+    if (action.id === 'act_tenir_fills' && (!state.character.hasPartner || state.character.children.length >= MAX_CHILDREN)) continue;
 
     if (upgradedBaseActionIds.has(action.id)) continue; // replaced by upgrade
 
@@ -1062,6 +1071,26 @@ function renderModals() {
     document.getElementById("succ-gen").textContent = s.generation;
     document.getElementById("succ-cycles").textContent = s.cyclesLived;
     document.getElementById("succ-axis").textContent = `${s.topAxis} (${s.topAxisVal})`;
+
+    const succList = document.getElementById("succ-successors");
+    succList.innerHTML = "";
+    for (const successor of s.successors) {
+      const dominantAxis = AXES.reduce((a, b) =>
+        Math.abs(successor.inheritedInclination[a]) > Math.abs(successor.inheritedInclination[b]) ? a : b
+      );
+      const dominantVal = successor.inheritedInclination[dominantAxis].toFixed(2);
+      const sibTag = successor.is_sibling ? '<span class="succ-tag-sibling">Germà</span>' : '';
+      const item = document.createElement("div");
+      item.className = "succ-option" + (successor.is_sibling ? " succ-sibling" : "");
+      item.innerHTML =
+        `<div class="succ-option-info">
+          <span class="succ-option-label">${successor.label}</span>${sibTag}
+          <span class="succ-option-incl">${dominantAxis}: ${dominantVal}</span>
+        </div>
+        <button class="btn-succ-choose" onclick="continueSuccession('${successor.id}')">Tria</button>`;
+      succList.appendChild(item);
+    }
+
     succModal.classList.remove("hidden");
   } else {
     succModal.classList.add("hidden");
@@ -1082,12 +1111,66 @@ function renderModals() {
   }
 }
 
+// --- Glossary ---
+function showGlossary() {
+  const content = document.getElementById("glossary-content");
+  const GLOSSARY_DATA = [
+    { title: "Indicadors Base", items: [
+      { icon: "❤️", name: "Salut", desc: `Estat físic del personatge. A 0 el personatge mor i es produeix la successió. Actual: ${state.health}/${HEALTH_MAX}.`, active: true },
+      { icon: "✨", name: "Benestar", desc: "Satisfacció general. Si cau molt baix, penalitza els resultats de les accions.", active: false },
+      { icon: "🛡️", name: "Protecció", desc: "Seguretat del grup. Un valor baix augmenta la freqüència d'events de pressió del món.", active: false },
+      { icon: "👥", name: "Vincles", desc: "Relacions socials del grup. Un valor baix tanca l'accés a accions col·lectives.", active: false },
+    ]},
+    { title: "Necessitats", items: [
+      { icon: "🌾", name: "Aliment", desc: `Es consumeix -${FOOD_UPKEEP} per torn. Si s'esgota, Salut decreix. Actual: ${state.food}.`, active: true },
+    ]},
+    { title: "Recursos d'Acció", items: [
+      { icon: "🧠", name: "Provisions (Era 1)", desc: `Generat per les accions del personatge. Es gasta per comprar i millorar accions noves. Actual: ${state.materials}.`, active: true },
+      { icon: "🦌", name: "Pells (Era 1 — proposta)", desc: "Generat per caça i trampatge. Gastat en cosit i intercanvi. Decisió de disseny pendent.", active: false },
+    ]},
+    { title: "Inclinació (4 eixos, -1 a +1)", items:
+      AXES.map(axis => {
+        const labels = AXIS_LABELS[axis];
+        const val = state.character.inclination[axis].toFixed(2);
+        return { icon: "", name: axis.charAt(0).toUpperCase() + axis.slice(1), desc: `${labels.left} (−1) ↔ ${labels.right} (+1). Actual: ${val}.`, active: true };
+      })
+    },
+    { title: "Atributs del Personatge", items: [
+      { icon: "", name: "Força", desc: `Millora outputs d'accions físiques. Hereta al ${Math.round(BRANCH_INHERITANCE_RATE*100)}%. Actual: ${state.character.stats.forca.toFixed(1)}.`, active: true },
+      { icon: "", name: "Enginy", desc: `Millora outputs d'accions d'eines. Hereta al ${Math.round(BRANCH_INHERITANCE_RATE*100)}%. Actual: ${state.character.stats.enginy.toFixed(1)}.`, active: true },
+      { icon: "", name: "Vincle", desc: `Millora outputs d'accions socials. Hereta al ${Math.round(BRANCH_INHERITANCE_RATE*100)}%. Actual: ${state.character.stats.vincle.toFixed(1)}.`, active: true },
+    ]},
+    { title: "Destreses", items: [
+      { icon: "⭐", name: "Destreses", desc: `Aptituds apreses per repetició (llindar: ${DESTRESA_THRESHOLD} usos). Màxim ${DESTRESA_MAX} per personatge. Heretades íntegrament (100%). Actuals: ${state.character.destreses.size}/${DESTRESA_MAX}.`, active: true },
+    ]},
+    { title: "Llinatge i Successió", items: [
+      { icon: "", name: "Successió", desc: `A la mort del personatge, el jugador tria quin fill continua (fins a ${MAX_CHILDREN} fills per personatge). L'inclinació s'hereta al ${Math.round(BRANCH_INHERITANCE_RATE*100)}%. Si no hi ha fills, es pot continuar amb un germà (fills no escollits de generacions anteriors). Generació actual: ${state.generation}/${MAX_GENERATIONS}.`, active: true },
+      { icon: "", name: "Crònica del Llinatge", desc: "Narració generada automàticament a partir de les decisions del jugador. Exportable al final de l'era.", active: false },
+    ]},
+  ];
+  content.innerHTML = GLOSSARY_DATA.map(section =>
+    `<div class="glossary-section">
+      <div class="glossary-section-title">${section.title}</div>
+      ${section.items.map(item =>
+        `<div class="glossary-item${item.active ? '' : ' pending'}">
+          ${item.icon ? `<span class="glossary-icon">${item.icon}</span>` : ''}
+          <div class="glossary-info"><strong>${item.name}</strong><span>${item.desc}</span></div>
+          <span class="glossary-badge${item.active ? ' active' : ''}">${item.active ? 'Actiu' : 'Pendent'}</span>
+        </div>`
+      ).join('')}
+    </div>`
+  ).join('');
+  document.getElementById("glossary-modal").classList.remove("hidden");
+}
+
 // --- Boot ---
 document.addEventListener("DOMContentLoaded", () => {
   // Wire modal buttons
   document.getElementById("btn-dismiss-event").onclick = dismissEvent;
-  document.getElementById("btn-continue-succession").onclick = continueSuccession;
   document.getElementById("btn-restart").onclick = restartGame;
+  document.getElementById("btn-glossary").onclick = showGlossary;
+  document.getElementById("btn-close-glossary").onclick = () =>
+    document.getElementById("glossary-modal").classList.add("hidden");
 
   // Zone grid filter — event delegation (survives re-renders)
   const zoneGridEl = document.getElementById("zone-grid");
