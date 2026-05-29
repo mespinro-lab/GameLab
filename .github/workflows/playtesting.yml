@@ -82,7 +82,7 @@ jobs:
 
       - name: Run playtesting agents
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.LIFE_TYCOON_TESTERS }}
         run: node scripts/playtest-ci.js
 
       - name: Find generated report
