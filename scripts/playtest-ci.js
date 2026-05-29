@@ -2,9 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-
-const API_KEY = process.env.ANTHROPIC_API_KEY;
-if (!API_KEY) { console.error('ANTHROPIC_API_KEY not set'); process.exit(1); }
+const Anthropic = require('@anthropic-ai/sdk');
 
 const ROOT = path.resolve(__dirname, '..');
 const PROTO = path.join(ROOT, 'prototypes/life-tycoon-2');
@@ -34,7 +32,7 @@ For each issue found, provide: severity (S2 major / S3 minor), location, and a c
   },
 ];
 
-async function readSources() {
+function readSources() {
   const files = ['game.js', 'data.js', 'index.html', 'style.css'];
   const parts = [];
   for (const f of files) {
@@ -46,44 +44,34 @@ async function readSources() {
   return parts.join('');
 }
 
-async function callClaude(systemPrompt, userContent) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': API_KEY,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 2048,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userContent }],
-    }),
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Anthropic API error ${res.status}: ${err}`);
-  }
-  const json = await res.json();
-  return json.content[0].text;
-}
-
 async function main() {
+  const client = new Anthropic();
+
   const date = new Date().toISOString().slice(0, 10);
   const outDir = path.join(ROOT, 'production/playtests', date);
   fs.mkdirSync(outDir, { recursive: true });
 
   console.log('Reading source files...');
-  const sources = await readSources();
-  const userMessage = `Here is the full source code of the game:\n${sources}`;
+  const sources = readSources();
+  if (!sources.trim()) {
+    console.error('No source files found in prototypes/life-tycoon-2/');
+    process.exit(1);
+  }
+  console.log(`  Source loaded: ${Math.round(sources.length / 1024)}KB`);
 
+  const userMessage = `Here is the full source code of the game:\n${sources}`;
   const sections = [];
+
   for (const p of PERSPECTIVES) {
     console.log(`Running ${p.label} analysis...`);
     try {
-      const result = await callClaude(p.prompt, userMessage);
-      sections.push(`## ${p.label}\n\n${result}`);
+      const msg = await client.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 2048,
+        system: p.prompt,
+        messages: [{ role: 'user', content: userMessage }],
+      });
+      sections.push(`## ${p.label}\n\n${msg.content[0].text}`);
       console.log(`  ✓ ${p.label} done`);
     } catch (err) {
       sections.push(`## ${p.label}\n\n_Analysis failed: ${err.message}_`);
