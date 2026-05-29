@@ -173,6 +173,52 @@ a les zones corresponents com a comprables.
 
 ---
 
+## 4b. Efectes Passius per Branch Tech
+
+Cada habilitat desbloqueja accions (§4). Aquí es defineix el `passive_effect` —
+efecte que s'aplica automàticament quan la tech és descoberta o posseïda,
+sense intervenció del jugador.
+
+### Format de dades (`passive_effect` a data.js)
+
+Tipus parametritzats — el motor llegeix el `type` i aplica l'efecte genèricament:
+
+| `type` | Camps addicionals | Semàntica |
+|---|---|---|
+| `one_time_health` | `amount` | Suma `amount` a Salut en el moment del descobriment |
+| `one_time_materials` | `amount` | Suma `amount` a Provisions en el moment del descobriment |
+| `event_block` | `event_id` | L'event indicat mai no es dispara mentre el personatge té la tech |
+| `unlock_zone` | `zone_id` | Desbloqueja la zona indicada immediatament en descobrir la tech |
+| `action_output_bonus` | `action_id`, `output_min_bonus` | Suma `output_min_bonus` al `output_min` de l'acció indicada (permanent) |
+
+Totes les techs sense efecte passiu declaren `passive_effect: null`.
+
+### Efectes per tech
+
+| ID | `passive_effect` | `desc` | Nota disseny |
+|---|---|---|---|
+| `bt_punta_llanca` | `null` | — | El valor és en les accions d'alt risc/reward |
+| `bt_rasclador_fi` | `action_output_bonus · act_recollectar_arrels · +1` | "+1 mínim recol·lecta (eina millora el raspat)" | Pont: beneficia dos perfils sense condicionals |
+| `bt_buri` | `null` | — | El valor és en l'intercanvi d'eines |
+| `bt_agulla_os` | `one_time_health · +3` | "+3 Salut (vestimenta protegeix del fred)" | Únic tech d'artesà amb passiu directe — Salut, no Provisions |
+| `bt_trampes` | `null` | — | El valor és en l'acció passiva de trampes |
+| `bt_guariment_plantes` | `event_block · pe_malaltia` | "Presència del guaridor: la febre no s'estén" | Bloqueig dur. Si el personatge té la tech, l'event no es dispara mai |
+| `bt_pintura_rupestre` | `unlock_zone · zone_ritual` | "El Místic descobreix el Lloc Sagrat" | La zona existeix en dades des del principi; la tech la fa accessible |
+| `bt_marques_territori` | `null` | — | El valor és en Marcar Territori i Rastreig de Rutes |
+| `bt_ornaments` | `null` | — | El valor és en les accions socials |
+| `bt_coneixement_plantes` | `null` | — | El valor és en les tres accions del Bosc |
+| `bt_calendari_natural` | `one_time_materials · +2` | "+2 Provisions (previsió de cicles millora les reserves)" | Simplificació de prototip: el warning d'event previ requereix engine nou |
+| `bt_llavor_selectiva` | `null` | — | L'efecte diferit es codifica com output_max ampliat (8) a l'acció |
+| `bt_domini_terra` | `one_time_health · +2` | "+2 Salut (domini del territori = seguretat del grup)" | Exit connector tech: el passiu és discret intencionalment |
+
+### Principi de disseny
+
+Només 5 de les 13 techs tenen passiu. La resta donen valor exclusivament
+via accions. Ràtio intencionada: el passiu és una sorpresa, no l'expectativa.
+Les branques amb passiu: Artesà (×1), Místic (×2), exit connector (×1), pont (×1).
+
+---
+
 ## 5. Zones del Mapa
 
 | ID | Nom | Discovery condition | Accions principals |
@@ -605,7 +651,7 @@ Abans de passar a implementació, aquest document ha d'estar complet:
 - [x] Condicions d'inclinació de les 4 branques definides
 - [x] Cadència de tecnologies universals validada (cicles 2, 4, 6, 9, 12)
 - [x] Noms de les 13 tecnologies de branca definits
-- [ ] Efectes de cada tecnologia de branca especificats completament (action_modifiers, indicator_modifiers)
+- [x] Efectes passius de les 13 branch techs especificats (§4b) — 5 actius, 8 null, format parametritzat
 - [x] 4 zones amb condicions de descoberta validades
 - [x] ~32 accions definides (7 base + 8+8+7+7 per branca)
 - [x] 6 events de pressió del món definits (1 rar inclòs)
