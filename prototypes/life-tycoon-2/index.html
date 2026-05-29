@@ -12,92 +12,79 @@
 <body>
 
   <header id="top-bar">
-    <h1>Life Tycoon 2</h1>
-    <div class="top-stats">
-      <span id="food-counter" class="stat-pill stat-food">🌾 15</span>
-      <span id="materials-counter" class="stat-pill stat-materials">🔧 0</span>
-      <span id="cycle-counter" class="stat-pill">Cicle 0</span>
-      <span id="gen-counter" class="stat-pill">Gen 1/5</span>
+    <div class="top-section top-title">
+      <span class="top-label">Joc</span>
+      <strong>Life Tycoon 2</strong>
+    </div>
+    <div class="top-divider"></div>
+    <div class="top-section">
+      <span class="top-label">Vitals (-1/torn)</span>
+      <div class="top-pills">
+        <span id="food-counter"   class="stat-pill stat-food">🌾 15</span>
+        <span id="health-counter" class="stat-pill stat-health">❤️ 20</span>
+      </div>
+    </div>
+    <div class="top-divider"></div>
+    <div class="top-section">
+      <span class="top-label">Saber</span>
+      <span id="materials-counter" class="stat-pill stat-materials">🧠 0</span>
+    </div>
+    <div class="top-divider"></div>
+    <div class="top-section">
+      <span class="top-label">Progrés</span>
+      <div class="top-pills">
+        <span id="cycle-counter" class="stat-pill">Cicle 0</span>
+        <span id="gen-counter"   class="stat-pill">Gen 1/5</span>
+      </div>
     </div>
   </header>
 
   <main id="main">
 
-    <!-- LEFT: Character profile -->
+    <!-- LEFT: Full debug profile — everything visible, no tabs -->
     <aside id="profile-panel">
 
       <div id="profile-label" class="profile-label">Explorador</div>
 
-      <div class="tab-buttons">
-        <button id="tab-joc" class="tab-btn active">Joc</button>
-        <button id="tab-personatge" class="tab-btn">Personatge</button>
+      <div class="profile-section">
+        <div class="section-label">Atributs</div>
+        <div id="stats-display"></div>
       </div>
 
-      <!-- JOC TAB: health + stats + family -->
-      <div id="panel-joc" class="tab-panel">
-
-        <div class="profile-health">
-          <div class="profile-health-label">
-            <span>Salut <span class="food-upkeep-label">−1/torn</span></span>
-            <strong id="health-count">20</strong>
-          </div>
-          <div id="health-bar-track">
-            <div id="health-bar-fill"></div>
-          </div>
-        </div>
-
-        <div class="profile-section">
-          <div class="section-label">Atributs</div>
-          <div id="stats-display"></div>
-        </div>
-
-        <div class="panel-group-label">Llinatge</div>
-
-        <div class="profile-section">
-          <div class="section-label">Família</div>
-          <div id="family-status"></div>
-        </div>
-
+      <div class="profile-section">
+        <div class="section-label">Inclinació</div>
+        <div id="inclination-rows"></div>
       </div>
 
-      <!-- PERSONATGE TAB: inclination + branches + skills -->
-      <div id="panel-personatge" class="tab-panel hidden">
+      <div class="panel-group-label">Llinatge</div>
 
-        <div class="panel-group-label">Vitals</div>
+      <div class="profile-section">
+        <div class="section-label">Família</div>
+        <div id="family-status"></div>
+      </div>
 
-        <div class="profile-section">
-          <div class="section-label">Inclinació</div>
-          <div id="inclination-rows"></div>
-        </div>
+      <div class="profile-section">
+        <div class="section-label">Branques actives</div>
+        <div id="active-branches"></div>
+      </div>
 
-        <div class="panel-group-label">Branques</div>
+      <div class="profile-section">
+        <div class="section-label">Habilitats</div>
+        <div id="unlocked-branch-techs"></div>
+      </div>
 
-        <div class="profile-section">
-          <div class="section-label">Branques actives</div>
-          <div id="active-branches"></div>
-        </div>
-
-        <div class="profile-section">
-          <div class="section-label">Habilitats</div>
-          <div id="unlocked-branch-techs"></div>
-        </div>
-
-        <div class="profile-section">
-          <div class="section-label">Destreses</div>
-          <div id="destreses-display"></div>
-        </div>
-
+      <div class="profile-section">
+        <div class="section-label">Destreses</div>
+        <div id="destreses-display"></div>
       </div>
 
     </aside>
 
-    <!-- RIGHT: Actions + log -->
+    <!-- RIGHT: Notifications + zone grid + log -->
     <section id="actions-panel">
 
       <div id="last-result" class="last-result hidden"></div>
-
       <div id="succession-warning" class="succession-warning hidden"></div>
-
       <div id="discovery-notification" class="discovery-notification hidden"></div>
 
       <div id="universal-techs-section" class="panel-block">
@@ -105,10 +92,8 @@
         <div id="universal-techs-list"></div>
       </div>
 
-      <div class="panel-block">
-        <div class="section-label">Accions</div>
-        <div id="actions-list"></div>
-      </div>
+      <!-- 2×2 zone grid — populated by JS -->
+      <div id="zone-grid"></div>
 
       <div class="panel-block log-block">
         <div class="section-label">Registre</div>
@@ -140,7 +125,7 @@
         Cicles viscuts: <span id="succ-cycles"></span><br>
         Eix dominant: <span id="succ-axis"></span>
       </div>
-      <p>El fill hereta les habilitats i el <strong>65%</strong> de les inclinacions.</p>
+      <p>El fill hereta habilitats, destreses i stats (65%), i el <strong>65%</strong> de les inclinacions.</p>
       <button class="btn-modal" id="btn-continue-succession">Continua amb el fill</button>
     </div>
   </div>

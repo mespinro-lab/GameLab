@@ -26,6 +26,7 @@ const DESTRESA_BONUS      = 1;     // flat output bonus when destresa is active
 
 // --- Game State ---
 let state = null;
+let zoneFilters = { Bosc: 'active', Planes: 'active', Campament: 'active', Ritual: 'active' };
 
 function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedBranchTechIds, inheritedStats, inheritedDestreses) {
   return {
@@ -481,6 +482,11 @@ function renderTopBar() {
   document.getElementById("gen-counter").textContent = `Gen ${state.generation}/${MAX_GENERATIONS}`;
   document.getElementById("food-counter").textContent = `🌾 ${state.food}`;
   document.getElementById("materials-counter").textContent = `🧠 ${state.materials}`;
+
+  const hc = document.getElementById("health-counter");
+  hc.textContent = `❤️ ${state.health}`;
+  hc.className = "stat-pill stat-health" +
+    (state.health <= 4 ? " stat-critical" : state.health <= 8 ? " stat-warning" : "");
 }
 
 function renderProfilePanel() {
@@ -507,12 +513,6 @@ function renderProfilePanel() {
       `<span class="stat-value">${val.toFixed(1)}</span>`;
     statsEl.appendChild(row);
   }
-
-  // Health bar
-  const hfill = document.getElementById("health-bar-fill");
-  document.getElementById("health-count").textContent = state.health;
-  hfill.style.width = Math.min(100, Math.max(0, (state.health / HEALTH_MAX) * 100)) + "%";
-  hfill.style.background = state.health <= 4 ? "var(--accent)" : state.health <= 8 ? "#f59e0b" : "var(--green)";
 
   // Inclination dots
   const inclEl = document.getElementById("inclination-rows");
@@ -621,7 +621,7 @@ function renderActionsPanel() {
     lrEl.classList.add("hidden");
   }
 
-  // Succession warning (approaching end of life without children)
+  // Succession warning
   const warnEl = document.getElementById("succession-warning");
   const cyclesLeft = LIFE_EXPECTANCY - state.cycle;
   if (cyclesLeft <= 4 && !state.character.hasChildren && !state.gameOver) {
@@ -641,7 +641,7 @@ function renderActionsPanel() {
   }
 
   renderUniversalTechs();
-  renderActions();
+  renderZoneGrid();
   renderLog();
 }
 
@@ -677,193 +677,278 @@ function renderUniversalTechs() {
   }
 }
 
-function renderActions() {
-  const el = document.getElementById("actions-list");
-  el.innerHTML = "";
+// --- Zone Grid (debug layout) ---
 
+const ZONE_ORDER = ["Bosc", "Planes", "Campament", "Ritual"];
+
+function buildLookupTables() {
   const purchasableActionIds = new Set();
   for (const btId of state.character.unlockedBranchTechIds) {
     const bt = BRANCH_TECHS.find(t => t.id === btId);
     if (!bt) continue;
     for (const aid of bt.unlocks_action_ids) purchasableActionIds.add(aid);
   }
-
-  // Base actions superseded by a purchased upgrade
   const upgradedBaseActionIds = new Set();
   for (const a of ACTIONS) {
     if (a.is_upgrade && state.character.purchasedActionIds.has(a.id)) {
       upgradedBaseActionIds.add(a.upgrades_action_id);
     }
   }
+  return { purchasableActionIds, upgradedBaseActionIds };
+}
 
-  const toShow = [];
+function renderZoneGrid() {
+  const grid = document.getElementById("zone-grid");
+  grid.innerHTML = "";
+  const tables = buildLookupTables();
+  for (const zona of ZONE_ORDER) {
+    grid.appendChild(buildZoneCard(zona, tables));
+  }
+}
+
+function buildZoneCard(zona, { purchasableActionIds, upgradedBaseActionIds }) {
   const hasEligibleBranchTechs = getEligibleBranchTechs().length > 0;
 
+  const active = [], buy = [], other = [];
+
+  // Discovery action appears in Campament active tab
+  if (zona === 'Campament' && hasEligibleBranchTechs) {
+    const disc = ACTIONS.find(a => a.is_discovery_action);
+    if (disc) active.push({ action: disc, purchased: true, vis: "ACTIVE", isDiscovery: true });
+  }
+
   for (const action of ACTIONS) {
-    // Family actions: one-time, shown only when conditions met
+    if (action.zona !== zona) continue;
+    if (action.is_discovery_action) continue;
     if (action.id === 'act_cercar_parella' && state.character.hasPartner) continue;
     if (action.id === 'act_tenir_fills' && (!state.character.hasPartner || state.character.hasChildren)) continue;
 
-    if (action.is_discovery_action) {
-      if (hasEligibleBranchTechs) toShow.push({ action, purchased: true, vis: "ACTIVE", isDiscovery: true });
-      continue;
-    }
+    if (upgradedBaseActionIds.has(action.id)) continue; // replaced by upgrade
 
-    // Upgrade actions: visible only when base is owned
     if (action.is_upgrade) {
       if (!state.character.purchasedActionIds.has(action.upgrades_action_id)) continue;
       const purchased = state.character.purchasedActionIds.has(action.id);
       const vis = getActionVisibility(action);
       if (purchased) {
-        if (vis !== "HIDDEN") toShow.push({ action, purchased, vis, isUpgrade: true });
+        active.push({ action, purchased, vis, isUpgrade: true });
       } else {
-        if (vis === "ACTIVE") toShow.push({ action, purchased: false, vis, isUpgrade: true });
+        buy.push({ action, purchased: false, vis, isUpgrade: true });
       }
       continue;
     }
 
-    // Skip base actions replaced by a purchased upgrade
-    if (upgradedBaseActionIds.has(action.id)) continue;
-
     const purchased = state.character.purchasedActionIds.has(action.id);
     const vis = getActionVisibility(action);
+
     if (purchased) {
-      if (vis === "HIDDEN") continue;
-      toShow.push({ action, purchased, vis });
+      if (vis === "HIDDEN") {
+        other.push({ action, purchased, blocked: "inclination" });
+      } else {
+        active.push({ action, purchased, vis });
+      }
     } else {
-      if (!purchasableActionIds.has(action.id)) continue;
-      if (vis !== "ACTIVE") continue;
-      toShow.push({ action, purchased, vis });
+      if (purchasableActionIds.has(action.id)) {
+        buy.push({ action, purchased: false, vis });
+      } else {
+        other.push({ action, purchased: false, blocked: "locked" });
+      }
     }
   }
 
-  if (toShow.length === 0) {
-    el.innerHTML = '<div class="dim">Cap acció disponible</div>';
-    return;
+  // Build card
+  const card = document.createElement("div");
+  card.className = "zone-card";
+  card.dataset.zona = zona;
+
+  // Header
+  const hdr = document.createElement("div");
+  hdr.className = `zone-card-header zone-${zona.toLowerCase()}`;
+  hdr.innerHTML =
+    `<span class="zone-card-title">${zona}</span>` +
+    `<span class="zone-card-summary">` +
+    `<span class="zcs-active">${active.length}▶</span> ` +
+    `<span class="zcs-buy">${buy.length}🧠</span> ` +
+    `<span class="zcs-other">${other.length}🔒</span>` +
+    `</span>`;
+  card.appendChild(hdr);
+
+  // Filter tabs
+  const currentFilter = zoneFilters[zona] || 'active';
+  const tabs = document.createElement("div");
+  tabs.className = "zone-filter-tabs";
+  for (const [fkey, flabel] of [
+    ['active', `Actives (${active.length})`],
+    ['buy',    `Aprendre (${buy.length})`],
+    ['other',  `Bloq. (${other.length})`],
+  ]) {
+    const btn = document.createElement("button");
+    btn.className = `zone-filter-btn${currentFilter === fkey ? ' active' : ''}`;
+    btn.dataset.filter = fkey;
+    btn.textContent = flabel;
+    tabs.appendChild(btn);
   }
+  card.appendChild(tabs);
 
-  const actionScore = item => {
-    if (item.isDiscovery) return -1;
-    if (item.purchased && item.vis === "ACTIVE") return 0;
-    if (item.purchased && item.vis === "FADED")  return 1;
-    return 2;
-  };
-  toShow.sort((a, b) => actionScore(a) - actionScore(b));
+  // Content
+  const content = document.createElement("div");
+  content.className = "zone-content";
+  const items = { active, buy, other }[currentFilter] || active;
 
-  // Group by zone
-  const ZONE_ORDER = ["Bosc", "Planes", "Campament", "Ritual"];
-  const byZone = {};
-  for (const item of toShow) {
-    const z = item.action.zona || "Campament";
-    if (!byZone[z]) byZone[z] = [];
-    byZone[z].push(item);
-  }
-
-  for (const zona of ZONE_ORDER) {
-    if (!byZone[zona]) continue;
-    const hdr = document.createElement("div");
-    hdr.className = `zone-section-header zone-${zona.toLowerCase()}`;
-    hdr.textContent = zona;
-    el.appendChild(hdr);
-    for (const item of byZone[zona]) {
-      el.appendChild(buildActionCard(item));
+  if (items.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "dim zone-empty";
+    empty.textContent = "Cap acció en aquesta categoria";
+    content.appendChild(empty);
+  } else {
+    for (const item of items) {
+      content.appendChild(
+        currentFilter === 'other' ? buildBlockedRow(item) : buildZoneActionRow(item)
+      );
     }
   }
+  card.appendChild(content);
+  return card;
 }
 
-function buildActionCard({ action, purchased, vis, isDiscovery, isUpgrade }) {
-  const card = document.createElement("div");
-  card.className = `action-card${vis === "FADED" ? " faded" : ""}${isDiscovery ? " discovery" : ""}${isUpgrade ? " upgrade" : ""}`;
+function buildZoneActionRow({ action, purchased, vis, isUpgrade, isDiscovery }) {
+  const row = document.createElement("div");
+  row.className = `zone-action-row` +
+    (vis === "FADED" ? " faded" : "") +
+    (isUpgrade ? " upgrade" : "") +
+    (isDiscovery ? " discovery" : "");
 
+  // Name
   const nameEl = document.createElement("div");
-  nameEl.className = "action-name";
+  nameEl.className = "zar-name";
   nameEl.textContent = isUpgrade ? `↑ ${action.name}` : action.name;
-  card.appendChild(nameEl);
-
-  if (action.description) {
-    const descEl = document.createElement("div");
-    descEl.className = "action-desc";
-    descEl.textContent = action.description;
-    card.appendChild(descEl);
-  }
-
-  const hint = getInclinationHint(action);
-  if (hint && !isDiscovery) {
-    const hintEl = document.createElement("div");
-    hintEl.className = "action-incl-hint";
-    hintEl.textContent = hint;
-    card.appendChild(hintEl);
-  }
-
   if (action.health_delta && action.health_delta < 0) {
-    const riskEl = document.createElement("div");
-    riskEl.className = "action-risk";
-    riskEl.textContent = `⚠ ${action.health_delta} Salut`;
-    card.appendChild(riskEl);
+    const risk = document.createElement("span");
+    risk.className = "zar-risk";
+    risk.textContent = ` ⚠${action.health_delta}❤️`;
+    nameEl.appendChild(risk);
   }
+  row.appendChild(nameEl);
 
-  // Destresa progress (only on purchased non-upgrade actions with a destresa_id)
-  if (action.destresa_id && purchased && !isUpgrade) {
-    const count = state.character.actionUseCounts[action.id] || 0;
-    const threshold = action.destresa_threshold || DESTRESA_THRESHOLD;
-    if (state.character.destreses.has(action.destresa_id)) {
-      const d = document.createElement("div");
-      d.className = "destresa-achieved";
-      d.textContent = `⭐ ${action.destresa_name}`;
-      card.appendChild(d);
-    } else if (state.character.destreses.size < DESTRESA_MAX) {
-      const d = document.createElement("div");
-      d.className = "destresa-progress";
-      d.textContent = `⭐ ${count}/${threshold}`;
-      card.appendChild(d);
+  if (!isDiscovery) {
+    // Meta: cost → output · stat · inclination hint · destresa
+    const outRes = action.output_resource || 'food';
+    const resIcon = outRes === 'eines' ? '🧠' : outRes === 'health' ? '❤️' : '🌾';
+    const costStr = action.execute_cost > 0 ? `${action.execute_cost}🌾→` : '';
+    const statStr = action.stat_key
+      ? `${action.stat_key.charAt(0).toUpperCase() + action.stat_key.slice(1)} ${state.character.stats[action.stat_key].toFixed(1)}`
+      : '';
+    const inclHint = getInclinationHint(action);
+    const destresaStr = (() => {
+      if (!action.destresa_id || !purchased || isUpgrade) return '';
+      const count = state.character.actionUseCounts[action.id] || 0;
+      const thr = action.destresa_threshold || DESTRESA_THRESHOLD;
+      if (state.character.destreses.has(action.destresa_id)) return ` ⭐${action.destresa_name}`;
+      if (state.character.destreses.size < DESTRESA_MAX) return ` ⭐${count}/${thr}`;
+      return '';
+    })();
+
+    const metaEl = document.createElement("div");
+    metaEl.className = "zar-meta";
+    metaEl.textContent =
+      `${costStr}+${action.output_min}–${action.output_max}${resIcon}` +
+      (statStr ? ` · ${statStr}` : '') +
+      (inclHint ? ` · ${inclHint}` : '') +
+      destresaStr;
+    row.appendChild(metaEl);
+
+    // Faded reason
+    if (vis === "FADED" && action.inclination_requirements) {
+      const issues = getInclinationIssues(action);
+      if (issues.length) {
+        const noteEl = document.createElement("div");
+        noteEl.className = "zar-faded-note";
+        noteEl.textContent = "Fora de rang: " + issues.join(", ");
+        row.appendChild(noteEl);
+      }
     }
   }
 
-  const footer = document.createElement("div");
-  footer.className = "action-footer";
-
-  const metaEl = document.createElement("div");
-  metaEl.className = "action-meta";
-
-  const btnArea = document.createElement("div");
-
-  const outRes   = action.output_resource || 'food';
-  const resShort = outRes === 'eines' ? 'saber' : outRes === 'health' ? 'salut' : 'alim.';
-  const resClass = outRes === 'eines' ? 'reward reward-eines' : outRes === 'health' ? 'reward reward-health' : 'reward';
-  const costLabel = action.execute_cost > 0 ? `${action.execute_cost} alim. ` : '';
-
+  // Button
   if (isDiscovery) {
     const btn = document.createElement("button");
-    btn.className = "btn-discovery";
+    btn.className = "btn-discovery btn-small";
     btn.textContent = "Escoltar";
     btn.onclick = () => performDiscoveryAction();
-    btnArea.appendChild(btn);
-  } else if (purchased && vis === "ACTIVE") {
-    metaEl.innerHTML = `${costLabel}<span class="${resClass}">+${action.output_min}–${action.output_max} ${resShort}</span>`;
+    row.appendChild(btn);
+  } else if (purchased && vis !== "FADED") {
     const btn = document.createElement("button");
-    btn.className = "btn-execute";
-    btn.textContent = action.execute_cost > 0 ? `Executar (−${action.execute_cost})` : `Executar`;
+    btn.className = "btn-execute btn-small";
+    btn.textContent = action.execute_cost > 0 ? `Executar (−${action.execute_cost}🌾)` : "Executar";
     btn.onclick = () => executeAction(action.id);
-    btnArea.appendChild(btn);
-  } else if (purchased && vis === "FADED") {
-    metaEl.innerHTML = `${costLabel}<span class="${resClass}">+${action.output_min}–${action.output_max} ${resShort}</span>`;
-    const note = document.createElement("span");
-    note.className = "faded-note";
-    note.textContent = "Fora de rang";
-    btnArea.appendChild(note);
-  } else {
-    metaEl.innerHTML = `${action.purchase_cost} saber <span class="${resClass}">+${action.output_min}–${action.output_max} ${resShort}</span>`;
+    row.appendChild(btn);
+  } else if (!purchased) {
     const btn = document.createElement("button");
-    btn.className = "btn-buy";
-    btn.textContent = isUpgrade ? `Millorar (−${action.purchase_cost} 🧠)` : `Aprendre (−${action.purchase_cost} 🧠)`;
+    btn.className = "btn-buy btn-small";
+    btn.textContent = isUpgrade
+      ? `Millorar (−${action.purchase_cost}🧠)`
+      : `Aprendre (−${action.purchase_cost}🧠)`;
     btn.onclick = () => purchaseAction(action.id);
-    btnArea.appendChild(btn);
+    row.appendChild(btn);
   }
 
-  footer.appendChild(metaEl);
-  footer.appendChild(btnArea);
-  card.appendChild(footer);
-  return card;
+  return row;
+}
+
+function buildBlockedRow({ action, purchased, blocked }) {
+  const row = document.createElement("div");
+  row.className = "zone-blocked-row";
+
+  const nameEl = document.createElement("div");
+  nameEl.className = "zbr-name";
+  nameEl.textContent = `🔒 ${action.name}`;
+  row.appendChild(nameEl);
+
+  const infoEl = document.createElement("div");
+  infoEl.className = "zbr-reason";
+
+  if (blocked === "inclination" && purchased) {
+    // Owned but hidden due to inclination
+    const issues = getInclinationIssues(action);
+    infoEl.textContent = "Ocult per inclinació: " + (issues.length ? issues.join(" · ") : "?");
+  } else {
+    // Locked behind branch tech
+    const bt = BRANCH_TECHS.find(b => b.unlocks_action_ids.includes(action.id));
+    if (!bt) {
+      infoEl.textContent = "Origen desconegut";
+    } else if (!state.discoveredUniversalTechIds.has(bt.universal_prereq)) {
+      const ut = UNIVERSAL_TECHS.find(t => t.id === bt.universal_prereq);
+      infoEl.textContent = `Via: ${bt.name} → Requereix: ${ut ? ut.name : bt.universal_prereq} (Cicle ${ut ? ut.cycle : '?'}, ara: ${state.cycle})`;
+    } else {
+      // Universal met, inclination not
+      const conds = bt.inclination_conditions?.conditions || [];
+      const lines = conds.map(c => {
+        const val = state.character.inclination[c.axis];
+        if (c.min !== undefined && val < c.min) {
+          return `${c.axis} ≥${c.min} (ara ${val.toFixed(2)}, falta +${(c.min - val).toFixed(2)})`;
+        }
+        if (c.max !== undefined && val > c.max) {
+          return `${c.axis} ≤${c.max} (ara ${val.toFixed(2)}, excés +${(val - c.max).toFixed(2)})`;
+        }
+        return `${c.axis} ✓`;
+      });
+      infoEl.innerHTML = `Via: <strong>${bt.name}</strong><br>${lines.join('<br>')}`;
+    }
+  }
+  row.appendChild(infoEl);
+  return row;
+}
+
+function getInclinationIssues(action) {
+  if (!action.inclination_requirements) return [];
+  const issues = [];
+  for (const [axis, range] of Object.entries(action.inclination_requirements)) {
+    const val = state.character.inclination[axis];
+    if (range.min !== undefined && val < range.min)
+      issues.push(`${axis} < ${range.min} (${val.toFixed(2)})`);
+    if (range.max !== undefined && val > range.max)
+      issues.push(`${axis} > ${range.max} (${val.toFixed(2)})`);
+  }
+  return issues;
 }
 
 function renderLog() {
@@ -948,19 +1033,15 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-continue-succession").onclick = continueSuccession;
   document.getElementById("btn-restart").onclick = restartGame;
 
-  // Wire profile tabs
-  document.getElementById("tab-joc").onclick = () => {
-    document.getElementById("panel-joc").classList.remove("hidden");
-    document.getElementById("panel-personatge").classList.add("hidden");
-    document.getElementById("tab-joc").classList.add("active");
-    document.getElementById("tab-personatge").classList.remove("active");
-  };
-  document.getElementById("tab-personatge").onclick = () => {
-    document.getElementById("panel-personatge").classList.remove("hidden");
-    document.getElementById("panel-joc").classList.add("hidden");
-    document.getElementById("tab-personatge").classList.add("active");
-    document.getElementById("tab-joc").classList.remove("active");
-  };
+  // Zone grid filter — event delegation (survives re-renders)
+  document.getElementById("zone-grid").addEventListener("click", e => {
+    const btn = e.target.closest(".zone-filter-btn");
+    if (!btn) return;
+    const card = btn.closest(".zone-card");
+    if (!card) return;
+    zoneFilters[card.dataset.zona] = btn.dataset.filter;
+    renderZoneGrid();
+  });
 
   initState();
   render();

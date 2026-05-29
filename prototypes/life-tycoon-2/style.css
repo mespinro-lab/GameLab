@@ -33,29 +33,51 @@ body {
 #top-bar {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  padding: 10px 16px;
   display: flex;
-  align-items: center;
-  gap: 12px;
+  align-items: stretch;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
-#top-bar h1 {
-  font-size: 15px;
+.top-section {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 9px 16px;
+}
+.top-title strong {
+  font-size: 14px;
   font-weight: 700;
   color: var(--accent);
-  flex: 1;
 }
-.top-stats { display: flex; gap: 8px; }
+.top-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.top-pills { display: flex; gap: 6px; align-items: center; }
+.top-divider {
+  width: 1px;
+  background: var(--border);
+  align-self: stretch;
+  margin: 6px 0;
+}
+
 .stat-pill {
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 20px;
-  padding: 3px 12px;
+  padding: 3px 10px;
   font-size: 12px;
   color: var(--dim);
+  white-space: nowrap;
 }
-.stat-food      { color: var(--gold); border-color: rgba(245,166,35,0.3); }
-.stat-materials { color: var(--blue); border-color: rgba(96,165,250,0.3); }
+.stat-food      { color: var(--gold);  border-color: rgba(245,166,35,0.3); }
+.stat-health    { color: var(--green); border-color: rgba(74,222,128,0.3); }
+.stat-materials { color: var(--blue);  border-color: rgba(96,165,250,0.3); }
+.stat-warning   { color: #f59e0b !important; border-color: rgba(245,158,11,0.4) !important; }
+.stat-critical  { color: var(--accent) !important; border-color: rgba(233,69,96,0.4) !important; }
 
 /* ---- MAIN LAYOUT ---- */
 #main {
@@ -434,110 +456,140 @@ body {
 .tech-effect { font-size: 10px; color: var(--green); font-weight: 600; margin-left: 8px; }
 .tech-desc { color: var(--dim); font-size: 11px; margin-top: 2px; line-height: 1.4; }
 
-/* ---- ACTION CARDS ---- */
-#actions-list { display: flex; flex-direction: column; gap: 6px; }
-
-.zone-section-header {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  padding: 10px 4px 4px;
-  margin-top: 4px;
-  border-bottom: 1px solid var(--border);
+/* ---- ZONE GRID (2×2) ---- */
+#zone-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
-.zone-section-header.zone-bosc      { color: var(--green); }
-.zone-section-header.zone-planes    { color: var(--gold); }
-.zone-section-header.zone-campament { color: var(--blue); }
-.zone-section-header.zone-ritual    { color: #c084fc; }
-.zone-section-header:first-child    { margin-top: 0; padding-top: 0; }
 
-.zone-badge {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.7px;
-  text-transform: uppercase;
-  padding: 2px 7px;
-  border-radius: 10px;
-  flex-shrink: 0;
-}
-.zone-bosc      { color: var(--green); background: rgba(74,222,128,0.12); }
-.zone-planes    { color: var(--gold);  background: rgba(245,166,35,0.12); }
-.zone-campament { color: var(--blue);  background: rgba(96,165,250,0.12); }
-.zone-ritual    { color: #c084fc;      background: rgba(192,132,252,0.12); }
-
-.action-card {
-  background: var(--surface2);
+.zone-card {
+  background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 10px 12px;
+  border-radius: var(--r);
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  transition: border-color 0.15s;
-}
-.action-card:not(.faded):not(.discovery):not(.upgrade):hover { border-color: rgba(96,165,250,0.35); }
-.action-card.faded { opacity: 0.38; }
-.action-card.discovery { border-color: rgba(245,166,35,0.45); background: rgba(245,166,35,0.05); }
-.action-card.upgrade  { border-color: rgba(74,222,128,0.35); background: rgba(74,222,128,0.04); }
-.action-card.upgrade:hover { border-color: rgba(74,222,128,0.6); }
-
-.action-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-}
-.action-card.discovery .action-name { color: var(--gold); }
-
-.action-desc {
-  font-size: 11px;
-  color: var(--dim);
-  line-height: 1.45;
+  overflow: hidden;
 }
 
-.action-incl-hint {
-  font-size: 10px;
-  color: var(--blue);
-  font-weight: 600;
-  letter-spacing: 0.3px;
-}
-.action-risk {
-  font-size: 10px;
-  color: var(--accent);
-  font-weight: 700;
-}
-.destresa-progress {
-  font-size: 10px;
-  color: var(--dim);
-  font-weight: 600;
-}
-.destresa-achieved {
-  font-size: 10px;
-  color: var(--gold);
-  font-weight: 700;
-}
-.destresa-item { color: var(--gold); }
-
-.action-footer {
+.zone-card-header {
+  padding: 7px 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-top: 2px;
+  border-bottom: 1px solid var(--border);
 }
-.action-meta {
+.zone-card-header.zone-bosc      { background: rgba(74,222,128,0.07);  border-bottom-color: rgba(74,222,128,0.2); }
+.zone-card-header.zone-planes    { background: rgba(245,166,35,0.07);  border-bottom-color: rgba(245,166,35,0.2); }
+.zone-card-header.zone-campament { background: rgba(96,165,250,0.07);  border-bottom-color: rgba(96,165,250,0.2); }
+.zone-card-header.zone-ritual    { background: rgba(192,132,252,0.07); border-bottom-color: rgba(192,132,252,0.2); }
+
+.zone-card-title {
   font-size: 11px;
-  color: var(--dim);
-  font-family: monospace;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
-.action-meta .reward        { color: var(--green); margin-left: 6px; }
-.action-meta .reward-eines  { color: var(--blue);  margin-left: 6px; }
-.action-meta .reward-health { color: #86efac;      margin-left: 6px; }
-.faded-note {
-  font-size: 11px;
+.zone-bosc      .zone-card-title { color: var(--green); }
+.zone-planes    .zone-card-title { color: var(--gold);  }
+.zone-campament .zone-card-title { color: var(--blue);  }
+.zone-ritual    .zone-card-title { color: #c084fc;      }
+
+.zone-card-summary {
+  font-size: 10px;
   color: var(--dim);
-  font-style: italic;
+  display: flex;
+  gap: 6px;
 }
+.zcs-active { color: var(--green); font-weight: 700; }
+.zcs-buy    { color: var(--blue);  font-weight: 700; }
+.zcs-other  { color: var(--dim);   font-weight: 600; }
+
+/* Zone filter tabs */
+.zone-filter-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+.zone-filter-btn {
+  flex: 1;
+  padding: 5px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  border: none;
+  border-radius: 0;
+  border-right: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--dim);
+  cursor: pointer;
+  letter-spacing: 0.2px;
+  transition: background 0.1s, color 0.1s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.zone-filter-btn:last-child { border-right: none; }
+.zone-filter-btn:hover { opacity: 1; transform: none; color: var(--text); }
+.zone-filter-btn.active { background: var(--surface); color: var(--text); }
+
+/* Zone content */
+.zone-content {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-height: 50px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.zone-empty { font-size: 11px; padding: 6px 2px; }
+
+/* Action rows — active / buy */
+.zone-action-row {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 7px 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  transition: border-color 0.1s;
+}
+.zone-action-row:hover { border-color: rgba(96,165,250,0.35); }
+.zone-action-row.faded { opacity: 0.45; }
+.zone-action-row.upgrade  { border-color: rgba(74,222,128,0.3);  background: rgba(74,222,128,0.04); }
+.zone-action-row.discovery { border-color: rgba(245,166,35,0.35); background: rgba(245,166,35,0.04); }
+
+.zar-name  { font-size: 12px; font-weight: 600; color: var(--text); }
+.zar-risk  { color: var(--accent); font-size: 10px; margin-left: 4px; }
+.zar-meta  { font-size: 10px; color: var(--dim); font-family: monospace; line-height: 1.4; }
+.zar-faded-note { font-size: 10px; color: var(--dim); font-style: italic; }
+
+/* Blocked rows */
+.zone-blocked-row {
+  background: rgba(233,69,96,0.03);
+  border: 1px solid rgba(233,69,96,0.12);
+  border-radius: 5px;
+  padding: 7px 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.zbr-name   { font-size: 11px; font-weight: 600; color: var(--dim); }
+.zbr-reason { font-size: 10px; color: var(--dim); opacity: 0.7; line-height: 1.5; }
+
+/* Small button variant */
+.btn-small { padding: 4px 10px; font-size: 11px; }
+
+/* Zone color aliases for zones without -card- prefix */
+.zone-bosc      { color: var(--green); }
+.zone-planes    { color: var(--gold);  }
+.zone-campament { color: var(--blue);  }
+.zone-ritual    { color: #c084fc;      }
+
+/* Destresa */
+.destresa-progress { font-size: 10px; color: var(--dim);  font-weight: 600; }
+.destresa-achieved { font-size: 10px; color: var(--gold); font-weight: 700; }
+.destresa-item     { color: var(--gold); }
 
 /* ---- BUTTONS ---- */
 button {
