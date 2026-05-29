@@ -86,7 +86,7 @@ const BRANCH_TECHS = [
     universal_prereq: "ut_art_simbolic",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.30 }, { axis: "sociabilitat", min: 0.20 }] },
     unlocks_action_ids: ["act_pintar_parets", "act_narrar_llegendes"],
-    passive_effect: { type: "unlock_zone", zone_id: "zone_ritual", desc: "Desbloqueja el Lloc Sagrat" },
+    passive_effect: { type: "unlock_zone", zone_id: "Ritual", desc: "Desbloqueja el Lloc Sagrat" },
     is_hidden: false
   },
   {

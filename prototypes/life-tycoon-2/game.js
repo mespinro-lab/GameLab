@@ -175,6 +175,7 @@ function autoDiscoverUniversalTechs() {
 
 function getEligibleBranchTechs() {
   return BRANCH_TECHS.filter(bt =>
+    !bt.is_hidden &&
     state.discoveredUniversalTechIds.has(bt.universal_prereq) &&
     !state.character.unlockedBranchTechIds.has(bt.id) &&
     evaluateConditions(bt.inclination_conditions)
@@ -192,6 +193,7 @@ function getBranchTechMaturity(bt) {
 }
 
 function unlockBranchTech(bt) {
+  if (state.character.unlockedBranchTechIds.has(bt.id)) return;
   state.character.unlockedBranchTechIds.add(bt.id);
   addLog(`Nova habilitat: ${bt.name}`);
   const pe = bt.passive_effect;
@@ -251,7 +253,7 @@ function purchaseAction(actionId) {
     return;
   }
   if (state.materials < action.purchase_cost) {
-    addLog(`Saber insuficient per aprendre ${action.name}.`);
+    addLog(`Provisions insuficients per aprendre ${action.name}.`);
     render();
     return;
   }
@@ -275,6 +277,11 @@ function executeAction(actionId) {
   }
   if (state.food < action.execute_cost) {
     addLog(`Aliment insuficient per executar ${action.name}.`);
+    render();
+    return;
+  }
+
+  if (actionId === 'act_tenir_fills' && (!state.character.hasPartner || state.character.children.length >= MAX_CHILDREN)) {
     render();
     return;
   }
@@ -509,6 +516,7 @@ function restartGame() {
 
 // --- Helpers ---
 function randInt(min, max) {
+  if (min > max) return min;
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
@@ -707,9 +715,22 @@ function renderActionsPanel() {
   // Succession warning
   const warnEl = document.getElementById("succession-warning");
   const cyclesLeft = LIFE_EXPECTANCY - state.cycle;
-  if (cyclesLeft <= 4 && state.character.children.length === 0 && !state.gameOver) {
-    warnEl.textContent = `⚠ Queden ${cyclesLeft} cicle${cyclesLeft === 1 ? '' : 's'}. Cal tenir fills per assegurar la successió.`;
-    warnEl.classList.remove("hidden");
+  const hasHeir = state.character.children.length > 0 || state.siblingPool.length > 0;
+  if (!state.gameOver) {
+    let warnText = '';
+    if (cyclesLeft <= 6 && !hasHeir) {
+      warnText = `⚠ Queden ${cyclesLeft} cicle${cyclesLeft === 1 ? '' : 's'}. Cal tenir fills per assegurar la successió.`;
+    }
+    if (cyclesLeft <= 3 && state.materials > 0) {
+      const mWarn = `🧠 ${state.materials} Provisions sense gastar — compra accions ara, no passen a la generació!`;
+      warnText = warnText ? warnText + ' · ' + mWarn : `⚠ ${mWarn}`;
+    }
+    if (warnText) {
+      warnEl.textContent = warnText;
+      warnEl.classList.remove("hidden");
+    } else {
+      warnEl.classList.add("hidden");
+    }
   } else {
     warnEl.classList.add("hidden");
   }
@@ -1093,17 +1114,21 @@ function renderModals() {
     const succList = document.getElementById("succ-successors");
     succList.innerHTML = "";
     for (const successor of s.successors) {
+      const incl = successor.inheritedInclination ?? {};
       const dominantAxis = AXES.reduce((a, b) =>
-        Math.abs(successor.inheritedInclination[a]) > Math.abs(successor.inheritedInclination[b]) ? a : b
+        Math.abs(incl[a] ?? 0) > Math.abs(incl[b] ?? 0) ? a : b
       );
-      const dominantVal = successor.inheritedInclination[dominantAxis].toFixed(2);
+      const dominantVal = incl[dominantAxis] ?? 0;
+      const axisLabel = dominantVal >= 0
+        ? AXIS_LABELS[dominantAxis].right
+        : AXIS_LABELS[dominantAxis].left;
       const sibTag = successor.is_sibling ? '<span class="succ-tag-sibling">Germà</span>' : '';
       const item = document.createElement("div");
       item.className = "succ-option" + (successor.is_sibling ? " succ-sibling" : "");
       item.innerHTML =
         `<div class="succ-option-info">
           <span class="succ-option-label">${successor.label}</span>${sibTag}
-          <span class="succ-option-incl">${dominantAxis}: ${dominantVal}</span>
+          <span class="succ-option-incl">${axisLabel}: ${Math.abs(dominantVal).toFixed(2)}</span>
         </div>
         <button class="btn-succ-choose" onclick="continueSuccession('${successor.id}')">Tria</button>`;
       succList.appendChild(item);
