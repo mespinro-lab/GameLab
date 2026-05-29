@@ -1113,53 +1113,170 @@ function renderModals() {
 
 // --- Glossary ---
 function showGlossary() {
-  const content = document.getElementById("glossary-content");
-  const GLOSSARY_DATA = [
-    { title: "Indicadors Base", items: [
-      { icon: "❤️", name: "Salut", desc: `Estat físic del personatge. A 0 el personatge mor i es produeix la successió. Actual: ${state.health}/${HEALTH_MAX}.`, active: true },
-      { icon: "✨", name: "Benestar", desc: "Satisfacció general. Si cau molt baix, penalitza els resultats de les accions.", active: false },
-      { icon: "🛡️", name: "Protecció", desc: "Seguretat del grup. Un valor baix augmenta la freqüència d'events de pressió del món.", active: false },
-      { icon: "👥", name: "Vincles", desc: "Relacions socials del grup. Un valor baix tanca l'accés a accions col·lectives.", active: false },
-    ]},
-    { title: "Necessitats", items: [
-      { icon: "🌾", name: "Aliment", desc: `Es consumeix -${FOOD_UPKEEP} per torn. Si s'esgota, Salut decreix. Actual: ${state.food}.`, active: true },
-    ]},
-    { title: "Recursos d'Acció", items: [
-      { icon: "🧠", name: "Provisions (Era 1)", desc: `Generat per les accions del personatge. Es gasta per comprar i millorar accions noves. Actual: ${state.materials}.`, active: true },
-      { icon: "🦌", name: "Pells (Era 1 — proposta)", desc: "Generat per caça i trampatge. Gastat en cosit i intercanvi. Decisió de disseny pendent.", active: false },
-    ]},
-    { title: "Inclinació (4 eixos, -1 a +1)", items:
-      AXES.map(axis => {
-        const labels = AXIS_LABELS[axis];
-        const val = state.character.inclination[axis].toFixed(2);
-        return { icon: "", name: axis.charAt(0).toUpperCase() + axis.slice(1), desc: `${labels.left} (−1) ↔ ${labels.right} (+1). Actual: ${val}.`, active: true };
-      })
-    },
-    { title: "Atributs del Personatge", items: [
-      { icon: "", name: "Força", desc: `Millora outputs d'accions físiques. Hereta al ${Math.round(BRANCH_INHERITANCE_RATE*100)}%. Actual: ${state.character.stats.forca.toFixed(1)}.`, active: true },
-      { icon: "", name: "Enginy", desc: `Millora outputs d'accions d'eines. Hereta al ${Math.round(BRANCH_INHERITANCE_RATE*100)}%. Actual: ${state.character.stats.enginy.toFixed(1)}.`, active: true },
-      { icon: "", name: "Vincle", desc: `Millora outputs d'accions socials. Hereta al ${Math.round(BRANCH_INHERITANCE_RATE*100)}%. Actual: ${state.character.stats.vincle.toFixed(1)}.`, active: true },
-    ]},
-    { title: "Destreses", items: [
-      { icon: "⭐", name: "Destreses", desc: `Aptituds apreses per repetició (llindar: ${DESTRESA_THRESHOLD} usos). Màxim ${DESTRESA_MAX} per personatge. Heretades íntegrament (100%). Actuals: ${state.character.destreses.size}/${DESTRESA_MAX}.`, active: true },
-    ]},
-    { title: "Llinatge i Successió", items: [
-      { icon: "", name: "Successió", desc: `A la mort del personatge, el jugador tria quin fill continua (fins a ${MAX_CHILDREN} fills per personatge). L'inclinació s'hereta al ${Math.round(BRANCH_INHERITANCE_RATE*100)}%. Si no hi ha fills, es pot continuar amb un germà (fills no escollits de generacions anteriors). Generació actual: ${state.generation}/${MAX_GENERATIONS}.`, active: true },
-      { icon: "", name: "Crònica del Llinatge", desc: "Narració generada automàticament a partir de les decisions del jugador. Exportable al final de l'era.", active: false },
-    ]},
-  ];
-  content.innerHTML = GLOSSARY_DATA.map(section =>
-    `<div class="glossary-section">
-      <div class="glossary-section-title">${section.title}</div>
-      ${section.items.map(item =>
-        `<div class="glossary-item${item.active ? '' : ' pending'}">
-          ${item.icon ? `<span class="glossary-icon">${item.icon}</span>` : ''}
-          <div class="glossary-info"><strong>${item.name}</strong><span>${item.desc}</span></div>
-          <span class="glossary-badge${item.active ? ' active' : ''}">${item.active ? 'Actiu' : 'Pendent'}</span>
-        </div>`
-      ).join('')}
-    </div>`
-  ).join('');
+  // Helpers
+  function fmtConds(condObj) {
+    if (!condObj || !condObj.conditions.length) return '—';
+    return condObj.conditions.map(c => {
+      const n = c.axis.charAt(0).toUpperCase() + c.axis.slice(1);
+      if (c.min !== undefined && c.max !== undefined) return `${c.min} ≤ ${n} ≤ ${c.max}`;
+      if (c.min !== undefined) return `${n} ≥ ${c.min}`;
+      return `${n} ≤ ${c.max}`;
+    }).join(condObj.operator === 'AND' ? ' · ' : ' o ');
+  }
+
+  function bdg(label, color) {
+    const colors = {
+      green:  'background:rgba(74,222,128,0.15);color:#4ade80;border:1px solid rgba(74,222,128,0.3)',
+      yellow: 'background:rgba(245,166,35,0.15);color:#f5a623;border:1px solid rgba(245,166,35,0.3)',
+      blue:   'background:rgba(96,165,250,0.15);color:#60a5fa;border:1px solid rgba(96,165,250,0.3)',
+      orange: 'background:rgba(251,146,60,0.15);color:#fb923c;border:1px solid rgba(251,146,60,0.3)',
+      grey:   'background:rgba(107,110,133,0.10);color:#6b6e85;border:1px solid rgba(107,110,133,0.2)',
+    };
+    return `<span class="glossary-badge" style="${colors[color] || colors.grey}">${label}</span>`;
+  }
+
+  function row(icon, name, desc, badge, dimmed = false) {
+    return `<div class="glossary-item${dimmed ? ' pending' : ''}">
+      <span class="glossary-icon">${icon}</span>
+      <div class="glossary-info"><strong>${name}</strong><span>${desc}</span></div>
+      ${badge}
+    </div>`;
+  }
+
+  function sec(title, rows) {
+    return `<div class="glossary-section">
+      <div class="glossary-section-title">${title}</div>${rows.join('')}
+    </div>`;
+  }
+
+  const activeBranches    = getActiveBranches();
+  const eligibleBranchTechs = getEligibleBranchTechs();
+  const pct               = Math.round(BRANCH_INHERITANCE_RATE * 100);
+
+  let html = '';
+
+  // 1 — Indicadors Base
+  html += sec('Indicadors Base', [
+    row('❤️', 'Salut', `Estat físic. A 0 el personatge mor i es produeix la successió. Decreix ${HEALTH_UPKEEP}/torn per envelliment. Actual: ${state.health}/${HEALTH_MAX}.`, bdg('Actiu', 'green')),
+    row('✨', 'Benestar', 'Satisfacció general. Si cau molt baix, penalitza els resultats de les accions.', bdg('Pendent', 'grey'), true),
+    row('🛡️', 'Protecció', 'Seguretat del grup. Un valor baix augmenta la freqüència d\'events de pressió del món.', bdg('Pendent', 'grey'), true),
+    row('👥', 'Vincles', 'Relacions socials del grup. Un valor baix tanca l\'accés a accions col·lectives.', bdg('Pendent', 'grey'), true),
+  ]);
+
+  // 2 — Necessitats
+  html += sec('Necessitats', [
+    row('🌾', 'Aliment', `Es consumeix -${FOOD_UPKEEP}/torn. Si s'esgota, Salut decreix. Actual: ${state.food}.`, bdg('Actiu', 'green')),
+  ]);
+
+  // 3 — Recursos d'Acció
+  html += sec("Recursos d'Acció", [
+    row('🧠', 'Provisions (Era 1)', `Generat per les accions. Gastat per comprar i millorar accions. Actual: ${state.materials}.`, bdg('Actiu', 'green')),
+    row('🦌', 'Pells (Era 1 — proposta)', 'Generat per caça i trampatge. Gastat en cosit i intercanvi. Decisió de disseny pendent.', bdg('Pendent', 'grey'), true),
+  ]);
+
+  // 4 — Inclinació
+  html += sec('Inclinació (4 eixos, -1 a +1)', [
+    row('', 'Com funciona', `Una acció és ACTIVA si la inclinació cau dins del seu rang · FADED (visible però no executable) si sobrepassa el llindar en ≤${FADE_MARGIN} · OCULTA si el supera en >${FADE_MARGIN}. Les accions comprades mai es perden: es reactiven si la inclinació torna.`, bdg('Actiu', 'green')),
+    ...AXES.map(axis => {
+      const labels = AXIS_LABELS[axis];
+      const val    = state.character.inclination[axis];
+      const valStr = val.toFixed(2);
+      const color  = Math.abs(val) >= 0.3 ? (val > 0 ? 'green' : 'orange') : 'grey';
+      return row('', `${axis.charAt(0).toUpperCase() + axis.slice(1)}`,
+        `${labels.left} (−1) ↔ ${labels.right} (+1). Valors possibles: −1 · −0.5 · 0 · +0.5 · +1 (5 posicions). Actual: ${valStr}.`,
+        bdg(valStr, color));
+    }),
+  ]);
+
+  // 5 — Branques
+  html += sec('Branques (Era 1 — 4 definides)', BRANCHES.map(b => {
+    const isActive = activeBranches.some(ab => ab.id === b.id);
+    return row('', b.name,
+      `Condicions: ${fmtConds(b.conditions)}.`,
+      isActive ? bdg('Activa', 'green') : bdg('Inactiva', 'grey'), !isActive);
+  }));
+
+  // 6 — Tecnologies Universals
+  html += sec(`Tecnologies Universals (${state.discoveredUniversalTechIds.size}/${UNIVERSAL_TECHS.length} descobertes)`,
+    UNIVERSAL_TECHS.map(ut => {
+      const discovered = state.discoveredUniversalTechIds.has(ut.id);
+      const effectStr  = ut.effect ? ` Efecte: ${ut.effect.desc}.` : ' Sense efecte directe.';
+      return row(ut.icon || '🔬', ut.name,
+        `${ut.description}${effectStr}`,
+        discovered ? bdg(`✓ Descoberta · c${ut.cycle}`, 'green') : bdg(`Cicle ${ut.cycle}`, 'grey'),
+        !discovered);
+    })
+  );
+
+  // 7 — Tecnologies de Branca (Habilitats)
+  const unlockedCount = state.character.unlockedBranchTechIds.size;
+  html += sec(`Tecnologies de Branca — Habilitats (${unlockedCount}/${BRANCH_TECHS.length} desblocades)`,
+    BRANCH_TECHS.map(bt => {
+      const unlocked  = state.character.unlockedBranchTechIds.has(bt.id);
+      const eligible  = eligibleBranchTechs.some(e => e.id === bt.id);
+      const prereqMet = state.discoveredUniversalTechIds.has(bt.universal_prereq);
+      const prereqTech = UNIVERSAL_TECHS.find(t => t.id === bt.universal_prereq);
+      const prereqName = prereqTech ? prereqTech.name : bt.universal_prereq;
+
+      let badge;
+      if (unlocked)       badge = bdg('✓ Desblocada', 'green');
+      else if (eligible)  badge = bdg('Elegible — descobrir!', 'yellow');
+      else if (prereqMet) badge = bdg('Inclinació insuficient', 'orange');
+      else                badge = bdg(`Espera: ${prereqName}`, 'grey');
+
+      const dimmed = !unlocked && !eligible;
+      return row('', bt.name,
+        `Prereq: ${prereqName}. Condicions: ${fmtConds(bt.inclination_conditions)}.`,
+        badge, dimmed);
+    })
+  );
+
+  // 8 — Zones
+  const ZONE_INFO = {
+    Campament: 'Disponible des del principi. Accions de supervivència, família i ritual.',
+    Planes:    'Disponible des del principi. Caça, exploració i recolecta exterior.',
+    Bosc:      '[Pendent implementació] Es descobreix explorant les Planes. Recolecta avançada i plantes.',
+    Ritual:    '[Pendent implementació] Es descobreix amb certes habilitats (ex: Pintura Rupestre). Rituals i cerimònies.',
+  };
+  html += sec('Zones (Era 1 — 4 definides)', ZONE_ORDER.map(zona =>
+    row('', zona, ZONE_INFO[zona] || zona, bdg('Activa', 'green'))
+  ));
+
+  // 9 — Atributs
+  html += sec('Atributs del Personatge', [
+    row('', 'Força', `Millora outputs d'accions físiques (caça, territori). Rang: ${STAT_STARTING_VALUE.toFixed(1)}–${STAT_MAX.toFixed(1)}. Hereta al ${pct}%. Actual: ${state.character.stats.forca.toFixed(2)}.`, bdg(`${state.character.stats.forca.toFixed(2)}`, 'blue')),
+    row('', 'Enginy', `Millora outputs d'accions d'eines i artesania. Rang: ${STAT_STARTING_VALUE.toFixed(1)}–${STAT_MAX.toFixed(1)}. Hereta al ${pct}%. Actual: ${state.character.stats.enginy.toFixed(2)}.`, bdg(`${state.character.stats.enginy.toFixed(2)}`, 'blue')),
+    row('', 'Vincle', `Millora outputs d'accions socials i rituals. Rang: ${STAT_STARTING_VALUE.toFixed(1)}–${STAT_MAX.toFixed(1)}. Hereta al ${pct}%. Actual: ${state.character.stats.vincle.toFixed(2)}.`, bdg(`${state.character.stats.vincle.toFixed(2)}`, 'blue')),
+  ]);
+
+  // 10 — Destreses
+  const destresesNames = [...state.character.destreses].map(destId => {
+    const srcAction = ACTIONS.find(a => a.destresa_id === destId);
+    return srcAction ? srcAction.destresa_name : destId;
+  });
+  const destresesDesc = (destresesNames.length > 0 ? `Actuals: ${destresesNames.join(', ')}. ` : 'Cap destresa encara. ') +
+    `Llindar: ${DESTRESA_THRESHOLD} usos d'una acció. Màxim ${DESTRESA_MAX}. Heretades 100%.`;
+  html += sec('Destreses', [
+    row('⭐', `Destreses (${state.character.destreses.size}/${DESTRESA_MAX})`, destresesDesc,
+      bdg(`${state.character.destreses.size}/${DESTRESA_MAX}`, state.character.destreses.size > 0 ? 'green' : 'grey')),
+  ]);
+
+  // 11 — Llinatge i Successió
+  const childLabels  = state.character.children.map(c => c.label).join(', ') || 'Cap fill nascut';
+  html += sec('Llinatge i Successió', [
+    row('', `Fills (${state.character.children.length}/${MAX_CHILDREN})`,
+      `${childLabels}. Heretaran inclinació al ${pct}%, atributs al ${pct}%, habilitats 100%, destreses 100%.`,
+      bdg(`${state.character.children.length}/${MAX_CHILDREN}`, state.character.children.length > 0 ? 'green' : 'grey')),
+    row('', `Germans disponibles (${state.siblingPool.length})`,
+      state.siblingPool.length > 0
+        ? `Fills no escollits de generacions anteriors: ${state.siblingPool.map(s => s.label).join(', ')}.`
+        : 'Cap germà disponible. Si el personatge mor sense fills, serà game over.',
+      bdg(`${state.siblingPool.length}`, state.siblingPool.length > 0 ? 'yellow' : 'grey'),
+      state.siblingPool.length === 0),
+    row('', 'Crònica del Llinatge', 'Narració generada automàticament a partir de les decisions del jugador. Exportable al final de l\'era.', bdg('Pendent', 'grey'), true),
+  ]);
+
+  document.getElementById("glossary-content").innerHTML = html;
   document.getElementById("glossary-modal").classList.remove("hidden");
 }
 
