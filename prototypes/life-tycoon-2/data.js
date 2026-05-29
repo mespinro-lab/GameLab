@@ -358,7 +358,7 @@ const EVENT_POOLS = {
       discovery_branch_tech_id: "bt_curar_herbes",
       text: "Durant el ritual, un vell crema certes herbes que mai no has vist. Olora diferent. Algú amb mal de ventre s'ha millorat, i ningú no entén per qué.",
       options: [
-        { text: "Demanar-li que t'ho expliqui", food_delta: 0, discovers: true },
+        { text: "Demanar-li que t'ho expliqui", food_delta: -2, discovers: true },
         { text: "Observar en silenci", food_delta: +1, discovers: false }
       ]
     },

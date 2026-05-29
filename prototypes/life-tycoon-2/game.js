@@ -7,7 +7,8 @@
 // --- Constants ---
 const INERTIA_FACTOR = 2.0;
 const BRANCH_INHERITANCE_RATE = 0.65;
-const FADE_MARGIN = 0.10;
+const FADE_MARGIN = 0.05;
+const DEBUG_MODE  = false;
 const LIFE_EXPECTANCY = 14; // cycles before succession
 const MAX_GENERATIONS = 5;
 const STARTING_FOOD = 15;
@@ -37,6 +38,7 @@ function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedB
     stats: inheritedStats ? { ...inheritedStats } : { forca: STAT_STARTING_VALUE, enginy: STAT_STARTING_VALUE, vincle: STAT_STARTING_VALUE },
     destreses: new Set(inheritedDestreses),
     actionUseCounts: {},
+    firedSingleUseEventIds: new Set(),
     hasPartner: false,
     hasChildren: false,
   };
@@ -154,6 +156,18 @@ function discoverTech(techId) {
   render();
 }
 
+// Auto-applies any universal techs whose cycle has been reached (no render — callers handle it).
+function autoDiscoverUniversalTechs() {
+  for (const tech of getDiscoverableTechs()) {
+    state.discoveredUniversalTechIds.add(tech.id);
+    addLog(`${tech.icon} Descoberta: ${tech.name}`);
+    if (tech.effect && tech.effect.healthBonus) {
+      state.health = Math.min(HEALTH_MAX, state.health + tech.effect.healthBonus);
+      addLog(`✨ ${tech.effect.desc}`);
+    }
+  }
+}
+
 // --- Branch Tech Discovery ---
 
 function getEligibleBranchTechs() {
@@ -192,14 +206,20 @@ function performDiscoveryAction() {
   unlockBranchTech(best);
   state.lastResult = `Habilitat nova apresa: ${best.name}`;
   state.cycle++;
+  autoDiscoverUniversalTechs();
+  state.food   = Math.max(0, state.food   - FOOD_UPKEEP);
+  state.health = Math.max(0, state.health - HEALTH_UPKEEP);
 
-  if (state.cycle >= LIFE_EXPECTANCY && !state.pendingEvent) triggerSuccession();
+  if (state.cycle >= LIFE_EXPECTANCY || state.health <= 0) {
+    if (!state.pendingEvent) triggerSuccession();
+  }
   render();
 }
 
 // Filter a pool to only eligible events (excludes discovery events whose conditions aren't met)
 function getEligiblePoolEvents(pool) {
   return pool.filter(ev => {
+    if (ev.is_single_use && state.character.firedSingleUseEventIds.has(ev.id)) return false;
     if (!ev.is_discovery_event) return true;
     const btId = ev.discovery_branch_tech_id;
     if (state.character.unlockedBranchTechIds.has(btId)) return false;
@@ -241,6 +261,7 @@ function executeAction(actionId) {
   const vis = getActionVisibility(action);
   if (vis !== "ACTIVE") {
     addLog(`${action.name} no és executable en l'estat actual.`);
+    render();
     return;
   }
   if (state.food < action.execute_cost) {
@@ -294,6 +315,7 @@ function executeAction(actionId) {
 
   // Advance cycle
   state.cycle++;
+  autoDiscoverUniversalTechs();
 
   const resLabel = outRes === 'eines' ? 'Saber' : outRes === 'health' ? 'Salut' : 'Aliment';
   addLog(`[${state.cycle}] ${action.name}: +${output} ${resLabel}`);
@@ -336,6 +358,7 @@ function executeAction(actionId) {
 function dismissEvent() {
   const ev = state.pendingEvent;
   if (!ev) return;
+  if (ev.is_single_use) state.character.firedSingleUseEventIds.add(ev.id);
 
   if (ev.effects) {
     if (ev.effects.food)   { state.food   = Math.max(0, state.food   + ev.effects.food);   addLog(`Esdeveniment: ${ev.effects.food   >= 0 ? '+' : ''}${ev.effects.food} Aliment`); }
@@ -353,7 +376,7 @@ function resolveDiscoveryOption(optionIndex) {
   const opt = ev.options[optionIndex];
 
   if (opt.food_delta !== 0) {
-    state.food += opt.food_delta;
+    state.food = Math.max(0, state.food + opt.food_delta);
     addLog(`Esdeveniment: ${opt.food_delta >= 0 ? '+' : ''}${opt.food_delta} Aliment`);
   }
 
@@ -362,6 +385,7 @@ function resolveDiscoveryOption(optionIndex) {
     if (bt) unlockBranchTech(bt);
   }
 
+  if (ev.is_single_use) state.character.firedSingleUseEventIds.add(ev.id);
   state.pendingEvent = null;
   if (state.cycle >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
   render();
@@ -395,6 +419,9 @@ function triggerSuccession() {
 function continueSuccession() {
   if (!state.pendingSuccession) return;
   state.pendingSuccession = null;
+  state.health    = STARTING_HEALTH;
+  state.food      = STARTING_FOOD;
+  state.materials = 0;
 
   // Inherited inclination with decay
   const newInclination = {};
@@ -1073,15 +1100,17 @@ document.addEventListener("DOMContentLoaded", () => {
     renderZoneGrid();
   });
 
-  // Inclination dot editor — click to force a value directly
-  document.getElementById("inclination-rows").addEventListener("click", e => {
-    const dot = e.target.closest(".incl-dot[data-idx]");
-    if (!dot) return;
-    const row = dot.closest(".incl-row[data-axis]");
-    if (!row) return;
-    state.character.inclination[row.dataset.axis] = INCL_DOT_VALUES[parseInt(dot.dataset.idx, 10)];
-    render();
-  });
+  // Inclination dot editor — debug only; disabled in normal play
+  if (DEBUG_MODE) {
+    document.getElementById("inclination-rows").addEventListener("click", e => {
+      const dot = e.target.closest(".incl-dot[data-idx]");
+      if (!dot) return;
+      const row = dot.closest(".incl-row[data-axis]");
+      if (!row) return;
+      state.character.inclination[row.dataset.axis] = INCL_DOT_VALUES[parseInt(dot.dataset.idx, 10)];
+      render();
+    });
+  }
 
   // Inclination delta tooltip — show on hover over action rows
   const tooltipEl = document.getElementById("incl-tooltip");
