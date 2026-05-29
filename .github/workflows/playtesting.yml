@@ -25,6 +25,8 @@ on:
           - optimizer
           - new-player
           - speed-runner
+          - tycoon
+          - historian
 
 concurrency:
   group: playtesting-${{ github.ref }}
@@ -199,6 +201,8 @@ jobs:
             optimizer)  SWEEP_CA="Optimitzador / caça-exploits" ;;
             new-player) SWEEP_CA="Jugador nou" ;;
             speed-runner) SWEEP_CA="Corredor de velocitat" ;;
+            tycoon)     SWEEP_CA="Auditor de codi font" ;;
+            historian)  SWEEP_CA="Anàlisi històrica de sessions" ;;
             *)          SWEEP_CA="$SWEEP" ;;
           esac
 
