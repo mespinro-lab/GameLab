@@ -746,6 +746,7 @@ button:active { opacity: 1;    transform: translateY(0); }
   color: var(--gold);
   padding: 5px 14px;
 }
+.discovery-choices { display: flex; flex-direction: column; gap: 4px; margin-top: 2px; }
 .btn-modal {
   background: var(--accent);
   color: #fff;

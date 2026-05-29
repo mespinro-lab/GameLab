@@ -217,17 +217,17 @@ function unlockBranchTech(bt) {
     : `Habilitat nova apresa: ${bt.name}`;
 }
 
-function performDiscoveryAction() {
+function performDiscoveryAction(chosenBtId) {
   const eligible = getEligibleBranchTechs();
   if (eligible.length === 0) {
     addLog("No hi ha tècniques noves a descobrir ara.");
     render();
     return;
   }
-  const best = eligible.reduce((a, b) =>
-    getBranchTechMaturity(a) >= getBranchTechMaturity(b) ? a : b
-  );
-  unlockBranchTech(best);
+  const chosen = chosenBtId
+    ? (eligible.find(bt => bt.id === chosenBtId) ?? eligible[0])
+    : eligible.reduce((a, b) => getBranchTechMaturity(a) >= getBranchTechMaturity(b) ? a : b);
+  unlockBranchTech(chosen);
   state.cycle++;
   autoDiscoverUniversalTechs();
   state.food   = Math.max(0, state.food   - FOOD_UPKEEP);
@@ -272,6 +272,13 @@ function purchaseAction(actionId) {
 
   state.materials -= action.purchase_cost;
   state.character.purchasedActionIds.add(actionId);
+
+  // Transfer destresa progress from base action when purchasing upgrade
+  if (action.is_upgrade && action.upgrades_action_id) {
+    const baseCount = state.character.actionUseCounts[action.upgrades_action_id] || 0;
+    if (baseCount > 0) state.character.actionUseCounts[actionId] = baseCount;
+  }
+
   addLog(`Après: ${action.name} (−${action.purchase_cost} 🧠)`);
   render();
 }
@@ -344,6 +351,18 @@ function executeAction(actionId) {
       state.character.destreses.add(action.destresa_id);
       addLog(`⭐ Destresa: ${action.destresa_name}`);
       state.lastResult = `Has après la destresa "${action.destresa_name}" per experiència acumulada.`;
+    }
+  }
+  // For upgrades: continue counting toward the base action's destresa
+  if (action.is_upgrade && action.upgrades_action_id && state.character.destreses.size < DESTRESA_MAX) {
+    const baseAction = ACTIONS.find(a => a.id === action.upgrades_action_id);
+    if (baseAction?.destresa_id && !state.character.destreses.has(baseAction.destresa_id)) {
+      const threshold = baseAction.destresa_threshold || DESTRESA_THRESHOLD;
+      if (state.character.actionUseCounts[actionId] >= threshold) {
+        state.character.destreses.add(baseAction.destresa_id);
+        addLog(`⭐ Destresa: ${baseAction.destresa_name}`);
+        state.lastResult = `Has après la destresa "${baseAction.destresa_name}" per experiència acumulada.`;
+      }
     }
   }
 
@@ -983,16 +1002,19 @@ function buildZoneActionRow({ action, purchased, vis, isUpgrade, isDiscovery }) 
       (inclHint ? ` · ${inclHint}` : '');
     row.appendChild(metaEl);
 
-    // Destresa progress (debug — player visibility TBD)
-    if (action.destresa_id && purchased && !isUpgrade) {
+    // Destresa progress — also for upgrades that carry base action's destresa
+    const destresaSrc = action.destresa_id ? action
+      : (isUpgrade && action.upgrades_action_id
+          ? ACTIONS.find(a => a.id === action.upgrades_action_id) : null);
+    if (destresaSrc?.destresa_id && purchased) {
       const count = state.character.actionUseCounts[action.id] || 0;
-      const thr = action.destresa_threshold || DESTRESA_THRESHOLD;
-      const achieved = state.character.destreses.has(action.destresa_id);
+      const thr = destresaSrc.destresa_threshold || DESTRESA_THRESHOLD;
+      const achieved = state.character.destreses.has(destresaSrc.destresa_id);
       if (achieved || state.character.destreses.size < DESTRESA_MAX) {
         const destRow = document.createElement("div");
         destRow.className = "zar-destresa";
         if (achieved) {
-          destRow.innerHTML = `<span class="zar-destresa-name">⭐ ${action.destresa_name}</span>`;
+          destRow.innerHTML = `<span class="zar-destresa-name">⭐ ${destresaSrc.destresa_name}</span>`;
         } else {
           const pct = Math.min(100, count / thr * 100).toFixed(1);
           destRow.innerHTML =
@@ -1017,11 +1039,25 @@ function buildZoneActionRow({ action, purchased, vis, isUpgrade, isDiscovery }) 
 
   // Button
   if (isDiscovery) {
-    const btn = document.createElement("button");
-    btn.className = "btn-discovery btn-small";
-    btn.textContent = "Escoltar";
-    btn.onclick = () => performDiscoveryAction();
-    row.appendChild(btn);
+    const eligible = getEligibleBranchTechs();
+    if (eligible.length === 1) {
+      const btn = document.createElement("button");
+      btn.className = "btn-discovery btn-small";
+      btn.textContent = `Escoltar: ${eligible[0].name}`;
+      btn.onclick = () => performDiscoveryAction(eligible[0].id);
+      row.appendChild(btn);
+    } else {
+      const wrap = document.createElement("div");
+      wrap.className = "discovery-choices";
+      for (const bt of eligible) {
+        const btn = document.createElement("button");
+        btn.className = "btn-discovery btn-small";
+        btn.textContent = bt.name;
+        btn.onclick = () => performDiscoveryAction(bt.id);
+        wrap.appendChild(btn);
+      }
+      row.appendChild(wrap);
+    }
   } else if (purchased && vis !== "FADED") {
     const btn = document.createElement("button");
     btn.className = "btn-execute btn-small";
