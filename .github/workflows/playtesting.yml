@@ -83,7 +83,21 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          claude --dangerously-skip-permissions "/playtest ${{ steps.sweep.outputs.type }}" \
+          SESSION_DIR="production/playtests/$(date +'%Y-%m-%d')"
+          mkdir -p "$SESSION_DIR"
+
+          claude --dangerously-skip-permissions -p \
+            "You are running in CI. Perform a '${{ steps.sweep.outputs.type }}' playtest sweep of the Life Tycoon prototype.
+
+          Game source: prototypes/life-tycoon-2/
+          Known open issues: design/life-tycoon-open-points.md (do not re-report these as new)
+          Prior reports: production/playtests/ (check for known issues)
+
+          Invoke the appropriate playtester agents for a '${{ steps.sweep.outputs.type }}' sweep.
+          Each agent must write its raw findings to: ${SESSION_DIR}/[agent-name].md
+          After all agents complete, write the consolidated report to: ${SESSION_DIR}/../$(date +'%Y-%m-%d')-${{ steps.sweep.outputs.type }}.md
+
+          Do not ask for confirmation. Write all files directly." \
             2>&1 | tee /tmp/claude-output.txt
 
       - name: Find generated report
