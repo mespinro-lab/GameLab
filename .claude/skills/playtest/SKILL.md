@@ -1,7 +1,7 @@
 ---
 name: playtest
-description: "Run a coordinated playtest sweep of Life Tycoon using all seven specialist playtester agents. Spawns agents in parallel, synthesizes findings, and writes a consolidated report to production/playtests/. Supports full sweeps and targeted sweeps when a specific system has changed."
-argument-hint: "[full | targeted: system-name | casual | dynasty | optimizer | new-player | speed-runner | tycoon | historian]"
+description: "Run a coordinated playtest sweep of Life Tycoon 2 using all specialist playtester agents. Spawns agents in parallel, synthesizes findings, and writes a consolidated report to production/playtests/. Supports full sweeps and targeted sweeps when a specific system has changed."
+argument-hint: "[full | targeted: system-name | casual | dynasty | optimizer | new-player | speed-runner | tycoon | historian | branch-path]"
 user-invocable: true
 allowed-tools: Read, Glob, Grep, Write, Task, AskUserQuestion
 agent: playtester-orchestrator
@@ -51,23 +51,29 @@ If no argument was provided, call `AskUserQuestion`:
 
 Before spawning any agent, read:
 
-1. `src/life-tycoon/data.js` — current traits, resources, eras, actions, milestones
-2. `design/life-tycoon-open-points.md` — known open design issues (do not re-report these as new)
-3. `production/playtests/` — list existing report files so agents know what has
-   already been covered
+1. `prototypes/life-tycoon-2/game.js` — current game logic
+2. `prototypes/life-tycoon-2/data.js` — current actions, branch techs, universal techs, events
+3. `production/playtests/` — list existing report files so agents know what has already been covered
 
 Build a **briefing block** to pass to every spawned agent:
 
 ```
-BRIEFING:
+BRIEFING — Life Tycoon 2 (prototype):
 - Engine: HTML5 / Vanilla JS, runs from file://, no framework
+- Files: prototypes/life-tycoon-2/game.js + data.js
 - Mobile target: 360px min width, touch via click events
 - UI language: Catalan
-- Eras implemented: Prehistòria, Neolític, Edat Antiga (Era 3); Era 4 missing
-- KNOWN OPEN: iron_smelting.nextEra = 'antiguitat_classica' — era does not exist
-- KNOWN OPEN: "Fabricar Eines" +5 felicitat output flagged for removal
-- KNOWN OPEN: Children lineage bonus (2+/3+ children) not yet implemented
-- Do NOT re-report items listed in design/life-tycoon-open-points.md as new findings
+- Core loop: Execute action → inclination shifts → branches emerge → branch tech unlocks → succession
+- Resources: Aliment 🌾 (-1/turn), Saber 🧠 (buy/upgrade currency), Salut ❤️ (-1/turn aging)
+- Key constants: LIFE_EXPECTANCY=14, MAX_GENERATIONS=5, INERTIA_FACTOR=2.0, BRANCH_INHERITANCE_RATE=0.65
+- Branch techs: 6 in current data.js (simplified — GDD has 13, content migration pending)
+- Universal techs: 3 (automatic at cycles 2, 5, 8)
+- Destreses: discovered by repeating actions (threshold 5 uses, max 2, inherited intact)
+- Upgrades: 5 upgrade actions that replace base actions when purchased
+- Debug features active: inclination dot editor, delta tooltip on hover, tech strip
+- KNOWN OPEN: data.js uses simplified content vs. design/gdd/life-tycoon-2/content-plan-era1.md
+- KNOWN OPEN: recurs secundari (Pells) decision pending — currently not in prototype
+- Do NOT re-report items already listed as S1/S2 in the latest playtest report
 - Write your raw findings to: production/playtests/[session-date]/[your-agent-name].md
 ```
 
