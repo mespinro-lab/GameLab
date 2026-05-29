@@ -6,13 +6,11 @@ on:
   push:
     branches: [main]
     paths:
-      - 'src/life-tycoon/**'
-      - 'design/life-tycoon-open-points.md'
+      - 'prototypes/life-tycoon-2/**'
   pull_request:
     branches: [main]
     paths:
-      - 'src/life-tycoon/**'
-      - 'design/life-tycoon-open-points.md'
+      - 'prototypes/life-tycoon-2/**'
   workflow_dispatch:
     inputs:
       sweep:
