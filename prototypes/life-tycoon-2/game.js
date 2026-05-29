@@ -62,6 +62,7 @@ function initState() {
     materials: 0,
     character: createCharacter(inclination, basePurchased, new Set()),
     discoveredUniversalTechIds: new Set(),
+    discoveredZoneIds: new Set(["Campament", "Planes"]),
     log: [],
     lastResult: null,
     gameOverReason: null,
@@ -193,6 +194,12 @@ function getBranchTechMaturity(bt) {
 function unlockBranchTech(bt) {
   state.character.unlockedBranchTechIds.add(bt.id);
   addLog(`Nova habilitat: ${bt.name}`);
+  const pe = bt.passive_effect;
+  if (!pe) return;
+  if (pe.type === 'one_time_health')    state.health    = Math.min(HEALTH_MAX, state.health + pe.amount);
+  if (pe.type === 'one_time_materials') state.materials += pe.amount;
+  if (pe.type === 'unlock_zone')        state.discoveredZoneIds.add(pe.zone_id);
+  if (pe.desc) addLog(`Efecte passiu: ${pe.desc}`);
 }
 
 function performDiscoveryAction() {
@@ -280,7 +287,12 @@ function executeAction(actionId) {
   // Roll output: stat multiplier + destresa flat bonus
   const destresaBonus = (action.destresa_id && state.character.destreses.has(action.destresa_id))
     ? DESTRESA_BONUS : 0;
-  const output = Math.round(randInt(action.output_min, action.output_max) * getStatMultiplier(action)) + destresaBonus;
+  const outputMinBonus = [...state.character.unlockedBranchTechIds].reduce((sum, btId) => {
+    const bt = BRANCH_TECHS.find(t => t.id === btId);
+    return (bt?.passive_effect?.type === 'action_output_bonus' && bt.passive_effect.action_id === actionId)
+      ? sum + bt.passive_effect.output_min_bonus : sum;
+  }, 0);
+  const output = Math.round(randInt(action.output_min + outputMinBonus, action.output_max) * getStatMultiplier(action)) + destresaBonus;
   const outRes = action.output_resource || 'food';
   if (outRes === 'eines') {
     state.materials += output;
@@ -322,6 +334,12 @@ function executeAction(actionId) {
   const resLabel = outRes === 'eines' ? 'Provisions' : outRes === 'health' ? 'Salut' : 'Aliment';
   addLog(`[${state.cycle}] ${action.name}: +${output} ${resLabel}`);
   state.lastResult = `Cicle ${state.cycle} — ${action.name}: +${output} ${resLabel}`;
+
+  if (action.unlocks_zone && !state.discoveredZoneIds.has(action.unlocks_zone)) {
+    state.discoveredZoneIds.add(action.unlocks_zone);
+    addLog(`Nova zona descoberta: ${action.unlocks_zone}`);
+    state.lastResult = `Has explorat prou lluny — ${action.unlocks_zone} descobert!`;
+  }
 
   // Special one-time family actions
   if (actionId === 'act_cercar_parella' && !state.character.hasPartner) {
@@ -756,7 +774,7 @@ function renderZoneGrid() {
   grid.innerHTML = "";
   const tables = buildLookupTables();
   for (const zona of ZONE_ORDER) {
-    grid.appendChild(buildZoneCard(zona, tables));
+    if (state.discoveredZoneIds.has(zona)) grid.appendChild(buildZoneCard(zona, tables));
   }
 }
 
@@ -1233,14 +1251,18 @@ function showGlossary() {
 
   // 8 — Zones
   const ZONE_INFO = {
-    Campament: 'Disponible des del principi. Accions de supervivència, família i ritual.',
-    Planes:    'Disponible des del principi. Caça, exploració i recolecta exterior.',
-    Bosc:      '[Pendent implementació] Es descobreix explorant les Planes. Recolecta avançada i plantes.',
-    Ritual:    '[Pendent implementació] Es descobreix amb certes habilitats (ex: Pintura Rupestre). Rituals i cerimònies.',
+    Campament: 'Supervivència base, família i ritual. Disponible des del principi.',
+    Planes:    'Caça, exploració i recolecta exterior. Disponible des del principi.',
+    Bosc:      'Recolecta avançada i plantes. Es descobreix explorant les Planes.',
+    Ritual:    'Rituals i cerimònies. Es descobreix amb Pintura Rupestre.',
   };
-  html += sec('Zones (Era 1 — 4 definides)', ZONE_ORDER.map(zona =>
-    row('', zona, ZONE_INFO[zona] || zona, bdg('Activa', 'green'))
-  ));
+  html += sec(`Zones (${state.discoveredZoneIds.size}/${ZONE_ORDER.length} descobertes)`,
+    ZONE_ORDER.map(zona => {
+      const disc = state.discoveredZoneIds.has(zona);
+      return row('', zona, ZONE_INFO[zona] || zona,
+        disc ? bdg('Descoberta', 'green') : bdg('No descoberta', 'grey'), !disc);
+    })
+  );
 
   // 9 — Atributs
   html += sec('Atributs del Personatge', [
