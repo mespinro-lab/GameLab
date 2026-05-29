@@ -476,9 +476,11 @@ body {
   gap: 5px;
   transition: border-color 0.15s;
 }
-.action-card:not(.faded):not(.discovery):hover { border-color: rgba(96,165,250,0.35); }
+.action-card:not(.faded):not(.discovery):not(.upgrade):hover { border-color: rgba(96,165,250,0.35); }
 .action-card.faded { opacity: 0.38; }
 .action-card.discovery { border-color: rgba(245,166,35,0.45); background: rgba(245,166,35,0.05); }
+.action-card.upgrade  { border-color: rgba(74,222,128,0.35); background: rgba(74,222,128,0.04); }
+.action-card.upgrade:hover { border-color: rgba(74,222,128,0.6); }
 
 .action-name {
   font-size: 13px;
@@ -504,6 +506,17 @@ body {
   color: var(--accent);
   font-weight: 700;
 }
+.destresa-progress {
+  font-size: 10px;
+  color: var(--dim);
+  font-weight: 600;
+}
+.destresa-achieved {
+  font-size: 10px;
+  color: var(--gold);
+  font-weight: 700;
+}
+.destresa-item { color: var(--gold); }
 
 .action-footer {
   display: flex;

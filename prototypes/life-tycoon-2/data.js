@@ -65,6 +65,8 @@ const BRANCH_TECHS = [
 // health_delta: side-effect on health (negative = risky, positive = restorative)
 // stat_key: "forca" | "enginy" | "vincle" — which stat multiplies output + grows on use
 // stat_gain: how much the stat grows per execution
+// destresa_id/name/threshold: personal skill discovered after N uses of this action
+// is_upgrade / upgrades_action_id: substitutory improved action, replaces base when purchased
 const ACTIONS = [
   // BASE
   {
@@ -72,6 +74,7 @@ const ACTIONS = [
     description: "Observes els moviments d'un ramat des d'un lloc cobert. Segur i eficaç.",
     execute_cost: 1, output_resource: "food", output_min: 2, output_max: 5,
     stat_key: "forca", stat_gain: 0.10,
+    destresa_id: "d_rastreig", destresa_name: "Rastreig", destresa_threshold: 5,
     inclination_deltas: { impuls: +0.02, "intel·lecte": +0.01, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_caca"
   },
@@ -80,6 +83,7 @@ const ACTIONS = [
     description: "Busques arrels i baies comestibles al voltant del campament. Tranquil.",
     execute_cost: 1, output_resource: "food", output_min: 2, output_max: 4,
     stat_key: "forca", stat_gain: 0.10,
+    destresa_id: "d_botanica", destresa_name: "Botànica", destresa_threshold: 5,
     inclination_deltas: { impuls: -0.01, "intel·lecte": +0.01, espiritualitat: 0, sociabilitat: +0.01 },
     event_pool_id: "pool_recollecta"
   },
@@ -88,6 +92,7 @@ const ACTIONS = [
     description: "Treballes el sílex amb cura per fer eines per al clan. Precís i meticulós.",
     execute_cost: 0, output_resource: "eines", output_min: 1, output_max: 3,
     stat_key: "enginy", stat_gain: 0.10,
+    destresa_id: "d_talla_silex", destresa_name: "Talla de Sílex", destresa_threshold: 5,
     inclination_deltas: { impuls: -0.01, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
   },
@@ -96,6 +101,7 @@ const ACTIONS = [
     description: "Celebres el ritual diari del foc sagrat. Enforteix els vincles del grup.",
     execute_cost: 1, output_resource: "food", output_min: 1, output_max: 3, health_delta: +1,
     stat_key: "vincle", stat_gain: 0.10,
+    destresa_id: "d_custodi_foc", destresa_name: "Custodi del Foc", destresa_threshold: 4,
     inclination_deltas: { impuls: 0, "intel·lecte": -0.01, espiritualitat: +0.03, sociabilitat: +0.02 },
     event_pool_id: "pool_ritual"
   },
@@ -104,6 +110,7 @@ const ACTIONS = [
     description: "Protegeixes el campament i observes els voltants. Responsabilitat compartida.",
     execute_cost: 1, output_resource: "food", output_min: 2, output_max: 4,
     stat_key: "vincle", stat_gain: 0.10,
+    destresa_id: "d_guardia", destresa_name: "Guàrdia", destresa_threshold: 5,
     inclination_deltas: { impuls: +0.01, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.01 },
     event_pool_id: "pool_social"
   },
@@ -142,6 +149,7 @@ const ACTIONS = [
     description: "El clan ataca preses grans en formació. Risc elevat, gran recompensa.",
     purchase_cost: 4, execute_cost: 2, output_resource: "food", output_min: 5, output_max: 12, health_delta: -2,
     stat_key: "forca", stat_gain: 0.20,
+    destresa_id: "d_cacador_expert", destresa_name: "Caçador Expert", destresa_threshold: 3,
     inclination_requirements: { impuls: { min: 0.10, max: 1.0 } },
     inclination_deltas: { impuls: +0.05, "intel·lecte": -0.01, espiritualitat: 0, sociabilitat: +0.02 },
     event_pool_id: "pool_caca"
@@ -180,6 +188,7 @@ const ACTIONS = [
     description: "Cosius pells amb agulles d'os per fer roba duradora per al clan.",
     purchase_cost: 4, execute_cost: 0, output_resource: "eines", output_min: 2, output_max: 5,
     stat_key: "enginy", stat_gain: 0.20,
+    destresa_id: "d_cosidor", destresa_name: "Cosidor/a", destresa_threshold: 3,
     inclination_requirements: { "intel·lecte": { min: 0.10, max: 1.0 } },
     inclination_deltas: { impuls: -0.02, "intel·lecte": +0.04, espiritualitat: 0, sociabilitat: +0.01 },
     event_pool_id: "pool_artesania"
@@ -200,6 +209,7 @@ const ACTIONS = [
     description: "Prepareu remeis d'herbes per als membres malalts o ferits del clan.",
     purchase_cost: 3, execute_cost: 2, output_resource: "health", output_min: 3, output_max: 6,
     stat_key: "vincle", stat_gain: 0.20,
+    destresa_id: "d_guaridor", destresa_name: "Guaridor/a", destresa_threshold: 3,
     inclination_requirements: { espiritualitat: { min: 0.15, max: 1.0 } },
     inclination_deltas: { impuls: -0.01, "intel·lecte": +0.01, espiritualitat: +0.03, sociabilitat: +0.03 },
     event_pool_id: "pool_ritual"
@@ -227,6 +237,7 @@ const ACTIONS = [
     description: "Expliques les gestes i llegendes del llinatge davant del foc del campament.",
     purchase_cost: 3, execute_cost: 0, output_resource: "eines", output_min: 1, output_max: 3,
     stat_key: "vincle", stat_gain: 0.15,
+    destresa_id: "d_narrador", destresa_name: "Narrador/a", destresa_threshold: 3,
     inclination_requirements: { espiritualitat: { min: 0.25, max: 1.0 }, sociabilitat: { min: 0.20, max: 1.0 } },
     inclination_deltas: { impuls: -0.01, "intel·lecte": 0, espiritualitat: +0.03, sociabilitat: +0.04 },
     event_pool_id: "pool_social"
@@ -245,8 +256,51 @@ const ACTIONS = [
     description: "Intercanvieu objectes simbòlics amb grups veïns. Obren aliances i coneixement.",
     purchase_cost: 3, execute_cost: 1, output_resource: "eines", output_min: 2, output_max: 4,
     stat_key: "vincle", stat_gain: 0.20,
+    destresa_id: "d_comerciant", destresa_name: "Comerciant", destresa_threshold: 3,
     inclination_requirements: { sociabilitat: { min: 0.10, max: 1.0 }, espiritualitat: { min: 0.15, max: 1.0 } },
     inclination_deltas: { impuls: -0.01, "intel·lecte": +0.01, espiritualitat: +0.02, sociabilitat: +0.04 },
+    event_pool_id: "pool_social"
+  },
+
+  // UPGRADES — substitutory improved actions, purchased with Saber, replace the base action
+  {
+    id: "act_aguait_coordinat", name: "Aguait Coordinat", is_upgrade: true, upgrades_action_id: "act_espiar_ramat", zona: "Bosc",
+    description: "Senyal coordinat amb el grup. La presa no pot fugir. Rendiment molt superior.",
+    purchase_cost: 5, execute_cost: 1, output_resource: "food", output_min: 3, output_max: 8,
+    stat_key: "forca", stat_gain: 0.10,
+    inclination_deltas: { impuls: +0.03, "intel·lecte": +0.01, espiritualitat: 0, sociabilitat: +0.02 },
+    event_pool_id: "pool_caca"
+  },
+  {
+    id: "act_recollecta_metodica", name: "Recol·lecta Metòdica", is_upgrade: true, upgrades_action_id: "act_recollectar_arrels", zona: "Planes",
+    description: "Apliques coneixement acumulat: zones, estació, plantes. Rendiment molt superior.",
+    purchase_cost: 4, execute_cost: 1, output_resource: "food", output_min: 4, output_max: 7,
+    stat_key: "enginy", stat_gain: 0.10,
+    inclination_deltas: { impuls: -0.01, "intel·lecte": +0.02, espiritualitat: +0.01, sociabilitat: +0.01 },
+    event_pool_id: "pool_recollecta"
+  },
+  {
+    id: "act_talla_avancada", name: "Talla Avançada", is_upgrade: true, upgrades_action_id: "act_tallar_pedra", zona: "Campament",
+    description: "Eines de qualitat superior. Menys rebuig, formes més precises.",
+    purchase_cost: 5, execute_cost: 0, output_resource: "eines", output_min: 3, output_max: 6,
+    stat_key: "enginy", stat_gain: 0.10,
+    inclination_deltas: { impuls: -0.01, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania"
+  },
+  {
+    id: "act_gran_ritual", name: "Gran Ritual", is_upgrade: true, upgrades_action_id: "act_ritual_foc", zona: "Ritual",
+    description: "El ritual s'extén a tota la nit. Cohesió màxima i regeneració profunda.",
+    purchase_cost: 4, execute_cost: 1, output_resource: "food", output_min: 2, output_max: 5, health_delta: +2,
+    stat_key: "vincle", stat_gain: 0.10,
+    inclination_deltas: { impuls: -0.01, "intel·lecte": 0, espiritualitat: +0.04, sociabilitat: +0.03 },
+    event_pool_id: "pool_ritual"
+  },
+  {
+    id: "act_defensa_activa", name: "Defensa Activa", is_upgrade: true, upgrades_action_id: "act_vigilar_campament", zona: "Campament",
+    description: "Distribuïu rols i torns de guàrdia. El campament queda segur i el grup rendeix més.",
+    purchase_cost: 5, execute_cost: 1, output_resource: "food", output_min: 3, output_max: 6,
+    stat_key: "vincle", stat_gain: 0.10,
+    inclination_deltas: { impuls: +0.01, "intel·lecte": +0.01, espiritualitat: 0, sociabilitat: +0.02 },
     event_pool_id: "pool_social"
   }
 ];

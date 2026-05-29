@@ -17,17 +17,24 @@ const FOOD_UPKEEP    = 1;  // food consumed per cycle
 const HEALTH_UPKEEP  = 1;  // health lost per cycle (aging)
 const STARTING_HEALTH = 20;
 const HEALTH_MAX      = 20;
-const STAT_MAX        = 5.0;
+const STAT_MAX           = 5.0;
+const STAT_STARTING_VALUE = 1.0;
+const STAT_OUTPUT_FACTOR  = 0.15;  // output multiplier per stat point above baseline
+const DESTRESA_THRESHOLD  = 5;     // default uses needed to discover a destresa
+const DESTRESA_MAX        = 2;     // max destreses per character
+const DESTRESA_BONUS      = 1;     // flat output bonus when destresa is active
 
 // --- Game State ---
 let state = null;
 
-function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedBranchTechIds, inheritedStats) {
+function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedBranchTechIds, inheritedStats, inheritedDestreses) {
   return {
     inclination: { ...inheritedInclination },
     purchasedActionIds: new Set(inheritedPurchasedIds),
     unlockedBranchTechIds: new Set(inheritedBranchTechIds),
-    stats: inheritedStats ? { ...inheritedStats } : { forca: 1.0, enginy: 1.0, vincle: 1.0 },
+    stats: inheritedStats ? { ...inheritedStats } : { forca: STAT_STARTING_VALUE, enginy: STAT_STARTING_VALUE, vincle: STAT_STARTING_VALUE },
+    destreses: new Set(inheritedDestreses),
+    actionUseCounts: {},
     hasPartner: false,
     hasChildren: false,
   };
@@ -120,7 +127,7 @@ function getActiveBranches() {
 
 function getStatMultiplier(action) {
   if (!action.stat_key) return 1;
-  return 1 + (state.character.stats[action.stat_key] - 1) * 0.15;
+  return 1 + (state.character.stats[action.stat_key] - STAT_STARTING_VALUE) * STAT_OUTPUT_FACTOR;
 }
 
 // --- Universal Tech Discovery ---
@@ -242,8 +249,13 @@ function executeAction(actionId) {
 
   state.food -= action.execute_cost;
 
-  // Roll output and route to correct resource
-  const output = Math.round(randInt(action.output_min, action.output_max) * getStatMultiplier(action));
+  // Track use count for destresa discovery
+  state.character.actionUseCounts[actionId] = (state.character.actionUseCounts[actionId] || 0) + 1;
+
+  // Roll output: stat multiplier + destresa flat bonus
+  const destresaBonus = (action.destresa_id && state.character.destreses.has(action.destresa_id))
+    ? DESTRESA_BONUS : 0;
+  const output = Math.round(randInt(action.output_min, action.output_max) * getStatMultiplier(action)) + destresaBonus;
   const outRes = action.output_resource || 'food';
   if (outRes === 'eines') {
     state.materials += output;
@@ -265,6 +277,17 @@ function executeAction(actionId) {
   if (action.stat_key && action.stat_gain) {
     state.character.stats[action.stat_key] = Math.min(STAT_MAX,
       state.character.stats[action.stat_key] + action.stat_gain);
+  }
+
+  // Check destresa discovery
+  if (action.destresa_id && !state.character.destreses.has(action.destresa_id)
+      && state.character.destreses.size < DESTRESA_MAX) {
+    const threshold = action.destresa_threshold || DESTRESA_THRESHOLD;
+    if (state.character.actionUseCounts[actionId] >= threshold) {
+      state.character.destreses.add(action.destresa_id);
+      addLog(`⭐ Destresa: ${action.destresa_name}`);
+      state.lastResult = `Has après la destresa "${action.destresa_name}" per experiència acumulada.`;
+    }
   }
 
   // Advance cycle
@@ -388,9 +411,11 @@ function continueSuccession() {
     inheritedStats[k] = parentStats[k] * BRANCH_INHERITANCE_RATE + 1.0 * (1 - BRANCH_INHERITANCE_RATE);
   }
 
+  const inheritedDestreses = new Set(state.character.destreses);
+
   state.generation++;
   state.cycle = 0;
-  state.character = createCharacter(newInclination, inheritedPurchased, inheritedBranchTechs, inheritedStats);
+  state.character = createCharacter(newInclination, inheritedPurchased, inheritedBranchTechs, inheritedStats, inheritedDestreses);
 
   state.lastResult = null;
   addLog(`--- Generació ${state.generation} ---`);
@@ -547,7 +572,7 @@ function renderProfilePanel() {
     }
   }
 
-  // Skills
+  // Branch tech skills
   const btEl = document.getElementById("unlocked-branch-techs");
   btEl.innerHTML = "";
   if (state.character.unlockedBranchTechIds.size === 0) {
@@ -560,6 +585,28 @@ function renderProfilePanel() {
       div.className = "skill-item";
       div.textContent = bt.name;
       btEl.appendChild(div);
+    }
+  }
+
+  // Destreses
+  const destEl = document.getElementById("destreses-display");
+  destEl.innerHTML = "";
+  if (state.character.destreses.size === 0) {
+    destEl.innerHTML = `<div class="dim">Cap destresa (màx ${DESTRESA_MAX})</div>`;
+  } else {
+    for (const destId of state.character.destreses) {
+      const srcAction = ACTIONS.find(a => a.destresa_id === destId);
+      const name = srcAction ? srcAction.destresa_name : destId;
+      const div = document.createElement("div");
+      div.className = "skill-item destresa-item";
+      div.textContent = `⭐ ${name}`;
+      destEl.appendChild(div);
+    }
+    if (state.character.destreses.size < DESTRESA_MAX) {
+      const note = document.createElement("div");
+      note.className = "dim";
+      note.textContent = `${state.character.destreses.size}/${DESTRESA_MAX} — en pots aprendre ${DESTRESA_MAX - state.character.destreses.size} més`;
+      destEl.appendChild(note);
     }
   }
 }
@@ -641,6 +688,14 @@ function renderActions() {
     for (const aid of bt.unlocks_action_ids) purchasableActionIds.add(aid);
   }
 
+  // Base actions superseded by a purchased upgrade
+  const upgradedBaseActionIds = new Set();
+  for (const a of ACTIONS) {
+    if (a.is_upgrade && state.character.purchasedActionIds.has(a.id)) {
+      upgradedBaseActionIds.add(a.upgrades_action_id);
+    }
+  }
+
   const toShow = [];
   const hasEligibleBranchTechs = getEligibleBranchTechs().length > 0;
 
@@ -653,6 +708,23 @@ function renderActions() {
       if (hasEligibleBranchTechs) toShow.push({ action, purchased: true, vis: "ACTIVE", isDiscovery: true });
       continue;
     }
+
+    // Upgrade actions: visible only when base is owned
+    if (action.is_upgrade) {
+      if (!state.character.purchasedActionIds.has(action.upgrades_action_id)) continue;
+      const purchased = state.character.purchasedActionIds.has(action.id);
+      const vis = getActionVisibility(action);
+      if (purchased) {
+        if (vis !== "HIDDEN") toShow.push({ action, purchased, vis, isUpgrade: true });
+      } else {
+        if (vis === "ACTIVE") toShow.push({ action, purchased: false, vis, isUpgrade: true });
+      }
+      continue;
+    }
+
+    // Skip base actions replaced by a purchased upgrade
+    if (upgradedBaseActionIds.has(action.id)) continue;
+
     const purchased = state.character.purchasedActionIds.has(action.id);
     const vis = getActionVisibility(action);
     if (purchased) {
@@ -699,13 +771,13 @@ function renderActions() {
   }
 }
 
-function buildActionCard({ action, purchased, vis, isDiscovery }) {
+function buildActionCard({ action, purchased, vis, isDiscovery, isUpgrade }) {
   const card = document.createElement("div");
-  card.className = `action-card${vis === "FADED" ? " faded" : ""}${isDiscovery ? " discovery" : ""}`;
+  card.className = `action-card${vis === "FADED" ? " faded" : ""}${isDiscovery ? " discovery" : ""}${isUpgrade ? " upgrade" : ""}`;
 
   const nameEl = document.createElement("div");
   nameEl.className = "action-name";
-  nameEl.textContent = action.name;
+  nameEl.textContent = isUpgrade ? `↑ ${action.name}` : action.name;
   card.appendChild(nameEl);
 
   if (action.description) {
@@ -728,6 +800,23 @@ function buildActionCard({ action, purchased, vis, isDiscovery }) {
     riskEl.className = "action-risk";
     riskEl.textContent = `⚠ ${action.health_delta} Salut`;
     card.appendChild(riskEl);
+  }
+
+  // Destresa progress (only on purchased non-upgrade actions with a destresa_id)
+  if (action.destresa_id && purchased && !isUpgrade) {
+    const count = state.character.actionUseCounts[action.id] || 0;
+    const threshold = action.destresa_threshold || DESTRESA_THRESHOLD;
+    if (state.character.destreses.has(action.destresa_id)) {
+      const d = document.createElement("div");
+      d.className = "destresa-achieved";
+      d.textContent = `⭐ ${action.destresa_name}`;
+      card.appendChild(d);
+    } else if (state.character.destreses.size < DESTRESA_MAX) {
+      const d = document.createElement("div");
+      d.className = "destresa-progress";
+      d.textContent = `⭐ ${count}/${threshold}`;
+      card.appendChild(d);
+    }
   }
 
   const footer = document.createElement("div");
@@ -766,7 +855,7 @@ function buildActionCard({ action, purchased, vis, isDiscovery }) {
     metaEl.innerHTML = `${action.purchase_cost} saber <span class="${resClass}">+${action.output_min}–${action.output_max} ${resShort}</span>`;
     const btn = document.createElement("button");
     btn.className = "btn-buy";
-    btn.textContent = `Aprendre (−${action.purchase_cost} 🧠)`;
+    btn.textContent = isUpgrade ? `Millorar (−${action.purchase_cost} 🧠)` : `Aprendre (−${action.purchase_cost} 🧠)`;
     btn.onclick = () => purchaseAction(action.id);
     btnArea.appendChild(btn);
   }
