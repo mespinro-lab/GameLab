@@ -100,6 +100,20 @@
 
       <div id="tech-status-strip" class="tech-status-strip"></div>
 
+      <!-- Onboarding panel — shown on cycle 0 unless dismissed -->
+      <div id="onboarding-panel" class="onboarding-panel hidden">
+        <div class="onboarding-tips">
+          <div class="onboarding-tip">🌾 Executa accions per aconseguir Aliment. Es consumeix −1 cada torn.</div>
+          <div class="onboarding-tip">🧠 Les accions d'artesania generen Provisions per aprendre accions noves (pestanya "Aprendre").</div>
+          <div class="onboarding-tip">↕ Les accions canvien la teva <strong>inclinació</strong> — quan arribes a cert pol, desbloquegen branques.</div>
+          <div class="onboarding-tip">👨‍👩‍👧 Tingues fills abans del cicle 14 per assegurar que el llinatge continua.</div>
+        </div>
+        <div class="onboarding-actions">
+          <button class="btn-onboarding-ok" onclick="dismissOnboarding(false)">Entès, comencem!</button>
+          <button class="btn-onboarding-skip" onclick="dismissOnboarding(true)">Salta (test)</button>
+        </div>
+      </div>
+
       <!-- 2×2 zone grid — populated by JS -->
       <div id="zone-grid"></div>
 

@@ -68,9 +68,17 @@ function initState() {
     gameOverReason: null,
     pendingEvent: null,
     pendingSuccession: null,
+    pendingZoneDiscovery: null,
     siblingPool: [],
     gameOver: false,
+    onboardingDismissed: localStorage.getItem('lt2_skip_onboarding') === '1',
   };
+}
+
+function dismissOnboarding(skip) {
+  state.onboardingDismissed = true;
+  if (skip) localStorage.setItem('lt2_skip_onboarding', '1');
+  render();
 }
 
 // --- Inclination Logic ---
@@ -197,11 +205,16 @@ function unlockBranchTech(bt) {
   state.character.unlockedBranchTechIds.add(bt.id);
   addLog(`Nova habilitat: ${bt.name}`);
   const pe = bt.passive_effect;
-  if (!pe) return;
-  if (pe.type === 'one_time_health')    state.health    = Math.min(HEALTH_MAX, state.health + pe.amount);
-  if (pe.type === 'one_time_materials') state.materials += pe.amount;
-  if (pe.type === 'unlock_zone')        state.discoveredZoneIds.add(pe.zone_id);
-  if (pe.desc) addLog(`Efecte passiu: ${pe.desc}`);
+  if (pe) {
+    if (pe.type === 'one_time_health')    state.health    = Math.min(HEALTH_MAX, state.health + pe.amount);
+    if (pe.type === 'one_time_materials') state.materials += pe.amount;
+    if (pe.type === 'unlock_zone')        state.discoveredZoneIds.add(pe.zone_id);
+    if (pe.desc) addLog(`Efecte passiu: ${pe.desc}`);
+  }
+  const newActions = ACTIONS.filter(a => bt.unlocks_action_ids.includes(a.id));
+  state.lastResult = newActions.length > 0
+    ? `Habilitat nova: ${bt.name} · Pots aprendre: ${newActions.map(a => a.name).join(', ')}`
+    : `Habilitat nova apresa: ${bt.name}`;
 }
 
 function performDiscoveryAction() {
@@ -215,7 +228,6 @@ function performDiscoveryAction() {
     getBranchTechMaturity(a) >= getBranchTechMaturity(b) ? a : b
   );
   unlockBranchTech(best);
-  state.lastResult = `Habilitat nova apresa: ${best.name}`;
   state.cycle++;
   autoDiscoverUniversalTechs();
   state.food   = Math.max(0, state.food   - FOOD_UPKEEP);
@@ -268,6 +280,7 @@ function executeAction(actionId) {
   const action = ACTIONS.find(a => a.id === actionId);
   if (!action) return;
   if (!state.character.purchasedActionIds.has(actionId)) return;
+  state.pendingZoneDiscovery = null;
 
   const vis = getActionVisibility(action);
   if (vis !== "ACTIVE") {
@@ -345,7 +358,8 @@ function executeAction(actionId) {
   if (action.unlocks_zone && !state.discoveredZoneIds.has(action.unlocks_zone)) {
     state.discoveredZoneIds.add(action.unlocks_zone);
     addLog(`Nova zona descoberta: ${action.unlocks_zone}`);
-    state.lastResult = `Has explorat prou lluny — ${action.unlocks_zone} descobert!`;
+    state.pendingZoneDiscovery = action.unlocks_zone;
+    state.lastResult = null;
   }
 
   // Special one-time family actions
@@ -505,6 +519,7 @@ function continueSuccession(successorId) {
   );
 
   state.lastResult = null;
+  state.pendingZoneDiscovery = null;
   addLog(`--- Generació ${state.generation} ---`);
   render();
 }
@@ -639,6 +654,10 @@ function renderProfilePanel() {
     row.appendChild(rightLbl);
     inclEl.appendChild(row);
   }
+  const inclHintEl = document.createElement("div");
+  inclHintEl.className = "dim incl-hint";
+  inclHintEl.textContent = "Les accions mouen la inclinació → desbloquegen branques";
+  inclEl.appendChild(inclHintEl);
 
   // Family status
   const famEl = document.getElementById("family-status");
@@ -647,6 +666,12 @@ function renderProfilePanel() {
     <span class="family-badge ${state.character.children.length > 0 ? 'achieved' : ''}">Fills (${state.character.children.length}/${MAX_CHILDREN})</span>
     ${state.siblingPool.length > 0 ? `<span class="family-badge achieved" style="background:rgba(245,166,35,0.15);border-color:rgba(245,166,35,0.3)">Germans (${state.siblingPool.length})</span>` : ''}
   `;
+  if (!state.character.hasPartner && !state.gameOver) {
+    const hintEl = document.createElement("div");
+    hintEl.className = "dim incl-hint";
+    hintEl.textContent = `Busca parella i tingues fills abans del cicle ${LIFE_EXPECTANCY}`;
+    famEl.appendChild(hintEl);
+  }
 
   // Branches
   const branchesEl = document.getElementById("active-branches");
@@ -735,13 +760,24 @@ function renderActionsPanel() {
     warnEl.classList.add("hidden");
   }
 
-  // Discovery notification
+  // Discovery notification — zone discovery takes priority over branch tech hint
   const notifEl = document.getElementById("discovery-notification");
-  if (getEligibleBranchTechs().length > 0) {
+  if (state.pendingZoneDiscovery) {
+    notifEl.textContent = `🗺️ Nova zona descoberta: ${state.pendingZoneDiscovery}! Ara apareix al teu mapa.`;
+    notifEl.classList.remove("hidden");
+  } else if (getEligibleBranchTechs().length > 0) {
     notifEl.textContent = "Hi ha estrangers al poblat que expliquen tècniques noves.";
     notifEl.classList.remove("hidden");
   } else {
     notifEl.classList.add("hidden");
+  }
+
+  // Onboarding panel
+  const onbEl = document.getElementById("onboarding-panel");
+  if (state.cycle === 0 && !state.onboardingDismissed) {
+    onbEl.classList.remove("hidden");
+  } else {
+    onbEl.classList.add("hidden");
   }
 
   renderUniversalTechs();
@@ -915,6 +951,13 @@ function buildZoneActionRow({ action, purchased, vis, isUpgrade, isDiscovery }) 
   const nameEl = document.createElement("div");
   nameEl.className = "zar-name";
   nameEl.textContent = isUpgrade ? `↑ ${action.name}` : action.name;
+  if (action.unlocks_zone && !state.discoveredZoneIds.has(action.unlocks_zone)) {
+    const zoneHint = document.createElement("span");
+    zoneHint.className = "zar-zone-hint";
+    zoneHint.title = `Descobreix ${action.unlocks_zone}`;
+    zoneHint.textContent = " 🗺️";
+    nameEl.appendChild(zoneHint);
+  }
   if (action.health_delta && action.health_delta < 0) {
     const risk = document.createElement("span");
     risk.className = "zar-risk";
