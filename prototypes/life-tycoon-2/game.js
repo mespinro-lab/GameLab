@@ -23,6 +23,7 @@ const STAT_OUTPUT_FACTOR  = 0.15;  // output multiplier per stat point above bas
 const DESTRESA_THRESHOLD  = 5;     // default uses needed to discover a destresa
 const DESTRESA_MAX        = 2;     // max destreses per character
 const DESTRESA_BONUS      = 1;     // flat output bonus when destresa is active
+const INCL_DOT_VALUES = [-1.0, -0.5, 0.0, 0.5, 1.0];
 
 // --- Game State ---
 let state = null;
@@ -524,6 +525,7 @@ function renderProfilePanel() {
 
     const row = document.createElement("div");
     row.className = "incl-row";
+    row.dataset.axis = axis;
 
     const leftLbl = document.createElement("span");
     leftLbl.className = "incl-pole";
@@ -534,6 +536,7 @@ function renderProfilePanel() {
     for (let i = 0; i < 5; i++) {
       const dot = document.createElement("span");
       dot.className = "incl-dot";
+      dot.dataset.idx = i;
       if (i === activeDot) {
         dot.classList.add(i < 2 ? "active-left" : i === 2 ? "active-center" : "active-right");
       }
@@ -641,6 +644,7 @@ function renderActionsPanel() {
   }
 
   renderUniversalTechs();
+  renderTechStrip();
   renderZoneGrid();
   renderLog();
 }
@@ -674,6 +678,20 @@ function renderUniversalTechs() {
     card.appendChild(info);
     card.appendChild(btn);
     el.appendChild(card);
+  }
+}
+
+function renderTechStrip() {
+  const el = document.getElementById("tech-status-strip");
+  el.innerHTML = "";
+  for (const tech of UNIVERSAL_TECHS) {
+    const discovered = state.discoveredUniversalTechIds.has(tech.id);
+    const available  = !discovered && state.cycle >= tech.cycle;
+    const pill = document.createElement("div");
+    pill.className = "ts-pill" + (discovered ? " ts-discovered" : available ? " ts-available" : " ts-pending");
+    const cycleStr = !discovered ? ` <span class="ts-cycle">c${tech.cycle}</span>` : '';
+    pill.innerHTML = `${tech.icon ? `<span>${tech.icon}</span>` : ''}<span class="ts-name">${tech.name}</span>${cycleStr}`;
+    el.appendChild(pill);
   }
 }
 
@@ -816,6 +834,7 @@ function buildZoneActionRow({ action, purchased, vis, isUpgrade, isDiscovery }) 
     (vis === "FADED" ? " faded" : "") +
     (isUpgrade ? " upgrade" : "") +
     (isDiscovery ? " discovery" : "");
+  row.dataset.actionId = action.id;
 
   // Name
   const nameEl = document.createElement("div");
@@ -838,23 +857,33 @@ function buildZoneActionRow({ action, purchased, vis, isUpgrade, isDiscovery }) 
       ? `${action.stat_key.charAt(0).toUpperCase() + action.stat_key.slice(1)} ${state.character.stats[action.stat_key].toFixed(1)}`
       : '';
     const inclHint = getInclinationHint(action);
-    const destresaStr = (() => {
-      if (!action.destresa_id || !purchased || isUpgrade) return '';
-      const count = state.character.actionUseCounts[action.id] || 0;
-      const thr = action.destresa_threshold || DESTRESA_THRESHOLD;
-      if (state.character.destreses.has(action.destresa_id)) return ` ⭐${action.destresa_name}`;
-      if (state.character.destreses.size < DESTRESA_MAX) return ` ⭐${count}/${thr}`;
-      return '';
-    })();
-
     const metaEl = document.createElement("div");
     metaEl.className = "zar-meta";
     metaEl.textContent =
       `${costStr}+${action.output_min}–${action.output_max}${resIcon}` +
       (statStr ? ` · ${statStr}` : '') +
-      (inclHint ? ` · ${inclHint}` : '') +
-      destresaStr;
+      (inclHint ? ` · ${inclHint}` : '');
     row.appendChild(metaEl);
+
+    // Destresa progress (debug — player visibility TBD)
+    if (action.destresa_id && purchased && !isUpgrade) {
+      const count = state.character.actionUseCounts[action.id] || 0;
+      const thr = action.destresa_threshold || DESTRESA_THRESHOLD;
+      const achieved = state.character.destreses.has(action.destresa_id);
+      if (achieved || state.character.destreses.size < DESTRESA_MAX) {
+        const destRow = document.createElement("div");
+        destRow.className = "zar-destresa";
+        if (achieved) {
+          destRow.innerHTML = `<span class="zar-destresa-name">⭐ ${action.destresa_name}</span>`;
+        } else {
+          const pct = Math.min(100, count / thr * 100).toFixed(1);
+          destRow.innerHTML =
+            `<span class="zar-destresa-bar-track"><span class="zar-destresa-bar-fill" style="width:${pct}%"></span></span>` +
+            `<span class="zar-destresa-count">${count}/${thr}</span>`;
+        }
+        row.appendChild(destRow);
+      }
+    }
 
     // Faded reason
     if (vis === "FADED" && action.inclination_requirements) {
@@ -1034,7 +1063,8 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-restart").onclick = restartGame;
 
   // Zone grid filter — event delegation (survives re-renders)
-  document.getElementById("zone-grid").addEventListener("click", e => {
+  const zoneGridEl = document.getElementById("zone-grid");
+  zoneGridEl.addEventListener("click", e => {
     const btn = e.target.closest(".zone-filter-btn");
     if (!btn) return;
     const card = btn.closest(".zone-card");
@@ -1042,6 +1072,43 @@ document.addEventListener("DOMContentLoaded", () => {
     zoneFilters[card.dataset.zona] = btn.dataset.filter;
     renderZoneGrid();
   });
+
+  // Inclination dot editor — click to force a value directly
+  document.getElementById("inclination-rows").addEventListener("click", e => {
+    const dot = e.target.closest(".incl-dot[data-idx]");
+    if (!dot) return;
+    const row = dot.closest(".incl-row[data-axis]");
+    if (!row) return;
+    state.character.inclination[row.dataset.axis] = INCL_DOT_VALUES[parseInt(dot.dataset.idx, 10)];
+    render();
+  });
+
+  // Inclination delta tooltip — show on hover over action rows
+  const tooltipEl = document.getElementById("incl-tooltip");
+  zoneGridEl.addEventListener("mouseover", e => {
+    const row = e.target.closest("[data-action-id]");
+    if (!row) { tooltipEl.classList.add("hidden"); return; }
+    const action = ACTIONS.find(a => a.id === row.dataset.actionId);
+    if (!action || !action.inclination_deltas) { tooltipEl.classList.add("hidden"); return; }
+    const lines = Object.entries(action.inclination_deltas)
+      .filter(([, d]) => Math.abs(d) >= 0.001)
+      .map(([axis, d]) => {
+        const labels = AXIS_LABELS[axis];
+        return d > 0 ? `+${d.toFixed(3)} ${labels.right}` : `${d.toFixed(3)} ${labels.left}`;
+      });
+    if (!lines.length) { tooltipEl.classList.add("hidden"); return; }
+    tooltipEl.textContent = lines.join("  ·  ");
+    tooltipEl.classList.remove("hidden");
+    tooltipEl.style.left = (e.clientX + 14) + "px";
+    tooltipEl.style.top  = (e.clientY - 32) + "px";
+  });
+  zoneGridEl.addEventListener("mousemove", e => {
+    if (!tooltipEl.classList.contains("hidden")) {
+      tooltipEl.style.left = (e.clientX + 14) + "px";
+      tooltipEl.style.top  = (e.clientY - 32) + "px";
+    }
+  });
+  zoneGridEl.addEventListener("mouseleave", () => tooltipEl.classList.add("hidden"));
 
   initState();
   render();
