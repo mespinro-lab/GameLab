@@ -66,7 +66,7 @@ async function main() {
     console.log(`Running ${p.label} analysis...`);
     try {
       const msg = await client.messages.create({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-sonnet-4-5',
         max_tokens: 2048,
         system: p.prompt,
         messages: [{ role: 'user', content: userMessage }],
