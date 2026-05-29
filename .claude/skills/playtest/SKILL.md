@@ -1,7 +1,7 @@
 ---
 name: playtest
-description: "Run a coordinated mobile playtest sweep of Life Tycoon using the five specialist playtester agents. Spawns agents in parallel, synthesizes findings, and writes a consolidated report to production/playtests/. Supports full sweeps and targeted sweeps when a specific system has changed."
-argument-hint: "[full | targeted: system-name | casual | dynasty | optimizer | new-player | speed-runner]"
+description: "Run a coordinated playtest sweep of Life Tycoon using all seven specialist playtester agents. Spawns agents in parallel, synthesizes findings, and writes a consolidated report to production/playtests/. Supports full sweeps and targeted sweeps when a specific system has changed."
+argument-hint: "[full | targeted: system-name | casual | dynasty | optimizer | new-player | speed-runner | tycoon | historian]"
 user-invocable: true
 allowed-tools: Read, Glob, Grep, Write, Task, AskUserQuestion
 agent: playtester-orchestrator
@@ -15,13 +15,15 @@ Resolve the sweep mode:
 
 | Argument | Agents to spawn | When to use |
 |---|---|---|
-| `full` | All 5 | Milestone gate, new era added, significant feature shipped |
+| `full` | All 6 active + historian after | Milestone gate, new era added, significant feature shipped |
 | `targeted: [system]` | Subset (see routing table) | One system changed |
 | `casual` | playtester-casual-mobile only | Mobile UX / touch layout change |
 | `dynasty` | playtester-dynasty-builder only | Inheritance or lineage system change |
 | `optimizer` | playtester-optimizer only | Balance values or formula changed |
 | `new-player` | playtester-new-player only | UI labels, onboarding, Catalan text |
 | `speed-runner` | playtester-speed-runner only | Tech tree, era gates, pacing |
+| `tycoon` | playtester-tycoon only | Code audit — logic bugs, balance, UX friction from source |
+| `historian` | playtester-historian only | Cross-session QA health snapshot |
 | *(blank)* | Ask user | — |
 
 **Targeted sweep routing** — when `targeted: [system]` is given:
@@ -33,13 +35,15 @@ Resolve the sweep mode:
 | Tech tree / era gates | speed-runner, optimizer |
 | Action costs / balance | optimizer, dynasty |
 | Succession overlay | casual, new-player |
-| New era added | ALL FIVE |
+| New era added | ALL SIX active + historian |
 | Save / load | dynasty, speed-runner |
+| Code logic / formula | tycoon |
+| QA health review | historian |
 
 If no argument was provided, call `AskUserQuestion`:
 - "What kind of playtest sweep would you like to run?"
-- Options: "Full sweep (all 5 agents)", "Targeted (pick a system)",
-  "Single agent (casual / dynasty / optimizer / new-player / speed-runner)"
+- Options: "Full sweep (all 6 active + historian)", "Targeted (pick a system)",
+  "Single agent (casual / dynasty / optimizer / new-player / speed-runner / tycoon / historian)"
 
 ---
 
