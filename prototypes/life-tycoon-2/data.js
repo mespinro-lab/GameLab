@@ -89,6 +89,35 @@ const STAT_DEFS = [
   { id: 'vincle', label: 'Vincle', description: "Millora outputs d'accions socials i rituals." },
 ];
 
+// --- Successió: noms i frases narratives ---
+const CHILD_NAMES = [
+  "Auri", "Brant", "Cels", "Dorma", "Elva",
+  "Fura", "Gall", "Hern", "Ibra", "Jord",
+  "Kela", "Llor", "Marn", "Nela", "Orx",
+  "Pell", "Raul", "Sena", "Tirsa", "Ursa",
+];
+
+// Frases per eix dominant (pos = pol dret, neg = pol esquerre) + neutral si cap eix domina
+const SUCCESSION_PHRASES = {
+  impuls: {
+    pos: "Nascut per liderar la caça. La seva determinació és inusual en un infant.",
+    neg: "Observa on d'altres actuen. Una prudència que sovint salva vides.",
+  },
+  "intel·lecte": {
+    pos: "La seva ment construeix connexions que d'altres no veuen.",
+    neg: "Confia en els instints del cos on d'altres dubten.",
+  },
+  espiritualitat: {
+    pos: "Sent la presència dels avantpassats. El foc li parla, i el clan l'escolta.",
+    neg: "Els seus peus sempre toquen terra. El clan sobreviu gràcies a ell.",
+  },
+  sociabilitat: {
+    pos: "El seu somriure obre portes que les llances no podrien.",
+    neg: "Troba en la solitud la força que d'altres busquen al grup.",
+  },
+  neutral: "Un caràcter obert. Qualsevol camí podria ser el seu.",
+};
+
 const UNIVERSAL_TECHS = [
   {
     id: "ut_talla_laminar", name: "Talla en Làmines", icon: "🪨", cycle: 2,

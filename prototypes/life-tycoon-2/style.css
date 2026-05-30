@@ -894,8 +894,9 @@ button:active { opacity: 1;    transform: translateY(0); }
 }
 .succ-sibling { border-color: rgba(245,166,35,0.3); }
 .succ-option-info { display: flex; flex-direction: column; gap: 3px; flex: 1; }
-.succ-option-label { font-size: 13px; font-weight: 600; color: var(--text); }
-.succ-option-incl  { font-size: 11px; color: var(--dim); }
+.succ-option-label  { font-size: 13px; font-weight: 600; color: var(--text); }
+.succ-option-phrase { font-size: 12px; color: var(--text); opacity: 0.75; font-style: italic; line-height: 1.4; }
+.succ-option-axis   { font-size: 11px; color: var(--dim); }
 .succ-tag-sibling {
   display: inline-block;
   font-size: 9px;

@@ -382,7 +382,8 @@ function executeAction(actionId) {
     addLog(`Parella trobada.`);
   }
   if (actionId === 'act_tenir_fills' && state.character.hasPartner && state.character.children.length < MAX_CHILDREN) {
-    const child = { id: `child_${state.generation}_${state.cycle}`, label: `Fill (cicle ${state.cycle})` };
+    const nameIdx = (state.generation * 7 + state.character.children.length * 3) % CHILD_NAMES.length;
+    const child = { id: `child_${state.generation}_${state.cycle}`, label: CHILD_NAMES[nameIdx] };
     state.character.children.push(child);
     const n = state.character.children.length;
     state.lastResult = n === 1
@@ -1232,13 +1233,17 @@ function renderModals() {
       const axisLabel = dominantVal >= 0
         ? AXIS_LABELS[dominantAxis].right
         : AXIS_LABELS[dominantAxis].left;
+      const phrase = Math.abs(dominantVal) < 0.1
+        ? SUCCESSION_PHRASES.neutral
+        : (SUCCESSION_PHRASES[dominantAxis]?.[dominantVal >= 0 ? 'pos' : 'neg'] ?? axisLabel);
       const sibTag = successor.is_sibling ? '<span class="succ-tag-sibling">Germà</span>' : '';
       const item = document.createElement("div");
       item.className = "succ-option" + (successor.is_sibling ? " succ-sibling" : "");
       item.innerHTML =
         `<div class="succ-option-info">
           <span class="succ-option-label">${successor.label}</span>${sibTag}
-          <span class="succ-option-incl">${axisLabel}: ${Math.abs(dominantVal).toFixed(2)}</span>
+          <span class="succ-option-phrase">${phrase}</span>
+          <span class="succ-option-axis">${axisLabel}</span>
         </div>
         <button class="btn-succ-choose" onclick="continueSuccession('${successor.id}')">Tria</button>`;
       succList.appendChild(item);
