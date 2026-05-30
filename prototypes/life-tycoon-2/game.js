@@ -15,9 +15,9 @@ const STARTING_FOOD = 15;
 
 const AXES = ["impuls", "intel·lecte", "espiritualitat", "sociabilitat"];
 const FOOD_UPKEEP    = 1;  // food consumed per cycle
-const HEALTH_UPKEEP  = 1;  // health lost per cycle (aging)
-const STARTING_HEALTH = 20;
-const HEALTH_MAX      = 20;
+const HEALTH_UPKEEP  = 5;  // health lost per cycle (aging)
+const STARTING_HEALTH = 80;
+const HEALTH_MAX      = 100;
 const STAT_MAX           = 5.0;
 const STAT_STARTING_VALUE = 1.0;
 const STAT_OUTPUT_FACTOR  = 0.15;  // output multiplier per stat point above baseline
@@ -608,7 +608,7 @@ function renderTopBar() {
   const hc = document.getElementById("health-counter");
   hc.innerHTML = `❤️ ${state.health}<span class="stat-rate">-${HEALTH_UPKEEP}/t</span>`;
   hc.className = "stat-pill stat-health" +
-    (state.health <= 4 ? " stat-critical" : state.health <= 8 ? " stat-warning" : "");
+    (state.health <= 20 ? " stat-critical" : state.health <= 40 ? " stat-warning" : "");
 }
 
 function renderProfilePanel() {
@@ -719,6 +719,16 @@ function renderProfilePanel() {
       const div = document.createElement("div");
       div.className = "skill-item";
       div.textContent = bt.name;
+      // S2-03: warn if all actions from this tech are in undiscovered zones
+      const btActions = ACTIONS.filter(a => bt.unlocks_action_ids.includes(a.id));
+      const allLocked = btActions.length > 0 && btActions.every(a => !state.discoveredZoneIds.has(a.zona));
+      if (allLocked) {
+        const hint = document.createElement("span");
+        hint.className = "skill-zone-hint";
+        hint.title = `Zona necessària: ${btActions[0].zona}`;
+        hint.textContent = " 🔒";
+        div.appendChild(hint);
+      }
       btEl.appendChild(div);
     }
   }

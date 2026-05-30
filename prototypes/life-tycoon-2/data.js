@@ -13,7 +13,7 @@ const UNIVERSAL_TECHS = [
   {
     id: "ut_vestimenta", name: "Cosit i Vestimenta", icon: "🧵", cycle: 4,
     description: "Agulles d'os per cosir pells d'animal. Permet colonitzar climes freds.",
-    effect: { healthBonus: 2, desc: "+2 Salut permanent" }
+    effect: { healthBonus: 10, desc: "+10 Salut permanent" }
   },
   {
     id: "ut_art_simbolic", name: "Art i Símbol", icon: "🎨", cycle: 6,
@@ -62,7 +62,7 @@ const BRANCH_TECHS = [
     universal_prereq: "ut_vestimenta",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.20 }, { axis: "impuls", max: 0.20 }] },
     unlocks_action_ids: ["act_cosir_pells", "act_construir_refugi"],
-    passive_effect: { type: "one_time_health", amount: 3, desc: "+3 Salut (vestimenta)" },
+    passive_effect: { type: "one_time_health", amount: 15, desc: "+15 Salut (vestimenta)" },
     is_hidden: false
   },
   {
@@ -134,7 +134,7 @@ const BRANCH_TECHS = [
     universal_prereq: "ut_conreu_incipient",
     inclination_conditions: { operator: "OR", conditions: [{ axis: "impuls", min: 0.10 }, { axis: "intel·lecte", max: 0.05 }] },
     unlocks_action_ids: ["act_control_territori"],
-    passive_effect: { type: "one_time_health", amount: 2, desc: "+2 Salut (domini del territori)" },
+    passive_effect: { type: "one_time_health", amount: 10, desc: "+10 Salut (domini del territori)" },
     is_hidden: false
   }
 ];
@@ -177,7 +177,7 @@ const ACTIONS = [
   {
     id: "act_ritual_foc", name: "Ritual del Foc", is_base: true, zona: "Campament",
     description: "Celebres el ritual diari del foc sagrat. Enforteix els vincles del grup.",
-    execute_cost: 1, output_resource: "food", output_min: 1, output_max: 3, health_delta: +1,
+    execute_cost: 1, output_resource: "food", output_min: 1, output_max: 3, health_delta: +5,
     stat_key: "vincle", stat_gain: 0.10,
     destresa_id: "d_custodi_foc", destresa_name: "Custodi del Foc", destresa_threshold: 4,
     inclination_deltas: { impuls: 0, "intel·lecte": -0.01, espiritualitat: +0.03, sociabilitat: +0.02 },
@@ -234,7 +234,7 @@ const ACTIONS = [
   {
     id: "act_caca_llanca", name: "Caça amb Llança", is_base: false, zona: "Planes",
     description: "Llances una pedra punxeguda des d'una distància que la presa no esperava. Alt risc, alt reward.",
-    purchase_cost: 4, execute_cost: 2, output_resource: "food", output_min: 5, output_max: 12, health_delta: -2,
+    purchase_cost: 4, execute_cost: 2, output_resource: "food", output_min: 5, output_max: 12, health_delta: -10,
     stat_key: "forca", stat_gain: 0.20,
     inclination_deltas: { impuls: +0.05, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_caca"
@@ -242,7 +242,7 @@ const ACTIONS = [
   {
     id: "act_emboscada_nocturna", name: "Emboscada Nocturna", is_base: false, zona: "Planes",
     description: "La foscor és el teu aliat. Atacs per sorpresa quan la presa dorm. Molt perillós però molt rendible.",
-    purchase_cost: 5, execute_cost: 2, output_resource: "food", output_min: 6, output_max: 15, health_delta: -3,
+    purchase_cost: 5, execute_cost: 3, output_resource: "food", output_min: 6, output_max: 10, health_delta: -15,
     stat_key: "forca", stat_gain: 0.20,
     inclination_deltas: { impuls: +0.07, "intel·lecte": 0, espiritualitat: 0, sociabilitat: -0.02 },
     event_pool_id: "pool_caca"
@@ -252,7 +252,7 @@ const ACTIONS = [
   {
     id: "act_marcar_territori", name: "Marcar Territori", is_base: false, zona: "Planes",
     description: "Senyals als arbres i roques que indiquen que aquest territori és del teu clan.",
-    purchase_cost: 3, execute_cost: 1, output_resource: "food", output_min: 2, output_max: 4, health_delta: -1,
+    purchase_cost: 3, execute_cost: 1, output_resource: "food", output_min: 2, output_max: 4, health_delta: -5,
     stat_key: "forca", stat_gain: 0.15,
     inclination_deltas: { impuls: +0.03, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_social"
@@ -290,7 +290,7 @@ const ACTIONS = [
   {
     id: "act_recollida_bolets", name: "Recollida de Bolets", is_base: false, zona: "Bosc",
     description: "Coneixes quins bolets del bosc son comestibles i quins cal evitar. Provisions i salut.",
-    purchase_cost: 3, execute_cost: 1, output_resource: "food", output_min: 2, output_max: 5, health_delta: +1,
+    purchase_cost: 3, execute_cost: 1, output_resource: "food", output_min: 2, output_max: 5, health_delta: +5,
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": -0.01, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_recollecta"
@@ -308,7 +308,7 @@ const ACTIONS = [
   {
     id: "act_seleccionar_llavors", name: "Seleccionar Llavors", is_base: false, zona: "Campament",
     description: "Tries les millors llavors de la collita. Les plantes del proper cicle donaran més.",
-    purchase_cost: 4, execute_cost: 0, output_resource: "food", output_min: 3, output_max: 8,
+    purchase_cost: 4, execute_cost: 1, output_resource: "food", output_min: 3, output_max: 6,
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_recollecta"
@@ -364,7 +364,7 @@ const ACTIONS = [
   {
     id: "act_curar_herbes", name: "Curar amb Herbes", is_base: false, zona: "Campament",
     description: "Prepareu infusions i cataplasmes d'herbes per als membres malalts o ferits.",
-    purchase_cost: 3, execute_cost: 2, output_resource: "health", output_min: 3, output_max: 7,
+    purchase_cost: 3, execute_cost: 2, output_resource: "health", output_min: 5, output_max: 8,
     stat_key: "vincle", stat_gain: 0.20,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.03, sociabilitat: 0 },
     event_pool_id: "pool_ritual"
@@ -374,7 +374,7 @@ const ACTIONS = [
   {
     id: "act_pintar_parets", name: "Pintar les Parets", is_base: false, zona: "Ritual",
     description: "Fixes les visions en les parets de roca. Els animals pintats semblen moure's amb el foc.",
-    purchase_cost: 4, execute_cost: 1, output_resource: "food", output_min: 1, output_max: 3, health_delta: +1,
+    purchase_cost: 4, execute_cost: 1, output_resource: "food", output_min: 1, output_max: 3, health_delta: +5,
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.04, sociabilitat: 0 },
     event_pool_id: "pool_ritual"
@@ -392,7 +392,7 @@ const ACTIONS = [
   {
     id: "act_ornamentar_se", name: "Ornamentar-se", is_base: false, zona: "Campament",
     description: "Et poses les closques, dents i pedres que has recollit. El grup et mira diferent.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 1, output_max: 2, health_delta: +1,
+    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 1, output_max: 2, health_delta: +5,
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.02, sociabilitat: +0.02 },
     event_pool_id: "pool_social"
@@ -418,7 +418,7 @@ const ACTIONS = [
   {
     id: "act_transit_nocturn", name: "Trànsit Nocturn", is_base: false, zona: "Ritual",
     description: "Et mous de nit seguint els senyals del cel. Perillós, però els que tornen parlen de visions.",
-    purchase_cost: 4, execute_cost: 1, output_resource: "food", output_min: 1, output_max: 3, health_delta: -1,
+    purchase_cost: 4, execute_cost: 1, output_resource: "food", output_min: 1, output_max: 3, health_delta: -5,
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: 0 },
     event_pool_id: "pool_ritual"
@@ -428,7 +428,7 @@ const ACTIONS = [
   {
     id: "act_control_territori", name: "Control del Territori", is_base: false, zona: "Planes",
     description: "Coordines el clan per controlar les zones de caça i recol·lecció. El territori és vostre.",
-    purchase_cost: 5, execute_cost: 1, output_resource: "food", output_min: 3, output_max: 7, health_delta: -1,
+    purchase_cost: 5, execute_cost: 1, output_resource: "food", output_min: 3, output_max: 7, health_delta: -5,
     stat_key: "forca", stat_gain: 0.15,
     inclination_deltas: { impuls: +0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.01 },
     event_pool_id: "pool_social"
@@ -464,7 +464,7 @@ const ACTIONS = [
   {
     id: "act_gran_ritual", name: "Gran Ritual", is_upgrade: true, upgrades_action_id: "act_ritual_foc", zona: "Campament",
     description: "El ritual s'extén a tota la nit. Cohesió màxima i regeneració profunda.",
-    purchase_cost: 4, execute_cost: 1, output_resource: "food", output_min: 2, output_max: 5, health_delta: +2,
+    purchase_cost: 4, execute_cost: 1, output_resource: "food", output_min: 2, output_max: 5, health_delta: +10,
     stat_key: "vincle", stat_gain: 0.10,
     inclination_deltas: { impuls: -0.01, "intel·lecte": 0, espiritualitat: +0.04, sociabilitat: +0.03 },
     event_pool_id: "pool_ritual"
@@ -482,7 +482,7 @@ const ACTIONS = [
 const EVENT_POOLS = {
   pool_caca: [
     { id: "ev_rastre_fresc",    text: "Rastres frescos! El grup segueix la pista i torna amb extra.", effects: { food: +3 } },
-    { id: "ev_bestia_ferida",   text: "Una bèstia ferida ataca. El caçador resulta ferit lleu.",      effects: { food: -1, health: -1 } },
+    { id: "ev_bestia_ferida",   text: "Una bèstia ferida ataca. El caçador resulta ferit lleu.",      effects: { food: -1, health: -5 } },
     { id: "ev_ramat_migracio",  text: "El ramat migra cap al nord. Les preses escassegen.",           effects: { food: -2 } },
     { id: "ev_caca_abundant",   text: "Temporada de caça abundant. Reserves extra per a la família.", effects: { food: +5 } },
     {
@@ -515,7 +515,7 @@ const EVENT_POOLS = {
   ],
   pool_recollecta: [
     { id: "ev_fruits_madurs",    text: "Fruits silvestres madurs. Una troballa inesperada.",            effects: { food: +3 } },
-    { id: "ev_plantes_toxiques", text: "Algunes plantes eren tòxiques. Malestars al grup.",            effects: { food: -2, health: -1 } },
+    { id: "ev_plantes_toxiques", text: "Algunes plantes eren tòxiques. Malestars al grup.",            effects: { food: -2, health: -5 } },
     { id: "ev_bolets_rars",      text: "Bolets estranys però comestibles. Extra de provisions.",       effects: { food: +2 } },
     {
       id: "ev_desc_rasclador", is_discovery_event: true, is_single_use: true,
@@ -571,7 +571,7 @@ const EVENT_POOLS = {
   pool_ritual: [
     { id: "ev_visio_profunda",   text: "Una visió durant el ritual guia el grup cap a recursos amagats.", effects: { food: +2 } },
     { id: "ev_ritual_cohesio",   text: "El ritual reforça la cohesió del grup.",                          effects: { food: +1 } },
-    { id: "ev_espiritocontent",  text: "Els esperits estan contents. El grup se sent protegit.",          effects: { health: +1 } },
+    { id: "ev_espiritocontent",  text: "Els esperits estan contents. El grup se sent protegit.",          effects: { health: +5 } },
     {
       id: "ev_desc_herbes", is_discovery_event: true, is_single_use: true,
       discovery_branch_tech_id: "bt_guariment_plantes",

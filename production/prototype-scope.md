@@ -96,7 +96,7 @@ Aquest document defineix el límit entre "implementat al prototip" i "post-proto
 | `LIFE_EXPECTANCY` | `base_cycles = 12`, `max_cycles = 18` | Valor fix = 14 | Simplificació; revisar quan s'implementi era system |
 | `MAX_GENERATIONS` | No definit (game over per extinció) | Fix = 5 (sessions curtes de test) | Limitació de prototip |
 | `MAX_CHILDREN` | Per era, rang 1–6 | Fix = 3 | Simplificació |
-| Escala indicadors | 0–100 (health: 80 a `era-system.md §3.2`) | 0–20 | Simplificació; pendent decidir escala canònica |
+| Escala indicadors | 0–100 (health: 80 a `era-system.md §3.2`) | **0–100** (alineat amb GDD) | Decidit 2026-05-30: escala canònica 0–100 |
 | Herència de recursos | `RESOURCE_INHERITANCE_RATE = 0.50` (`lineage-chronicle.md §7`) | materials = 0 a successió | Simplificació; GDD i codi no coincideixen — pendent decisió |
 | `FADE_MARGIN` | Default 0.10 (`branch-system.md §7`) | 0.05 | Ajust de playtest; pendent actualitzar GDD |
 | Destreses | "Innates" (`_overview.md §3.10`) | Apreses per ús repetit | Divergència conceptual; pendent reconciliar |
@@ -107,11 +107,11 @@ Aquest document defineix el límit entre "implementat al prototip" i "post-proto
 
 Decisions que cal prendre per poder continuar amb el prototip:
 
-1. **C3-02** — Branches inalcançables Gen 1: ¿multi-generacionals per disseny o error de balance? (afecta `bt_coneixement_plantes`, `bt_llavor_selectiva`, `bt_calendari_natural`, `bt_pintura_rupestre`)
-2. **C2-09** — Stats (Força/Enginy/Vincle): ¿entren al GDD o s'eliminen del prototip?
-3. **C3-03** — Pells: ¿recurs de l'Era 1 o descartats?
-4. **C5-01** — Escala d'indicadors: 0–20 (codi) o 0–100 (GDD)?
-5. **C3-06** — Herència de materials a successió: 0% (avui) o 50% (GDD)?
+1. ~~**C3-02** — Branches inalcançables Gen 1~~ **RESOLT 2026-05-30**: Multi-generacionals per disseny (progressió dinàstica intencional)
+2. ~~**C2-09** — Stats (Força/Enginy/Vincle)~~ **RESOLT 2026-05-30**: Entren al GDD → `character-stats.md` creat
+3. **C3-03** — Pells: OBERT — parametritzable, decisió per playtest
+4. ~~**C5-01** — Escala d'indicadors~~ **RESOLT 2026-05-30**: 0–100 (alineat amb GDD)
+5. ~~**C3-06** — Herència de materials a successió~~ **RESOLT 2026-05-30**: 0% (codi actual correcte; GDD pendent actualitzar)
 
 ---
 
@@ -124,8 +124,8 @@ FADE_MARGIN          = 0.05
 LIFE_EXPECTANCY      = 14    # cicles per personatge
 MAX_GENERATIONS      = 5     # límit de prototip
 STARTING_FOOD        = 15
-STARTING_HEALTH      = 20
-HEALTH_MAX           = 20
+STARTING_HEALTH      = 80
+HEALTH_MAX           = 100
 STAT_MAX             = 5.0
 STAT_STARTING_VALUE  = 1.0
 STAT_OUTPUT_FACTOR   = 0.15
@@ -134,5 +134,5 @@ DESTRESA_MAX         = 2
 DESTRESA_BONUS       = 1
 MAX_CHILDREN         = 3
 FOOD_UPKEEP          = 1     # per torn
-HEALTH_UPKEEP        = 1     # per torn (envelliment)
+HEALTH_UPKEEP        = 5     # per torn (envelliment)
 ```

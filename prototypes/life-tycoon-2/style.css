@@ -420,6 +420,8 @@ body {
   color: var(--gold);
 }
 
+.skill-zone-hint { opacity: 0.55; font-size: 11px; cursor: default; }
+
 /* ---- PANEL BLOCKS (right column) ---- */
 .panel-block {
   background: var(--surface);
