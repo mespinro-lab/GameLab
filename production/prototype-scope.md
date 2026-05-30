@@ -112,27 +112,31 @@ Decisions que cal prendre per poder continuar amb el prototip:
 3. **C3-03** — Pells: OBERT — parametritzable, decisió per playtest
 4. ~~**C5-01** — Escala d'indicadors~~ **RESOLT 2026-05-30**: 0–100 (alineat amb GDD)
 5. ~~**C3-06** — Herència de materials a successió~~ **RESOLT 2026-05-30**: 0% (codi actual correcte; GDD pendent actualitzar)
+6. **C6-01** — Límit de fills: el hard cap `MAX_CHILDREN = 3` és una simplificació de prototip. El disseny ideal és un soft constraint: tenir fills costa Aliment addicional o torns, el jugador troba l'equilibri entre supervivència i línia successòria. Pendent disseny de fórmula.
+7. **C6-02** — Sessió de disseny de branques: cal una sessió dedicada per definir les habilitats de cada branca, equivalències cross-branch, impacte quantitatiu d'accions i events associats. Prerequisit per al full content pass d'Era 1.
 
 ---
 
 ## Constants del prototip (referència ràpida)
 
 ```
-INERTIA_FACTOR       = 2.0
+INERTIA_FACTOR          = 2.0
 BRANCH_INHERITANCE_RATE = 0.65
-FADE_MARGIN          = 0.05
-LIFE_EXPECTANCY      = 14    # cicles per personatge
-MAX_GENERATIONS      = 5     # límit de prototip
-STARTING_FOOD        = 15
-STARTING_HEALTH      = 80
-HEALTH_MAX           = 100
-STAT_MAX             = 5.0
-STAT_STARTING_VALUE  = 1.0
-STAT_OUTPUT_FACTOR   = 0.15
-DESTRESA_THRESHOLD   = 5
-DESTRESA_MAX         = 2
-DESTRESA_BONUS       = 1
-MAX_CHILDREN         = 3
-FOOD_UPKEEP          = 1     # per torn
-HEALTH_UPKEEP        = 5     # per torn (envelliment)
+FADE_MARGIN             = 0.05
+EVENT_TRIGGER_CHANCE    = 0.60   # probabilitat que un event elegible es dispari
+LIFE_EXPECTANCY         = 20     # cicles per personatge
+MAX_GENERATIONS         = 5      # límit de prototip
+STARTING_FOOD           = 12
+FOOD_MAX                = 20     # cap per espatllament; ampliable per tech
+STARTING_HEALTH         = 100
+HEALTH_MAX              = 100
+STAT_MAX                = 5.0
+STAT_STARTING_VALUE     = 1.0
+STAT_OUTPUT_FACTOR      = 0.15
+DESTRESA_THRESHOLD      = 5
+DESTRESA_MAX            = 2
+DESTRESA_BONUS          = 1
+MAX_CHILDREN            = 3      # pendent redisseny (C6-01, veure §Decisions obertes)
+FOOD_UPKEEP             = 2      # per torn
+HEALTH_UPKEEP           = 5      # per torn (envelliment)
 ```

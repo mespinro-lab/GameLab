@@ -9,14 +9,16 @@ const INERTIA_FACTOR = 2.0;
 const BRANCH_INHERITANCE_RATE = 0.65;
 const FADE_MARGIN = 0.05;
 const DEBUG_MODE  = false;
-const LIFE_EXPECTANCY = 14; // cycles before succession
+const LIFE_EXPECTANCY = 20; // cycles before succession
 const MAX_GENERATIONS = 5;
-const STARTING_FOOD = 15;
+const STARTING_FOOD = 12;
+const FOOD_MAX      = 20;  // food spoils — can't accumulate beyond this
+const EVENT_TRIGGER_CHANCE = 0.6; // probability an eligible event fires
 
 const AXES = ["impuls", "intel·lecte", "espiritualitat", "sociabilitat"];
-const FOOD_UPKEEP    = 1;  // food consumed per cycle
+const FOOD_UPKEEP    = 2;  // food consumed per cycle
 const HEALTH_UPKEEP  = 5;  // health lost per cycle (aging)
-const STARTING_HEALTH = 80;
+const STARTING_HEALTH = 100;
 const HEALTH_MAX      = 100;
 const STAT_MAX           = 5.0;
 const STAT_STARTING_VALUE = 1.0;
@@ -326,7 +328,7 @@ function executeAction(actionId) {
   } else if (outRes === 'health') {
     state.health = Math.min(HEALTH_MAX, state.health + output);
   } else {
-    state.food += output;
+    state.food = Math.min(FOOD_MAX, state.food + output);
   }
 
   // Side-effect health delta (risky / restorative actions)
@@ -403,8 +405,8 @@ function executeAction(actionId) {
   if (state.food   === 0) addLog(`⚠ Provisions crítiques.`);
   if (state.health === 0) addLog(`💀 Salut crítica.`);
 
-  // Trigger event
-  if (action.event_pool_id && EVENT_POOLS[action.event_pool_id]) {
+  // Trigger event — only fires EVENT_TRIGGER_CHANCE of the time
+  if (action.event_pool_id && EVENT_POOLS[action.event_pool_id] && Math.random() < EVENT_TRIGGER_CHANCE) {
     const pool = getEligiblePoolEvents(EVENT_POOLS[action.event_pool_id]);
     if (pool.length > 0) {
       state.pendingEvent = pool[Math.floor(Math.random() * pool.length)];
@@ -425,7 +427,7 @@ function dismissEvent() {
   if (ev.is_single_use) state.character.firedSingleUseEventIds.add(ev.id);
 
   if (ev.effects) {
-    if (ev.effects.food)   { state.food   = Math.max(0, state.food   + ev.effects.food);   addLog(`Esdeveniment: ${ev.effects.food   >= 0 ? '+' : ''}${ev.effects.food} Aliment`); }
+    if (ev.effects.food)   { state.food   = Math.max(0, Math.min(FOOD_MAX, state.food + ev.effects.food));   addLog(`Esdeveniment: ${ev.effects.food   >= 0 ? '+' : ''}${ev.effects.food} Aliment`); }
     if (ev.effects.health) { state.health = Math.max(0, Math.min(HEALTH_MAX, state.health + ev.effects.health)); addLog(`Esdeveniment: ${ev.effects.health >= 0 ? '+' : ''}${ev.effects.health} Salut`); }
   }
 
@@ -601,8 +603,10 @@ function render() {
 function renderTopBar() {
   document.getElementById("cycle-counter").textContent = `Cicle ${state.cycle}`;
   document.getElementById("gen-counter").textContent = `Gen ${state.generation}/${MAX_GENERATIONS}`;
-  document.getElementById("food-counter").innerHTML =
-    `🌾 ${state.food}<span class="stat-rate">-${FOOD_UPKEEP}/t</span>`;
+  const foodEl = document.getElementById("food-counter");
+  foodEl.innerHTML = `🌾 ${state.food}/<span class="stat-cap">${FOOD_MAX}</span><span class="stat-rate">-${FOOD_UPKEEP}/t</span>`;
+  foodEl.className = "stat-pill stat-food" +
+    (state.food <= 4 ? " stat-critical" : state.food <= 8 ? " stat-warning" : "");
   document.getElementById("materials-counter").textContent = `🧠 ${state.materials}`;
 
   const hc = document.getElementById("health-counter");
@@ -855,12 +859,30 @@ function buildLookupTables() {
   return { purchasableActionIds, upgradedBaseActionIds };
 }
 
+function buildUndiscoveredCard(zona) {
+  const card = document.createElement("div");
+  card.className = "zone-card zone-undiscovered";
+  const header = document.createElement("div");
+  header.className = "zone-header";
+  header.innerHTML = `<span class="zone-name zone-undiscovered-name">🔒 ${zona}</span>`;
+  const hint = document.createElement("div");
+  hint.className = "zone-undiscovered-hint";
+  hint.textContent = "Zona no explorada";
+  card.appendChild(header);
+  card.appendChild(hint);
+  return card;
+}
+
 function renderZoneGrid() {
   const grid = document.getElementById("zone-grid");
   grid.innerHTML = "";
   const tables = buildLookupTables();
   for (const zona of ZONE_ORDER) {
-    if (state.discoveredZoneIds.has(zona)) grid.appendChild(buildZoneCard(zona, tables));
+    if (state.discoveredZoneIds.has(zona)) {
+      grid.appendChild(buildZoneCard(zona, tables));
+    } else {
+      grid.appendChild(buildUndiscoveredCard(zona));
+    }
   }
 }
 
