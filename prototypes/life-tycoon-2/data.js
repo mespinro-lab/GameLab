@@ -4,6 +4,91 @@
 
 'use strict';
 
+// --- Game Design Parameters ---
+const LIFE_EXPECTANCY = 20;
+const MAX_GENERATIONS = 5;
+const MAX_CHILDREN    = 3;
+
+const STARTING_FOOD = 12;
+const FOOD_MAX      = 20;
+const FOOD_UPKEEP   = 2;
+
+const STARTING_HEALTH = 100;
+const HEALTH_MAX      = 100;
+
+const AGING_BASE      = 3;
+const AGING_THRESHOLD = 10;
+const AGING_POWER     = 1.8;
+const AGING_SCALE     = 0.35;
+
+const STAT_MAX            = 5.0;
+const STAT_STARTING_VALUE = 1.0;
+const STAT_OUTPUT_FACTOR  = 0.15;
+
+const DESTRESA_THRESHOLD = 5;
+const DESTRESA_MAX       = 2;
+const DESTRESA_BONUS     = 1;
+
+// --- Resource Definitions ---
+// Afegir un recurs aquí = apareix al top bar, s'inicialitza a l'estat i apareix al glossari.
+// id:          clau a state[id]
+// section:     'vitals' | 'resources' — secció del top bar
+// rateType:    'fixed' (mostra upkeep/t) | 'aging' (mostra taxa envelliment) | false (sense taxa)
+// showMax:     true = "val/max" | false = "val"
+// color/borderColor: color del pill (CSS variable o valor directe)
+// critAt/warnAt: llindars per a classes CSS d'avís
+// glossaryDesc: descripció estàtica per al glossari (el valor actual s'afegeix automàticament)
+const RESOURCE_DEFS = [
+  {
+    id: 'food', emoji: '🌾', label: 'Aliment', section: 'vitals',
+    startVal: STARTING_FOOD, max: FOOD_MAX, upkeep: FOOD_UPKEEP,
+    showMax: true, rateType: 'fixed', critAt: 4, warnAt: 8,
+    color: 'var(--gold)', borderColor: 'rgba(245,166,35,0.3)',
+    glossaryDesc: `Es consumeix -${FOOD_UPKEEP}/torn. Si s'esgota, Salut decreix. Cap: ${FOOD_MAX} (el menjar es fa malbé).`,
+  },
+  {
+    id: 'health', emoji: '❤️', label: 'Salut', section: 'vitals',
+    startVal: STARTING_HEALTH, max: HEALTH_MAX, upkeep: null,
+    showMax: false, rateType: 'aging', critAt: 20, warnAt: 40,
+    color: 'var(--green)', borderColor: 'rgba(74,222,128,0.3)',
+    glossaryDesc: `Estat físic. A 0 el personatge mor i es produeix la successió. Decreix per envelliment: ${AGING_BASE}/torn en joventut, s'accelera a partir del cicle ${AGING_THRESHOLD}.`,
+  },
+  {
+    id: 'materials', emoji: '🧠', label: 'Provisions', section: 'resources',
+    startVal: 0, max: null, upkeep: null, showMax: false, rateType: false,
+    color: 'var(--blue)', borderColor: 'rgba(96,165,250,0.3)',
+    glossaryDesc: "Generat per accions d'artesania. Gastat per comprar i millorar accions.",
+  },
+  // Era 2+: descomenta per afegir nous recursos al top bar, estat i glossari
+  // { id: 'happiness', emoji: '✨', label: 'Benestar', section: 'resources', startVal: 50, max: 100, upkeep: null, showMax: false, rateType: false, era: 2, color: 'var(--purple)', borderColor: 'rgba(168,85,247,0.3)', glossaryDesc: "Satisfacció general. Si cau molt baix, penalitza els resultats de les accions." },
+];
+
+// --- Zone Definitions ---
+// Afegir una zona aquí = apareix a la graella i al glossari. starts_discovered controla la visibilitat inicial.
+const ZONE_DEFS = [
+  { id: 'Bosc',      label: 'Bosc',      description: "Recol·lecta avançada i plantes. Es descobreix explorant les Planes.",  starts_discovered: false },
+  { id: 'Planes',    label: 'Planes',    description: "Caça, exploració i recol·lecta exterior. Disponible des del principi.", starts_discovered: true  },
+  { id: 'Campament', label: 'Campament', description: "Supervivència base, família i ritual. Disponible des del principi.",   starts_discovered: true  },
+  { id: 'Ritual',    label: 'Ritual',    description: "Rituals i cerimònies. Es descobreix amb Pintura Rupestre.",             starts_discovered: false },
+];
+
+// --- Axis Definitions ---
+// Afegir un eix aquí = apareix al sistema d'inclinació, al perfil i al glossari.
+const AXIS_DEFS = [
+  { id: 'impuls',         left: 'Reflexiu',  right: 'Impulsiu'  },
+  { id: "intel·lecte",    left: 'Instintiu', right: 'Analític'  },
+  { id: 'espiritualitat', left: 'Pragmàtic', right: 'Espiritual' },
+  { id: 'sociabilitat',   left: 'Solitari',  right: 'Social'    },
+];
+
+// --- Stat Definitions ---
+// Afegir un atribut aquí = apareix al perfil del personatge, a la successió i al glossari.
+const STAT_DEFS = [
+  { id: 'forca',  label: 'Força',  description: "Millora outputs d'accions físiques (caça, territori)." },
+  { id: 'enginy', label: 'Enginy', description: "Millora outputs d'accions d'eines i artesania." },
+  { id: 'vincle', label: 'Vincle', description: "Millora outputs d'accions socials i rituals." },
+];
+
 const UNIVERSAL_TECHS = [
   {
     id: "ut_talla_laminar", name: "Talla en Làmines", icon: "🪨", cycle: 2,

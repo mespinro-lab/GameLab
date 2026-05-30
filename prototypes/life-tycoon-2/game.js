@@ -4,33 +4,18 @@
 
 'use strict';
 
-// --- Constants ---
-const INERTIA_FACTOR = 2.0;
+// --- Logic Constants (mechanics parameters — design data is in data.js) ---
+const INERTIA_FACTOR          = 2.0;
 const BRANCH_INHERITANCE_RATE = 0.65;
-const FADE_MARGIN = 0.05;
-const DEBUG_MODE  = false;
-const LIFE_EXPECTANCY = 20; // cycles before succession
-const MAX_GENERATIONS = 5;
-const STARTING_FOOD = 12;
-const FOOD_MAX      = 20;  // food spoils — can't accumulate beyond this
-const EVENT_TRIGGER_CHANCE = 0.6; // probability an eligible event fires
+const FADE_MARGIN             = 0.05;
+const DEBUG_MODE              = false;
+const EVENT_TRIGGER_CHANCE    = 0.6;
+const INCL_DOT_VALUES         = [-1.0, -0.5, 0.0, 0.5, 1.0];
 
-const AXES = ["impuls", "intel·lecte", "espiritualitat", "sociabilitat"];
-const FOOD_UPKEEP       = 2;    // food consumed per cycle
-const AGING_BASE        = 3;    // health lost per cycle in youth
-const AGING_THRESHOLD   = 10;   // cycle when acceleration begins
-const AGING_POWER       = 1.8;  // curvature of aging curve
-const AGING_SCALE       = 0.35; // multiplier for accelerating component
-const STARTING_HEALTH = 100;
-const HEALTH_MAX      = 100;
-const STAT_MAX           = 5.0;
-const STAT_STARTING_VALUE = 1.0;
-const STAT_OUTPUT_FACTOR  = 0.15;  // output multiplier per stat point above baseline
-const DESTRESA_THRESHOLD  = 5;     // default uses needed to discover a destresa
-const DESTRESA_MAX        = 2;     // max destreses per character
-const DESTRESA_BONUS      = 1;     // flat output bonus when destresa is active
-const INCL_DOT_VALUES = [-1.0, -0.5, 0.0, 0.5, 1.0];
-const MAX_CHILDREN    = 3;
+// --- Derived Lookups (from data.js defs) ---
+const AXES        = AXIS_DEFS.map(a => a.id);
+const AXIS_LABELS = Object.fromEntries(AXIS_DEFS.map(a => [a.id, { left: a.left, right: a.right }]));
+const ZONE_ORDER  = ZONE_DEFS.map(z => z.id);
 
 // Returns health lost this cycle due to aging — accelerates exponentially past AGING_THRESHOLD
 function getAgingLoss(cycle) {
@@ -40,14 +25,14 @@ function getAgingLoss(cycle) {
 
 // --- Game State ---
 let state = null;
-let zoneFilters = { Bosc: 'active', Planes: 'active', Campament: 'active', Ritual: 'active' };
+let zoneFilters = Object.fromEntries(ZONE_DEFS.map(z => [z.id, 'active']));
 
 function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedBranchTechIds, inheritedStats, inheritedDestreses) {
   return {
     inclination: { ...inheritedInclination },
     purchasedActionIds: new Set(inheritedPurchasedIds),
     unlockedBranchTechIds: new Set(inheritedBranchTechIds),
-    stats: inheritedStats ? { ...inheritedStats } : { forca: STAT_STARTING_VALUE, enginy: STAT_STARTING_VALUE, vincle: STAT_STARTING_VALUE },
+    stats: inheritedStats ? { ...inheritedStats } : Object.fromEntries(STAT_DEFS.map(s => [s.id, STAT_STARTING_VALUE])),
     destreses: new Set(inheritedDestreses),
     actionUseCounts: {},
     firedSingleUseEventIds: new Set(),
@@ -57,7 +42,7 @@ function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedB
 }
 
 function freshInclination() {
-  return { impuls: 0.0, "intel·lecte": 0.0, espiritualitat: 0.0, sociabilitat: 0.0 };
+  return Object.fromEntries(AXIS_DEFS.map(a => [a.id, 0.0]));
 }
 
 function initState() {
@@ -68,12 +53,10 @@ function initState() {
   state = {
     cycle: 0,
     generation: 1,
-    food: STARTING_FOOD,
-    health: STARTING_HEALTH,
-    materials: 0,
+    ...Object.fromEntries(RESOURCE_DEFS.map(r => [r.id, r.startVal])),
     character: createCharacter(inclination, basePurchased, new Set()),
     discoveredUniversalTechIds: new Set(),
-    discoveredZoneIds: new Set(["Campament", "Planes"]),
+    discoveredZoneIds: new Set(ZONE_DEFS.filter(z => z.starts_discovered).map(z => z.id)),
     log: [],
     lastResult: null,
     gameOverReason: null,
@@ -494,7 +477,7 @@ function triggerSuccession() {
   );
   const parentStats = state.character.stats;
   const inheritedStats = Object.fromEntries(
-    ['forca', 'enginy', 'vincle'].map(k => [k, parentStats[k] * BRANCH_INHERITANCE_RATE + 1.0 * (1 - BRANCH_INHERITANCE_RATE)])
+    STAT_DEFS.map(s => [s.id, parentStats[s.id] * BRANCH_INHERITANCE_RATE + STAT_STARTING_VALUE * (1 - BRANCH_INHERITANCE_RATE)])
   );
   const inheritedPurchased    = new Set(state.character.purchasedActionIds);
   const inheritedBranchTechs  = new Set(state.character.unlockedBranchTechIds);
@@ -537,9 +520,7 @@ function continueSuccession(successorId) {
   ];
 
   state.pendingSuccession = null;
-  state.health    = STARTING_HEALTH;
-  state.food      = STARTING_FOOD;
-  state.materials = 0;
+  for (const res of RESOURCE_DEFS) state[res.id] = res.startVal;
   state.generation++;
   state.cycle = 0;
   state.character = createCharacter(
@@ -574,14 +555,6 @@ function addLog(msg) {
 
 // --- Rendering ---
 
-const AXIS_LABELS = {
-  impuls:         { left: "Reflexiu",  right: "Impulsiu"  },
-  "intel·lecte":  { left: "Instintiu", right: "Analític"  },
-  espiritualitat: { left: "Pragmàtic", right: "Espiritual" },
-  sociabilitat:   { left: "Solitari",  right: "Social"    }
-};
-
-const FOOD_MAX_DISPLAY = 30;
 
 function getInclinationHint(action) {
   const deltas = action.inclination_deltas;
@@ -614,18 +587,35 @@ function render() {
 function renderTopBar() {
   document.getElementById("cycle-counter").textContent = `Cicle ${state.cycle}`;
   document.getElementById("gen-counter").textContent = `Gen ${state.generation}/${MAX_GENERATIONS}`;
-  const foodEl = document.getElementById("food-counter");
-  foodEl.innerHTML = `🌾 ${state.food}/<span class="stat-cap">${FOOD_MAX}</span><span class="stat-rate">-${FOOD_UPKEEP}/t</span>`;
-  foodEl.className = "stat-pill stat-food" +
-    (state.food <= 4 ? " stat-critical" : state.food <= 8 ? " stat-warning" : "");
-  document.getElementById("materials-counter").textContent = `🧠 ${state.materials}`;
+
+  const vitalsEl    = document.getElementById("top-vitals");
+  const resourcesEl = document.getElementById("top-resources");
+  vitalsEl.innerHTML    = "";
+  resourcesEl.innerHTML = "";
 
   const agingNow = getAgingLoss(state.cycle);
-  const hc = document.getElementById("health-counter");
-  hc.innerHTML = `❤️ ${state.health}<span class="stat-rate">-${agingNow}/t</span>`;
-  hc.className = "stat-pill stat-health" +
-    (state.health <= 20 ? " stat-critical" : state.health <= 40 ? " stat-warning" : "") +
-    (agingNow >= 10 ? " aging-fast" : "");
+  for (const res of RESOURCE_DEFS) {
+    const val  = state[res.id];
+    const pill = document.createElement("span");
+    pill.id    = `${res.id}-counter`;
+
+    let inner = `${res.emoji} ${val}`;
+    if (res.showMax)              inner += `/<span class="stat-cap">${res.max}</span>`;
+    if (res.rateType === 'fixed') inner += `<span class="stat-rate">-${res.upkeep}/t</span>`;
+    if (res.rateType === 'aging') inner += `<span class="stat-rate">-${agingNow}/t</span>`;
+    pill.innerHTML = inner;
+
+    if (res.color)       pill.style.color       = res.color;
+    if (res.borderColor) pill.style.borderColor = res.borderColor;
+
+    let cls = `stat-pill stat-${res.id}`;
+    if (res.critAt !== undefined && val <= res.critAt)      cls += ' stat-critical';
+    else if (res.warnAt !== undefined && val <= res.warnAt) cls += ' stat-warning';
+    if (res.rateType === 'aging' && agingNow >= 10)         cls += ' aging-fast';
+    pill.className = cls;
+
+    (res.section === 'vitals' ? vitalsEl : resourcesEl).appendChild(pill);
+  }
 }
 
 function renderProfilePanel() {
@@ -637,14 +627,9 @@ function renderProfilePanel() {
   // Stats (Força / Enginy / Vincle)
   const statsEl = document.getElementById("stats-display");
   statsEl.innerHTML = "";
-  const statDefs = [
-    { key: "forca",  label: "Força" },
-    { key: "enginy", label: "Enginy" },
-    { key: "vincle", label: "Vincle" }
-  ];
-  for (const { key, label } of statDefs) {
-    const val = state.character.stats[key];
-    const pct = Math.min(100, Math.max(0, (val - 1.0) / (STAT_MAX - 1.0) * 100));
+  for (const { id, label } of STAT_DEFS) {
+    const val = state.character.stats[id];
+    const pct = Math.min(100, Math.max(0, (val - STAT_STARTING_VALUE) / (STAT_MAX - STAT_STARTING_VALUE) * 100));
     const row = document.createElement("div");
     row.className = "stat-row";
     row.innerHTML = `<span class="stat-name">${label}</span>` +
@@ -853,8 +838,6 @@ function renderTechStrip() {
 }
 
 // --- Zone Grid (debug layout) ---
-
-const ZONE_ORDER = ["Bosc", "Planes", "Campament", "Ritual"];
 
 function buildLookupTables() {
   const purchasableActionIds = new Set();
@@ -1325,26 +1308,18 @@ function showGlossary() {
 
   let html = '';
 
-  // 1 — Indicadors Base
-  html += sec('Indicadors Base', [
-    row('❤️', 'Salut', `Estat físic. A 0 el personatge mor i es produeix la successió. Decreix per envelliment: ${AGING_BASE}/torn en joventut, s'accelera a partir del cicle ${AGING_THRESHOLD}. Ara: −${getAgingLoss(state.cycle)}/torn. Actual: ${state.health}/${HEALTH_MAX}.`, bdg('Actiu', 'green')),
-    row('✨', 'Benestar', 'Satisfacció general. Si cau molt baix, penalitza els resultats de les accions.', bdg('Pendent', 'grey'), true),
-    row('🛡️', 'Protecció', 'Seguretat del grup. Un valor baix augmenta la freqüència d\'events de pressió del món.', bdg('Pendent', 'grey'), true),
-    row('👥', 'Vincles', 'Relacions socials del grup. Un valor baix tanca l\'accés a accions col·lectives.', bdg('Pendent', 'grey'), true),
+  // 1 — Recursos
+  html += sec('Recursos', [
+    ...RESOURCE_DEFS.map(res => {
+      const val = state[res.id];
+      const rateStr = res.rateType === 'aging' ? ` Ara: −${getAgingLoss(state.cycle)}/torn.` : '';
+      const valStr  = res.showMax ? ` Actual: ${val}/${res.max}.` : ` Actual: ${val}.`;
+      return row(res.emoji, res.label, res.glossaryDesc + rateStr + valStr, bdg('Actiu', 'green'));
+    }),
+    row('🦌', 'Pells (Era 1 — proposta)', 'Generat per caça i trampatge. Gastat en cosit i intercanvi. Decisió de disseny pendent (C3-03).', bdg('Pendent', 'grey'), true),
   ]);
 
-  // 2 — Necessitats
-  html += sec('Necessitats', [
-    row('🌾', 'Aliment', `Es consumeix -${FOOD_UPKEEP}/torn. Si s'esgota, Salut decreix. Actual: ${state.food}.`, bdg('Actiu', 'green')),
-  ]);
-
-  // 3 — Recursos d'Acció
-  html += sec("Recursos d'Acció", [
-    row('🧠', 'Provisions (Era 1)', `Generat per les accions. Gastat per comprar i millorar accions. Actual: ${state.materials}.`, bdg('Actiu', 'green')),
-    row('🦌', 'Pells (Era 1 — proposta)', 'Generat per caça i trampatge. Gastat en cosit i intercanvi. Decisió de disseny pendent.', bdg('Pendent', 'grey'), true),
-  ]);
-
-  // 4 — Inclinació
+  // 2 — Inclinació
   html += sec('Inclinació (4 eixos, -1 a +1)', [
     row('', 'Com funciona', `Una acció és ACTIVA si la inclinació cau dins del seu rang · FADED (visible però no executable) si sobrepassa el llindar en ≤${FADE_MARGIN} · OCULTA si el supera en >${FADE_MARGIN}. Les accions comprades mai es perden: es reactiven si la inclinació torna.`, bdg('Actiu', 'green')),
     ...AXES.map(axis => {
@@ -1358,7 +1333,7 @@ function showGlossary() {
     }),
   ]);
 
-  // 5 — Branques
+  // 3 — Branques
   html += sec('Branques (Era 1 — 4 definides)', BRANCHES.map(b => {
     const isActive = activeBranches.some(ab => ab.id === b.id);
     return row('', b.name,
@@ -1366,7 +1341,7 @@ function showGlossary() {
       isActive ? bdg('Activa', 'green') : bdg('Inactiva', 'grey'), !isActive);
   }));
 
-  // 6 — Tecnologies Universals
+  // 4 — Tecnologies Universals
   html += sec(`Tecnologies Universals (${state.discoveredUniversalTechIds.size}/${UNIVERSAL_TECHS.length} descobertes)`,
     UNIVERSAL_TECHS.map(ut => {
       const discovered = state.discoveredUniversalTechIds.has(ut.id);
@@ -1378,7 +1353,7 @@ function showGlossary() {
     })
   );
 
-  // 7 — Tecnologies de Branca (Habilitats)
+  // 5 — Tecnologies de Branca (Habilitats)
   const unlockedCount = state.character.unlockedBranchTechIds.size;
   html += sec(`Tecnologies de Branca — Habilitats (${unlockedCount}/${BRANCH_TECHS.length} desblocades)`,
     BRANCH_TECHS.map(bt => {
@@ -1401,29 +1376,24 @@ function showGlossary() {
     })
   );
 
-  // 8 — Zones
-  const ZONE_INFO = {
-    Campament: 'Supervivència base, família i ritual. Disponible des del principi.',
-    Planes:    'Caça, exploració i recolecta exterior. Disponible des del principi.',
-    Bosc:      'Recolecta avançada i plantes. Es descobreix explorant les Planes.',
-    Ritual:    'Rituals i cerimònies. Es descobreix amb Pintura Rupestre.',
-  };
+  // 6 — Zones
   html += sec(`Zones (${state.discoveredZoneIds.size}/${ZONE_ORDER.length} descobertes)`,
-    ZONE_ORDER.map(zona => {
-      const disc = state.discoveredZoneIds.has(zona);
-      return row('', zona, ZONE_INFO[zona] || zona,
+    ZONE_DEFS.map(z => {
+      const disc = state.discoveredZoneIds.has(z.id);
+      return row('', z.label, z.description,
         disc ? bdg('Descoberta', 'green') : bdg('No descoberta', 'grey'), !disc);
     })
   );
 
-  // 9 — Atributs
-  html += sec('Atributs del Personatge', [
-    row('', 'Força', `Millora outputs d'accions físiques (caça, territori). Rang: ${STAT_STARTING_VALUE.toFixed(1)}–${STAT_MAX.toFixed(1)}. Hereta al ${pct}%. Actual: ${state.character.stats.forca.toFixed(2)}.`, bdg(`${state.character.stats.forca.toFixed(2)}`, 'blue')),
-    row('', 'Enginy', `Millora outputs d'accions d'eines i artesania. Rang: ${STAT_STARTING_VALUE.toFixed(1)}–${STAT_MAX.toFixed(1)}. Hereta al ${pct}%. Actual: ${state.character.stats.enginy.toFixed(2)}.`, bdg(`${state.character.stats.enginy.toFixed(2)}`, 'blue')),
-    row('', 'Vincle', `Millora outputs d'accions socials i rituals. Rang: ${STAT_STARTING_VALUE.toFixed(1)}–${STAT_MAX.toFixed(1)}. Hereta al ${pct}%. Actual: ${state.character.stats.vincle.toFixed(2)}.`, bdg(`${state.character.stats.vincle.toFixed(2)}`, 'blue')),
-  ]);
+  // 7 — Atributs
+  html += sec('Atributs del Personatge', STAT_DEFS.map(s => {
+    const val = state.character.stats[s.id].toFixed(2);
+    return row('', s.label,
+      `${s.description} Rang: ${STAT_STARTING_VALUE.toFixed(1)}–${STAT_MAX.toFixed(1)}. Hereta al ${pct}%. Actual: ${val}.`,
+      bdg(val, 'blue'));
+  }));
 
-  // 10 — Destreses
+  // 8 — Destreses
   const destresesNames = [...state.character.destreses].map(destId => {
     const srcAction = ACTIONS.find(a => a.destresa_id === destId);
     return srcAction ? srcAction.destresa_name : destId;
@@ -1435,7 +1405,7 @@ function showGlossary() {
       bdg(`${state.character.destreses.size}/${DESTRESA_MAX}`, state.character.destreses.size > 0 ? 'green' : 'grey')),
   ]);
 
-  // 11 — Llinatge i Successió
+  // 9 — Llinatge i Successió
   const childLabels  = state.character.children.map(c => c.label).join(', ') || 'Cap fill nascut';
   html += sec('Llinatge i Successió', [
     row('', `Fills (${state.character.children.length}/${MAX_CHILDREN})`,
