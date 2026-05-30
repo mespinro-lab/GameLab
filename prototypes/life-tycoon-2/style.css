@@ -79,6 +79,7 @@ body {
 .stat-dim       { color: var(--dim); opacity: 0.45; cursor: default; }
 .stat-warning   { color: #f59e0b !important; border-color: rgba(245,158,11,0.4) !important; }
 .stat-critical  { color: var(--accent) !important; border-color: rgba(233,69,96,0.4) !important; }
+.aging-fast .stat-rate { color: var(--accent); opacity: 0.9; font-weight: 700; }
 .stat-rate {
   font-size: 9px;
   opacity: 0.55;

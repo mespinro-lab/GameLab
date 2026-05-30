@@ -138,5 +138,9 @@ DESTRESA_MAX            = 2
 DESTRESA_BONUS          = 1
 MAX_CHILDREN            = 3      # pendent redisseny (C6-01, veure §Decisions obertes)
 FOOD_UPKEEP             = 2      # per torn
-HEALTH_UPKEEP           = 5      # per torn (envelliment)
+AGING_BASE              = 3      # salut perduda/torn en joventut (cicles 0-10)
+AGING_THRESHOLD         = 10     # cicle on comença l'acceleració
+AGING_POWER             = 1.8    # curvatura de la corba d'envelliment
+AGING_SCALE             = 0.35   # multiplicador component accelerat
+# Pèrdua efectiva: cicle 10→3HP, 12→4, 15→10, 17→17, 18→22 (mort sense curar ~c17-18)
 ```

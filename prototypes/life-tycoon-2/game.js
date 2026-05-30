@@ -16,8 +16,11 @@ const FOOD_MAX      = 20;  // food spoils — can't accumulate beyond this
 const EVENT_TRIGGER_CHANCE = 0.6; // probability an eligible event fires
 
 const AXES = ["impuls", "intel·lecte", "espiritualitat", "sociabilitat"];
-const FOOD_UPKEEP    = 2;  // food consumed per cycle
-const HEALTH_UPKEEP  = 5;  // health lost per cycle (aging)
+const FOOD_UPKEEP       = 2;    // food consumed per cycle
+const AGING_BASE        = 3;    // health lost per cycle in youth
+const AGING_THRESHOLD   = 10;   // cycle when acceleration begins
+const AGING_POWER       = 1.8;  // curvature of aging curve
+const AGING_SCALE       = 0.35; // multiplier for accelerating component
 const STARTING_HEALTH = 100;
 const HEALTH_MAX      = 100;
 const STAT_MAX           = 5.0;
@@ -28,6 +31,12 @@ const DESTRESA_MAX        = 2;     // max destreses per character
 const DESTRESA_BONUS      = 1;     // flat output bonus when destresa is active
 const INCL_DOT_VALUES = [-1.0, -0.5, 0.0, 0.5, 1.0];
 const MAX_CHILDREN    = 3;
+
+// Returns health lost this cycle due to aging — accelerates exponentially past AGING_THRESHOLD
+function getAgingLoss(cycle) {
+  const excess = Math.max(0, cycle - AGING_THRESHOLD);
+  return AGING_BASE + Math.floor(Math.pow(excess, AGING_POWER) * AGING_SCALE);
+}
 
 // --- Game State ---
 let state = null;
@@ -233,7 +242,7 @@ function performDiscoveryAction(chosenBtId) {
   state.cycle++;
   autoDiscoverUniversalTechs();
   state.food   = Math.max(0, state.food   - FOOD_UPKEEP);
-  state.health = Math.max(0, state.health - HEALTH_UPKEEP);
+  state.health = Math.max(0, state.health - getAgingLoss(state.cycle));
 
   if (state.cycle >= LIFE_EXPECTANCY || state.health <= 0) {
     if (!state.pendingEvent) triggerSuccession();
@@ -400,10 +409,12 @@ function executeAction(actionId) {
   }
 
   // Upkeep (food + health lost to survival and aging)
+  const agingLoss = getAgingLoss(state.cycle);
   state.food   = Math.max(0, state.food   - FOOD_UPKEEP);
-  state.health = Math.max(0, state.health - HEALTH_UPKEEP);
+  state.health = Math.max(0, state.health - agingLoss);
   if (state.food   === 0) addLog(`⚠ Provisions crítiques.`);
   if (state.health === 0) addLog(`💀 Salut crítica.`);
+  if (state.cycle === AGING_THRESHOLD + 1) addLog(`L'envelliment s'accelera.`);
 
   // Trigger event — only fires EVENT_TRIGGER_CHANCE of the time
   if (action.event_pool_id && EVENT_POOLS[action.event_pool_id] && Math.random() < EVENT_TRIGGER_CHANCE) {
@@ -609,10 +620,12 @@ function renderTopBar() {
     (state.food <= 4 ? " stat-critical" : state.food <= 8 ? " stat-warning" : "");
   document.getElementById("materials-counter").textContent = `🧠 ${state.materials}`;
 
+  const agingNow = getAgingLoss(state.cycle);
   const hc = document.getElementById("health-counter");
-  hc.innerHTML = `❤️ ${state.health}<span class="stat-rate">-${HEALTH_UPKEEP}/t</span>`;
+  hc.innerHTML = `❤️ ${state.health}<span class="stat-rate">-${agingNow}/t</span>`;
   hc.className = "stat-pill stat-health" +
-    (state.health <= 20 ? " stat-critical" : state.health <= 40 ? " stat-warning" : "");
+    (state.health <= 20 ? " stat-critical" : state.health <= 40 ? " stat-warning" : "") +
+    (agingNow >= 10 ? " aging-fast" : "");
 }
 
 function renderProfilePanel() {
@@ -1314,7 +1327,7 @@ function showGlossary() {
 
   // 1 — Indicadors Base
   html += sec('Indicadors Base', [
-    row('❤️', 'Salut', `Estat físic. A 0 el personatge mor i es produeix la successió. Decreix ${HEALTH_UPKEEP}/torn per envelliment. Actual: ${state.health}/${HEALTH_MAX}.`, bdg('Actiu', 'green')),
+    row('❤️', 'Salut', `Estat físic. A 0 el personatge mor i es produeix la successió. Decreix per envelliment: ${AGING_BASE}/torn en joventut, s'accelera a partir del cicle ${AGING_THRESHOLD}. Ara: −${getAgingLoss(state.cycle)}/torn. Actual: ${state.health}/${HEALTH_MAX}.`, bdg('Actiu', 'green')),
     row('✨', 'Benestar', 'Satisfacció general. Si cau molt baix, penalitza els resultats de les accions.', bdg('Pendent', 'grey'), true),
     row('🛡️', 'Protecció', 'Seguretat del grup. Un valor baix augmenta la freqüència d\'events de pressió del món.', bdg('Pendent', 'grey'), true),
     row('👥', 'Vincles', 'Relacions socials del grup. Un valor baix tanca l\'accés a accions col·lectives.', bdg('Pendent', 'grey'), true),
