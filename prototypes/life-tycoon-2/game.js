@@ -371,8 +371,8 @@ function executeAction(actionId) {
   autoDiscoverUniversalTechs();
 
   const resLabel = outRes === 'eines' ? 'Provisions' : outRes === 'health' ? 'Salut' : 'Aliment';
-  addLog(`[${state.cycle}] ${action.name}: +${output} ${resLabel}`);
-  state.lastResult = `Cicle ${state.cycle} — ${action.name}: +${output} ${resLabel}`;
+  if (output > 0) addLog(`[${state.cycle}] ${action.name}: +${output} ${resLabel}`);
+  if (output > 0) state.lastResult = `Cicle ${state.cycle} — ${action.name}: +${output} ${resLabel}`;
 
   if (action.unlocks_zone && !state.discoveredZoneIds.has(action.unlocks_zone)) {
     state.discoveredZoneIds.add(action.unlocks_zone);
@@ -1184,8 +1184,10 @@ function renderModals() {
       dismissBtn.classList.remove("hidden");
       choicesEl.classList.add("hidden");
       const fx = ev.effects;
-      document.getElementById("event-effect").textContent =
-        fx && fx.food ? `Efecte: ${fx.food >= 0 ? "+" : ""}${fx.food} provisions` : "";
+      const fxParts = [];
+      if (fx && fx.food)   fxParts.push(`${fx.food >= 0 ? "+" : ""}${fx.food} Aliment`);
+      if (fx && fx.health) fxParts.push(`${fx.health >= 0 ? "+" : ""}${fx.health} Salut`);
+      document.getElementById("event-effect").textContent = fxParts.length ? `Efecte: ${fxParts.join(' · ')}` : "";
     }
     eventModal.classList.remove("hidden");
   } else {
@@ -1198,7 +1200,8 @@ function renderModals() {
     const s = state.pendingSuccession;
     document.getElementById("succ-gen").textContent = s.generation;
     document.getElementById("succ-cycles").textContent = s.cyclesLived;
-    document.getElementById("succ-axis").textContent = `${s.topAxis} (${s.topAxisVal})`;
+    const topLabel = parseFloat(s.topAxisVal) >= 0 ? AXIS_LABELS[s.topAxis].right : AXIS_LABELS[s.topAxis].left;
+    document.getElementById("succ-axis").textContent = `${topLabel} (${s.topAxisVal})`;
 
     const succList = document.getElementById("succ-successors");
     succList.innerHTML = "";

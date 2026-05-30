@@ -200,8 +200,11 @@ Dues vies per desbloquejar-la:
 Cada era té exactament una acció de descoberta (`is_discovery_action: true`).
 Quan el jugador l'executa:
 1. S'avaluen totes les branch techs elegibles.
-2. Es desbloqueja la que té la **maduresa** més alta (fórmula a §4).
-3. Si cap és elegible, l'execució consumeix el cicle sense descoberta.
+2. El jugador **tria** quina tech descobrir entre les elegibles (UI: un botó per opció).
+   - Si només n'hi ha una d'elegible, es descobreix automàticament sense selecció.
+   - Si cap és elegible, l'execució consumeix el cicle sense descoberta.
+
+> **Nota de disseny (2026-05-30)**: el disseny original especificava selecció automàtica per maduresa màxima. Canvi al prototip (#29b S2-02): el jugador tria per evitar el biaix sistemàtic de l'algoritme de maduresa i donar agència explícita al jugador.
 
 **Visibilitat de l'acció de descoberta**: OCULTA quan no hi ha cap branch tech
 elegible. Visible quan n'hi ha almenys una. Quan passa a visible, la UI mostra

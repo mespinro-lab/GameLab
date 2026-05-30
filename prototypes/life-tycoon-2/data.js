@@ -289,7 +289,7 @@ const ACTIONS = [
   // GATHERER branch — bt_coneixement_plantes
   {
     id: "act_recollida_bolets", name: "Recollida de Bolets", is_base: false, zona: "Bosc",
-    description: "Coneixes quins bolets del bosc son comestibles i quins cal evitar. Provisions i salut.",
+    description: "Coneixes quins bolets del bosc són comestibles i quins cal evitar. Provisions i salut.",
     purchase_cost: 3, execute_cost: 1, output_resource: "food", output_min: 2, output_max: 5, health_delta: +5,
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": -0.01, espiritualitat: 0, sociabilitat: 0 },
@@ -541,7 +541,7 @@ const EVENT_POOLS = {
       text: "Mentre mols grans, notes que alguns son més grossos i més pesats. Et preguntes si sembrant-los sortirien plantes millors.",
       options: [
         { text: "Apartar-los i experimentar (−2 Aliment)", food_delta: -2, discovers: true },
-        { text: "Mòlts tots igual", food_delta: +1, discovers: false }
+        { text: "Mòl-los tots igual", food_delta: +1, discovers: false }
       ]
     }
   ],
@@ -552,7 +552,7 @@ const EVENT_POOLS = {
     {
       id: "ev_desc_agulla", is_discovery_event: true, is_single_use: true,
       discovery_branch_tech_id: "bt_agulla_os",
-      text: "Mentre talles os, un fragment llarg i fi queda perfectament aguillonat. Un membre del grup el recull pensatiu: \"Amb un forat aquí, podríem cosir pells...\"",
+      text: "Mentre talles os, un fragment llarg i fi queda perfectament fi com una agulla. Un membre del grup el recull pensatiu: \"Amb un forat aquí, podríem cosir pells...\"",
       options: [
         { text: "Experimentar plegats (−2 Aliment)", food_delta: -2, discovers: true },
         { text: "Deixar-ho per a un altre moment", food_delta: +1, discovers: false }

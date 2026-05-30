@@ -227,9 +227,10 @@ millorar accions. Noms era-específics.
 | Concepte | Definició | Herència |
 |---|---|---|
 | **Inclinació** | 4 eixos globals [-1,+1]. Persistent entre eres i generacions. | Sí, parcial |
-| **Destresa** | Aptitud innata. Era-nomenada (mateixa destresa, nom de l'època). | Sí, íntegra |
-| **Característica** | Tret innat. Herència + atzar en néixer. | Parcial |
-| **Aprenentatge** | Coneixement acumulat per experiència. | Parcial |
+| **Atribut** | Força / Enginy / Vincle (1.0–5.0). Creix per ús, hereta al 65%. Veure `character-stats.md`. | Sí, parcial |
+| **Destresa** | Aptitud apresa per repetició d'accions (threshold configurable). Era-nomenada. | Sí, íntegra |
+| **Característica** | Tret innat. Herència + atzar en néixer. *Post-prototip.* | Parcial |
+| **Aprenentatge** | Coneixement acumulat per experiència. *Post-prototip.* | Parcial |
 
 ### Transició d'Era
 

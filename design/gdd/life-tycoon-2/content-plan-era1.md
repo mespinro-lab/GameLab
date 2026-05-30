@@ -39,7 +39,7 @@
 | ID intern | Nom Paleolític | Notes |
 |---|---|---|
 | `primary` | Provisions | Menjar acumulat; gastat en comprar/executar accions. Si s'esgota, `Salut` decreix. |
-| `secondary` | `[PROPOSTA]` Pells | Generat per caça i trampatge; gastat en cosit i intercanvi. Opcional: simplificar a 1 recurs per a l'Era 1. |
+| `secondary` | `[PENDENT C3-03]` Pells | Generat per caça i trampatge; gastat en cosit i intercanvi. Decisió pendent playtest: si les mecàniques de gestió de Provisions resulten suficients per crear tensió sense un segon recurs, descartar. Parametritzable — no afecta el codi base. |
 
 ---
 
@@ -160,6 +160,13 @@ a les zones corresponents com a comprables.
 |---|---|---|---|---|---|---|
 | `bt_llavor_selectiva` | Llavor Selectiva | `gatherer` | No | false | Seleccionar Llavors | Triar les millors llavors per sembrar. Proto-agricultora. |
 | `bt_domini_terra` | Domini de la Terra | `hunter`, `gatherer` | **Sí** | false | Control del Territori | Control i delimitació d'àrees de recursos. Pont exit connector. |
+
+> **Nota de disseny — Branques multi-generacionals (2026-05-30, C3-02 resolt)**
+> Les branch techs derivades de `ut_recollida_sistematica` (cicle 9) i `ut_conreu_incipient` (cicle 12)
+> — `bt_coneixement_plantes`, `bt_calendari_natural`, `bt_llavor_selectiva`, `bt_domini_terra` —
+> són **estructuralment de Gen 2+ per disseny**: un personatge de Gen 1 no té temps d'activar-les i
+> aprofitar-les. Això és intencional: crea una meta de progressió dinàstica.
+> A implementar: indicador visual "Llegat dinàstic" al Glossari per comunicar-ho al jugador.
 
 **Resum: 13 branch techs** (5 ponts + 8 exclusives). Distribució per branca:
 - Caçador: `bt_punta_llanca`, `bt_trampes`, `bt_marques_territori`, `bt_domini_terra` (4)
