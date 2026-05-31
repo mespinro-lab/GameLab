@@ -4,13 +4,10 @@
 
 'use strict';
 
-// --- Logic Constants (mechanics parameters — design data is in data.js) ---
-const INERTIA_FACTOR          = 2.0;
-const BRANCH_INHERITANCE_RATE = 0.65;
-const FADE_MARGIN             = 0.05;
-const DEBUG_MODE              = false;
-const EVENT_TRIGGER_CHANCE    = 0.6;
-const INCL_DOT_VALUES         = [-1.0, -0.5, 0.0, 0.5, 1.0];
+// --- Logic Constants (engine behaviour — design values live in data.js) ---
+const INERTIA_FACTOR  = 2.0;
+const DEBUG_MODE      = false;
+const INCL_DOT_VALUES = [-1.0, -0.5, 0.0, 0.5, 1.0];
 
 // --- Derived Lookups (from data.js defs) ---
 const AXES        = AXIS_DEFS.map(a => a.id);
@@ -23,12 +20,17 @@ function getAgingLoss(cycle) {
   return AGING_BASE + Math.floor(Math.pow(excess, AGING_POWER) * AGING_SCALE);
 }
 
+function characterAge() {
+  return state.cycle - (state.character.birthCycle || 0);
+}
+
 // --- Game State ---
 let state = null;
 let zoneFilters = Object.fromEntries(ZONE_DEFS.map(z => [z.id, 'active']));
 
-function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedBranchTechIds, inheritedStats, inheritedDestreses) {
+function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedBranchTechIds, inheritedStats, inheritedDestreses, birthCycle = 0) {
   return {
+    birthCycle,
     inclination: { ...inheritedInclination },
     purchasedActionIds: new Set(inheritedPurchasedIds),
     unlockedBranchTechIds: new Set(inheritedBranchTechIds),
@@ -36,7 +38,7 @@ function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedB
     destreses: new Set(inheritedDestreses),
     actionUseCounts: {},
     firedSingleUseEventIds: new Set(),
-    hasPartner: false,
+    charState: Object.fromEntries(CHARACTER_STATE_DEFS.map(d => [d.id, d.startVal])),
     children: [],
   };
 }
@@ -149,15 +151,9 @@ function getDiscoverableTechs() {
 function discoverTech(techId) {
   if (state.discoveredUniversalTechIds.has(techId)) return;
   state.discoveredUniversalTechIds.add(techId);
-
   const tech = UNIVERSAL_TECHS.find(t => t.id === techId);
   addLog(`${tech.icon} Descoberta: ${tech.name}`);
-
-  if (tech.effect && tech.effect.healthBonus) {
-    state.health = Math.min(HEALTH_MAX, state.health + tech.effect.healthBonus);
-    addLog(`✨ ${tech.effect.desc}`);
-  }
-
+  applyUniversalTechEffect(tech);
   render();
 }
 
@@ -166,11 +162,16 @@ function autoDiscoverUniversalTechs() {
   for (const tech of getDiscoverableTechs()) {
     state.discoveredUniversalTechIds.add(tech.id);
     addLog(`${tech.icon} Descoberta: ${tech.name}`);
-    if (tech.effect && tech.effect.healthBonus) {
-      state.health = Math.min(HEALTH_MAX, state.health + tech.effect.healthBonus);
-      addLog(`✨ ${tech.effect.desc}`);
-    }
+    applyUniversalTechEffect(tech);
   }
+}
+
+function applyUniversalTechEffect(tech) {
+  if (!tech.effect) return;
+  if (tech.effect.healthBonus) {
+    state.health = Math.min(HEALTH_MAX, state.health + tech.effect.healthBonus);
+  }
+  if (tech.effect.desc) addLog(`✨ ${tech.effect.desc}`);
 }
 
 // --- Branch Tech Discovery ---
@@ -178,7 +179,7 @@ function autoDiscoverUniversalTechs() {
 function getEligibleBranchTechs() {
   return BRANCH_TECHS.filter(bt =>
     !bt.is_hidden &&
-    state.discoveredUniversalTechIds.has(bt.universal_prereq) &&
+    (!bt.universal_prereq || state.discoveredUniversalTechIds.has(bt.universal_prereq)) &&
     !state.character.unlockedBranchTechIds.has(bt.id) &&
     evaluateConditions(bt.inclination_conditions)
   );
@@ -200,9 +201,9 @@ function unlockBranchTech(bt) {
   addLog(`Nova habilitat: ${bt.name}`);
   const pe = bt.passive_effect;
   if (pe) {
-    if (pe.type === 'one_time_health')    state.health    = Math.min(HEALTH_MAX, state.health + pe.amount);
-    if (pe.type === 'one_time_materials') state.materials += pe.amount;
-    if (pe.type === 'unlock_zone')        state.discoveredZoneIds.add(pe.zone_id);
+    if (pe.type === 'grant_health')    state.health    = Math.min(HEALTH_MAX, state.health + pe.amount);
+    if (pe.type === 'grant_material') state.material += pe.amount;
+    if (pe.type === 'unlock_zone')        state.discoveredZoneIds.add(pe.unlocks_zone);
     if (pe.desc) addLog(`Efecte passiu: ${pe.desc}`);
   }
   const newActions = ACTIONS.filter(a => bt.unlocks_action_ids.includes(a.id));
@@ -225,18 +226,74 @@ function performDiscoveryAction(chosenBtId) {
   state.cycle++;
   autoDiscoverUniversalTechs();
   state.food   = Math.max(0, state.food   - FOOD_UPKEEP);
-  state.health = Math.max(0, state.health - getAgingLoss(state.cycle));
+  state.health = Math.max(0, state.health - getAgingLoss(characterAge()));
 
-  if (state.cycle >= LIFE_EXPECTANCY || state.health <= 0) {
+  if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) {
     if (!state.pendingEvent) triggerSuccession();
   }
   render();
+}
+
+function evaluateBlockedIf(conditions) {
+  if (!conditions || conditions.length === 0) return false;
+  return conditions.some(cond => {
+    if (cond.type === 'has_branch_tech') return state.character.unlockedBranchTechIds.has(cond.id);
+    if (cond.type === 'has_destresa')    return state.character.destreses.has(cond.id);
+    if (cond.type === 'stat_min')        return (state.character.stats[cond.stat] || 0) >= cond.min;
+    return false;
+  });
+}
+
+function evaluateCharacterRequires(action) {
+  if (!action.requires || action.requires.length === 0) return true;
+  return action.requires.every(req => {
+    if (req.type === 'has_any_branch_tech') return state.character.unlockedBranchTechIds.size > 0;
+    if (req.state) {
+      const val = state.character.charState[req.state] ?? 0;
+      if (req.min !== undefined && val < req.min) return false;
+      if (req.max !== undefined && val > req.max) return false;
+      if (req.lt_max) {
+        const def = CHARACTER_STATE_DEFS.find(d => d.id === req.state);
+        if (def && val >= def.max) return false;
+      }
+    }
+    return true;
+  });
+}
+
+function applyCharacterEffect(action) {
+  const eff = action.character_effect;
+  if (!eff) return;
+  if (eff.type === 'delta') {
+    const def = CHARACTER_STATE_DEFS.find(d => d.id === eff.state);
+    const cur = state.character.charState[eff.state] ?? 0;
+    const newVal = cur + eff.delta;
+    state.character.charState[eff.state] = def?.max != null
+      ? Math.min(def.max, Math.max(0, newVal))
+      : newVal;
+    if (eff.message) {
+      state.lastResult = eff.message;
+      addLog(eff.message.split('.')[0]);
+    }
+  }
+  if (eff.type === 'add_child') {
+    const nameIdx = (state.generation * 7 + state.character.children.length * 3) % CHILD_NAMES.length;
+    const child = { id: `child_${state.generation}_${state.cycle}`, label: CHILD_NAMES[nameIdx] };
+    state.character.children.push(child);
+    state.character.charState.fills = state.character.children.length;
+    const n = state.character.children.length;
+    state.lastResult = n === 1
+      ? `Primer fill nascut. La successió és assegurada.`
+      : `${n}è fill nascut. Podreu triar successor.`;
+    addLog(`Fill nascut (${n}/${MAX_CHILDREN}).`);
+  }
 }
 
 // Filter a pool to only eligible events (excludes discovery events whose conditions aren't met)
 function getEligiblePoolEvents(pool) {
   return pool.filter(ev => {
     if (ev.is_single_use && state.character.firedSingleUseEventIds.has(ev.id)) return false;
+    if (ev.blocked_if && evaluateBlockedIf(ev.blocked_if)) return false;
     if (!ev.is_discovery_event) return true;
     const btId = ev.discovery_branch_tech_id;
     if (state.character.unlockedBranchTechIds.has(btId)) return false;
@@ -258,13 +315,13 @@ function purchaseAction(actionId) {
     addLog("Acció no disponible en l'estat actual.");
     return;
   }
-  if (state.materials < action.purchase_cost) {
+  if (state.material < action.purchase_cost) {
     addLog(`Provisions insuficients per aprendre ${action.name}.`);
     render();
     return;
   }
 
-  state.materials -= action.purchase_cost;
+  state.material -= action.purchase_cost;
   state.character.purchasedActionIds.add(actionId);
 
   // Transfer destresa progress from base action when purchasing upgrade
@@ -295,7 +352,19 @@ function executeAction(actionId) {
     return;
   }
 
-  if (actionId === 'act_tenir_fills' && (!state.character.hasPartner || state.character.children.length >= MAX_CHILDREN)) {
+  const age = characterAge();
+  if (action.minAge !== undefined && age < action.minAge) {
+    addLog(`${action.name} requereix edat mínima ${action.minAge}.`);
+    render();
+    return;
+  }
+  if (action.maxAge !== undefined && age > action.maxAge) {
+    addLog(`${action.name} no disponible passats ${action.maxAge} cicles.`);
+    render();
+    return;
+  }
+
+  if (!evaluateCharacterRequires(action)) {
     render();
     return;
   }
@@ -310,22 +379,27 @@ function executeAction(actionId) {
     ? DESTRESA_BONUS : 0;
   const outputMinBonus = [...state.character.unlockedBranchTechIds].reduce((sum, btId) => {
     const bt = BRANCH_TECHS.find(t => t.id === btId);
-    return (bt?.passive_effect?.type === 'action_output_bonus' && bt.passive_effect.action_id === actionId)
+    return (bt?.passive_effect?.type === 'bonus_action_output' && bt.passive_effect.action_id === actionId)
       ? sum + bt.passive_effect.output_min_bonus : sum;
   }, 0);
   const output = Math.round(randInt(action.output_min + outputMinBonus, action.output_max) * getStatMultiplier(action)) + destresaBonus;
   const outRes = action.output_resource || 'food';
-  if (outRes === 'eines') {
-    state.materials += output;
-  } else if (outRes === 'health') {
-    state.health = Math.min(HEALTH_MAX, state.health + output);
-  } else {
-    state.food = Math.min(FOOD_MAX, state.food + output);
+  const outResDef = RESOURCE_DEFS.find(r => r.id === outRes);
+  if (outResDef) {
+    const newVal = (state[outRes] || 0) + output;
+    state[outRes] = outResDef.max != null ? Math.min(outResDef.max, newVal) : newVal;
   }
 
-  // Side-effect health delta (risky / restorative actions)
-  if (action.health_delta) {
-    state.health = Math.max(0, Math.min(HEALTH_MAX, state.health + action.health_delta));
+  // Side-effects (risky / restorative actions)
+  if (action.side_effects) {
+    for (const se of action.side_effects) {
+      const resDef = RESOURCE_DEFS.find(r => r.id === se.resource);
+      if (!resDef) continue;
+      const newVal = (state[se.resource] || 0) + se.delta;
+      state[se.resource] = resDef.max != null
+        ? Math.max(0, Math.min(resDef.max, newVal))
+        : Math.max(0, newVal);
+    }
   }
 
   // Apply inclination deltas
@@ -364,7 +438,7 @@ function executeAction(actionId) {
   state.cycle++;
   autoDiscoverUniversalTechs();
 
-  const resLabel = outRes === 'eines' ? 'Provisions' : outRes === 'health' ? 'Salut' : 'Aliment';
+  const resLabel = outResDef ? outResDef.label : outRes;
   if (output > 0) addLog(`[${state.cycle}] ${action.name}: +${output} ${resLabel}`);
   if (output > 0) state.lastResult = `Cicle ${state.cycle} — ${action.name}: +${output} ${resLabel}`;
 
@@ -375,30 +449,17 @@ function executeAction(actionId) {
     state.lastResult = null;
   }
 
-  // Special one-time family actions
-  if (actionId === 'act_cercar_parella' && !state.character.hasPartner) {
-    state.character.hasPartner = true;
-    state.lastResult = `Has trobat parella. Ara podeu tenir fills.`;
-    addLog(`Parella trobada.`);
-  }
-  if (actionId === 'act_tenir_fills' && state.character.hasPartner && state.character.children.length < MAX_CHILDREN) {
-    const nameIdx = (state.generation * 7 + state.character.children.length * 3) % CHILD_NAMES.length;
-    const child = { id: `child_${state.generation}_${state.cycle}`, label: CHILD_NAMES[nameIdx] };
-    state.character.children.push(child);
-    const n = state.character.children.length;
-    state.lastResult = n === 1
-      ? `Primer fill nascut. La successió és assegurada.`
-      : `${n}è fill nascut. Podreu triar successor.`;
-    addLog(`Fill nascut (${n}/${MAX_CHILDREN}).`);
-  }
+  // Apply character state effects and reputation
+  applyCharacterEffect(action);
+  if (action.reputation_gain) state.reputacio = (state.reputacio || 0) + action.reputation_gain;
 
   // Upkeep (food + health lost to survival and aging)
-  const agingLoss = getAgingLoss(state.cycle);
+  const agingLoss = getAgingLoss(characterAge());
   state.food   = Math.max(0, state.food   - FOOD_UPKEEP);
   state.health = Math.max(0, state.health - agingLoss);
   if (state.food   === 0) addLog(`⚠ Provisions crítiques.`);
   if (state.health === 0) addLog(`💀 Salut crítica.`);
-  if (state.cycle === AGING_THRESHOLD + 1) addLog(`L'envelliment s'accelera.`);
+  if (characterAge() === AGING_THRESHOLD + 1) addLog(`L'envelliment s'accelera.`);
 
   // Trigger event — only fires EVENT_TRIGGER_CHANCE of the time
   if (action.event_pool_id && EVENT_POOLS[action.event_pool_id] && Math.random() < EVENT_TRIGGER_CHANCE) {
@@ -409,7 +470,7 @@ function executeAction(actionId) {
   }
 
   // Check succession: end of life OR health depleted
-  if (state.cycle >= LIFE_EXPECTANCY || state.health <= 0) {
+  if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) {
     if (!state.pendingEvent) triggerSuccession();
   }
 
@@ -427,7 +488,7 @@ function dismissEvent() {
   }
 
   state.pendingEvent = null;
-  if (state.cycle >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
+  if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
   render();
 }
 
@@ -448,14 +509,14 @@ function resolveDiscoveryOption(optionIndex) {
 
   if (ev.is_single_use) state.character.firedSingleUseEventIds.add(ev.id);
   state.pendingEvent = null;
-  if (state.cycle >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
+  if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
   render();
 }
 
 function triggerSuccession() {
-  if (state.generation >= MAX_GENERATIONS) {
+  if (state.cycle >= ERA_CYCLES) {
     state.gameOver = true;
-    state.gameOverReason = 'max_generations';
+    state.gameOverReason = 'era_complete';
     return;
   }
 
@@ -474,15 +535,16 @@ function triggerSuccession() {
 
   // Pre-compute inheritance from current character (same for all children)
   const inheritedInclination = Object.fromEntries(
-    AXES.map(a => [a, state.character.inclination[a] * BRANCH_INHERITANCE_RATE])
+    AXES.map(a => [a, state.character.inclination[a] * INCLINATION_INHERITANCE_RATE])
   );
   const parentStats = state.character.stats;
   const inheritedStats = Object.fromEntries(
-    STAT_DEFS.map(s => [s.id, parentStats[s.id] * BRANCH_INHERITANCE_RATE + STAT_STARTING_VALUE * (1 - BRANCH_INHERITANCE_RATE)])
+    STAT_DEFS.map(s => [s.id, parentStats[s.id] * INCLINATION_INHERITANCE_RATE + STAT_STARTING_VALUE * (1 - INCLINATION_INHERITANCE_RATE)])
   );
-  const inheritedPurchased    = new Set(state.character.purchasedActionIds);
-  const inheritedBranchTechs  = new Set(state.character.unlockedBranchTechIds);
-  const inheritedDestreses    = new Set(state.character.destreses);
+  const inheritedPurchased   = new Set(state.character.purchasedActionIds);
+  const inheritedBranchTechs = new Set(state.character.unlockedBranchTechIds);
+  const inheritedDestreses   = new Set(state.character.destreses);
+  const hasEnsenyat          = state.character.charState.ensenyat === 1;
 
   const childSuccessors = children.map(c => ({
     ...c,
@@ -492,13 +554,14 @@ function triggerSuccession() {
     inheritedPurchased,
     inheritedBranchTechs,
     inheritedDestreses,
+    hasEnsenyat,
   }));
 
   const siblingSuccessors = siblings.map(s => ({ ...s, is_sibling: true }));
 
   state.pendingSuccession = {
     generation: state.generation,
-    cyclesLived: state.cycle,
+    cyclesLived: characterAge(),
     topAxis,
     topAxisVal: state.character.inclination[topAxis].toFixed(2),
     successors: [...childSuccessors, ...siblingSuccessors],
@@ -514,22 +577,41 @@ function continueSuccession(successorId) {
 
   // Unchosen children become siblings for the next generation
   const unchosenChildren = s.successors.filter(c => !c.is_sibling && c.id !== successorId);
-  // Remove chosen sibling from pool; keep remaining siblings + add unchosen children
   state.siblingPool = [
     ...unchosenChildren,
     ...state.siblingPool.filter(sib => sib.id !== successorId),
   ];
 
   state.pendingSuccession = null;
-  for (const res of RESOURCE_DEFS) state[res.id] = res.startVal;
+
+  // Reset non-persistent resources; apply inheritDecay on persistent ones that define it
+  for (const res of RESOURCE_DEFS) {
+    if (!res.persistent) {
+      state[res.id] = res.startVal;
+    } else if (res.inheritDecay != null) {
+      state[res.id] = Math.floor((state[res.id] || 0) * res.inheritDecay);
+    }
+  }
+
   state.generation++;
-  state.cycle = 0;
+  // state.cycle does NOT reset — it is an era-wide counter
+
+  // Probabilistic branch tech inheritance (parent teaching bonus applied)
+  const teachingBonus = chosen.hasEnsenyat ? TEACHING_BONUS : 0;
+  const inheritedBranchTechs = new Set();
+  for (const btId of chosen.inheritedBranchTechs) {
+    const bt = BRANCH_TECHS.find(t => t.id === btId);
+    const rate = Math.min(1, (bt ? (bt.inheritanceRate || 0) : 0) + teachingBonus);
+    if (Math.random() < rate) inheritedBranchTechs.add(btId);
+  }
+
   state.character = createCharacter(
     chosen.inheritedInclination,
     chosen.inheritedPurchased,
-    chosen.inheritedBranchTechs,
+    inheritedBranchTechs,
     chosen.inheritedStats,
-    chosen.inheritedDestreses
+    chosen.inheritedDestreses,
+    state.cycle  // birthCycle = current era cycle
   );
 
   state.lastResult = null;
@@ -586,15 +668,15 @@ function render() {
 }
 
 function renderTopBar() {
-  document.getElementById("cycle-counter").textContent = `Cicle ${state.cycle}`;
-  document.getElementById("gen-counter").textContent = `Gen ${state.generation}/${MAX_GENERATIONS}`;
+  document.getElementById("cycle-counter").textContent = `Era ${state.cycle}/${ERA_CYCLES}`;
+  document.getElementById("gen-counter").textContent = `Gen ${state.generation} · Edat ${characterAge()}`;
 
   const vitalsEl    = document.getElementById("top-vitals");
   const resourcesEl = document.getElementById("top-resources");
   vitalsEl.innerHTML    = "";
   resourcesEl.innerHTML = "";
 
-  const agingNow = getAgingLoss(state.cycle);
+  const agingNow = getAgingLoss(characterAge());
   for (const res of RESOURCE_DEFS) {
     const val  = state[res.id];
     const pill = document.createElement("span");
@@ -684,14 +766,15 @@ function renderProfilePanel() {
   // Family status
   const famEl = document.getElementById("family-status");
   famEl.innerHTML = `
-    <span class="family-badge ${state.character.hasPartner ? 'achieved' : ''}">Parella</span>
+    <span class="family-badge ${state.character.charState.parella ? 'achieved' : ''}">Parella</span>
     <span class="family-badge ${state.character.children.length > 0 ? 'achieved' : ''}">Fills (${state.character.children.length}/${MAX_CHILDREN})</span>
     ${state.siblingPool.length > 0 ? `<span class="family-badge achieved" style="background:rgba(245,166,35,0.15);border-color:rgba(245,166,35,0.3)">Germans (${state.siblingPool.length})</span>` : ''}
+    ${state.character.charState.ensenyat ? `<span class="family-badge achieved" style="background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.3)">Ensenyat ✓</span>` : ''}
   `;
-  if (!state.character.hasPartner && !state.gameOver) {
+  if (!state.character.charState.parella && !state.gameOver) {
     const hintEl = document.createElement("div");
     hintEl.className = "dim incl-hint";
-    hintEl.textContent = `Busca parella i tingues fills abans del cicle ${LIFE_EXPECTANCY}`;
+    hintEl.textContent = `Busca parella i tingues fills (era: cicle ${state.cycle}/${ERA_CYCLES})`;
     famEl.appendChild(hintEl);
   }
 
@@ -771,15 +854,15 @@ function renderActionsPanel() {
 
   // Succession warning
   const warnEl = document.getElementById("succession-warning");
-  const cyclesLeft = LIFE_EXPECTANCY - state.cycle;
+  const cyclesLeft = LIFE_EXPECTANCY - characterAge();
   const hasHeir = state.character.children.length > 0 || state.siblingPool.length > 0;
   if (!state.gameOver) {
     let warnText = '';
     if (cyclesLeft <= 6 && !hasHeir) {
-      warnText = `⚠ Queden ${cyclesLeft} cicle${cyclesLeft === 1 ? '' : 's'}. Cal tenir fills per assegurar la successió.`;
+      warnText = `⚠ Queden ${cyclesLeft} cicle${cyclesLeft === 1 ? '' : 's'} de vida. Cal tenir fills per assegurar la successió.`;
     }
-    if (cyclesLeft <= 3 && state.materials > 0) {
-      const mWarn = `🧠 ${state.materials} Provisions sense gastar — compra accions ara, no passen a la generació!`;
+    if (cyclesLeft <= 3 && state.material > 0) {
+      const mWarn = `🧠 ${state.material} Provisions sense gastar — compra accions ara, no passen a la generació!`;
       warnText = warnText ? warnText + ' · ' + mWarn : `⚠ ${mWarn}`;
     }
     if (warnText) {
@@ -888,17 +971,20 @@ function buildZoneCard(zona, { purchasableActionIds, upgradedBaseActionIds }) {
 
   const active = [], buy = [], other = [];
 
-  // Discovery action appears in Campament active tab
-  if (zona === 'Campament' && hasEligibleBranchTechs) {
-    const disc = ACTIONS.find(a => a.is_discovery_action);
+  const currentAge = characterAge();
+
+  // Discovery action appears in whichever zone it declares
+  if (hasEligibleBranchTechs) {
+    const disc = ACTIONS.find(a => a.is_discovery_action && a.zona === zona);
     if (disc) active.push({ action: disc, purchased: true, vis: "ACTIVE", isDiscovery: true });
   }
 
   for (const action of ACTIONS) {
     if (action.zona !== zona) continue;
     if (action.is_discovery_action) continue;
-    if (action.id === 'act_cercar_parella' && state.character.hasPartner) continue;
-    if (action.id === 'act_tenir_fills' && (!state.character.hasPartner || state.character.children.length >= MAX_CHILDREN)) continue;
+    if (action.minAge !== undefined && currentAge < action.minAge) continue;
+    if (action.maxAge !== undefined && currentAge > action.maxAge) continue;
+    if (!evaluateCharacterRequires(action)) continue;
 
     if (upgradedBaseActionIds.has(action.id)) continue; // replaced by upgrade
 
@@ -1006,10 +1092,12 @@ function buildZoneActionRow({ action, purchased, vis, isUpgrade, isDiscovery }) 
     zoneHint.textContent = " 🗺️";
     nameEl.appendChild(zoneHint);
   }
-  if (action.health_delta && action.health_delta < 0) {
+  const negSideEffects = (action.side_effects || []).filter(se => se.delta < 0);
+  if (negSideEffects.length > 0) {
     const risk = document.createElement("span");
     risk.className = "zar-risk";
-    risk.textContent = ` ⚠${action.health_delta}❤️`;
+    const riskRes = RESOURCE_DEFS.find(r => r.id === negSideEffects[0].resource);
+    risk.textContent = ` ⚠${negSideEffects[0].delta}${riskRes ? riskRes.emoji : ''}`;
     nameEl.appendChild(risk);
   }
   row.appendChild(nameEl);
@@ -1017,7 +1105,7 @@ function buildZoneActionRow({ action, purchased, vis, isUpgrade, isDiscovery }) 
   if (!isDiscovery) {
     // Meta: cost → output · stat · inclination hint · destresa
     const outRes = action.output_resource || 'food';
-    const resIcon = outRes === 'eines' ? '🧠' : outRes === 'health' ? '❤️' : '🌾';
+    const resIcon = (RESOURCE_DEFS.find(r => r.id === outRes) || RESOURCE_DEFS[0]).emoji;
     const costStr = action.execute_cost > 0 ? `${action.execute_cost}🌾→` : '';
     const statStr = action.stat_key
       ? `${action.stat_key.charAt(0).toUpperCase() + action.stat_key.slice(1)} ${state.character.stats[action.stat_key].toFixed(1)}`
@@ -1127,7 +1215,7 @@ function buildBlockedRow({ action, purchased, blocked }) {
     const bt = BRANCH_TECHS.find(b => b.unlocks_action_ids.includes(action.id));
     if (!bt) {
       infoEl.textContent = "Origen desconegut";
-    } else if (!state.discoveredUniversalTechIds.has(bt.universal_prereq)) {
+    } else if (bt.universal_prereq && !state.discoveredUniversalTechIds.has(bt.universal_prereq)) {
       const ut = UNIVERSAL_TECHS.find(t => t.id === bt.universal_prereq);
       infoEl.textContent = `Via: ${bt.name} → Requereix: ${ut ? ut.name : bt.universal_prereq} (Cicle ${ut ? ut.cycle : '?'}, ara: ${state.cycle})`;
     } else {
@@ -1258,11 +1346,11 @@ function renderModals() {
   const gameOverModal = document.getElementById("gameover-modal");
   if (state.gameOver) {
     const reasons = {
-      max_generations: "Cinc generacions han passat. El coneixement del teu llinatge queda gravat a les roques.",
+      era_complete: `L'era de la Prehistòria ha acabat. ${state.generation} generació${state.generation > 1 ? 's' : ''} de llinatge queden gravades a les roques.`,
       no_heir: "El personatge ha mort sense fills. El llinatge s'extingeix en aquesta generació.",
     };
     document.getElementById("gameover-text").textContent =
-      reasons[state.gameOverReason] || reasons.max_generations;
+      reasons[state.gameOverReason] || reasons.era_complete;
     gameOverModal.classList.remove("hidden");
   } else {
     gameOverModal.classList.add("hidden");
@@ -1309,7 +1397,7 @@ function showGlossary() {
 
   const activeBranches    = getActiveBranches();
   const eligibleBranchTechs = getEligibleBranchTechs();
-  const pct               = Math.round(BRANCH_INHERITANCE_RATE * 100);
+  const pct               = Math.round(INCLINATION_INHERITANCE_RATE * 100);
 
   let html = '';
 
@@ -1317,7 +1405,7 @@ function showGlossary() {
   html += sec('Recursos', [
     ...RESOURCE_DEFS.map(res => {
       const val = state[res.id];
-      const rateStr = res.rateType === 'aging' ? ` Ara: −${getAgingLoss(state.cycle)}/torn.` : '';
+      const rateStr = res.rateType === 'aging' ? ` Ara: −${getAgingLoss(characterAge())}/torn.` : '';
       const valStr  = res.showMax ? ` Actual: ${val}/${res.max}.` : ` Actual: ${val}.`;
       return row(res.emoji, res.label, res.glossaryDesc + rateStr + valStr, bdg('Actiu', 'green'));
     }),
@@ -1364,9 +1452,9 @@ function showGlossary() {
     BRANCH_TECHS.map(bt => {
       const unlocked  = state.character.unlockedBranchTechIds.has(bt.id);
       const eligible  = eligibleBranchTechs.some(e => e.id === bt.id);
-      const prereqMet = state.discoveredUniversalTechIds.has(bt.universal_prereq);
-      const prereqTech = UNIVERSAL_TECHS.find(t => t.id === bt.universal_prereq);
-      const prereqName = prereqTech ? prereqTech.name : bt.universal_prereq;
+      const prereqMet = !bt.universal_prereq || state.discoveredUniversalTechIds.has(bt.universal_prereq);
+      const prereqTech = bt.universal_prereq ? UNIVERSAL_TECHS.find(t => t.id === bt.universal_prereq) : null;
+      const prereqName = prereqTech ? prereqTech.name : (bt.universal_prereq || '—');
 
       let badge;
       if (unlocked)       badge = bdg('✓ Desblocada', 'green');
