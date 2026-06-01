@@ -36,7 +36,6 @@ function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedS
     unlockedSkillIds: new Set(inheritedSkillIds),
     stats: inheritedStats ? { ...inheritedStats } : Object.fromEntries(STAT_DEFS.map(s => [s.id, STAT_STARTING_VALUE])),
     destreses: new Set(inheritedDestreses),
-    actionUseCounts: {},
     firedSingleUseEventIds: new Set(),
     charState: Object.fromEntries(CHARACTER_STATE_DEFS.map(d => [d.id, d.startVal])),
     children: [],
@@ -177,7 +176,7 @@ function applyUniversalTechEffect(tech) {
 // --- Branch Tech Discovery ---
 
 function getEligibleSkills() {
-  return SKILL_DEFS.filter(bt =>
+  return SKILL_DEFS.filter(skill =>
     !skill.is_hidden &&
     (!skill.universal_prereq || state.discoveredUniversalTechIds.has(skill.universal_prereq)) &&
     !state.character.unlockedSkillIds.has(skill.id) &&
@@ -190,7 +189,6 @@ function getSkillMaturity(skill) {
   for (const cond of skill.inclination_conditions.conditions) {
     const val = state.character.inclination[cond.axis];
     if (cond.min !== undefined) score += Math.max(0, val - cond.min);
-    if (cond.max !== undefined) score += Math.max(0, cond.max - val);
   }
   return score;
 }
@@ -207,9 +205,16 @@ function unlockSkill(skill) {
     if (pe.desc) addLog(`Efecte passiu: ${pe.desc}`);
   }
   const newActions = ACTIONS.filter(a => skill.unlocks_action_ids.includes(a.id));
-  state.lastResult = newActions.length > 0
-    ? `Habilitat nova: ${skill.name} · Pots aprendre: ${newActions.map(a => a.name).join(', ')}`
-    : `Habilitat nova apresa: ${skill.name}`;
+  if (newActions.length > 0) {
+    const byZone = {};
+    for (const a of newActions) {
+      (byZone[a.zona] = byZone[a.zona] || []).push(a.name);
+    }
+    const parts = Object.entries(byZone).map(([z, names]) => `${z}: ${names.join(', ')}`);
+    state.lastResult = `Habilitat nova: ${skill.name} · Noves accions — ${parts.join('; ')}. Ves a 'Aprendre' per comprar-les.`;
+  } else {
+    state.lastResult = `Habilitat nova apresa: ${skill.name}`;
+  }
 }
 
 function performDiscoveryAction(chosenBtId) {
@@ -220,8 +225,12 @@ function performDiscoveryAction(chosenBtId) {
     return;
   }
   const chosen = chosenBtId
-    ? (eligible.find(bt => skill.id === chosenBtId) ?? eligible[0])
-    : eligible.reduce((a, b) => getSkillMaturity(a) >= getSkillMaturity(b) ? a : b);
+    ? (eligible.find(bt => bt.id === chosenBtId) ?? eligible[0])
+    : (() => {
+        const maxScore = Math.max(...eligible.map(bt => getSkillMaturity(bt)));
+        const top = eligible.filter(bt => getSkillMaturity(bt) === maxScore);
+        return top[Math.floor(Math.random() * top.length)];
+      })();
   unlockSkill(chosen);
   state.cycle++;
   autoDiscoverUniversalTechs();
@@ -324,14 +333,26 @@ function purchaseAction(actionId) {
   state.material -= action.purchase_cost;
   state.character.purchasedActionIds.add(actionId);
 
-  // Transfer destresa progress from base action when purchasing upgrade
-  if (action.is_upgrade && action.upgrades_action_id) {
-    const baseCount = state.character.actionUseCounts[action.upgrades_action_id] || 0;
-    if (baseCount > 0) state.character.actionUseCounts[actionId] = baseCount;
-  }
-
   addLog(`Après: ${action.name} (−${action.purchase_cost} 🧠)`);
   render();
+}
+
+function checkDestresesAfterAction() {
+  if (state.character.destreses.size >= DESTRESA_MAX) return;
+  for (const def of DESTRESA_DEFS) {
+    if (state.character.destreses.has(def.id)) continue;
+    const met = def.conditions.every(c => {
+      const val = state.character.inclination[c.axis] ?? 0;
+      if (c.min !== undefined && val < c.min) return false;
+      if (c.max !== undefined && val > c.max) return false;
+      return true;
+    });
+    if (met) {
+      state.character.destreses.add(def.id);
+      addLog(`⭐ Destresa: ${def.name}`);
+      state.lastResult = `Has après la destresa "${def.name}" per la teva inclinació vital.`;
+    }
+  }
 }
 
 function executeAction(actionId) {
@@ -371,9 +392,6 @@ function executeAction(actionId) {
 
   state.food -= action.execute_cost;
 
-  // Track use count for destresa discovery
-  state.character.actionUseCounts[actionId] = (state.character.actionUseCounts[actionId] || 0) + 1;
-
   // Roll output: stat multiplier + destresa flat bonus
   const destresaBonus = (action.destresa_id && state.character.destreses.has(action.destresa_id))
     ? DESTRESA_BONUS : 0;
@@ -411,28 +429,8 @@ function executeAction(actionId) {
       state.character.stats[action.stat_key] + action.stat_gain);
   }
 
-  // Check destresa discovery
-  if (action.destresa_id && !state.character.destreses.has(action.destresa_id)
-      && state.character.destreses.size < DESTRESA_MAX) {
-    const threshold = action.destresa_threshold || DESTRESA_THRESHOLD;
-    if (state.character.actionUseCounts[actionId] >= threshold) {
-      state.character.destreses.add(action.destresa_id);
-      addLog(`⭐ Destresa: ${action.destresa_name}`);
-      state.lastResult = `Has après la destresa "${action.destresa_name}" per experiència acumulada.`;
-    }
-  }
-  // For upgrades: continue counting toward the base action's destresa
-  if (action.is_upgrade && action.upgrades_action_id && state.character.destreses.size < DESTRESA_MAX) {
-    const baseAction = ACTIONS.find(a => a.id === action.upgrades_action_id);
-    if (baseAction?.destresa_id && !state.character.destreses.has(baseAction.destresa_id)) {
-      const threshold = baseAction.destresa_threshold || DESTRESA_THRESHOLD;
-      if (state.character.actionUseCounts[actionId] >= threshold) {
-        state.character.destreses.add(baseAction.destresa_id);
-        addLog(`⭐ Destresa: ${baseAction.destresa_name}`);
-        state.lastResult = `Has après la destresa "${baseAction.destresa_name}" per experiència acumulada.`;
-      }
-    }
-  }
+  // Check destresa discovery by inclination conditions
+  checkDestresesAfterAction();
 
   // Advance cycle
   state.cycle++;
@@ -771,10 +769,11 @@ function renderProfilePanel() {
     ${state.siblingPool.length > 0 ? `<span class="family-badge achieved" style="background:rgba(245,166,35,0.15);border-color:rgba(245,166,35,0.3)">Germans (${state.siblingPool.length})</span>` : ''}
     ${state.character.charState.ensenyat ? `<span class="family-badge achieved" style="background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.3)">Ensenyat ✓</span>` : ''}
   `;
-  if (!state.character.charState.parella && !state.gameOver) {
+  if (!state.gameOver) {
+    const cyclesRem = LIFE_EXPECTANCY - characterAge();
     const hintEl = document.createElement("div");
     hintEl.className = "dim incl-hint";
-    hintEl.textContent = `Busca parella i tingues fills (era: cicle ${state.cycle}/${ERA_CYCLES})`;
+    hintEl.textContent = `Queden ${cyclesRem} cicle${cyclesRem === 1 ? '' : 's'}. Assegura la successió.`;
     famEl.appendChild(hintEl);
   }
 
@@ -826,8 +825,8 @@ function renderProfilePanel() {
     destEl.innerHTML = `<div class="dim">Cap destresa (màx ${DESTRESA_MAX})</div>`;
   } else {
     for (const destId of state.character.destreses) {
-      const srcAction = ACTIONS.find(a => a.destresa_id === destId);
-      const name = srcAction ? srcAction.destresa_name : destId;
+      const def = DESTRESA_DEFS.find(d => d.id === destId);
+      const name = def ? def.name : destId;
       const div = document.createElement("div");
       div.className = "skill-item destresa-item";
       div.textContent = `⭐ ${name}`;
@@ -928,7 +927,7 @@ function buildLookupTables() {
   for (const skillId of state.character.unlockedSkillIds) {
     const bt = SKILL_DEFS.find(t => t.id === skillId);
     if (!bt) continue;
-    for (const aid of skill.unlocks_action_ids) purchasableActionIds.add(aid);
+    for (const aid of bt.unlocks_action_ids) purchasableActionIds.add(aid);
   }
   const upgradedBaseActionIds = new Set();
   for (const a of ACTIONS) {
@@ -947,7 +946,22 @@ function buildUndiscoveredCard(zona) {
   header.innerHTML = `<span class="zone-name zone-undiscovered-name">🔒 ${zona}</span>`;
   const hint = document.createElement("div");
   hint.className = "zone-undiscovered-hint";
-  hint.textContent = "Zona no explorada";
+
+  const lockedHere = ACTIONS.filter(a =>
+    a.zona === zona && !a.is_base && !a.is_discovery_action &&
+    [...state.character.unlockedSkillIds].some(skillId => {
+      const bt = SKILL_DEFS.find(t => t.id === skillId);
+      return bt?.unlocks_action_ids.includes(a.id);
+    })
+  );
+  const discoverAction = ACTIONS.find(a => a.unlocks_zone === zona);
+
+  if (lockedHere.length > 0 && discoverAction) {
+    hint.textContent = `Zona no explorada · ${lockedHere.length} acció${lockedHere.length > 1 ? 'ns' : ''} disponible${lockedHere.length > 1 ? 's' : ''} quan la descobreixis · Requereix: "${discoverAction.name}"`;
+  } else {
+    hint.textContent = "Zona no explorada";
+  }
+
   card.appendChild(header);
   card.appendChild(hint);
   return card;
@@ -1119,24 +1133,26 @@ function buildZoneActionRow({ action, purchased, vis, isUpgrade, isDiscovery }) 
       (inclHint ? ` · ${inclHint}` : '');
     row.appendChild(metaEl);
 
-    // Destresa progress — also for upgrades that carry base action's destresa
-    const destresaSrc = action.destresa_id ? action
-      : (isUpgrade && action.upgrades_action_id
-          ? ACTIONS.find(a => a.id === action.upgrades_action_id) : null);
-    if (destresaSrc?.destresa_id && purchased) {
-      const count = state.character.actionUseCounts[action.id] || 0;
-      const thr = destresaSrc.destresa_threshold || DESTRESA_THRESHOLD;
-      const achieved = state.character.destreses.has(destresaSrc.destresa_id);
-      if (achieved || state.character.destreses.size < DESTRESA_MAX) {
+    // Destresa progress — based on inclination proximity to conditions
+    const destresaSrcId = action.destresa_id
+      ?? (isUpgrade && action.upgrades_action_id
+          ? ACTIONS.find(a => a.id === action.upgrades_action_id)?.destresa_id : null);
+    if (destresaSrcId && purchased) {
+      const def = DESTRESA_DEFS.find(d => d.id === destresaSrcId);
+      const achieved = state.character.destreses.has(destresaSrcId);
+      if (def && (achieved || state.character.destreses.size < DESTRESA_MAX)) {
         const destRow = document.createElement("div");
         destRow.className = "zar-destresa";
         if (achieved) {
-          destRow.innerHTML = `<span class="zar-destresa-name">⭐ ${destresaSrc.destresa_name}</span>`;
+          destRow.innerHTML = `<span class="zar-destresa-name">⭐ ${def.name}</span>`;
         } else {
-          const pct = Math.min(100, count / thr * 100).toFixed(1);
+          const pct = Math.min(100, ...def.conditions.map(c => {
+            const val = state.character.inclination[c.axis] ?? 0;
+            return c.min !== undefined ? (val / c.min * 100) : 100;
+          })).toFixed(1);
           destRow.innerHTML =
             `<span class="zar-destresa-bar-track"><span class="zar-destresa-bar-fill" style="width:${pct}%"></span></span>` +
-            `<span class="zar-destresa-count">${count}/${thr}</span>`;
+            `<span class="zar-destresa-count">${def.name}: ${pct}%</span>`;
         }
         row.appendChild(destRow);
       }
@@ -1215,12 +1231,12 @@ function buildBlockedRow({ action, purchased, blocked }) {
     const bt = SKILL_DEFS.find(b => b.unlocks_action_ids.includes(action.id));
     if (!bt) {
       infoEl.textContent = "Origen desconegut";
-    } else if (skill.universal_prereq && !state.discoveredUniversalTechIds.has(skill.universal_prereq)) {
-      const ut = UNIVERSAL_TECHS.find(t => t.id === skill.universal_prereq);
-      infoEl.textContent = `Via: ${skill.name} → Requereix: ${ut ? ut.name : skill.universal_prereq} (Cicle ${ut ? ut.cycle : '?'}, ara: ${state.cycle})`;
+    } else if (bt.universal_prereq && !state.discoveredUniversalTechIds.has(bt.universal_prereq)) {
+      const ut = UNIVERSAL_TECHS.find(t => t.id === bt.universal_prereq);
+      infoEl.textContent = `Via: ${bt.name} → Requereix: ${ut ? ut.name : bt.universal_prereq} (Cicle ${ut ? ut.cycle : '?'}, ara: ${state.cycle})`;
     } else {
       // Universal met, inclination not
-      const conds = skill.inclination_conditions?.conditions || [];
+      const conds = bt.inclination_conditions?.conditions || [];
       const lines = conds.map(c => {
         const val = state.character.inclination[c.axis];
         if (c.min !== undefined && val < c.min) {
@@ -1231,7 +1247,7 @@ function buildBlockedRow({ action, purchased, blocked }) {
         }
         return `${c.axis} ✓`;
       });
-      infoEl.innerHTML = `Via: <strong>${skill.name}</strong><br>${lines.join('<br>')}`;
+      infoEl.innerHTML = `Via: <strong>${bt.name}</strong><br>${lines.join('<br>')}`;
     }
   }
   row.appendChild(infoEl);
@@ -1488,11 +1504,11 @@ function showGlossary() {
 
   // 8 — Destreses
   const destresesNames = [...state.character.destreses].map(destId => {
-    const srcAction = ACTIONS.find(a => a.destresa_id === destId);
-    return srcAction ? srcAction.destresa_name : destId;
+    const def = DESTRESA_DEFS.find(d => d.id === destId);
+    return def ? def.name : destId;
   });
   const destresesDesc = (destresesNames.length > 0 ? `Actuals: ${destresesNames.join(', ')}. ` : 'Cap destresa encara. ') +
-    `Llindar: ${DESTRESA_THRESHOLD} usos d'una acció. Màxim ${DESTRESA_MAX}. Heretades 100%.`;
+    `Es descobreixen quan la inclinació compleix les condicions de cada destresa. Màxim ${DESTRESA_MAX}. Heretades 100%.`;
   html += sec('Destreses', [
     row('⭐', `Destreses (${state.character.destreses.size}/${DESTRESA_MAX})`, destresesDesc,
       bdg(`${state.character.destreses.size}/${DESTRESA_MAX}`, state.character.destreses.size > 0 ? 'green' : 'grey')),

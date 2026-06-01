@@ -86,6 +86,15 @@ const RESOURCE_DEFS = [
   // { id: 'happiness', emoji: '✨', label: 'Benestar', section: 'resources', startVal: 50, max: 100, upkeep: null, showMax: false, rateType: false, era: 2, color: 'var(--purple)', borderColor: 'rgba(168,85,247,0.3)', glossaryDesc: "Satisfacció general. Si cau molt baix, penalitza els resultats de les accions." },
 ];
 
+// --- Destresa Definitions ---
+const DESTRESA_DEFS = [
+  { id: "d_rastreig",    name: "Rastreig",       conditions: [{ axis: "impuls",         min: 0.10 }] },
+  { id: "d_botanica",    name: "Botànica",        conditions: [{ axis: "intel·lecte",    min: 0.10 }] },
+  { id: "d_talla_silex", name: "Talla de Sílex",  conditions: [{ axis: "intel·lecte",    min: 0.15 }] },
+  { id: "d_custodi_foc", name: "Custodi del Foc", conditions: [{ axis: "espiritualitat", min: 0.10 }] },
+  { id: "d_guardia",     name: "Guàrdia",         conditions: [{ axis: "sociabilitat",   min: 0.10 }] },
+];
+
 // --- Zone Definitions ---
 const ZONE_DEFS = [
   { id: 'Bosc',      label: 'Bosc',      description: "Recol·lecta avançada i plantes. Es descobreix explorant les Planes.",  starts_discovered: false },
@@ -231,7 +240,7 @@ const SKILL_DEFS = [
     inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.25 }, { axis: "sociabilitat", min: 0.20 }] },
     unlocks_action_ids: ["act_curar_herbes"],
     passive_effect: null,
-    is_hidden: true
+    is_hidden: false
   },
   {
     id: "bt_pintura_rupestre", name: "Pintura Rupestre",
@@ -276,7 +285,7 @@ const SKILL_DEFS = [
     inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.20 }, { axis: "intel·lecte", max: 0.05 }] },
     unlocks_action_ids: ["act_observar_cel", "act_transit_nocturn"],
     passive_effect: { type: "grant_material", amount: 2, desc: "+2 Provisions (previsió de cicles)" },
-    is_hidden: true
+    is_hidden: false
   },
   {
     id: "bt_llavor_selectiva", name: "Llavor Selectiva",
@@ -313,7 +322,7 @@ const ACTIONS = [
     description: "Observes els moviments d'un ramat des d'un lloc cobert. Segur i eficaç.",
     execute_cost: 1, output_resource: "food", output_min: 2, output_max: 5,
     stat_key: "forca", stat_gain: 0.10,
-    destresa_id: "d_rastreig", destresa_name: "Rastreig", destresa_threshold: 5,
+    destresa_id: "d_rastreig",
     inclination_deltas: { impuls: +0.02, "intel·lecte": +0.01, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_caca"
   },
@@ -322,7 +331,7 @@ const ACTIONS = [
     description: "Busques arrels i baies comestibles al voltant del campament. Tranquil.",
     execute_cost: 1, output_resource: "food", output_min: 2, output_max: 4,
     stat_key: "forca", stat_gain: 0.10,
-    destresa_id: "d_botanica", destresa_name: "Botànica", destresa_threshold: 5,
+    destresa_id: "d_botanica",
     inclination_deltas: { impuls: -0.01, "intel·lecte": +0.01, espiritualitat: 0, sociabilitat: +0.01 },
     event_pool_id: "pool_recollecta"
   },
@@ -331,7 +340,7 @@ const ACTIONS = [
     description: "Treballes el sílex amb cura per fer eines per al clan. Precís i meticulós.",
     execute_cost: 0, output_resource: "material", output_min: 1, output_max: 3,
     stat_key: "enginy", stat_gain: 0.10,
-    destresa_id: "d_talla_silex", destresa_name: "Talla de Sílex", destresa_threshold: 5,
+    destresa_id: "d_talla_silex",
     inclination_deltas: { impuls: -0.01, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
   },
@@ -341,8 +350,16 @@ const ACTIONS = [
     execute_cost: 1, output_resource: "food", output_min: 1, output_max: 3, side_effects: [{ resource: 'health', delta: +5 }],
     reputation_gain: 1,
     stat_key: "vincle", stat_gain: 0.10,
-    destresa_id: "d_custodi_foc", destresa_name: "Custodi del Foc", destresa_threshold: 4,
+    destresa_id: "d_custodi_foc",
     inclination_deltas: { impuls: 0, "intel·lecte": -0.01, espiritualitat: +0.03, sociabilitat: +0.02 },
+    event_pool_id: "pool_ritual"
+  },
+  {
+    id: "act_contemplacio", name: "Contemplació", is_base: true, zona: "Campament",
+    description: "T'asseus en silenci i observes el món. La quietud obre la ment a allò invisible.",
+    execute_cost: 1, output_resource: "food", output_min: 0, output_max: 1,
+    stat_key: "vincle", stat_gain: 0.05,
+    inclination_deltas: { impuls: -0.01, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: 0 },
     event_pool_id: "pool_ritual"
   },
   {
@@ -351,7 +368,7 @@ const ACTIONS = [
     execute_cost: 1, output_resource: "food", output_min: 2, output_max: 4,
     reputation_gain: 1,
     stat_key: "vincle", stat_gain: 0.10,
-    destresa_id: "d_guardia", destresa_name: "Guàrdia", destresa_threshold: 5,
+    destresa_id: "d_guardia",
     inclination_deltas: { impuls: +0.01, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.01 },
     event_pool_id: "pool_social"
   },
