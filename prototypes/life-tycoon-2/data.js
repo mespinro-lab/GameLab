@@ -139,28 +139,38 @@ const SUCCESSION_PHRASES = {
 
 const UNIVERSAL_TECHS = [
   {
-    id: "ut_talla_laminar", name: "Talla en Làmines", icon: "🪨", cycle: 2,
-    description: "Làmines de sílex primes permeten eines i armes molt més eficaces.",
+    id: "ut_foc", name: "El Foc", icon: "🔥", cycle: 10,
+    description: "Fabricació intencional del foc amb sílex i pirita. Cuina, calor, llum i protecció nocturna.",
+    effect: { healthBonus: 10, desc: "+10 Salut (menjar cuit)" }
+  },
+  {
+    id: "ut_eines", name: "Les Eines", icon: "🪨", cycle: 22,
+    description: "Fulloles de sílex de precisió: formes especialitzades per a caça, tall i gravat.",
     effect: null
   },
   {
-    id: "ut_vestimenta", name: "Cosit i Vestimenta", icon: "🧵", cycle: 4,
-    description: "Agulles d'os per cosir pells d'animal. Permet colonitzar climes freds.",
-    effect: { healthBonus: 10, desc: "+10 Salut permanent" }
-  },
-  {
-    id: "ut_art_simbolic", name: "Art i Símbol", icon: "🎨", cycle: 6,
-    description: "Art rupestre i objectes simbòlics. L'inici del pensament abstracte.",
+    id: "ut_art", name: "L'Art", icon: "🎨", cycle: 36,
+    description: "Pintures a les roques, figurines d'ivori, flautes d'os. El clan comença a explicar el món.",
     effect: null
   },
   {
-    id: "ut_recollida_sistematica", name: "Recol·lecció Sistemàtica", icon: "🌿", cycle: 9,
-    description: "Mòlta de plantes salvatges i emmagatzematge. Predecessor de l'agricultura.",
+    id: "ut_vestimenta", name: "La Vestimenta", icon: "🧵", cycle: 50,
+    description: "Agulles d'os per cosir pells. Roba que protegeix del fred i permet explorar climes extrems.",
+    effect: { healthBonus: 15, desc: "+15 Salut (abric del fred)" }
+  },
+  {
+    id: "ut_corda", name: "La Corda", icon: "🪢", cycle: 65,
+    description: "Fibres vegetals trenzades. Trampes, cistelles, arcs i balses transformen el territori.",
     effect: null
   },
   {
-    id: "ut_conreu_incipient", name: "Conreu Incipient", icon: "🌾", cycle: 12,
-    description: "Primera sembra intencional. Transició cap al Neolític.",
+    id: "ut_ceramica", name: "La Ceràmica", icon: "🏺", cycle: 80,
+    description: "Argila cuita al foc. Emmagatzematge, cocció avançada i conservació de provisions.",
+    effect: null
+  },
+  {
+    id: "ut_agricultura", name: "L'Agricultura", icon: "🌾", cycle: 92,
+    description: "Primera sembra intencional i selecció de llavors. L'era prehistòrica arriba al seu límit.",
     effect: null
   }
 ];
@@ -172,7 +182,7 @@ const SKILL_DEFS = [
   {
     id: "bt_punta_llanca", name: "Punta de Llança",
     inheritanceRate: 0.20,
-    universal_prereq: "ut_talla_laminar",
+    universal_prereq: "ut_eines",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "impuls", min: 0.25 }, { axis: "sociabilitat", max: 0.30 }] },
     unlocks_action_ids: ["act_caca_llanca", "act_emboscada_nocturna"],
     passive_effect: null,
@@ -181,7 +191,7 @@ const SKILL_DEFS = [
   {
     id: "bt_rasclador_fi", name: "Rasclador Fi",
     inheritanceRate: 0.35,
-    universal_prereq: "ut_talla_laminar",
+    universal_prereq: "ut_eines",
     inclination_conditions: { operator: "OR", conditions: [{ axis: "impuls", max: 0.10 }, { axis: "intel·lecte", min: 0.20 }] },
     unlocks_action_ids: ["act_molda_grans", "act_faonar_eines"],
     passive_effect: { type: "bonus_action_output", action_id: "act_recollectar_arrels", output_min_bonus: 1, desc: "+1 mínim recol·lecta" },
@@ -190,7 +200,7 @@ const SKILL_DEFS = [
   {
     id: "bt_buri", name: "Burí i Gravat",
     inheritanceRate: 0.30,
-    universal_prereq: "ut_talla_laminar",
+    universal_prereq: "ut_eines",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.25 }, { axis: "impuls", max: 0.20 }] },
     unlocks_action_ids: ["act_gravar_os", "act_intercanviar_eines"],
     passive_effect: null,
@@ -208,7 +218,7 @@ const SKILL_DEFS = [
   {
     id: "bt_trampes", name: "Trampes i Llaços",
     inheritanceRate: 0.25,
-    universal_prereq: "ut_vestimenta",
+    universal_prereq: "ut_corda",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "impuls", min: 0.10 }] },
     unlocks_action_ids: ["act_parar_trampes"],
     passive_effect: null,
@@ -217,7 +227,7 @@ const SKILL_DEFS = [
   {
     id: "bt_guariment_plantes", name: "Guariment amb Plantes",
     inheritanceRate: 0.45,
-    universal_prereq: "ut_vestimenta",
+    universal_prereq: "ut_foc",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.25 }, { axis: "sociabilitat", min: 0.20 }] },
     unlocks_action_ids: ["act_curar_herbes"],
     passive_effect: null,
@@ -226,7 +236,7 @@ const SKILL_DEFS = [
   {
     id: "bt_pintura_rupestre", name: "Pintura Rupestre",
     inheritanceRate: 0.40,
-    universal_prereq: "ut_art_simbolic",
+    universal_prereq: "ut_art",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.30 }, { axis: "sociabilitat", min: 0.20 }] },
     unlocks_action_ids: ["act_pintar_parets", "act_narrar_llegendes"],
     passive_effect: { type: "unlock_zone", unlocks_zone: "Ritual", desc: "Desbloqueja el Lloc Sagrat" },
@@ -235,7 +245,7 @@ const SKILL_DEFS = [
   {
     id: "bt_marques_territori", name: "Marques de Territori",
     inheritanceRate: 0.30,
-    universal_prereq: "ut_art_simbolic",
+    universal_prereq: "ut_art",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "impuls", min: 0.20 }, { axis: "intel·lecte", min: 0.05 }] },
     unlocks_action_ids: ["act_marcar_territori", "act_rastreig_rutes"],
     passive_effect: null,
@@ -244,7 +254,7 @@ const SKILL_DEFS = [
   {
     id: "bt_ornaments", name: "Ornaments i Adorn",
     inheritanceRate: 0.35,
-    universal_prereq: "ut_art_simbolic",
+    universal_prereq: "ut_art",
     inclination_conditions: { operator: "OR", conditions: [{ axis: "espiritualitat", min: 0.20 }, { axis: "sociabilitat", min: 0.25 }] },
     unlocks_action_ids: ["act_ornamentar_se", "act_consagrar_ornaments"],
     passive_effect: null,
@@ -253,7 +263,7 @@ const SKILL_DEFS = [
   {
     id: "bt_coneixement_plantes", name: "Coneixement de Plantes",
     inheritanceRate: 0.45,
-    universal_prereq: "ut_recollida_sistematica",
+    universal_prereq: "ut_corda",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", max: 0.05 }, { axis: "impuls", max: 0.10 }] },
     unlocks_action_ids: ["act_recollida_bolets", "act_assecament_plantes"],
     passive_effect: null,
@@ -262,7 +272,7 @@ const SKILL_DEFS = [
   {
     id: "bt_calendari_natural", name: "Calendari Natural",
     inheritanceRate: 0.40,
-    universal_prereq: "ut_recollida_sistematica",
+    universal_prereq: "ut_ceramica",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.20 }, { axis: "intel·lecte", max: 0.05 }] },
     unlocks_action_ids: ["act_observar_cel", "act_transit_nocturn"],
     passive_effect: { type: "grant_material", amount: 2, desc: "+2 Provisions (previsió de cicles)" },
@@ -271,7 +281,7 @@ const SKILL_DEFS = [
   {
     id: "bt_llavor_selectiva", name: "Llavor Selectiva",
     inheritanceRate: 0.35,
-    universal_prereq: "ut_conreu_incipient",
+    universal_prereq: "ut_agricultura",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", max: 0.05 }, { axis: "impuls", max: 0.10 }] },
     unlocks_action_ids: ["act_seleccionar_llavors"],
     passive_effect: null,
@@ -280,7 +290,7 @@ const SKILL_DEFS = [
   {
     id: "bt_domini_terra", name: "Domini de la Terra",
     inheritanceRate: 0.25,
-    universal_prereq: "ut_conreu_incipient",
+    universal_prereq: "ut_agricultura",
     inclination_conditions: { operator: "OR", conditions: [{ axis: "impuls", min: 0.10 }, { axis: "intel·lecte", max: 0.05 }] },
     unlocks_action_ids: ["act_control_territori"],
     passive_effect: { type: "grant_health", amount: 10, desc: "+10 Salut (domini del territori)" },
