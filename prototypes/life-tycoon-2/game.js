@@ -28,12 +28,12 @@ function characterAge() {
 let state = null;
 let zoneFilters = Object.fromEntries(ZONE_DEFS.map(z => [z.id, 'active']));
 
-function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedBranchTechIds, inheritedStats, inheritedDestreses, birthCycle = 0) {
+function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedSkillIds, inheritedStats, inheritedDestreses, birthCycle = 0) {
   return {
     birthCycle,
     inclination: { ...inheritedInclination },
     purchasedActionIds: new Set(inheritedPurchasedIds),
-    unlockedBranchTechIds: new Set(inheritedBranchTechIds),
+    unlockedSkillIds: new Set(inheritedSkillIds),
     stats: inheritedStats ? { ...inheritedStats } : Object.fromEntries(STAT_DEFS.map(s => [s.id, STAT_STARTING_VALUE])),
     destreses: new Set(inheritedDestreses),
     actionUseCounts: {},
@@ -176,18 +176,18 @@ function applyUniversalTechEffect(tech) {
 
 // --- Branch Tech Discovery ---
 
-function getEligibleBranchTechs() {
-  return BRANCH_TECHS.filter(bt =>
-    !bt.is_hidden &&
-    (!bt.universal_prereq || state.discoveredUniversalTechIds.has(bt.universal_prereq)) &&
-    !state.character.unlockedBranchTechIds.has(bt.id) &&
-    evaluateConditions(bt.inclination_conditions)
+function getEligibleSkills() {
+  return SKILL_DEFS.filter(bt =>
+    !skill.is_hidden &&
+    (!skill.universal_prereq || state.discoveredUniversalTechIds.has(skill.universal_prereq)) &&
+    !state.character.unlockedSkillIds.has(skill.id) &&
+    evaluateConditions(skill.inclination_conditions)
   );
 }
 
-function getBranchTechMaturity(bt) {
+function getSkillMaturity(skill) {
   let score = 0;
-  for (const cond of bt.inclination_conditions.conditions) {
+  for (const cond of skill.inclination_conditions.conditions) {
     const val = state.character.inclination[cond.axis];
     if (cond.min !== undefined) score += Math.max(0, val - cond.min);
     if (cond.max !== undefined) score += Math.max(0, cond.max - val);
@@ -195,34 +195,34 @@ function getBranchTechMaturity(bt) {
   return score;
 }
 
-function unlockBranchTech(bt) {
-  if (state.character.unlockedBranchTechIds.has(bt.id)) return;
-  state.character.unlockedBranchTechIds.add(bt.id);
-  addLog(`Nova habilitat: ${bt.name}`);
-  const pe = bt.passive_effect;
+function unlockSkill(skill) {
+  if (state.character.unlockedSkillIds.has(skill.id)) return;
+  state.character.unlockedSkillIds.add(skill.id);
+  addLog(`Nova habilitat: ${skill.name}`);
+  const pe = skill.passive_effect;
   if (pe) {
     if (pe.type === 'grant_health')    state.health    = Math.min(HEALTH_MAX, state.health + pe.amount);
     if (pe.type === 'grant_material') state.material += pe.amount;
     if (pe.type === 'unlock_zone')        state.discoveredZoneIds.add(pe.unlocks_zone);
     if (pe.desc) addLog(`Efecte passiu: ${pe.desc}`);
   }
-  const newActions = ACTIONS.filter(a => bt.unlocks_action_ids.includes(a.id));
+  const newActions = ACTIONS.filter(a => skill.unlocks_action_ids.includes(a.id));
   state.lastResult = newActions.length > 0
-    ? `Habilitat nova: ${bt.name} · Pots aprendre: ${newActions.map(a => a.name).join(', ')}`
-    : `Habilitat nova apresa: ${bt.name}`;
+    ? `Habilitat nova: ${skill.name} · Pots aprendre: ${newActions.map(a => a.name).join(', ')}`
+    : `Habilitat nova apresa: ${skill.name}`;
 }
 
 function performDiscoveryAction(chosenBtId) {
-  const eligible = getEligibleBranchTechs();
+  const eligible = getEligibleSkills();
   if (eligible.length === 0) {
     addLog("No hi ha tècniques noves a descobrir ara.");
     render();
     return;
   }
   const chosen = chosenBtId
-    ? (eligible.find(bt => bt.id === chosenBtId) ?? eligible[0])
-    : eligible.reduce((a, b) => getBranchTechMaturity(a) >= getBranchTechMaturity(b) ? a : b);
-  unlockBranchTech(chosen);
+    ? (eligible.find(bt => skill.id === chosenBtId) ?? eligible[0])
+    : eligible.reduce((a, b) => getSkillMaturity(a) >= getSkillMaturity(b) ? a : b);
+  unlockSkill(chosen);
   state.cycle++;
   autoDiscoverUniversalTechs();
   state.food   = Math.max(0, state.food   - FOOD_UPKEEP);
@@ -237,7 +237,7 @@ function performDiscoveryAction(chosenBtId) {
 function evaluateBlockedIf(conditions) {
   if (!conditions || conditions.length === 0) return false;
   return conditions.some(cond => {
-    if (cond.type === 'has_branch_tech') return state.character.unlockedBranchTechIds.has(cond.id);
+    if (cond.type === 'has_skill') return state.character.unlockedSkillIds.has(cond.id);
     if (cond.type === 'has_destresa')    return state.character.destreses.has(cond.id);
     if (cond.type === 'stat_min')        return (state.character.stats[cond.stat] || 0) >= cond.min;
     return false;
@@ -247,7 +247,7 @@ function evaluateBlockedIf(conditions) {
 function evaluateCharacterRequires(action) {
   if (!action.requires || action.requires.length === 0) return true;
   return action.requires.every(req => {
-    if (req.type === 'has_any_branch_tech') return state.character.unlockedBranchTechIds.size > 0;
+    if (req.type === 'has_any_skill') return state.character.unlockedSkillIds.size > 0;
     if (req.state) {
       const val = state.character.charState[req.state] ?? 0;
       if (req.min !== undefined && val < req.min) return false;
@@ -295,12 +295,12 @@ function getEligiblePoolEvents(pool) {
     if (ev.is_single_use && state.character.firedSingleUseEventIds.has(ev.id)) return false;
     if (ev.blocked_if && evaluateBlockedIf(ev.blocked_if)) return false;
     if (!ev.is_discovery_event) return true;
-    const btId = ev.discovery_branch_tech_id;
-    if (state.character.unlockedBranchTechIds.has(btId)) return false;
-    const bt = BRANCH_TECHS.find(t => t.id === btId);
+    const skillId = ev.discovery_skill_id;
+    if (state.character.unlockedSkillIds.has(skillId)) return false;
+    const bt = SKILL_DEFS.find(t => t.id === skillId);
     if (!bt) return false;
-    if (!state.discoveredUniversalTechIds.has(bt.universal_prereq)) return false;
-    return evaluateConditions(bt.inclination_conditions);
+    if (!state.discoveredUniversalTechIds.has(skill.universal_prereq)) return false;
+    return evaluateConditions(skill.inclination_conditions);
   });
 }
 
@@ -377,10 +377,10 @@ function executeAction(actionId) {
   // Roll output: stat multiplier + destresa flat bonus
   const destresaBonus = (action.destresa_id && state.character.destreses.has(action.destresa_id))
     ? DESTRESA_BONUS : 0;
-  const outputMinBonus = [...state.character.unlockedBranchTechIds].reduce((sum, btId) => {
-    const bt = BRANCH_TECHS.find(t => t.id === btId);
-    return (bt?.passive_effect?.type === 'bonus_action_output' && bt.passive_effect.action_id === actionId)
-      ? sum + bt.passive_effect.output_min_bonus : sum;
+  const outputMinBonus = [...state.character.unlockedSkillIds].reduce((sum, skillId) => {
+    const bt = SKILL_DEFS.find(t => t.id === skillId);
+    return (bt?.passive_effect?.type === 'bonus_action_output' && skill.passive_effect.action_id === actionId)
+      ? sum + skill.passive_effect.output_min_bonus : sum;
   }, 0);
   const output = Math.round(randInt(action.output_min + outputMinBonus, action.output_max) * getStatMultiplier(action)) + destresaBonus;
   const outRes = action.output_resource || 'food';
@@ -502,9 +502,9 @@ function resolveDiscoveryOption(optionIndex) {
     addLog(`Esdeveniment: ${opt.food_delta >= 0 ? '+' : ''}${opt.food_delta} Aliment`);
   }
 
-  if (opt.discovers && ev.discovery_branch_tech_id) {
-    const bt = BRANCH_TECHS.find(t => t.id === ev.discovery_branch_tech_id);
-    if (bt) unlockBranchTech(bt);
+  if (opt.discovers && ev.discovery_skill_id) {
+    const bt = SKILL_DEFS.find(t => t.id === ev.discovery_skill_id);
+    if (bt) unlockSkill(bt);
   }
 
   if (ev.is_single_use) state.character.firedSingleUseEventIds.add(ev.id);
@@ -542,7 +542,7 @@ function triggerSuccession() {
     STAT_DEFS.map(s => [s.id, parentStats[s.id] * INCLINATION_INHERITANCE_RATE + STAT_STARTING_VALUE * (1 - INCLINATION_INHERITANCE_RATE)])
   );
   const inheritedPurchased   = new Set(state.character.purchasedActionIds);
-  const inheritedBranchTechs = new Set(state.character.unlockedBranchTechIds);
+  const inheritedSkills = new Set(state.character.unlockedSkillIds);
   const inheritedDestreses   = new Set(state.character.destreses);
   const hasEnsenyat          = state.character.charState.ensenyat === 1;
 
@@ -552,7 +552,7 @@ function triggerSuccession() {
     inheritedInclination,
     inheritedStats,
     inheritedPurchased,
-    inheritedBranchTechs,
+    inheritedSkills,
     inheritedDestreses,
     hasEnsenyat,
   }));
@@ -598,17 +598,17 @@ function continueSuccession(successorId) {
 
   // Probabilistic branch tech inheritance (parent teaching bonus applied)
   const teachingBonus = chosen.hasEnsenyat ? TEACHING_BONUS : 0;
-  const inheritedBranchTechs = new Set();
-  for (const btId of chosen.inheritedBranchTechs) {
-    const bt = BRANCH_TECHS.find(t => t.id === btId);
-    const rate = Math.min(1, (bt ? (bt.inheritanceRate || 0) : 0) + teachingBonus);
-    if (Math.random() < rate) inheritedBranchTechs.add(btId);
+  const inheritedSkills = new Set();
+  for (const skillId of chosen.inheritedSkills) {
+    const bt = SKILL_DEFS.find(t => t.id === skillId);
+    const rate = Math.min(1, (bt ? (skill.inheritanceRate || 0) : 0) + teachingBonus);
+    if (Math.random() < rate) inheritedSkills.add(skillId);
   }
 
   state.character = createCharacter(
     chosen.inheritedInclination,
     chosen.inheritedPurchased,
-    inheritedBranchTechs,
+    inheritedSkills,
     chosen.inheritedStats,
     chosen.inheritedDestreses,
     state.cycle  // birthCycle = current era cycle
@@ -796,22 +796,22 @@ function renderProfilePanel() {
   // Branch tech skills
   const btEl = document.getElementById("unlocked-branch-techs");
   btEl.innerHTML = "";
-  if (state.character.unlockedBranchTechIds.size === 0) {
+  if (state.character.unlockedSkillIds.size === 0) {
     btEl.innerHTML = '<div class="dim">Cap habilitat desblocada</div>';
   } else {
-    for (const btId of state.character.unlockedBranchTechIds) {
-      const bt = BRANCH_TECHS.find(t => t.id === btId);
+    for (const skillId of state.character.unlockedSkillIds) {
+      const bt = SKILL_DEFS.find(t => t.id === skillId);
       if (!bt) continue;
       const div = document.createElement("div");
       div.className = "skill-item";
-      div.textContent = bt.name;
+      div.textContent = skill.name;
       // S2-03: warn if all actions from this tech are in undiscovered zones
-      const btActions = ACTIONS.filter(a => bt.unlocks_action_ids.includes(a.id));
-      const allLocked = btActions.length > 0 && btActions.every(a => !state.discoveredZoneIds.has(a.zona));
+      const skillActions = ACTIONS.filter(a => skill.unlocks_action_ids.includes(a.id));
+      const allLocked = skillActions.length > 0 && skillActions.every(a => !state.discoveredZoneIds.has(a.zona));
       if (allLocked) {
         const hint = document.createElement("span");
         hint.className = "skill-zone-hint";
-        hint.title = `Zona necessària: ${btActions[0].zona}`;
+        hint.title = `Zona necessària: ${skillActions[0].zona}`;
         hint.textContent = " 🔒";
         div.appendChild(hint);
       }
@@ -880,7 +880,7 @@ function renderActionsPanel() {
   if (state.pendingZoneDiscovery) {
     notifEl.textContent = `🗺️ Nova zona descoberta: ${state.pendingZoneDiscovery}! Ara apareix al teu mapa.`;
     notifEl.classList.remove("hidden");
-  } else if (getEligibleBranchTechs().length > 0) {
+  } else if (getEligibleSkills().length > 0) {
     notifEl.textContent = "Hi ha estrangers al poblat que expliquen tècniques noves.";
     notifEl.classList.remove("hidden");
   } else {
@@ -925,10 +925,10 @@ function renderTechStrip() {
 
 function buildLookupTables() {
   const purchasableActionIds = new Set();
-  for (const btId of state.character.unlockedBranchTechIds) {
-    const bt = BRANCH_TECHS.find(t => t.id === btId);
+  for (const skillId of state.character.unlockedSkillIds) {
+    const bt = SKILL_DEFS.find(t => t.id === skillId);
     if (!bt) continue;
-    for (const aid of bt.unlocks_action_ids) purchasableActionIds.add(aid);
+    for (const aid of skill.unlocks_action_ids) purchasableActionIds.add(aid);
   }
   const upgradedBaseActionIds = new Set();
   for (const a of ACTIONS) {
@@ -967,14 +967,14 @@ function renderZoneGrid() {
 }
 
 function buildZoneCard(zona, { purchasableActionIds, upgradedBaseActionIds }) {
-  const hasEligibleBranchTechs = getEligibleBranchTechs().length > 0;
+  const hasEligibleSkills = getEligibleSkills().length > 0;
 
   const active = [], buy = [], other = [];
 
   const currentAge = characterAge();
 
   // Discovery action appears in whichever zone it declares
-  if (hasEligibleBranchTechs) {
+  if (hasEligibleSkills) {
     const disc = ACTIONS.find(a => a.is_discovery_action && a.zona === zona);
     if (disc) active.push({ action: disc, purchased: true, vis: "ACTIVE", isDiscovery: true });
   }
@@ -1156,7 +1156,7 @@ function buildZoneActionRow({ action, purchased, vis, isUpgrade, isDiscovery }) 
 
   // Button
   if (isDiscovery) {
-    const eligible = getEligibleBranchTechs();
+    const eligible = getEligibleSkills();
     if (eligible.length === 1) {
       const btn = document.createElement("button");
       btn.className = "btn-discovery btn-small";
@@ -1169,8 +1169,8 @@ function buildZoneActionRow({ action, purchased, vis, isUpgrade, isDiscovery }) 
       for (const bt of eligible) {
         const btn = document.createElement("button");
         btn.className = "btn-discovery btn-small";
-        btn.textContent = bt.name;
-        btn.onclick = () => performDiscoveryAction(bt.id);
+        btn.textContent = skill.name;
+        btn.onclick = () => performDiscoveryAction(skill.id);
         wrap.appendChild(btn);
       }
       row.appendChild(wrap);
@@ -1212,15 +1212,15 @@ function buildBlockedRow({ action, purchased, blocked }) {
     infoEl.textContent = "Ocult per inclinació: " + (issues.length ? issues.join(" · ") : "?");
   } else {
     // Locked behind branch tech
-    const bt = BRANCH_TECHS.find(b => b.unlocks_action_ids.includes(action.id));
+    const bt = SKILL_DEFS.find(b => b.unlocks_action_ids.includes(action.id));
     if (!bt) {
       infoEl.textContent = "Origen desconegut";
-    } else if (bt.universal_prereq && !state.discoveredUniversalTechIds.has(bt.universal_prereq)) {
-      const ut = UNIVERSAL_TECHS.find(t => t.id === bt.universal_prereq);
-      infoEl.textContent = `Via: ${bt.name} → Requereix: ${ut ? ut.name : bt.universal_prereq} (Cicle ${ut ? ut.cycle : '?'}, ara: ${state.cycle})`;
+    } else if (skill.universal_prereq && !state.discoveredUniversalTechIds.has(skill.universal_prereq)) {
+      const ut = UNIVERSAL_TECHS.find(t => t.id === skill.universal_prereq);
+      infoEl.textContent = `Via: ${skill.name} → Requereix: ${ut ? ut.name : skill.universal_prereq} (Cicle ${ut ? ut.cycle : '?'}, ara: ${state.cycle})`;
     } else {
       // Universal met, inclination not
-      const conds = bt.inclination_conditions?.conditions || [];
+      const conds = skill.inclination_conditions?.conditions || [];
       const lines = conds.map(c => {
         const val = state.character.inclination[c.axis];
         if (c.min !== undefined && val < c.min) {
@@ -1231,7 +1231,7 @@ function buildBlockedRow({ action, purchased, blocked }) {
         }
         return `${c.axis} ✓`;
       });
-      infoEl.innerHTML = `Via: <strong>${bt.name}</strong><br>${lines.join('<br>')}`;
+      infoEl.innerHTML = `Via: <strong>${skill.name}</strong><br>${lines.join('<br>')}`;
     }
   }
   row.appendChild(infoEl);
@@ -1396,7 +1396,7 @@ function showGlossary() {
   }
 
   const activeBranches    = getActiveBranches();
-  const eligibleBranchTechs = getEligibleBranchTechs();
+  const eligibleSkills = getEligibleSkills();
   const pct               = Math.round(INCLINATION_INHERITANCE_RATE * 100);
 
   let html = '';
@@ -1446,15 +1446,15 @@ function showGlossary() {
     })
   );
 
-  // 5 — Tecnologies de Branca (Habilitats)
-  const unlockedCount = state.character.unlockedBranchTechIds.size;
-  html += sec(`Tecnologies de Branca — Habilitats (${unlockedCount}/${BRANCH_TECHS.length} desblocades)`,
-    BRANCH_TECHS.map(bt => {
-      const unlocked  = state.character.unlockedBranchTechIds.has(bt.id);
-      const eligible  = eligibleBranchTechs.some(e => e.id === bt.id);
-      const prereqMet = !bt.universal_prereq || state.discoveredUniversalTechIds.has(bt.universal_prereq);
-      const prereqTech = bt.universal_prereq ? UNIVERSAL_TECHS.find(t => t.id === bt.universal_prereq) : null;
-      const prereqName = prereqTech ? prereqTech.name : (bt.universal_prereq || '—');
+  // 5 — Habilitats
+  const unlockedCount = state.character.unlockedSkillIds.size;
+  html += sec(`Habilitats (${unlockedCount}/${SKILL_DEFS.length} desblocades)`,
+    SKILL_DEFS.map(bt => {
+      const unlocked  = state.character.unlockedSkillIds.has(skill.id);
+      const eligible  = eligibleSkills.some(e => e.id === skill.id);
+      const prereqMet = !skill.universal_prereq || state.discoveredUniversalTechIds.has(skill.universal_prereq);
+      const prereqTech = skill.universal_prereq ? UNIVERSAL_TECHS.find(t => t.id === skill.universal_prereq) : null;
+      const prereqName = prereqTech ? prereqTech.name : (skill.universal_prereq || '—');
 
       let badge;
       if (unlocked)       badge = bdg('✓ Desblocada', 'green');
@@ -1463,8 +1463,8 @@ function showGlossary() {
       else                badge = bdg(`Espera: ${prereqName}`, 'grey');
 
       const dimmed = !unlocked && !eligible;
-      return row('', bt.name,
-        `Prereq: ${prereqName}. Condicions: ${fmtConds(bt.inclination_conditions)}.`,
+      return row('', skill.name,
+        `Prereq: ${prereqName}. Condicions: ${fmtConds(skill.inclination_conditions)}.`,
         badge, dimmed);
     })
   );

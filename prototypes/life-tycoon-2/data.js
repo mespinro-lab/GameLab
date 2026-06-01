@@ -165,10 +165,10 @@ const UNIVERSAL_TECHS = [
   }
 ];
 
-// inheritanceRate: probabilitat base que un fill hereti aquesta tech sense ensenyança explícita.
+// inheritanceRate: probabilitat base que un fill hereti aquesta habilitat sense ensenyança explícita.
 // Amb act_ensenyar, s'afegeix TEACHING_BONUS a cada rate (fins a màx 0.95).
 // Baixa = habilitat física difícil de transmetre. Alta = coneixement oral transmissible.
-const BRANCH_TECHS = [
+const SKILL_DEFS = [
   {
     id: "bt_punta_llanca", name: "Punta de Llança",
     inheritanceRate: 0.20,
@@ -382,7 +382,7 @@ const ACTIONS = [
     id: "act_ensenyar", name: "Ensenyar el Fill", is_base: true, zona: "Campament",
     description: "Passes temps transmetent al fill les tècniques que has après. Un torn que definirà el llegat del llinatge.",
     minAge: 8,
-    requires: [{ state: 'fills', min: 1 }, { state: 'ensenyat', max: 0 }, { type: 'has_any_branch_tech' }],
+    requires: [{ state: 'fills', min: 1 }, { state: 'ensenyat', max: 0 }, { type: 'has_any_skill' }],
     character_effect: { type: 'delta', state: 'ensenyat', delta: 1 },
     execute_cost: 2, output_resource: "food", output_min: 0, output_max: 0,
     reputation_gain: 3,
@@ -656,7 +656,7 @@ const ACTIONS = [
 ];
 
 // blocked_if: array de condicions — si QUALSEVOL es compleix, l'event no dispara
-//   { type: "has_branch_tech", id: "bt_xxx" }
+//   { type: "has_skill", id: "bt_xxx" }
 //   { type: "has_destresa",    id: "d_xxx"  }
 //   { type: "stat_min",        stat: "vincle", min: 3.0 }
 const EVENT_POOLS = {
@@ -667,7 +667,7 @@ const EVENT_POOLS = {
     { id: "ev_caca_abundant",   text: "Temporada de caça abundant. Reserves extra per a la família.", effects: { food: +5 } },
     {
       id: "ev_desc_llancador", is_discovery_event: true, is_single_use: true,
-      discovery_branch_tech_id: "bt_punta_llanca",
+      discovery_skill_id: "bt_punta_llanca",
       text: "Mentre espies el ramat, veus un caçador d'un altre grup llançar una pedra amb un pal llarg. Abat la presa des d'una distància increïble.",
       options: [
         { text: "Apropar-te a observar (−2 Aliment)", food_delta: -2, discovers: true },
@@ -676,7 +676,7 @@ const EVENT_POOLS = {
     },
     {
       id: "ev_desc_trampes", is_discovery_event: true, is_single_use: true,
-      discovery_branch_tech_id: "bt_trampes",
+      discovery_skill_id: "bt_trampes",
       text: "Trobes un grup de recol·lectors que han deixat llaços de fibra vegetal en llocs de pas. Quan tornes, n'hi ha un de ple.",
       options: [
         { text: "Demanar-los que t'ensenyin (−2 Aliment)", food_delta: -2, discovers: true },
@@ -685,7 +685,7 @@ const EVENT_POOLS = {
     },
     {
       id: "ev_desc_marques", is_discovery_event: true, is_single_use: true,
-      discovery_branch_tech_id: "bt_marques_territori",
+      discovery_skill_id: "bt_marques_territori",
       text: "Trobes incisions en l'escorça d'un arbre que marquen clarament el límit d'un altre clan. La idea és senzilla i poderosa.",
       options: [
         { text: "Estudiar les marques de prop (−1 Aliment)", food_delta: -1, discovers: true },
@@ -699,7 +699,7 @@ const EVENT_POOLS = {
     { id: "ev_bolets_rars",      text: "Bolets estranys però comestibles. Extra de provisions.",       effects: { food: +2 } },
     {
       id: "ev_desc_rasclador", is_discovery_event: true, is_single_use: true,
-      discovery_branch_tech_id: "bt_rasclador_fi",
+      discovery_skill_id: "bt_rasclador_fi",
       text: "Recolles arrels prop d'un grup estranger. Una dona rasca una arrel amb un fragment de sílex molt fi que mai no havies vist — surt una polpa perfecta.",
       options: [
         { text: "Preguntar-li com ho fa (−2 Aliment)", food_delta: -2, discovers: true },
@@ -708,7 +708,7 @@ const EVENT_POOLS = {
     },
     {
       id: "ev_desc_coneixement_plantes", is_discovery_event: true, is_single_use: true,
-      discovery_branch_tech_id: "bt_coneixement_plantes",
+      discovery_skill_id: "bt_coneixement_plantes",
       text: "Un ancià del grup proper recol·lecta plantes amb una precisió inusual, triant-les una a una. Sembla que coneix cada fulla pel nom.",
       options: [
         { text: "Seguir-lo i aprendre (−2 Aliment)", food_delta: -2, discovers: true },
@@ -717,7 +717,7 @@ const EVENT_POOLS = {
     },
     {
       id: "ev_desc_llavor", is_discovery_event: true, is_single_use: true,
-      discovery_branch_tech_id: "bt_llavor_selectiva",
+      discovery_skill_id: "bt_llavor_selectiva",
       text: "Mentre mols grans, notes que alguns son més grossos i més pesats. Et preguntes si sembrant-los sortirien plantes millors.",
       options: [
         { text: "Apartar-los i experimentar (−2 Aliment)", food_delta: -2, discovers: true },
@@ -731,7 +731,7 @@ const EVENT_POOLS = {
     { id: "ev_intercanvi_eines", text: "Un grup veí demana eines a canvi de provisions.",              effects: { food: +2 } },
     {
       id: "ev_desc_agulla", is_discovery_event: true, is_single_use: true,
-      discovery_branch_tech_id: "bt_agulla_os",
+      discovery_skill_id: "bt_agulla_os",
       text: "Mentre talles os, un fragment llarg i fi queda perfectament fi com una agulla. Un membre del grup el recull pensatiu: \"Amb un forat aquí, podríem cosir pells...\"",
       options: [
         { text: "Experimentar plegats (−2 Aliment)", food_delta: -2, discovers: true },
@@ -740,7 +740,7 @@ const EVENT_POOLS = {
     },
     {
       id: "ev_desc_buri", is_discovery_event: true, is_single_use: true,
-      discovery_branch_tech_id: "bt_buri",
+      discovery_skill_id: "bt_buri",
       text: "Un artesà d'un grup veí grava línies en un fragment d'os amb una eina punxeguda molt fina. El resultat és inusitadament precís.",
       options: [
         { text: "Demanar-li que t'ensenyi (−2 Aliment)", food_delta: -2, discovers: true },
@@ -754,7 +754,7 @@ const EVENT_POOLS = {
       text: "Una febre s'escampa pel campament. Alguns membres cauen malalts i les reserves s'esgoten.",
       effects: { food: -3, health: -15 },
       blocked_if: [
-        { type: "has_branch_tech", id: "bt_guariment_plantes" }
+        { type: "has_skill", id: "bt_guariment_plantes" }
       ]
     },
     { id: "ev_visio_profunda",   text: "Una visió durant el ritual guia el grup cap a recursos amagats.", effects: { food: +2 } },
@@ -762,7 +762,7 @@ const EVENT_POOLS = {
     { id: "ev_espiritocontent",  text: "Els esperits estan contents. El grup se sent protegit.",          effects: { health: +5 } },
     {
       id: "ev_desc_herbes", is_discovery_event: true, is_single_use: true,
-      discovery_branch_tech_id: "bt_guariment_plantes",
+      discovery_skill_id: "bt_guariment_plantes",
       text: "Durant el ritual, un vell crema certes herbes que mai no has vist. Olora diferent. Algú amb mal de ventre s'ha millorat, i ningú no entén per qué.",
       options: [
         { text: "Demanar-li que t'ho expliqui", food_delta: -2, discovers: true },
@@ -771,7 +771,7 @@ const EVENT_POOLS = {
     },
     {
       id: "ev_desc_pintura", is_discovery_event: true, is_single_use: true,
-      discovery_branch_tech_id: "bt_pintura_rupestre",
+      discovery_skill_id: "bt_pintura_rupestre",
       text: "En un moment de silenci prop d'una paret de roca, el foc projecta ombres que semblen animals movent-se. Per un instant, sents que podries fixar-les.",
       options: [
         { text: "Intentar dibuixar les formes amb fang", food_delta: -1, discovers: true },
@@ -780,7 +780,7 @@ const EVENT_POOLS = {
     },
     {
       id: "ev_desc_calendari", is_discovery_event: true, is_single_use: true,
-      discovery_branch_tech_id: "bt_calendari_natural",
+      discovery_skill_id: "bt_calendari_natural",
       text: "Mentre fas el ritual, notes que la lluna ha tornat al mateix punt que fa molts dies. Alguna cosa en tu comença a comptar.",
       options: [
         { text: "Marcar el cicle en un os (−1 Aliment)", food_delta: -1, discovers: true },
@@ -794,7 +794,7 @@ const EVENT_POOLS = {
     { id: "ev_lider_respectat",  text: "El respecte augmenta. El grup treballa millor.",            effects: { food: +1 } },
     {
       id: "ev_desc_ornaments", is_discovery_event: true, is_single_use: true,
-      discovery_branch_tech_id: "bt_ornaments",
+      discovery_skill_id: "bt_ornaments",
       text: "L'estranger que ha visitat el campament porta closques foradades lligades al coll. Tothom els mira. L'home somriu i te n'ofereix una.",
       options: [
         { text: "Acceptar-la i preguntar-li (−3 Aliment)", food_delta: -3, discovers: true },
@@ -803,7 +803,7 @@ const EVENT_POOLS = {
     },
     {
       id: "ev_desc_domini_terra", is_discovery_event: true, is_single_use: true,
-      discovery_branch_tech_id: "bt_domini_terra",
+      discovery_skill_id: "bt_domini_terra",
       text: "Un clan veí i el teu han recol·lectat a la mateixa zona fins que l'han esgotada. Si s'hagués repartit el territori, tots haurien menjat millor.",
       options: [
         { text: "Proposar un acord de zones (−2 Aliment)", food_delta: -2, discovers: true },
