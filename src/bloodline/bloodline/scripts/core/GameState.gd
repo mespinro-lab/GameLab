@@ -22,6 +22,7 @@ var inclination: Dictionary = {
 
 # Character
 var character_label: String = ""
+var character_birth_cycle: int = 0
 var character_stats: Dictionary = {
 	"forca": 1.0,
 	"enginy": 1.0,
@@ -34,6 +35,7 @@ var unlocked_skill_ids: Array[String] = []
 var purchased_action_ids: Array[String] = []
 var discovered_zone_ids: Array[String] = []
 var children: Array[Dictionary] = []
+var sibling_pool: Array[Dictionary] = []
 
 # Dynasty
 var dynasty_name: String = ""
@@ -60,6 +62,8 @@ func reset() -> void:
 	purchased_action_ids = []
 	discovered_zone_ids = []
 	children = []
+	sibling_pool = []
+	character_birth_cycle = 0
 	genealogy = []
 	pending_action_result = {}
 	pending_event = {}
