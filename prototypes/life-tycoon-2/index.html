@@ -119,6 +119,53 @@
 
   </main>
 
+  <!-- RESULT MODAL (post-action) -->
+  <div id="result-modal" class="modal-overlay hidden">
+    <div class="modal-box ceremony-box">
+      <div class="ceremony-tag">Resultat</div>
+      <div id="result-action-name" class="ceremony-title"></div>
+      <div id="result-output" class="result-output"></div>
+      <div id="result-side-effects" class="result-fx-row"></div>
+      <button class="btn-modal" id="btn-dismiss-result">Continuar →</button>
+    </div>
+  </div>
+
+  <!-- BIRTH MODAL -->
+  <div id="birth-modal" class="modal-overlay hidden">
+    <div class="modal-box ceremony-box">
+      <div class="ceremony-tag">Nou membre del llinatge</div>
+      <div class="ceremony-emoji">👶</div>
+      <div id="birth-name" class="ceremony-title"></div>
+      <div id="birth-n" class="ceremony-sub"></div>
+      <div class="ceremony-parent">Fill de <span id="birth-parent"></span></div>
+      <button class="btn-modal" id="btn-dismiss-birth">Benvingut al món →</button>
+    </div>
+  </div>
+
+  <!-- DEATH MODAL -->
+  <div id="death-modal" class="modal-overlay hidden">
+    <div class="modal-box ceremony-box">
+      <div class="ceremony-tag">Fi d'una vida</div>
+      <div id="death-emoji" class="ceremony-emoji"></div>
+      <div id="death-name" class="ceremony-title"></div>
+      <div id="death-age" class="ceremony-sub"></div>
+      <div id="death-axis" class="ceremony-axis"></div>
+      <button class="btn-modal" id="btn-dismiss-death">El llinatge continua →</button>
+    </div>
+  </div>
+
+  <!-- NEW GENERATION MODAL -->
+  <div id="newgen-modal" class="modal-overlay hidden">
+    <div class="modal-box ceremony-box">
+      <div class="ceremony-tag">Nova generació</div>
+      <div id="newgen-emoji" class="ceremony-emoji"></div>
+      <div id="newgen-name" class="ceremony-title"></div>
+      <div id="newgen-gen" class="ceremony-sub"></div>
+      <div id="newgen-axis" class="ceremony-axis"></div>
+      <button class="btn-modal" id="btn-dismiss-newgen">Comença →</button>
+    </div>
+  </div>
+
   <!-- DISCOVERY MODAL -->
   <div id="discovery-modal" class="modal-overlay hidden">
     <div class="modal-box discovery-box">

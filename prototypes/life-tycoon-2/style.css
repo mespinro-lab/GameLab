@@ -981,6 +981,26 @@ button:active { opacity: 1;    transform: translateY(0); }
   color: var(--green);
 }
 
+/* ---- CEREMONY MODALS (result, birth, death, newgen) ---- */
+.ceremony-box { text-align: center; padding: 28px 24px 20px; }
+.ceremony-tag {
+  display: inline-block;
+  font-size: 10px; font-weight: 700; letter-spacing: 1.2px;
+  text-transform: uppercase; color: var(--dim);
+  border: 1px solid var(--border); border-radius: 4px;
+  padding: 2px 8px; margin-bottom: 16px;
+}
+.ceremony-emoji { font-size: 52px; line-height: 1; margin-bottom: 10px; }
+.ceremony-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.ceremony-sub   { font-size: 13px; color: var(--dim); margin-bottom: 6px; }
+.ceremony-axis  { font-size: 12px; color: var(--accent); margin-bottom: 16px; }
+.ceremony-parent { font-size: 12px; color: var(--dim); margin-bottom: 16px; }
+.result-output  { font-size: 32px; font-weight: 700; margin: 8px 0; color: var(--green); }
+.result-fx-row  { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; }
+.result-fx      { font-size: 14px; font-weight: 600; }
+.result-fx.pos  { color: var(--green); }
+.result-fx.neg  { color: var(--red, #e94560); }
+
 /* ---- ACTION TOAST ---- */
 .action-toast {
   position: fixed;

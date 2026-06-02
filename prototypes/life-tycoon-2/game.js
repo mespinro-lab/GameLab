@@ -28,9 +28,19 @@ function characterAge() {
 let state = null;
 let zoneFilters = Object.fromEntries(ZONE_DEFS.map(z => [z.id, 'active']));
 
-function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedSkillIds, inheritedStats, inheritedDestreses, birthCycle = 0) {
+function getCharEmoji(char) {
+  const inc = char?.inclination || {};
+  if ((inc.impuls || 0) > 0.3)         return '🏹';
+  if ((inc['intel·lecte'] || 0) > 0.3) return '🪨';
+  if ((inc.espiritualitat || 0) > 0.3) return '🔥';
+  if ((inc.sociabilitat || 0) > 0.3)   return '👥';
+  return '🦴';
+}
+
+function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedSkillIds, inheritedStats, inheritedDestreses, birthCycle = 0, label = '') {
   return {
     birthCycle,
+    label,
     inclination: { ...inheritedInclination },
     purchasedActionIds: new Set(inheritedPurchasedIds),
     unlockedSkillIds: new Set(inheritedSkillIds),
@@ -55,7 +65,7 @@ function initState() {
     cycle: 0,
     generation: 1,
     ...Object.fromEntries(RESOURCE_DEFS.map(r => [r.id, r.startVal])),
-    character: createCharacter(inclination, basePurchased, new Set()),
+    character: createCharacter(inclination, basePurchased, new Set(), null, new Set(), 0, CHILD_NAMES[0]),
     discoveredUniversalTechIds: new Set(),
     discoveredZoneIds: new Set(ZONE_DEFS.filter(z => z.starts_discovered).map(z => z.id)),
     log: [],
@@ -65,6 +75,10 @@ function initState() {
     pendingSuccession: null,
     pendingZoneDiscovery: null,
     pendingDiscoveries: [],
+    pendingActionResult: null,
+    pendingBirths: [],
+    pendingDeath: null,
+    pendingNewGen: null,
     siblingPool: [],
     gameOver: false,
     onboardingDismissed: localStorage.getItem('lt2_skip_onboarding') === '1',
@@ -169,6 +183,28 @@ function autoDiscoverUniversalTechs() {
 
 function dismissDiscovery() {
   state.pendingDiscoveries.shift();
+  render();
+}
+
+function dismissActionResult() {
+  state.pendingActionResult = null;
+  render();
+}
+
+function dismissBirth() {
+  state.pendingBirths.shift();
+  render();
+}
+
+function dismissDeath() {
+  const d = state.pendingDeath;
+  state.pendingDeath = null;
+  state.pendingSuccession = d.successionPayload;
+  render();
+}
+
+function dismissNewGen() {
+  state.pendingNewGen = null;
   render();
 }
 
@@ -297,14 +333,17 @@ function applyCharacterEffect(action) {
   }
   if (eff.type === 'add_child') {
     const nameIdx = (state.generation * 7 + state.character.children.length * 3) % CHILD_NAMES.length;
-    const child = { id: `child_${state.generation}_${state.cycle}`, label: CHILD_NAMES[nameIdx] };
+    const childLabel = CHILD_NAMES[nameIdx];
+    const child = { id: `child_${state.generation}_${state.cycle}`, label: childLabel };
     state.character.children.push(child);
     state.character.charState.fills = state.character.children.length;
     const n = state.character.children.length;
-    state.lastResult = n === 1
+    const msg = n === 1
       ? `Primer fill nascut. La successió és assegurada.`
       : `${n}è fill nascut. Podreu triar successor.`;
+    state.lastResult = msg;
     addLog(`Fill nascut (${n}/${MAX_CHILDREN}).`);
+    state.pendingBirths.push({ childLabel, parentLabel: state.character.label || `Gen ${state.generation}`, n });
   }
 }
 
@@ -483,13 +522,17 @@ function executeAction(actionId) {
     if (!state.pendingEvent) triggerSuccession();
   }
 
-  // Toast feedback
+  // Result screen
   const resIcon = outRes === 'food' ? '🌾' : outRes === 'health' ? '❤️' : '📦';
-  const toastLines = [`▶ ${action.name}`];
-  if (output > 0) toastLines.push(`+${output} ${resIcon}`);
-  const seTotalHealth = (action.side_effects || []).reduce((s, se) => se.resource === 'health' ? s + se.delta : s, 0);
-  if (seTotalHealth !== 0) toastLines.push(`${seTotalHealth > 0 ? '+' : ''}${seTotalHealth} ❤️`);
-  showActionToast(toastLines);
+  state.pendingActionResult = {
+    name: action.name,
+    output,
+    resIcon,
+    sideEffects: (action.side_effects || []).map(se => ({
+      delta: se.delta,
+      icon: se.resource === 'health' ? '❤️' : se.resource === 'food' ? '🌾' : '📦',
+    })),
+  };
 
   render();
 }
@@ -605,12 +648,22 @@ function triggerSuccession() {
 
   const siblingSuccessors = siblings.map(s => ({ ...s, is_sibling: true }));
 
-  state.pendingSuccession = {
+  const successionPayload = {
     generation: state.generation,
     cyclesLived: characterAge(),
     topAxis,
     topAxisVal: state.character.inclination[topAxis].toFixed(2),
     successors: [...childSuccessors, ...siblingSuccessors],
+  };
+
+  state.pendingDeath = {
+    label: state.character.label || `Gen ${state.generation}`,
+    emoji: getCharEmoji(state.character),
+    age: characterAge(),
+    cause: state.health <= 0 ? 'Salut esgotada' : 'Vida complerta',
+    topAxis,
+    topAxisVal: state.character.inclination[topAxis].toFixed(2),
+    successionPayload,
   };
 }
 
@@ -657,12 +710,22 @@ function continueSuccession(successorId) {
     inheritedSkills,
     chosen.inheritedStats,
     chosen.inheritedDestreses,
-    state.cycle  // birthCycle = current era cycle
+    state.cycle,
+    chosen.label
   );
 
   state.lastResult = null;
   state.pendingZoneDiscovery = null;
   addLog(`--- Generació ${state.generation} ---`);
+
+  state.pendingNewGen = {
+    label: chosen.label,
+    emoji: getCharEmoji(state.character),
+    generation: state.generation,
+    topAxis: chosen.inheritedInclination
+      ? AXES.reduce((a, b) => Math.abs(chosen.inheritedInclination[a]||0) > Math.abs(chosen.inheritedInclination[b]||0) ? a : b)
+      : null,
+  };
   render();
 }
 
@@ -1330,6 +1393,55 @@ function renderLog() {
 }
 
 function renderModals() {
+  // Result modal (highest priority — shown right after action)
+  const resultModal = document.getElementById("result-modal");
+  if (resultModal) {
+    if (state.pendingActionResult && !state.pendingBirths.length) {
+      const r = state.pendingActionResult;
+      document.getElementById("result-action-name").textContent = r.name;
+      const outputEl = document.getElementById("result-output");
+      outputEl.innerHTML = r.output > 0 ? `<span class="result-big">+${r.output} ${r.resIcon}</span>` : '';
+      const fxEl = document.getElementById("result-side-effects");
+      fxEl.innerHTML = r.sideEffects.map(se =>
+        `<span class="result-fx ${se.delta < 0 ? 'neg' : 'pos'}">${se.delta > 0 ? '+' : ''}${se.delta} ${se.icon}</span>`
+      ).join('');
+      resultModal.classList.remove("hidden");
+    } else {
+      resultModal.classList.add("hidden");
+    }
+  }
+
+  // Birth modal
+  const birthModal = document.getElementById("birth-modal");
+  if (birthModal) {
+    if (state.pendingBirths.length > 0 && !state.pendingActionResult) {
+      const b = state.pendingBirths[0];
+      document.getElementById("birth-name").textContent = b.childLabel;
+      document.getElementById("birth-parent").textContent = b.parentLabel;
+      document.getElementById("birth-n").textContent = b.n === 1 ? "Primera descendència" : `${b.n}a descendència`;
+      birthModal.classList.remove("hidden");
+    } else {
+      birthModal.classList.add("hidden");
+    }
+  }
+
+  // Death modal
+  const deathModal = document.getElementById("death-modal");
+  if (deathModal) {
+    if (state.pendingDeath) {
+      const d = state.pendingDeath;
+      document.getElementById("death-emoji").textContent = d.emoji;
+      document.getElementById("death-name").textContent = d.label;
+      document.getElementById("death-age").textContent = `${d.age} cicles · ${d.cause}`;
+      const axisLabel = parseFloat(d.topAxisVal) >= 0
+        ? AXIS_LABELS[d.topAxis].right : AXIS_LABELS[d.topAxis].left;
+      document.getElementById("death-axis").textContent = `${axisLabel} (${d.topAxisVal})`;
+      deathModal.classList.remove("hidden");
+    } else {
+      deathModal.classList.add("hidden");
+    }
+  }
+
   // Discovery modal
   const discoveryModal = document.getElementById("discovery-modal");
   if (discoveryModal) {
@@ -1383,8 +1495,27 @@ function renderModals() {
   }
 
   // Succession modal
+  // New generation modal
+  const newgenModal = document.getElementById("newgen-modal");
+  if (newgenModal) {
+    if (state.pendingNewGen && !state.pendingDeath) {
+      const ng = state.pendingNewGen;
+      document.getElementById("newgen-emoji").textContent = ng.emoji;
+      document.getElementById("newgen-name").textContent = ng.label;
+      document.getElementById("newgen-gen").textContent = `Generació ${ng.generation}`;
+      const axisLabel = ng.topAxis
+        ? (state.character.inclination[ng.topAxis] >= 0
+           ? AXIS_LABELS[ng.topAxis].right : AXIS_LABELS[ng.topAxis].left)
+        : '';
+      document.getElementById("newgen-axis").textContent = axisLabel;
+      newgenModal.classList.remove("hidden");
+    } else {
+      newgenModal.classList.add("hidden");
+    }
+  }
+
   const succModal = document.getElementById("succession-modal");
-  if (state.pendingSuccession && !state.gameOver) {
+  if (state.pendingSuccession && !state.gameOver && !state.pendingDeath) {
     const s = state.pendingSuccession;
     document.getElementById("succ-gen").textContent = s.generation;
     document.getElementById("succ-cycles").textContent = s.cyclesLived;
@@ -1605,6 +1736,14 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("btn-restart").onclick = restartGame;
   const btnDismissDiscovery = document.getElementById("btn-dismiss-discovery");
   if (btnDismissDiscovery) btnDismissDiscovery.onclick = dismissDiscovery;
+  const btnDismissResult = document.getElementById("btn-dismiss-result");
+  if (btnDismissResult) btnDismissResult.onclick = dismissActionResult;
+  const btnDismissBirth = document.getElementById("btn-dismiss-birth");
+  if (btnDismissBirth) btnDismissBirth.onclick = dismissBirth;
+  const btnDismissDeath = document.getElementById("btn-dismiss-death");
+  if (btnDismissDeath) btnDismissDeath.onclick = dismissDeath;
+  const btnDismissNewgen = document.getElementById("btn-dismiss-newgen");
+  if (btnDismissNewgen) btnDismissNewgen.onclick = dismissNewGen;
   document.getElementById("btn-glossary").onclick = showGlossary;
   document.getElementById("btn-close-glossary").onclick = () =>
     document.getElementById("glossary-modal").classList.add("hidden");
