@@ -20,6 +20,17 @@ func get_action_visibility(action: Dictionary) -> Visibility:
 	if not _check_requires(action):
 		return Visibility.HIDDEN
 
+	# Hide original action if its upgrade is purchased
+	if not action.get("is_upgrade", false):
+		if _has_purchased_upgrade_for(action_id):
+			return Visibility.HIDDEN
+
+	# Upgrades: only show if the original action is purchased
+	if action.get("is_upgrade", false):
+		var upgrades_id: String = action.get("upgrades_action_id", "")
+		if upgrades_id not in GameState.purchased_action_ids:
+			return Visibility.HIDDEN
+
 	# Base actions are always visible if their zone is discovered
 	if action.get("is_base", false):
 		var zona: String = action.get("zona", "")
@@ -153,6 +164,14 @@ func _apply_stat_growth(action: Dictionary) -> void:
 	var max_stat: float = DataLoader.config.get("stats", {}).get("max_value", 5.0)
 	var current: float = GameState.character_stats.get(stat_key, 1.0)
 	GameState.character_stats[stat_key] = minf(current + stat_gain, max_stat)
+
+
+func _has_purchased_upgrade_for(action_id: String) -> bool:
+	for aid: String in GameState.purchased_action_ids:
+		var a: Dictionary = DataLoader.actions.get(aid, {})
+		if a.get("is_upgrade", false) and a.get("upgrades_action_id", "") == action_id:
+			return true
+	return false
 
 
 func _check_requires(action: Dictionary) -> bool:
