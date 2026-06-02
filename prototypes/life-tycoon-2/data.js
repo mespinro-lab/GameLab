@@ -98,7 +98,7 @@ const DESTRESA_DEFS = [
 // --- Zone Definitions ---
 const ZONE_DEFS = [
   { id: 'Bosc',      label: 'Bosc',      description: "Recol·lecta avançada i plantes. Es descobreix explorant les Planes.",  starts_discovered: false },
-  { id: 'Planes',    label: 'Planes',    description: "Caça, exploració i recol·lecta exterior. Disponible des del principi.", starts_discovered: true  },
+  { id: 'Planes',    label: 'Planes',    description: "Caça, exploració i recol·lecta exterior. Es descobreix vigilant el campament.", starts_discovered: false },
   { id: 'Campament', label: 'Campament', description: "Supervivència base, família i ritual. Disponible des del principi.",   starts_discovered: true  },
   { id: 'Ritual',    label: 'Ritual',    description: "Rituals i cerimònies. Es descobreix amb Pintura Rupestre.",             starts_discovered: false },
 ];
@@ -363,7 +363,7 @@ const ACTIONS = [
     event_pool_id: "pool_ritual"
   },
   {
-    id: "act_vigilar_campament", name: "Vigilar el Campament", is_base: true, zona: "Campament",
+    id: "act_vigilar_campament", name: "Vigilar el Campament", is_base: true, zona: "Campament", unlocks_zone: "Planes",
     description: "Protegeixes el campament i observes els voltants. Responsabilitat compartida.",
     execute_cost: 1, output_resource: "food", output_min: 2, output_max: 4,
     reputation_gain: 1,

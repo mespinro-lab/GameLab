@@ -64,6 +64,7 @@ function initState() {
     pendingEvent: null,
     pendingSuccession: null,
     pendingZoneDiscovery: null,
+    pendingDiscoveries: [],
     siblingPool: [],
     gameOver: false,
     onboardingDismissed: localStorage.getItem('lt2_skip_onboarding') === '1',
@@ -162,7 +163,13 @@ function autoDiscoverUniversalTechs() {
     state.discoveredUniversalTechIds.add(tech.id);
     addLog(`${tech.icon} Descoberta: ${tech.name}`);
     applyUniversalTechEffect(tech);
+    state.pendingDiscoveries.push(tech);
   }
+}
+
+function dismissDiscovery() {
+  state.pendingDiscoveries.shift();
+  render();
 }
 
 function applyUniversalTechEffect(tech) {
@@ -362,16 +369,14 @@ function executeAction(actionId) {
   const action = ACTIONS.find(a => a.id === actionId);
   if (!action) return;
   if (!state.character.purchasedActionIds.has(actionId)) return;
+  if (state.pendingEvent) return;
+  if (state.pendingSuccession) return;
+  if (state.gameOver) return;
   state.pendingZoneDiscovery = null;
 
   const vis = getActionVisibility(action);
   if (vis !== "ACTIVE") {
     addLog(`${action.name} no és executable en l'estat actual.`);
-    render();
-    return;
-  }
-  if (state.food < action.execute_cost) {
-    addLog(`Aliment insuficient per executar ${action.name}.`);
     render();
     return;
   }
@@ -392,8 +397,6 @@ function executeAction(actionId) {
     render();
     return;
   }
-
-  state.food -= action.execute_cost;
 
   // Roll output: stat multiplier + destresa flat bonus
   const destresaBonus = (action.destresa_id && state.character.destreses.has(action.destresa_id))
@@ -480,7 +483,24 @@ function executeAction(actionId) {
     if (!state.pendingEvent) triggerSuccession();
   }
 
+  // Toast feedback
+  const resIcon = outRes === 'food' ? '🌾' : outRes === 'health' ? '❤️' : '📦';
+  const toastLines = [`▶ ${action.name}`];
+  if (output > 0) toastLines.push(`+${output} ${resIcon}`);
+  const seTotalHealth = (action.side_effects || []).reduce((s, se) => se.resource === 'health' ? s + se.delta : s, 0);
+  if (seTotalHealth !== 0) toastLines.push(`${seTotalHealth > 0 ? '+' : ''}${seTotalHealth} ❤️`);
+  showActionToast(toastLines);
+
   render();
+}
+
+function showActionToast(lines) {
+  const el = document.getElementById("action-toast");
+  if (!el) return;
+  el.innerHTML = lines.map(l => `<div>${l}</div>`).join("");
+  el.classList.remove("hidden");
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(() => el.classList.add("hidden"), 2200);
 }
 
 function dismissEvent() {
@@ -1148,7 +1168,6 @@ function buildZoneActionRow({ action, purchased, vis, isUpgrade, isDiscovery }) 
     // Meta: cost → output · stat · inclination hint · destresa
     const outRes = action.output_resource || 'food';
     const resIcon = (RESOURCE_DEFS.find(r => r.id === outRes) || RESOURCE_DEFS[0]).emoji;
-    const costStr = action.execute_cost > 0 ? `${action.execute_cost}🌾→` : '';
     const statStr = action.stat_key
       ? `${action.stat_key.charAt(0).toUpperCase() + action.stat_key.slice(1)} ${state.character.stats[action.stat_key].toFixed(1)}`
       : '';
@@ -1156,7 +1175,7 @@ function buildZoneActionRow({ action, purchased, vis, isUpgrade, isDiscovery }) 
     const metaEl = document.createElement("div");
     metaEl.className = "zar-meta";
     metaEl.textContent =
-      `${costStr}+${action.output_min}–${action.output_max}${resIcon}` +
+      `+${action.output_min}–${action.output_max}${resIcon}` +
       (statStr ? ` · ${statStr}` : '') +
       (inclHint ? ` · ${inclHint}` : '');
     row.appendChild(metaEl);
@@ -1222,7 +1241,7 @@ function buildZoneActionRow({ action, purchased, vis, isUpgrade, isDiscovery }) 
   } else if (purchased && vis !== "FADED") {
     const btn = document.createElement("button");
     btn.className = "btn-execute btn-small";
-    btn.textContent = action.execute_cost > 0 ? `Executar (−${action.execute_cost}🌾)` : "Executar";
+    btn.textContent = "Executar";
     btn.onclick = () => executeAction(action.id);
     row.appendChild(btn);
   } else if (!purchased) {
@@ -1311,6 +1330,20 @@ function renderLog() {
 }
 
 function renderModals() {
+  // Discovery modal
+  const discoveryModal = document.getElementById("discovery-modal");
+  if (discoveryModal) {
+    if (state.pendingDiscoveries && state.pendingDiscoveries.length > 0 && !state.pendingEvent) {
+      const tech = state.pendingDiscoveries[0];
+      document.getElementById("discovery-icon").textContent = tech.icon || "⭐";
+      document.getElementById("discovery-name").textContent = tech.name;
+      document.getElementById("discovery-desc").textContent = tech.description || "";
+      discoveryModal.classList.remove("hidden");
+    } else {
+      discoveryModal.classList.add("hidden");
+    }
+  }
+
   // Event modal
   const eventModal = document.getElementById("event-modal");
   if (state.pendingEvent) {
@@ -1570,6 +1603,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // Wire modal buttons
   document.getElementById("btn-dismiss-event").onclick = dismissEvent;
   document.getElementById("btn-restart").onclick = restartGame;
+  const btnDismissDiscovery = document.getElementById("btn-dismiss-discovery");
+  if (btnDismissDiscovery) btnDismissDiscovery.onclick = dismissDiscovery;
   document.getElementById("btn-glossary").onclick = showGlossary;
   document.getElementById("btn-close-glossary").onclick = () =>
     document.getElementById("glossary-modal").classList.add("hidden");

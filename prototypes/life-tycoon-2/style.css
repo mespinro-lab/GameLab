@@ -22,7 +22,8 @@ body {
   font-size: 14px;
   background: var(--bg);
   color: var(--text);
-  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   -webkit-tap-highlight-color: transparent;
@@ -107,7 +108,9 @@ body {
   gap: 12px;
   padding: 12px;
   flex: 1;
-  align-items: start;
+  align-items: stretch;
+  overflow: hidden;
+  min-height: 0;
 }
 
 /* ---- PANELS ---- */
@@ -116,6 +119,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 /* ---- SECTION LABEL ---- */
@@ -634,7 +639,7 @@ body {
   background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 5px;
-  padding: 7px 9px;
+  padding: 5px 8px;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -645,7 +650,7 @@ body {
 .zone-action-row.upgrade  { border-color: rgba(74,222,128,0.3);  background: rgba(74,222,128,0.04); }
 .zone-action-row.discovery { border-color: rgba(245,166,35,0.35); background: rgba(245,166,35,0.04); }
 
-.zar-name  { font-size: 12px; font-weight: 600; color: var(--text); }
+.zar-name  { font-size: 11px; font-weight: 600; color: var(--text); }
 .zar-risk  { color: var(--accent); font-size: 10px; margin-left: 4px; }
 .zar-meta  { font-size: 10px; color: var(--dim); font-family: monospace; line-height: 1.4; }
 .zar-faded-note { font-size: 10px; color: var(--dim); font-style: italic; }
@@ -655,7 +660,7 @@ body {
   background: rgba(233,69,96,0.03);
   border: 1px solid rgba(233,69,96,0.12);
   border-radius: 5px;
-  padding: 7px 9px;
+  padding: 5px 8px;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -791,7 +796,7 @@ button:active { opacity: 1;    transform: translateY(0); }
 .btn-choice:hover { border-color: var(--accent); color: var(--accent); }
 
 /* ---- LOG ---- */
-.log-block { max-height: 160px; overflow-y: auto; }
+.log-block { max-height: 80px; overflow-y: auto; }
 #action-log { display: flex; flex-direction: column; gap: 4px; }
 .log-entry {
   font-size: 11px;
@@ -861,12 +866,10 @@ button:active { opacity: 1;    transform: translateY(0); }
   #top-bar h1 { font-size: 14px; }
 
   #main {
-    grid-template-columns: 1fr;
+    grid-template-columns: 160px 1fr;
     padding: 8px;
     gap: 8px;
   }
-  #actions-panel { order: 1; }
-  #profile-panel { order: 2; }
 
   .action-footer { flex-direction: column; align-items: flex-start; }
   .action-footer button { width: 100%; }
@@ -976,4 +979,43 @@ button:active { opacity: 1;    transform: translateY(0); }
 .glossary-badge.active {
   background: rgba(74,222,128,0.12);
   color: var(--green);
+}
+
+/* ---- ACTION TOAST ---- */
+.action-toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.82);
+  color: #fff;
+  padding: 8px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  text-align: center;
+  z-index: 200;
+  pointer-events: none;
+  line-height: 1.5;
+}
+.action-toast.hidden { display: none; }
+
+/* ---- DISCOVERY MODAL ---- */
+.discovery-box {
+  text-align: center;
+  padding: 28px 24px 20px;
+}
+.discovery-icon {
+  font-size: 52px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+#discovery-name {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+#discovery-desc {
+  font-size: 13px;
+  color: var(--dim);
+  margin: 0 0 20px;
 }
