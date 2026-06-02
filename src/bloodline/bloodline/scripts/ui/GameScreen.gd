@@ -285,10 +285,12 @@ func _refresh_branches() -> void:
 
 func _refresh_top_bar() -> void:
 	var age: int = LineageManager.character_age()
-	_label_char.text = GameState.character_label
-	_label_gen.text = "Gen %d  ·  Edat %d  ·  Cicle %d" % [
-		GameState.generation, age, GameState.era_cycle]
-	_label_resources.text = "🌾 %d   ❤️ %d   🦴 %d" % [
+	var partner_str: String = "💑" if GameState.has_partner else ""
+	var children_str: String = "👶×%d" % GameState.children.size() if not GameState.children.is_empty() else ""
+	_label_char.text = "%s  %s %s" % [GameState.character_label, partner_str, children_str]
+	var era_pct: int = int(EraManager.get_era_progress_pct() * 100)
+	_label_gen.text = "Gen %d · Edat %d · Era %d%%" % [GameState.generation, age, era_pct]
+	_label_resources.text = "🌾%d  ❤️%d  🦴%d" % [
 		int(GameState.food), int(GameState.health), int(GameState.tokens)]
 
 
@@ -571,12 +573,24 @@ func _show_succession_overlay(successors: Array) -> void:
 		if child.name.begins_with("SuccBtn"):
 			child.queue_free()
 
+	var axis_icons: Dictionary = {
+		"impuls": "🏹", "intel_lectus": "🪨", "espiritualitat": "🔥", "sociabilitat": "👥"
+	}
 	for s: Variant in successors:
 		var sdict: Dictionary = s as Dictionary
+		var incl: Dictionary = sdict.get("inherited_inclination", {})
+		var dom_axis: String = "impuls"
+		var dom_val: float = 0.0
+		for ax: String in incl:
+			if absf(float(incl[ax])) > absf(dom_val):
+				dom_axis = ax
+				dom_val = float(incl[ax])
+		var icon: String = axis_icons.get(dom_axis, "?")
+		var tag: String = " (Germà)" if sdict.get("is_sibling", false) else ""
 		var succ_btn := Button.new()
 		succ_btn.name = "SuccBtn_" + sdict.get("id", "")
-		succ_btn.text = sdict.get("label", "?")
-		succ_btn.add_theme_font_size_override("font_size", 14)
+		succ_btn.text = "%s %s  %s%s" % [icon, sdict.get("label", "?"), "%+.2f" % dom_val, tag]
+		succ_btn.add_theme_font_size_override("font_size", 13)
 		succ_btn.custom_minimum_size.y = 44
 		var sid: String = sdict.get("id", "")
 		succ_btn.pressed.connect(func() -> void:
