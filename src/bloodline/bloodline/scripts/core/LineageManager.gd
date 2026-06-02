@@ -130,10 +130,11 @@ func _inherit_stats() -> Dictionary:
 
 func _inherit_skills() -> Array[String]:
 	var inherited: Array[String] = []
+	var teaching_bonus: float = DataLoader.config.get("stats", {}).get("teaching_bonus", 0.20) if GameState.has_taught_child else 0.0
 	for skill_id: String in GameState.unlocked_skill_ids:
 		var skill: Dictionary = DataLoader.skills.get(skill_id, {})
-		var rate: float = float(skill.get("inheritance_rate", 0.0))
-		if randf() < rate:
+		var rate: float = float(skill.get("inheritance_rate", 0.15)) + teaching_bonus
+		if randf() < minf(rate, 1.0):
 			inherited.append(skill_id)
 	return inherited
 

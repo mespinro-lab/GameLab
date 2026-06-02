@@ -253,7 +253,7 @@ func _connect_signals() -> void:
 func _refresh() -> void:
 	_refresh_top_bar()
 	_refresh_branches()
-	_refresh_inclination()
+	call_deferred("_refresh_inclination")
 	_refresh_zones()
 
 
@@ -300,8 +300,9 @@ func _refresh_inclination() -> void:
 		var fill: Panel = entry["fill"]
 		var lbl: Label = entry["val"]
 		lbl.text = "%+.2f" % val
-		await get_tree().process_frame
 		var track_w: float = track.size.x
+		if track_w <= 0.0:
+			continue
 		var fill_w: float = abs(val) * track_w * 0.5
 		fill.size.x = fill_w
 		fill.position.x = track_w * 0.5 if val >= 0.0 else track_w * 0.5 - fill_w

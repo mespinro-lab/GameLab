@@ -189,6 +189,9 @@ func _apply_special_effect(action: Dictionary) -> void:
 			var child: Dictionary = LineageManager.create_child()
 			if not child.is_empty():
 				action_executed.emit("child_born", 0.0, [{"resource": "child", "label": child.get("label", "")}])
+		"teach_child":
+			# Mark as having taught — improves inheritance rate
+			GameState.has_taught_child = true
 
 
 func _apply_food_upkeep() -> void:

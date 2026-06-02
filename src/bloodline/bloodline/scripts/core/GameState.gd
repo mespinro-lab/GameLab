@@ -35,6 +35,7 @@ var unlocked_skill_ids: Array[String] = []
 var purchased_action_ids: Array[String] = []
 var discovered_zone_ids: Array[String] = []
 var has_partner: bool = false
+var has_taught_child: bool = false
 var children: Array[Dictionary] = []
 var sibling_pool: Array[Dictionary] = []
 
@@ -63,6 +64,7 @@ func reset() -> void:
 	purchased_action_ids = []
 	discovered_zone_ids = []
 	has_partner = false
+	has_taught_child = false
 	children = []
 	sibling_pool = []
 	character_birth_cycle = 0
