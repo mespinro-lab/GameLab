@@ -18,7 +18,7 @@ func load_all() -> void:
 	print("[DataLoader] Loaded OK — era: prehistoria")
 
 
-func tr(key: String, locale: String = "ca") -> String:
+func loc(key: String, locale: String = "ca") -> String:
 	if not locales.has(locale):
 		return "[MISSING LOCALE: %s]" % locale
 	return locales[locale].get(key, "[MISSING: %s]" % key)
