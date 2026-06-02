@@ -243,6 +243,7 @@ func _connect_signals() -> void:
 	EraManager.universal_tech_discovered.connect(_on_tech_discovered)
 	LineageManager.succession_required.connect(_on_succession_required)
 	LineageManager.lineage_extinct.connect(_on_lineage_extinct)
+	LineageManager.era_ended.connect(_on_era_ended)
 	EventManager.event_triggered.connect(_on_event_triggered)
 	EventManager.event_resolved.connect(_on_event_resolved)
 
@@ -414,10 +415,11 @@ func _on_action_pressed(action_id: String) -> void:
 	EraManager.check_universal_techs()
 	var action: Dictionary = DataLoader.actions.get(action_id, {})
 	var pool_id: String = action.get("event_pool_id", "")
-	if pool_id != "":
+	if pool_id != "" and not EventManager.has_pending_event():
 		EventManager.try_trigger_event(pool_id)
 	if LineageManager.should_trigger_succession():
 		LineageManager.trigger_succession()
+	SaveSystem.save()
 
 
 func _on_action_executed(action_id: String, output: float, side_effects: Array) -> void:
@@ -457,6 +459,17 @@ func _on_succession_required(successors: Array) -> void:
 func _on_lineage_extinct() -> void:
 	_show_overlay("Fi del llinatge", "💀", "El llinatge s'extingeix",
 		"El personatge ha mort sense hereus.", "Tornar a jugar",
+		func() -> void: get_tree().reload_current_scene())
+
+
+func _on_era_ended(summary: Dictionary) -> void:
+	var gens: int = int(summary.get("generations", 1))
+	var techs: int = (summary.get("discovered_techs", []) as Array).size()
+	var skills: int = (summary.get("unlocked_skills", []) as Array).size()
+	var sub: String = "%d generacion%s  ·  %d tecn.  ·  %d habilitats" % [
+		gens, "s" if gens > 1 else "", techs, skills]
+	_show_overlay("Era completa", "🌾", "El Paleolític ha acabat", sub,
+		"Jugar de nou",
 		func() -> void: get_tree().reload_current_scene())
 
 

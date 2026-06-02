@@ -27,9 +27,11 @@ func should_trigger_succession() -> bool:
 
 func trigger_succession() -> void:
 	# Era complete check first
-	if EraManager.check_era_complete():
+	if EraManager.check_era_complete() or GameState.era_cycle >= 92:
 		var summary: Dictionary = _build_era_summary()
 		GameState.genealogy.append(_snapshot_current_character())
+		GameState.game_over = true
+		GameState.game_over_reason = "era_complete"
 		era_ended.emit(summary)
 		return
 
