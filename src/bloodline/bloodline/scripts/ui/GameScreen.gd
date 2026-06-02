@@ -11,6 +11,13 @@ var _incl_bars: Dictionary = {}
 var _zone_container: VBoxContainer
 var _log_label: Label
 var _overlay: Control
+# Overlay child refs (direct, avoids get_node path issues)
+var _ov_tag: Label
+var _ov_icon: Label
+var _ov_title: Label
+var _ov_sub: Label
+var _ov_btn: Button
+var _ov_vbox: VBoxContainer
 
 const AXIS_LABELS: Dictionary = {
 	"impuls": "Impuls",
@@ -168,44 +175,39 @@ func _build_overlay() -> Control:
 	overlay.add_theme_stylebox_override("panel", _flat_style(Color(0.13, 0.10, 0.07)))
 	overlay.visible = false
 
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 12)
-	overlay.add_child(vbox)
+	_ov_vbox = VBoxContainer.new()
+	_ov_vbox.add_theme_constant_override("separation", 12)
+	overlay.add_child(_ov_vbox)
 
-	var tag := Label.new()
-	tag.name = "Tag"
-	tag.add_theme_color_override("font_color", Color(0.55, 0.50, 0.42))
-	tag.add_theme_font_size_override("font_size", 10)
-	tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(tag)
+	_ov_tag = Label.new()
+	_ov_tag.add_theme_color_override("font_color", Color(0.55, 0.50, 0.42))
+	_ov_tag.add_theme_font_size_override("font_size", 10)
+	_ov_tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_ov_vbox.add_child(_ov_tag)
 
-	var icon := Label.new()
-	icon.name = "Icon"
-	icon.add_theme_font_size_override("font_size", 48)
-	icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(icon)
+	_ov_icon = Label.new()
+	_ov_icon.add_theme_font_size_override("font_size", 48)
+	_ov_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_ov_vbox.add_child(_ov_icon)
 
-	var title := Label.new()
-	title.name = "Title"
-	title.add_theme_color_override("font_color", Color(0.95, 0.88, 0.70))
-	title.add_theme_font_size_override("font_size", 18)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(title)
+	_ov_title = Label.new()
+	_ov_title.add_theme_color_override("font_color", Color(0.95, 0.88, 0.70))
+	_ov_title.add_theme_font_size_override("font_size", 18)
+	_ov_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_ov_vbox.add_child(_ov_title)
 
-	var sub := Label.new()
-	sub.name = "Sub"
-	sub.add_theme_color_override("font_color", Color(0.65, 0.58, 0.48))
-	sub.add_theme_font_size_override("font_size", 13)
-	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	vbox.add_child(sub)
+	_ov_sub = Label.new()
+	_ov_sub.add_theme_color_override("font_color", Color(0.65, 0.58, 0.48))
+	_ov_sub.add_theme_font_size_override("font_size", 13)
+	_ov_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_ov_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_ov_vbox.add_child(_ov_sub)
 
-	var btn := Button.new()
-	btn.name = "Btn"
-	btn.text = "Continuar →"
-	btn.add_theme_color_override("font_color", Color(0.95, 0.88, 0.70))
-	btn.add_theme_font_size_override("font_size", 14)
-	vbox.add_child(btn)
+	_ov_btn = Button.new()
+	_ov_btn.text = "Continuar →"
+	_ov_btn.add_theme_color_override("font_color", Color(0.95, 0.88, 0.70))
+	_ov_btn.add_theme_font_size_override("font_size", 14)
+	_ov_vbox.add_child(_ov_btn)
 
 	return overlay
 
@@ -369,32 +371,29 @@ func _on_lineage_extinct() -> void:
 
 func _show_overlay(tag: String, icon: String, title: String, sub: String,
 		btn_text: String, on_dismiss: Callable) -> void:
-	_overlay.get_node("VBoxContainer/Tag").text = tag.to_upper()
-	_overlay.get_node("VBoxContainer/Icon").text = icon
-	_overlay.get_node("VBoxContainer/Title").text = title
-	_overlay.get_node("VBoxContainer/Sub").text = sub
-	var btn: Button = _overlay.get_node("VBoxContainer/Btn")
-	btn.text = btn_text
-	if btn.pressed.get_connections().size() > 0:
-		btn.pressed.disconnect(btn.pressed.get_connections()[0]["callable"])
-	btn.pressed.connect(func() -> void:
+	_ov_tag.text = tag.to_upper()
+	_ov_icon.text = icon
+	_ov_title.text = title
+	_ov_sub.text = sub
+	_ov_btn.text = btn_text
+	_ov_btn.visible = true
+	if _ov_btn.pressed.get_connections().size() > 0:
+		_ov_btn.pressed.disconnect(_ov_btn.pressed.get_connections()[0]["callable"])
+	_ov_btn.pressed.connect(func() -> void:
 		_overlay.visible = false
 		on_dismiss.call())
 	_overlay.visible = true
 
 
 func _show_succession_overlay(successors: Array) -> void:
-	_overlay.get_node("VBoxContainer/Tag").text = "SUCCESSIÓ"
-	_overlay.get_node("VBoxContainer/Icon").text = "👥"
-	_overlay.get_node("VBoxContainer/Title").text = "Tria el successor"
-	_overlay.get_node("VBoxContainer/Sub").text = ""
+	_ov_tag.text = "SUCCESSIÓ"
+	_ov_icon.text = "👥"
+	_ov_title.text = "Tria el successor"
+	_ov_sub.text = ""
+	_ov_btn.visible = false
 
-	var btn: Button = _overlay.get_node("VBoxContainer/Btn")
-	btn.visible = false
-
-	# Add successor buttons dynamically
-	var vbox: VBoxContainer = _overlay.get_node("VBoxContainer")
-	for child: Node in vbox.get_children():
+	# Remove previous successor buttons
+	for child: Node in _ov_vbox.get_children():
 		if child.name.begins_with("SuccBtn"):
 			child.queue_free()
 
@@ -407,14 +406,14 @@ func _show_succession_overlay(successors: Array) -> void:
 		succ_btn.custom_minimum_size.y = 44
 		var sid: String = sdict.get("id", "")
 		succ_btn.pressed.connect(func() -> void:
-			btn.visible = true
-			for child: Node in vbox.get_children():
+			_ov_btn.visible = true
+			for child: Node in _ov_vbox.get_children():
 				if child.name.begins_with("SuccBtn"):
 					child.queue_free()
 			_overlay.visible = false
 			LineageManager.choose_successor(sid)
 			_refresh())
-		vbox.add_child(succ_btn)
+		_ov_vbox.add_child(succ_btn)
 
 	_overlay.visible = true
 
