@@ -17,16 +17,19 @@
 - [x] **Fase 3: Habilitats** → `design/eras/prehistoria/03-skills.md` ✅ IMPORTAT (13 habilitats)
 - [ ] **Fase 4: Accions** → `design/eras/prehistoria/04-actions.md` ⏳ PENDENT (importació + nous)
 - [x] **Fase 5: Balanç** → `design/eras/prehistoria/05-balance.md` ✅ APROVAT (9 ajustos aplicats)
-- [ ] **Fase 7: Events** → `design/eras/prehistoria/07-events.md` ⏳ PENDENT
+- [x] **Fase 6: Documentació** → `design/eras/prehistoria/state.md` ✅ CHECKPOINT (2026-06-02)
+- [x] **Fase 7: Events** → `design/eras/prehistoria/07-events.md` ✅ PARCIAL (pool_caca + pool_ritual; pool_artesania/recollecta/social pendents)
 
 ## Decisions Clau
 
 - **Nombre de tecnologies**: 7 (ERA_CYCLES 10, 22, 36, 50, 65, 80, 92)
 - **Branques**: Caçador, Recol·lector, Artesà, Místic
-- **Habilitats totals**: 13 (5 compartides entre branques)
-- **Accions**: base + branca (importades de data.js — veure 04-actions.md)
+- **Habilitats totals**: 13 (5 compartides entre branques) + 7 passive effects nous
+- **Accions totals**: 7 base + 4 familia/descoberta + 25 branca + 5 upgrades = ~41
+- **Accions noves (2026-06-02)**: act_revisar_trampes, act_preparar_ungüent, act_preparar_terreny, act_negociar_pastures
 - **Destreses**: 5 (sistema redissenyat 2026-06-01: condicions d'inclinació, no recompte)
 - **Connector de sortida**: `ut_agricultura` (cicle 92) → Era 2 (Neolític)
+- **Pools d'events pendents**: pool_caca, pool_ritual, pool_artesania, pool_recollecta, pool_social
 
 ## Divergències GDD ↔ Implementació
 

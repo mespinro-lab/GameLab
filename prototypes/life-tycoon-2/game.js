@@ -246,9 +246,10 @@ function performDiscoveryAction(chosenBtId) {
 function evaluateBlockedIf(conditions) {
   if (!conditions || conditions.length === 0) return false;
   return conditions.some(cond => {
-    if (cond.type === 'has_skill') return state.character.unlockedSkillIds.has(cond.id);
-    if (cond.type === 'has_destresa')    return state.character.destreses.has(cond.id);
-    if (cond.type === 'stat_min')        return (state.character.stats[cond.stat] || 0) >= cond.min;
+    if (cond.type === 'has_skill')    return state.character.unlockedSkillIds.has(cond.id);
+    if (cond.type === 'has_destresa') return state.character.destreses.has(cond.id);
+    if (cond.type === 'stat_min')     return (state.character.stats[cond.stat] || 0) >= cond.min;
+    if (cond.type === 'axis_above')   return (state.character.inclination[cond.axis] || 0) >= cond.value;
     return false;
   });
 }
@@ -500,9 +501,29 @@ function resolveDiscoveryOption(optionIndex) {
   if (!ev || !ev.options) return;
   const opt = ev.options[optionIndex];
 
-  if (opt.food_delta !== 0) {
-    state.food = Math.max(0, state.food + opt.food_delta);
+  if (opt.food_delta) {
+    state.food = Math.max(0, Math.min(FOOD_MAX, state.food + opt.food_delta));
     addLog(`Esdeveniment: ${opt.food_delta >= 0 ? '+' : ''}${opt.food_delta} Aliment`);
+  }
+
+  // Conditional health_delta: skill_modifier overrides base health_delta if skill absent
+  let healthDelta = opt.health_delta ?? 0;
+  if (opt.skill_modifier && !state.character.unlockedSkillIds.has(opt.skill_modifier.skill_id)) {
+    const roll = Math.random();
+    healthDelta = opt.skill_modifier.absent_health_options
+      ? opt.skill_modifier.absent_health_options[Math.floor(roll * opt.skill_modifier.absent_health_options.length)]
+      : (opt.skill_modifier.absent_health_delta ?? healthDelta);
+  } else if (opt.skill_modifier && state.character.unlockedSkillIds.has(opt.skill_modifier.skill_id)) {
+    healthDelta = opt.skill_modifier.present_health_delta ?? healthDelta;
+  }
+  if (healthDelta !== 0) {
+    state.health = Math.max(0, Math.min(HEALTH_MAX, state.health + healthDelta));
+    addLog(`Esdeveniment: ${healthDelta >= 0 ? '+' : ''}${healthDelta} Salut`);
+  }
+
+  if (opt.material_delta) {
+    state.material = Math.max(0, state.material + opt.material_delta);
+    if (opt.material_delta !== 0) addLog(`Esdeveniment: ${opt.material_delta >= 0 ? '+' : ''}${opt.material_delta} Provisions`);
   }
 
   if (opt.discovers && ev.discovery_skill_id) {

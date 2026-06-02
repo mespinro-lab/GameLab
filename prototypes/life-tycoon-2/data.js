@@ -750,6 +750,46 @@ const EVENT_POOLS = {
         { text: "Estudiar les marques de prop (−1 Aliment)", food_delta: -1, discovers: true },
         { text: "Retirar-te per respecte", food_delta: +1, discovers: false }
       ]
+    },
+    {
+      id: "ev_bison_ferit",
+      text: "La sang és fresca — el rastre no té més d'una hora. El flac esquerra del bisont gota a cada pas. La llum s'esmuny entre els pins i el bosc s'endensa. Si m'atura la nit, el perdo.",
+      options: [
+        { text: "Seguir ara, en la foscor",          food_delta: +8, health_delta: -4, discovers: false },
+        { text: "Acampar aquí, esperar l'alba",       food_delta: +3, health_delta:  0, discovers: false },
+        { text: "Deixar-ho anar, cercar presa nova",  food_delta: -1, health_delta: +1, discovers: false }
+      ]
+    },
+    {
+      id: "ev_grup_estrany",
+      text: "El fum puja recte, tranquil. Un altre grup ha fet foc a la baixada del torrent, just on jo pensava anar avui. Són dos o tres, potser més. No sé si m'han vist.",
+      options: [
+        { text: "Apropar-me, fer gestos de pau", food_delta: +2, health_delta: +1, discovers: false },
+        { text: "Retirar-me sense fer soroll",   food_delta: -2, health_delta:  0, discovers: false },
+        { text: "Quedar-me quiet i observar",    food_delta: -1, health_delta:  0, discovers: false }
+      ]
+    },
+    {
+      id: "ev_mamut_sol",
+      text: "Vell. Les defenses desgastades, els costats enfonsats. S'ha quedat enrere del ramat — potser fa dies. A cent passos. El cor em batega fort i fort.",
+      options: [
+        {
+          text: "Atac directe amb llances",
+          food_delta: +12, health_delta: -6, discovers: false,
+          skill_modifier: { skill_id: "bt_punta_llanca", absent_health_delta: -12 }
+        },
+        { text: "Conduir-lo cap al barranc",   food_delta: +10, health_delta: -1, discovers: false },
+        { text: "Deixar-lo, seguir un rens",   food_delta:  +2, health_delta:  0, discovers: false }
+      ]
+    },
+    {
+      id: "ev_trampa_rival",
+      text: "El rens jeu quiet, enredat al llaç. No és el meu llaç. Les marques als arbres propers no em diuen res — no reconec el clan. Qui hagi posat la trampa pot tornar en qualsevol moment.",
+      options: [
+        { text: "Agafar-ho tot i marxar de pressa",            food_delta: +6, health_delta: -2, discovers: false },
+        { text: "No tocar-ho, allunyar-me en silenci",         food_delta:  0, health_delta:  0, discovers: false },
+        { text: "Agafar la meitat, deixar senyal de retorn",   food_delta: +3, health_delta: +1, discovers: false }
+      ]
     }
   ],
   pool_recollecta: [
@@ -844,6 +884,50 @@ const EVENT_POOLS = {
       options: [
         { text: "Marcar el cicle en un os (−1 Aliment)", food_delta: -1, discovers: true },
         { text: "Continuar el ritual sense aturar-te", food_delta: 0, discovers: false }
+      ]
+    },
+    {
+      id: "ev_dol_enterrament",
+      text: "Un membre del clan ha mort al matí. Hi ha ocre vermell al sac, i un cargol marí que ningú no ha volgut tocar. El cos és allà. Ningú no sap ben bé quant de temps podem esperar.",
+      options: [
+        { text: "Enterrar-lo fondo. Posar-hi l'ocre i el cargol.", food_delta: 0, health_delta: +2, material_delta: -2, discovers: false },
+        { text: "Cavar just el que cal. Cobrir-lo i continuar.",   food_delta: 0, health_delta:  0, material_delta:  0, discovers: false },
+        { text: "Deixar-lo a l'aire. El vent i les bèsties fan la seva feina.", food_delta: 0, health_delta: -1, material_delta: 0, discovers: false }
+      ]
+    },
+    {
+      id: "ev_figura_venus",
+      text: "Tens un tros d'ivori a les mans. La forma surt sola — corbes, volum, pes. El clan s'ha aturat a mirar. No sé si és jo qui la faig o ella que es deixa fer.",
+      options: [
+        { text: "Acabar-la i posar-la al centre del campament.", food_delta: 0, health_delta: +1, material_delta: -1, discovers: false },
+        { text: "Acabar-la i guardar-la. Aquesta és meva.",       food_delta: 0, health_delta: +2, material_delta: -1, discovers: false },
+        { text: "Colpejar el bloc fins que es trenqui.",          food_delta: 0, health_delta:  0, material_delta:  0, discovers: false }
+      ]
+    },
+    {
+      id: "ev_transicio_xaman",
+      blocked_if: [{ type: "axis_above", axis: "impuls", value: 0.70 }],
+      text: "Fa dies que veig coses. Formes a les pedres, veus que no venen de cap boca. L'ancià m'ha mirat diferent. Diu que és el senyal. Puc entrar-hi o deixar-ho passar.",
+      options: [
+        { text: "Tres nits sol a la caverna. Res a menjar.", food_delta: -2, health_delta: -1, discovers: false },
+        { text: "Fer-ho amb l'ancià i el clan a prop.",      food_delta: -1, health_delta:  0, discovers: false }
+      ]
+    },
+    {
+      id: "ev_planta_amarga",
+      text: "Un infant crema de febre des de fa dos dies. Un vell s'acosta amb una rel negra que no he vist mai. Diu que funciona. No en sé res, però el nen empitjora.",
+      options: [
+        {
+          text: "Provar la rel a dosi petita. Veure com respon.",
+          food_delta: 0, discovers: false,
+          skill_modifier: {
+            skill_id: "bt_guariment_plantes",
+            present_health_delta: +3,
+            absent_health_options: [+1, -2]
+          }
+        },
+        { text: "Continuar amb el que conec. Carn bullida, caliu, repòs.", food_delta: -1, health_delta: +1, discovers: false },
+        { text: "Deixar que ho faci el vell. Donar-li una ofrena.",        food_delta:  0, health_delta: +2, material_delta: -1, discovers: false }
       ]
     }
   ],
