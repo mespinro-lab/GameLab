@@ -246,10 +246,12 @@ function performDiscoveryAction(chosenBtId) {
 function evaluateBlockedIf(conditions) {
   if (!conditions || conditions.length === 0) return false;
   return conditions.some(cond => {
-    if (cond.type === 'has_skill')    return state.character.unlockedSkillIds.has(cond.id);
-    if (cond.type === 'has_destresa') return state.character.destreses.has(cond.id);
-    if (cond.type === 'stat_min')     return (state.character.stats[cond.stat] || 0) >= cond.min;
-    if (cond.type === 'axis_above')   return (state.character.inclination[cond.axis] || 0) >= cond.value;
+    if (cond.type === 'has_skill')      return state.character.unlockedSkillIds.has(cond.id);
+    if (cond.type === 'not_has_skill')  return !state.character.unlockedSkillIds.has(cond.id);
+    if (cond.type === 'has_destresa')   return state.character.destreses.has(cond.id);
+    if (cond.type === 'stat_min')       return (state.character.stats[cond.stat] || 0) >= cond.min;
+    if (cond.type === 'axis_above')     return (state.character.inclination[cond.axis] || 0) >= cond.value;
+    if (cond.type === 'resource_below') return (state[cond.resource] || 0) < cond.value;
     return false;
   });
 }
@@ -1321,7 +1323,11 @@ function renderModals() {
       dismissBtn.classList.add("hidden");
       choicesEl.innerHTML = "";
       choicesEl.classList.remove("hidden");
+      const hasChildren = state.character.children.length > 0;
       ev.options.forEach((opt, i) => {
+        if (opt.requires_skill && !state.character.unlockedSkillIds.has(opt.requires_skill)) return;
+        if (opt.requires_children && !hasChildren) return;
+        if (opt.requires_no_children && hasChildren) return;
         const btn = document.createElement("button");
         btn.className = "btn-choice";
         btn.textContent = opt.text;

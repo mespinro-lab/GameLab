@@ -18,7 +18,7 @@
 - [ ] **Fase 4: Accions** → `design/eras/prehistoria/04-actions.md` ⏳ PENDENT (importació + nous)
 - [x] **Fase 5: Balanç** → `design/eras/prehistoria/05-balance.md` ✅ APROVAT (9 ajustos aplicats)
 - [x] **Fase 6: Documentació** → `design/eras/prehistoria/state.md` ✅ CHECKPOINT (2026-06-02)
-- [x] **Fase 7: Events** → `design/eras/prehistoria/07-events.md` ✅ PARCIAL (pool_caca + pool_ritual; pool_artesania/recollecta/social pendents)
+- [x] **Fase 7: Events** → `design/eras/prehistoria/07-events.md` ✅ COMPLET (tots 5 pools, 50 events total)
 
 ## Decisions Clau
 

@@ -822,6 +822,42 @@ const EVENT_POOLS = {
         { text: "Apartar-los i experimentar (−2 Aliment)", food_delta: -2, discovers: true },
         { text: "Mòl-los tots igual", food_delta: +1, discovers: false }
       ]
+    },
+    {
+      id: "ev_pluja_tardor",
+      text: "El cel s'ha tornat groguenc i l'aire pesa. Sento la primera frescor a la nuca — la tempesta és propera. La meva cistella és a la meitat. Cada gota que cau ja em renta les mans.",
+      options: [
+        { text: "Seguir recollint fins que truoni",          food_delta: +3, health_delta: -1, discovers: false },
+        { text: "Arreplegar el que tinc i córrer",           food_delta: +1, health_delta: +1, discovers: false },
+        { text: "Marco els tubercles, agafo les baies peribles i marxo", food_delta: +2, health_delta: +1, material_delta: +1, requires_skill: "bt_coneixement_plantes", discovers: false }
+      ]
+    },
+    {
+      id: "ev_ossa_amb_cries",
+      text: "L'ossa és al roure que volia collir. Les cries s'enganxen al tronc i piulen. Em veu però no s'ha mogut — m'estudia. El meu cor bat fort i lent a la vegada.",
+      options: [
+        { text: "Recular a poc a poc, sense girar l'esquena", food_delta: -1, health_delta: +2, discovers: false },
+        { text: "Fer soroll fort i moure els braços",          food_delta: +2, health_delta: -2, discovers: false },
+        { text: "Ajupir-me darrere les mates i esperar",      food_delta: +1, health_delta: +1, discovers: false }
+      ]
+    },
+    {
+      id: "ev_fong_blanc",
+      text: "El fong és gran, blanc, amb el capell pàl·lid com os sec. No el conec. El grup porta hores sense menjar i ningú diu res, però tothom me'l mira.",
+      options: [
+        { text: "Agafar-lo i repartir-lo",       food_delta: +3, health_delta: -3, discovers: false },
+        { text: "Deixar-lo estar, seguim",        discovers: false },
+        { text: "Observo el peu, l'olor, el color de les làmines — decideixo", food_delta: +2, health_delta: +1, requires_skill: "bt_coneixement_plantes", discovers: false }
+      ]
+    },
+    {
+      id: "ev_arbust_espinos",
+      text: "Les baies son gruixudes i morades, perfectament madures. Però l'esbarzer les tanca per tots costats. Demà potser ja no hi seran — els ocells ho saben.",
+      options: [
+        { text: "Endinsar-m'hi directe, cos endavant",       food_delta: +3, health_delta: -1, material_delta: -1, discovers: false },
+        { text: "Agafar una branca llarga i sacsejar",        food_delta: +1, discovers: false },
+        { text: "Voltar fins a trobar un pas entre branques", food_delta: +2, health_delta: +1, discovers: false }
+      ]
     }
   ],
   pool_artesania: [
@@ -844,6 +880,43 @@ const EVENT_POOLS = {
       options: [
         { text: "Demanar-li que t'ensenyi (−2 Aliment)", food_delta: -2, discovers: true },
         { text: "Admirar la feina i continuar", food_delta: +1, discovers: false }
+      ]
+    },
+    {
+      id: "ev_fissura_pedra",
+      text: "El cop de percussor ha obert una fissura que no havia vist. La pedra cruix lleugerament sota els dits. La línia corre en diagonal, cap a la part que volia conservar. Puc seguir tallant per aquí, adaptar el tall a on la roca vol anar, o llençar-ho i buscar un altre bloc.",
+      options: [
+        { text: "Forçar l'angle: aprofitar la fissura com a guia natural.", material_delta: -4, discovers: false },
+        { text: "Canviar el tall: deixo que la pedra decideixi la forma.",  material_delta: +1, discovers: false },
+        { text: "Descartar. Camino fins al jaç de sílex a cercar un bloc millor.", food_delta: -1, material_delta: -1, discovers: false }
+      ]
+    },
+    {
+      id: "ev_aprenent_observa",
+      text: "Un infant s'ha aturat darrere meu i mira com treballo la pedra. No fa soroll. Observa on cau el rebuig i segueix el moviment de la meva mà. Podria deixar-lo quedar i anar explicant en veu baixa, fer-lo marxar ara i ensenyar-lo quan tingui temps, o donar-li els fragments petits perquè s'hi entreni.",
+      options: [
+        { text: "Deixar-lo quedar. Parlo mentre treballo, sense aturar-me.", material_delta: -1, discovers: false },
+        { text: "Fer-lo marxar. Li diré que torni quan acabi aquesta peça.",  material_delta: +1, discovers: false },
+        { text: "Donar-li el rebuig. Que aprengui amb els fragments que jo no vull.", health_delta: +1, material_delta: -1, discovers: false }
+      ]
+    },
+    {
+      id: "ev_fulla_prestada",
+      text: "El company s'atura al costat meu i mostra la seva presa. Ha anat bé, però la seva fulla ha quedat embotida dins la bèstia i l'ha perduda. M'allarga la mà. La meva fulla és bona, però no en tinc cap altra avui. Decideixo ràpidament.",
+      options: [
+        { text: "Donar-li la meva fulla. Ell torna amb menjar per als dos.", food_delta: +2, material_delta: -2, discovers: false },
+        { text: "Donar-li un fragment de rebuig. Serveix per netejar, si va amb compte.", food_delta: +1, material_delta: -1, discovers: false },
+        { text: "Dir-li que no. Avui la necessito.", food_delta: -1, material_delta: +1, discovers: false }
+      ]
+    },
+    {
+      id: "ev_tecnica_subtil",
+      blocked_if: [{ type: "not_has_skill", id: "bt_buri" }],
+      text: "He notat que quan inclino el burí uns dits cap a l'esquerra, el solc surt net i sense esclats. Un artesà que no havia vist mai s'ha assegut al costat i treballa amb el burí inclinat, exactament com ho he provat jo. Sembla que ja ho sap des de fa temps.",
+      options: [
+        { text: "Preguntar-li directament: mostro el meu solc i el seu, i espero.", health_delta: +1, material_delta: +1, discovers: false },
+        { text: "No dir res. Segueixo experimentant sol fins que ho entenc del tot.", discovers: false },
+        { text: "Ensenyar-li el que he descobert jo primer, abans de preguntar-li res.", health_delta: +2, material_delta: +1, discovers: false }
       ]
     }
   ],
@@ -951,6 +1024,46 @@ const EVENT_POOLS = {
       options: [
         { text: "Proposar un acord de zones (−2 Aliment)", food_delta: -2, discovers: true },
         { text: "Marxar a buscar una altra zona", food_delta: +1, discovers: false }
+      ]
+    },
+    {
+      id: "ev_fill_orfe",
+      blocked_if: [{ type: "resource_below", resource: "food", value: 3 }],
+      text: "Una dona del clan s'acosta amb dos infants agafats a la seva roba. El seu home no ha tornat de la darrera cacera. Em mira sense dir res, però l'enteneixo. El clan observa des de lluny com reacciono.",
+      options: [
+        { text: "Els acollim: dormen sota el meu sostre i mengen a la meva taula.", food_delta: -2, material_delta: -1, discovers: false },
+        { text: "Proposo que el clan reparteixi la càrrega entre tots.",            food_delta: -1, discovers: false },
+        { text: "Faig veure que no he vist res i continuo amb el meu treball.",     discovers: false }
+      ]
+    },
+    {
+      id: "ev_rancor_ancians",
+      text: "Dos dels homes vells del clan s'han encarar a crits davant tothom. La disputa és per la queixalada millor d'un cérvol abatut ahir. Ningú s'atreveix a intervenir, però tots m'estan mirant.",
+      options: [
+        { text: "Prenc part pel que crec que té raó i li cedeixo el que li toca.", material_delta: +1, discovers: false },
+        { text: "Proposo dividir la peça de manera que cap dels dos surti guanyador.", material_delta: -1, discovers: false },
+        { text: "M'allunyo. Que ho resolguin ells.", discovers: false }
+      ]
+    },
+    {
+      id: "ev_estrany_a_la_vora",
+      blocked_if: [{ type: "resource_below", resource: "health", value: 3 }],
+      text: "Un home s'acosta al campament arrossegant els peus. No és del clan. Porta una bossa de cuir amb pedres que no he vist mai per aquí. Té els llavis secs i els ulls enfonsats de caminada llarga.",
+      options: [
+        { text: "L'invito a seure i li ofereixo menjar. Acabem bescanviant pedres.", food_delta: -1, material_delta: +2, discovers: false },
+        { text: "Li dono una mica de menjar i li indico el camí per on ha de seguir.", food_delta: -1, discovers: false },
+        { text: "No el deixo apropar-se. Protegeixo els meus primer.", requires_children: true, discovers: false }
+      ]
+    },
+    {
+      id: "ev_criatura_dificil",
+      text: "Un infant del clan fa mesos que hauria d'haver parlat i no ho fa. La mare cada nit li posa la mà al pit i espera. Alguns volen cridar el vell que fa els rituals; d'altres diuen que és qüestió d'alimentar-lo millor.",
+      options: [
+        { text: "Contribueixo als materials del ritual i m'assec prop de la família.", food_delta: -1, health_delta: +1, material_delta: -1, requires_children: true, discovers: false },
+        { text: "Deixo una part de les meves provisions per ajudar a cobrir el ritual.", food_delta: -1, material_delta: -1, requires_no_children: true, discovers: false },
+        { text: "Porto menjar a la família i dic a la mare que els infants a vegades triguen.", food_delta: -2, health_delta: +1, requires_children: true, discovers: false },
+        { text: "Porto el que puc de menjar i els dic que l'infant trobarà la veu quan estigui llest.", food_delta: -1, health_delta: +1, requires_no_children: true, discovers: false },
+        { text: "No és assumpte meu. Cada família resol les seves coses.", discovers: false }
       ]
     }
   ]

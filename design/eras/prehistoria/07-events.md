@@ -1,5 +1,5 @@
 # Paleolític — Events
-**Estat**: PARCIAL 2026-06-02 (pool_caca + pool_ritual completats)
+**Estat**: COMPLET 2026-06-02 (tots 5 pools generats)
 **Agents**: era-historian (rigor) + era-writer (veu narrativa)
 
 ---
@@ -10,9 +10,9 @@
 |---|---|---|---|---|
 | `pool_caca` | 7 (4 simples + 3 discovery) | 4 narratius amb opcions | 11 | ✅ COMPLET |
 | `pool_ritual` | 7 (4 simples + 3 discovery) | 4 narratius amb opcions | 11 | ✅ COMPLET |
-| `pool_artesania` | 5 (3 simples + 2 discovery) | — | 5 | ⏳ PENDENT |
-| `pool_recollecta` | 6 (3 simples + 3 discovery) | — | 6 | ⏳ PENDENT |
-| `pool_social` | 5 (3 simples + 2 discovery) | — | 5 | ⏳ PENDENT |
+| `pool_artesania` | 5 (3 simples + 2 discovery) | 4 narratius amb opcions | 9 | ✅ COMPLET |
+| `pool_recollecta` | 6 (3 simples + 3 discovery) | 4 narratius amb opcions | 10 | ✅ COMPLET |
+| `pool_social` | 5 (3 simples + 2 discovery) | 4 narratius amb opcions | 9 | ✅ COMPLET |
 
 ---
 
@@ -75,8 +75,39 @@ Per als nous events narratius es van estendre les capacitats del motor (`game.js
 
 ---
 
-## Pendents
+## pool_artesania — 4 events nous
 
-- [ ] `pool_artesania` — 3 events narratius nous (eines trencades amb opcions, intercanvi forçat, aprenentatge accidental)
-- [ ] `pool_recollecta` — 3 events narratius nous (planta desconeguda amb opcions, temporal de pluja, descoberta d'un jardí natural)
-- [ ] `pool_social` — 3 events narratius nous (negociació fallida, primer bebè del clan, conflicte de lideratge)
+| ID | Dilema | Especial |
+|---|---|---|
+| `ev_fissura_pedra` | Fissura oculta al sílex — continuar, adaptar o descartar | — |
+| `ev_aprenent_observa` | Infant observa mentre tallo — ensenyar, fer marxar o donar rebuig | — |
+| `ev_fulla_prestada` | Company demana una fulla per caçar — donar, donar de rebuig, negar | — |
+| `ev_tecnica_subtil` | Artesà visitant sap el secret del burí — preguntar, experimentar sol, compartir primer | `blocked_if: not_has_skill bt_buri` |
+
+## pool_recollecta — 4 events nous
+
+| ID | Dilema | Especial |
+|---|---|---|
+| `ev_pluja_tardor` | Tempesta imminent, cistella a la meitat | Opció 3 `requires_skill bt_coneixement_plantes` |
+| `ev_ossa_amb_cries` | Ossa al roure que volia collir — retirada, espantar, esperar | — |
+| `ev_fong_blanc` | Fong desconegut quan el grup té gana | Opció 3 `requires_skill bt_coneixement_plantes` |
+| `ev_arbust_espinos` | Baies darrere d'esbarzer, es faran malbé demà | — |
+
+## pool_social — 4 events nous
+
+| ID | Dilema | Especial |
+|---|---|---|
+| `ev_fill_orfe` | Dona sola amb fills, caçador mort | `blocked_if resource_below food 3` |
+| `ev_rancor_ancians` | Dos ancians enfrontats per la distribució d'una cacera | — |
+| `ev_estrany_a_la_vora` | Estranger esgotat amb sílex exòtic | Opció C `requires_children`; `blocked_if resource_below health 3` |
+| `ev_criatura_dificil` | Infant que no parla — ritual o esperar | Opcions A/B `requires_children` / `requires_no_children` |
+
+## Extensions del motor afegides (2026-06-02 — 2a iteració)
+
+| Cap nou | Descripció |
+|---|---|
+| `blocked_if: not_has_skill` | Bloca l'event si el jugador NO té la habilitat indicada |
+| `blocked_if: resource_below` | Bloca si food/health < valor |
+| `opt.requires_skill` | Opció visible sols si el jugador té la habilitat |
+| `opt.requires_children` | Opció visible sols si el personatge té fills |
+| `opt.requires_no_children` | Opció visible sols si el personatge NO té fills |
