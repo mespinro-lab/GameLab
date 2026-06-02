@@ -29,13 +29,18 @@ func _load_config() -> void:
 
 
 func _load_locale(code: String) -> void:
-	var data := _read_json("res://data/locales/%s.json" % code)
+	var data: Dictionary = _read_json("res://data/locales/%s.json" % code)
 	locales[code] = data
 
 
 func _load_era(era_id: String) -> void:
-	var era := _read_json("res://data/eras/%s/era.json" % era_id)
+	var era: Dictionary = _read_json("res://data/eras/%s/era.json" % era_id)
 	eras[era_id] = era
+	for action: Variant in era.get("actions", []):
+		var a: Dictionary = action as Dictionary
+		var action_id: String = a.get("id", "")
+		if action_id != "":
+			actions[action_id] = a
 
 
 func _read_json(path: String) -> Dictionary:
