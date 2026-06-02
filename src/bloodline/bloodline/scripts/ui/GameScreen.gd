@@ -92,6 +92,16 @@ func _build_top_bar() -> Control:
 	_label_resources.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	hbox.add_child(_label_resources)
 
+	var reset_btn := Button.new()
+	reset_btn.text = "↺"
+	reset_btn.add_theme_font_size_override("font_size", 14)
+	reset_btn.custom_minimum_size = Vector2(32, 32)
+	reset_btn.add_theme_color_override("font_color", Color(0.45, 0.40, 0.35))
+	reset_btn.pressed.connect(func() -> void:
+		SaveSystem.delete_save()
+		get_tree().reload_current_scene())
+	hbox.add_child(reset_btn)
+
 	return bar
 
 
@@ -486,9 +496,12 @@ func _on_event_triggered(event: Dictionary) -> void:
 	if has_options:
 		_show_event_overlay(event)
 	else:
-		# Simple event — apply effects and auto-dismiss after showing
-		_show_overlay("Esdeveniment", "", event.get("id", ""),
-			event.get("text", ""), "Continuar →",
+		var effects: Dictionary = event.get("effects", {})
+		var effects_str: String = ""
+		if effects.has("food"):   effects_str += " %+d 🌾" % int(effects["food"])
+		if effects.has("health"): effects_str += " %+d ❤️" % int(effects["health"])
+		_show_overlay("Esdeveniment", "📜", event.get("text", "").substr(0, 60) + "...",
+			effects_str.strip_edges(), "Continuar →",
 			func() -> void:
 				EventManager.dismiss_simple_event()
 				_refresh())
