@@ -100,6 +100,33 @@
       "inclination_deltas": { "impuls": 0.02 },
       "side_effects": [],
       "event_pool_id": "pool_caca"
+    },
+    {
+      "id": "act_cercar_parella",
+      "name_key": "Cercar Parella",
+      "is_base": true, "zona": "Campament",
+      "requires": [{ "type": "no_partner" }],
+      "output_min": 1, "output_max": 2,
+      "stat_key": "vincle", "stat_gain": 0.05,
+      "inclination_deltas": { "sociabilitat": 0.03 },
+      "side_effects": [],
+      "special_effect": { "type": "find_partner" },
+      "event_pool_id": "pool_social"
+    },
+    {
+      "id": "act_tenir_fills",
+      "name_key": "Tenir Fills",
+      "is_base": true, "zona": "Campament",
+      "requires": [
+        { "type": "has_partner" },
+        { "type": "max_children", "value": 4 }
+      ],
+      "output_min": 0, "output_max": 1,
+      "stat_key": "vincle", "stat_gain": 0.05,
+      "inclination_deltas": { "sociabilitat": 0.02 },
+      "side_effects": [{ "resource": "food", "delta": -2 }],
+      "special_effect": { "type": "have_child" },
+      "event_pool_id": "pool_social"
     }
   ]
 }

@@ -16,6 +16,10 @@ enum Visibility { ACTIVE, LOCKED, HIDDEN }
 func get_action_visibility(action: Dictionary) -> Visibility:
 	var action_id: String = action.get("id", "")
 
+	# Check requires conditions first (for base and branch actions)
+	if not _check_requires(action):
+		return Visibility.HIDDEN
+
 	# Base actions are always visible if their zone is discovered
 	if action.get("is_base", false):
 		var zona: String = action.get("zona", "")
@@ -85,6 +89,9 @@ func execute_action(action_id: String) -> bool:
 	# Stat growth
 	_apply_stat_growth(action)
 
+	# Special effects (partner, children)
+	_apply_special_effect(action)
+
 	# Zone unlock
 	var unlocks_zone: String = action.get("unlocks_zone", "")
 	if unlocks_zone != "" and unlocks_zone not in GameState.discovered_zone_ids:
@@ -146,6 +153,36 @@ func _apply_stat_growth(action: Dictionary) -> void:
 	var max_stat: float = DataLoader.config.get("stats", {}).get("max_value", 5.0)
 	var current: float = GameState.character_stats.get(stat_key, 1.0)
 	GameState.character_stats[stat_key] = minf(current + stat_gain, max_stat)
+
+
+func _check_requires(action: Dictionary) -> bool:
+	var requires: Array = action.get("requires", [])
+	for req: Variant in requires:
+		var r: Dictionary = req as Dictionary
+		match r.get("type", ""):
+			"has_partner":
+				if not GameState.has_partner:
+					return false
+			"no_partner":
+				if GameState.has_partner:
+					return false
+			"max_children":
+				if GameState.children.size() >= int(r.get("value", 4)):
+					return false
+	return true
+
+
+func _apply_special_effect(action: Dictionary) -> void:
+	var effect: Dictionary = action.get("special_effect", {})
+	if effect.is_empty():
+		return
+	match effect.get("type", ""):
+		"find_partner":
+			GameState.has_partner = true
+		"have_child":
+			var child: Dictionary = LineageManager.create_child()
+			if not child.is_empty():
+				action_executed.emit("child_born", 0.0, [{"resource": "child", "label": child.get("label", "")}])
 
 
 func _apply_food_upkeep() -> void:

@@ -350,11 +350,22 @@ func _on_action_pressed(action_id: String) -> void:
 		LineageManager.trigger_succession()
 
 
-func _on_action_executed(action_id: String, output: float, _side_effects: Array) -> void:
+func _on_action_executed(action_id: String, output: float, side_effects: Array) -> void:
+	if action_id == "child_born":
+		var child_label: String = ""
+		for se: Variant in side_effects:
+			var s: Dictionary = se as Dictionary
+			if s.get("resource") == "child":
+				child_label = s.get("label", "")
+		_show_overlay("Nou membre del llinatge", "👶", child_label,
+			"Fill de %s" % GameState.character_label, "Benvingut →",
+			func() -> void: _refresh())
+		return
 	var action: Dictionary = DataLoader.actions.get(action_id, {})
 	var name_str: String = action.get("name_key", action.get("name", action_id))
-	_log_label.text = "[Cicle %d] %s: +%d 🦴" % [GameState.era_cycle, name_str, int(output)]
-	_show_overlay("Resultat", "", name_str, "+%d 🦴" % int(output), "Continuar →",
+	var output_str: String = "+%d 🦴" % int(output) if output > 0 else ""
+	_log_label.text = "[Cicle %d] %s  %s" % [GameState.era_cycle, name_str, output_str]
+	_show_overlay("Resultat", "", name_str, output_str, "Continuar →",
 		func() -> void: _refresh())
 
 

@@ -7,7 +7,7 @@ const GameScreenScript = preload("res://scripts/ui/GameScreen.gd")
 func _ready() -> void:
 	DataLoader.load_all()
 
-	if SaveSystem.has_save():
+	if false and SaveSystem.has_save():  # TODO: re-enable when save schema stable
 		SaveSystem.load_save()
 	else:
 		EraManager.start_era("prehistoria")
