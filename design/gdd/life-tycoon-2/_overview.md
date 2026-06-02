@@ -1,5 +1,6 @@
-# Life Tycoon 2 — Game Design Document
+# Bloodline — Game Design Document
 
+**Nom comercial**: Bloodline
 **Gènere**: Tycoon de llinatge humà, gestió estratègica per sessions llargues
 **Plataforma**: iOS + Android, portrait, touch-first
 **Engine**: Godot 4 + GDScript
