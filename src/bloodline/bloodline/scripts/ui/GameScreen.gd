@@ -411,13 +411,13 @@ func _get_zone_actions(zone_id: String) -> Array:
 
 # ── Event handlers ────────────────────────────────────────────────────────────
 
+var _pending_pool_id: String = ""
+
 func _on_action_pressed(action_id: String) -> void:
 	ActionManager.execute_action(action_id)
 	EraManager.check_universal_techs()
 	var action: Dictionary = DataLoader.actions.get(action_id, {})
-	var pool_id: String = action.get("event_pool_id", "")
-	if pool_id != "" and not EventManager.has_pending_event():
-		EventManager.try_trigger_event(pool_id)
+	_pending_pool_id = action.get("event_pool_id", "")
 	if LineageManager.should_trigger_succession():
 		LineageManager.trigger_succession()
 	SaveSystem.save()
@@ -439,7 +439,12 @@ func _on_action_executed(action_id: String, output: float, side_effects: Array) 
 	var output_str: String = "+%d 🦴" % int(output) if output > 0 else ""
 	_log_label.text = "[Cicle %d] %s  %s" % [GameState.era_cycle, name_str, output_str]
 	_show_overlay("Resultat", "", name_str, output_str, "Continuar →",
-		func() -> void: _refresh())
+		func() -> void:
+			_refresh()
+			if _pending_pool_id != "":
+				var pool: String = _pending_pool_id
+				_pending_pool_id = ""
+				EventManager.try_trigger_event(pool))
 
 
 func _on_zone_unlocked(zone_id: String) -> void:

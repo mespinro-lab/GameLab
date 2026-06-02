@@ -66,6 +66,8 @@ func _serialize() -> Dictionary:
 		"tokens": GameState.tokens,
 		"inclination": GameState.inclination.duplicate(),
 		"character_label": GameState.character_label,
+		"has_partner": GameState.has_partner,
+		"has_taught_child": GameState.has_taught_child,
 		"character_birth_cycle": GameState.character_birth_cycle,
 		"character_stats": GameState.character_stats.duplicate(),
 		"discovered_universal_tech_ids": GameState.discovered_universal_tech_ids.duplicate(),
@@ -87,6 +89,8 @@ func _deserialize(data: Dictionary) -> void:
 	GameState.health = float(data.get("health", 100.0))
 	GameState.tokens = float(data.get("tokens", 0.0))
 	GameState.character_label = data.get("character_label", "")
+	GameState.has_partner = bool(data.get("has_partner", false))
+	GameState.has_taught_child = bool(data.get("has_taught_child", false))
 	GameState.character_birth_cycle = int(data.get("character_birth_cycle", 0))
 	GameState.dynasty_name = data.get("dynasty_name", "")
 
