@@ -169,15 +169,27 @@ func _build_log_panel() -> Control:
 
 
 func _build_overlay() -> Control:
-	var overlay := PanelContainer.new()
-	overlay.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	overlay.custom_minimum_size = Vector2(320, 220)
-	overlay.add_theme_stylebox_override("panel", _flat_style(Color(0.13, 0.10, 0.07)))
+	var overlay := Control.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.visible = false
 
+	var dimmer := ColorRect.new()
+	dimmer.color = Color(0.0, 0.0, 0.0, 0.72)
+	dimmer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(dimmer)
+
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(center)
+
+	var box := PanelContainer.new()
+	box.custom_minimum_size = Vector2(330, 0)
+	box.add_theme_stylebox_override("panel", _flat_style(Color(0.13, 0.10, 0.07)))
+	center.add_child(box)
+
 	_ov_vbox = VBoxContainer.new()
-	_ov_vbox.add_theme_constant_override("separation", 12)
-	overlay.add_child(_ov_vbox)
+	_ov_vbox.add_theme_constant_override("separation", 14)
+	box.add_child(_ov_vbox)
 
 	_ov_tag = Label.new()
 	_ov_tag.add_theme_color_override("font_color", Color(0.55, 0.50, 0.42))
