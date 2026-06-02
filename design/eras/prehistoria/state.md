@@ -16,7 +16,7 @@
 - [x] **Fase 2: Branques** → `design/eras/prehistoria/02-branches.md` ✅ IMPORTAT (4 branques)
 - [x] **Fase 3: Habilitats** → `design/eras/prehistoria/03-skills.md` ✅ IMPORTAT (13 habilitats)
 - [ ] **Fase 4: Accions** → `design/eras/prehistoria/04-actions.md` ⏳ PENDENT (importació + nous)
-- [ ] **Fase 5: Balanç** → `design/eras/prehistoria/05-balance.md` ⏳ PENDENT
+- [x] **Fase 5: Balanç** → `design/eras/prehistoria/05-balance.md` ✅ APROVAT (9 ajustos aplicats)
 - [ ] **Fase 7: Events** → `design/eras/prehistoria/07-events.md` ⏳ PENDENT
 
 ## Decisions Clau
