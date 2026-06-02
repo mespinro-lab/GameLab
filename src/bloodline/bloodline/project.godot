@@ -21,6 +21,8 @@ config/icon="res://icon.svg"
 GameState="*res://scripts/core/GameState.gd"
 DataLoader="*res://scripts/core/DataLoader.gd"
 BranchManager="*res://scripts/core/BranchManager.gd"
+ActionManager="*res://scripts/core/ActionManager.gd"
+EventManager="*res://scripts/core/EventManager.gd"
 
 [display]
 
