@@ -1,0 +1,29 @@
+{
+  "id": "era_prehistoria",
+  "name_key": "era.prehistoria.name",
+  "icon": "🦴",
+  "period": "50.000–10.000 AEC",
+  "era_cycles": 100,
+  "life_expectancy": 20,
+  "entry_connector": null,
+  "exit_connector": "ut_agricultura",
+
+  "token": {
+    "id": "provisions",
+    "name_key": "era.prehistoria.token.name",
+    "icon": "🦴",
+    "start_val": 10,
+    "max_val": null
+  },
+
+  "food": {
+    "start_val": 12,
+    "max_val": 20,
+    "upkeep_per_cycle": 2
+  },
+
+  "health": {
+    "start_val": 100,
+    "max_val": 100
+  }
+}
