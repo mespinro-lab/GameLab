@@ -156,6 +156,9 @@ func _apply_stat_growth(action: Dictionary) -> void:
 
 
 func _check_requires(action: Dictionary) -> bool:
+	var min_age: int = int(action.get("min_age", 0))
+	if min_age > 0 and LineageManager.character_age() < min_age:
+		return false
 	var requires: Array = action.get("requires", [])
 	for req: Variant in requires:
 		var r: Dictionary = req as Dictionary
@@ -165,6 +168,9 @@ func _check_requires(action: Dictionary) -> bool:
 					return false
 			"no_partner":
 				if GameState.has_partner:
+					return false
+			"has_children":
+				if GameState.children.is_empty():
 					return false
 			"max_children":
 				if GameState.children.size() >= int(r.get("value", 4)):

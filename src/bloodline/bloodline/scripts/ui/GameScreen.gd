@@ -8,6 +8,7 @@ var _label_char: Label
 var _label_gen: Label
 var _label_resources: Label
 var _incl_bars: Dictionary = {}
+var _branch_bar: HBoxContainer
 var _zone_container: VBoxContainer
 var _log_label: Label
 var _overlay: Control
@@ -57,6 +58,7 @@ func _build_layout() -> void:
 	add_child(root)
 
 	root.add_child(_build_top_bar())
+	root.add_child(_build_branch_bar())
 	root.add_child(_build_incl_panel())
 	root.add_child(_build_zone_area())
 	root.add_child(_build_log_panel())
@@ -91,6 +93,15 @@ func _build_top_bar() -> Control:
 	hbox.add_child(_label_resources)
 
 	return bar
+
+
+func _build_branch_bar() -> Control:
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _flat_style(Color(0.11, 0.08, 0.05)))
+	_branch_bar = HBoxContainer.new()
+	_branch_bar.add_theme_constant_override("separation", 6)
+	panel.add_child(_branch_bar)
+	return panel
 
 
 func _build_incl_panel() -> Control:
@@ -238,8 +249,35 @@ func _connect_signals() -> void:
 
 func _refresh() -> void:
 	_refresh_top_bar()
+	_refresh_branches()
 	_refresh_inclination()
 	_refresh_zones()
+
+
+func _refresh_branches() -> void:
+	for child: Node in _branch_bar.get_children():
+		child.queue_free()
+	var era: Dictionary = DataLoader.eras.get(GameState.current_era_id, {})
+	var branches: Array = era.get("branches", [])
+	var active_ids: Array = BranchManager.get_active_branch_ids()
+	for branch: Variant in branches:
+		var b: Dictionary = branch as Dictionary
+		var bid: String = b.get("id", "")
+		var is_active: bool = bid in active_ids
+		var pill := Label.new()
+		pill.text = b.get("name", bid)
+		pill.add_theme_font_size_override("font_size", 11)
+		if is_active:
+			pill.add_theme_color_override("font_color", Color(0.95, 0.88, 0.50))
+		else:
+			pill.add_theme_color_override("font_color", Color(0.35, 0.30, 0.25))
+		_branch_bar.add_child(pill)
+		if branches.find(branch) < branches.size() - 1:
+			var sep := Label.new()
+			sep.text = "·"
+			sep.add_theme_font_size_override("font_size", 11)
+			sep.add_theme_color_override("font_color", Color(0.30, 0.26, 0.22))
+			_branch_bar.add_child(sep)
 
 
 func _refresh_top_bar() -> void:
