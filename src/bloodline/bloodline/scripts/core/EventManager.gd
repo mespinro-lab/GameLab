@@ -43,7 +43,7 @@ func resolve_option(option_index: int) -> void:
 	# Apply option effects
 	var food_delta: float = float(opt.get("food_delta", 0))
 	var health_delta: float = float(opt.get("health_delta", 0))
-	var material_delta: float = float(opt.get("material_delta", 0))
+	var token_delta: float = float(opt.get("token_delta", opt.get("material_delta", 0)))
 
 	if food_delta != 0.0:
 		GameState.food = clampf(GameState.food + food_delta, 0.0, 20.0)
@@ -51,9 +51,9 @@ func resolve_option(option_index: int) -> void:
 	if health_delta != 0.0:
 		GameState.health = clampf(GameState.health + health_delta, 0.0, 100.0)
 		applied.append({"resource": "health", "delta": health_delta})
-	if material_delta != 0.0:
-		GameState.tokens = maxf(GameState.tokens + material_delta, 0.0)
-		applied.append({"resource": "tokens", "delta": material_delta})
+	if token_delta != 0.0:
+		GameState.tokens = maxf(GameState.tokens + token_delta, 0.0)
+		applied.append({"resource": "tokens", "delta": token_delta})
 
 	# Skill discovery
 	if opt.get("discovers", false):

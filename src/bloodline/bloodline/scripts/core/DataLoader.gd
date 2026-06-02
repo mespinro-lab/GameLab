@@ -41,6 +41,18 @@ func _load_era(era_id: String) -> void:
 		var action_id: String = a.get("id", "")
 		if action_id != "":
 			actions[action_id] = a
+	_load_event_pools(era_id)
+
+
+func _load_event_pools(era_id: String) -> void:
+	var path: String = "res://data/eras/%s/event_pools.json" % era_id
+	if not FileAccess.file_exists(path):
+		return
+	var pools: Dictionary = _read_json(path)
+	for pool_id: String in pools:
+		var pool_events: Variant = pools[pool_id]
+		if pool_events is Array:
+			events[pool_id] = pool_events as Array
 
 
 func _read_json(path: String) -> Dictionary:

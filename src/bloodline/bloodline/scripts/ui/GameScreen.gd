@@ -243,6 +243,8 @@ func _connect_signals() -> void:
 	EraManager.universal_tech_discovered.connect(_on_tech_discovered)
 	LineageManager.succession_required.connect(_on_succession_required)
 	LineageManager.lineage_extinct.connect(_on_lineage_extinct)
+	EventManager.event_triggered.connect(_on_event_triggered)
+	EventManager.event_resolved.connect(_on_event_resolved)
 
 
 # ── Refresh ───────────────────────────────────────────────────────────────────
@@ -343,26 +345,52 @@ func _build_zone_card(zone_id: String) -> Control:
 
 
 func _build_action_row(action: Dictionary) -> Control:
-	var btn := Button.new()
 	var action_id: String = action.get("id", "")
-	var name_key: String = action.get("name_key", action.get("name", action_id))
+	var name_str: String = action.get("name_key", action.get("name", action_id))
 	var out_min: int = int(action.get("output_min", 0))
 	var out_max: int = int(action.get("output_max", 0))
 	var vis: ActionManager.Visibility = ActionManager.get_action_visibility(action)
+	var cost: int = int(action.get("purchase_cost", 0))
 
-	btn.text = "%s   +%d–%d 🦴" % [name_key, out_min, out_max]
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var btn := Button.new()
 	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn.custom_minimum_size.y = 44
 	btn.add_theme_font_size_override("font_size", 13)
 
 	if vis == ActionManager.Visibility.ACTIVE:
+		btn.text = "%s  +%d–%d 🦴" % [name_str, out_min, out_max]
 		btn.add_theme_color_override("font_color", Color(0.92, 0.85, 0.68))
 		btn.pressed.connect(_on_action_pressed.bind(action_id))
+	elif vis == ActionManager.Visibility.LOCKED and cost > 0:
+		btn.text = "%s  +%d–%d 🦴" % [name_str, out_min, out_max]
+		btn.add_theme_color_override("font_color", Color(0.50, 0.44, 0.34))
+		var buy_btn := Button.new()
+		buy_btn.text = "Comprar %d🦴" % cost
+		buy_btn.custom_minimum_size = Vector2(90, 44)
+		buy_btn.add_theme_font_size_override("font_size", 11)
+		if GameState.tokens >= float(cost):
+			buy_btn.add_theme_color_override("font_color", Color(0.95, 0.88, 0.50))
+			buy_btn.pressed.connect(func() -> void:
+				ActionManager.purchase_action(action_id)
+				_refresh_zones())
+		else:
+			buy_btn.add_theme_color_override("font_color", Color(0.40, 0.36, 0.30))
+			buy_btn.disabled = true
+		btn.disabled = true
+		row.add_child(btn)
+		row.add_child(buy_btn)
+		return row
 	else:
-		btn.add_theme_color_override("font_color", Color(0.40, 0.36, 0.30))
+		btn.text = name_str
+		btn.add_theme_color_override("font_color", Color(0.35, 0.31, 0.26))
 		btn.disabled = true
 
-	return btn
+	row.add_child(btn)
+	return row
 
 
 func _get_zone_actions(zone_id: String) -> Array:
@@ -384,6 +412,10 @@ func _get_zone_actions(zone_id: String) -> Array:
 func _on_action_pressed(action_id: String) -> void:
 	ActionManager.execute_action(action_id)
 	EraManager.check_universal_techs()
+	var action: Dictionary = DataLoader.actions.get(action_id, {})
+	var pool_id: String = action.get("event_pool_id", "")
+	if pool_id != "":
+		EventManager.try_trigger_event(pool_id)
 	if LineageManager.should_trigger_succession():
 		LineageManager.trigger_succession()
 
@@ -426,6 +458,68 @@ func _on_lineage_extinct() -> void:
 	_show_overlay("Fi del llinatge", "💀", "El llinatge s'extingeix",
 		"El personatge ha mort sense hereus.", "Tornar a jugar",
 		func() -> void: get_tree().reload_current_scene())
+
+
+func _on_event_triggered(event: Dictionary) -> void:
+	var has_options: bool = event.get("options", []).size() > 0
+	if has_options:
+		_show_event_overlay(event)
+	else:
+		# Simple event — apply effects and auto-dismiss after showing
+		_show_overlay("Esdeveniment", "", event.get("id", ""),
+			event.get("text", ""), "Continuar →",
+			func() -> void:
+				EventManager.dismiss_simple_event()
+				_refresh())
+
+
+func _on_event_resolved(_event_id: String, _option_index: int, _effects: Array) -> void:
+	_refresh()
+
+
+func _show_event_overlay(event: Dictionary) -> void:
+	_ov_tag.text = "ESDEVENIMENT"
+	_ov_icon.text = ""
+	_ov_title.text = ""
+	_ov_sub.text = event.get("text", "")
+	_ov_btn.visible = false
+
+	for child: Node in _ov_vbox.get_children():
+		if child.name.begins_with("OptBtn"):
+			child.queue_free()
+
+	var options: Array = event.get("options", [])
+	var has_partner: bool = GameState.has_partner
+	var has_children: bool = not GameState.children.is_empty()
+
+	for i: int in range(options.size()):
+		var opt: Dictionary = options[i] as Dictionary
+		# Check option visibility
+		if opt.get("requires_skill", "") != "" and opt["requires_skill"] not in GameState.unlocked_skill_ids:
+			continue
+		if opt.get("requires_children", false) and not has_children:
+			continue
+		if opt.get("requires_no_children", false) and has_children:
+			continue
+
+		var opt_btn := Button.new()
+		opt_btn.name = "OptBtn_%d" % i
+		opt_btn.text = opt.get("text", "Opció %d" % (i + 1))
+		opt_btn.add_theme_font_size_override("font_size", 12)
+		opt_btn.custom_minimum_size.y = 40
+		opt_btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		var idx: int = i
+		opt_btn.pressed.connect(func() -> void:
+			_ov_btn.visible = true
+			for child: Node in _ov_vbox.get_children():
+				if child.name.begins_with("OptBtn"):
+					child.queue_free()
+			_overlay.visible = false
+			EventManager.resolve_option(idx)
+			_refresh())
+		_ov_vbox.add_child(opt_btn)
+
+	_overlay.visible = true
 
 
 # ── Overlay helpers ───────────────────────────────────────────────────────────
