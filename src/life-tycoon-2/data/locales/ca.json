@@ -1,0 +1,14 @@
+{
+  "_comment": "Català — idioma d'autoria. Tots els strings del joc van aquí.",
+
+  "era.prehistoria.name": "Paleolític",
+  "era.prehistoria.token.name": "Provisions",
+
+  "indicator.health.name": "Salut",
+  "indicator.food.name": "Menjar",
+
+  "branch.caçador.name": "Caçador",
+  "branch.recol_lector.name": "Recol·lector",
+  "branch.artesa.name": "Artesà",
+  "branch.mistic.name": "Místic"
+}

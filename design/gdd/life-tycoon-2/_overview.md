@@ -219,8 +219,24 @@ Elements com Menjar o Riquesa — no son estats fonamentals sinó mitjans.
 Si Menjar s'esgota, Salut decreix. Els noms son era-específics.
 
 **Nivell 3 — Recursos d'acció** (moneda acumuladora, estil GDT):
-Generats per les accions i visibles acumulant-se. Es gasten per comprar i
-millorar accions. Noms era-específics.
+Generats per **totes** les accions en executar-se, en major o menor quantitat
+depenent del tipus d'acció i la branca. Visibles acumulant-se. Es gasten per
+comprar i millorar accions. **Un sol token per era** (noms era-específics):
+
+| Era | Token | Símbol |
+|---|---|---|
+| Paleolític | Provisions | 🦴 |
+| Neolític | Gra | 🌾 |
+| Edat del Bronze | Metall | 🔶 |
+| ... | ... | ... |
+
+**Relació amb Nivell 2 (Menjar)**: el token de l'era NO és el Menjar. El Menjar
+és un indicador de necessitat independent que disminueix cada cicle. Les accions
+de caça/recol·lecta sí que generen Menjar com a side_effect (a més del token
+principal). Si el Menjar s'esgota, la Salut baixa.
+
+**Analogia Game Dev Tycoon**: els tokens d'acció = els diners del joc. El Menjar
+= els sous del personal que has de pagar cada mes.
 
 ### Altres Conceptes del Personatge
 

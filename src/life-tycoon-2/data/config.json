@@ -1,0 +1,37 @@
+{
+  "_comment": "Tuning knobs globals — tots els valors de gameplay van aquí",
+
+  "inclination": {
+    "inertia_factor": 2.0,
+    "inheritance_rate": 0.65,
+    "branch_tech_min": 0.15,
+    "min_branch_inclination": 0.20
+  },
+
+  "stats": {
+    "starting_value": 1.0,
+    "max_value": 5.0,
+    "output_factor": 0.1,
+    "teaching_bonus": 0.20,
+    "destresa_bonus": 1
+  },
+
+  "events": {
+    "trigger_chance": 0.35,
+    "chain_decay": 0.50
+  },
+
+  "succession": {
+    "aging_threshold": 15,
+    "aging_loss_per_cycle": 3,
+    "max_children": 4
+  },
+
+  "scoring": {
+    "w_tech": 50,
+    "w_rare": 200,
+    "w_eff": 30,
+    "w_rep": 10,
+    "efficiency_per_cycle": 10
+  }
+}
