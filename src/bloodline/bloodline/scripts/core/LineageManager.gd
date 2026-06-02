@@ -75,7 +75,7 @@ func choose_successor(successor_id: String) -> void:
 	new_generation_started.emit(chosen.get("label", ""), GameState.generation)
 
 
-func add_child() -> Dictionary:
+func create_child() -> Dictionary:
 	var config: Dictionary = DataLoader.config.get("succession", {})
 	var max_children: int = int(config.get("max_children", 4))
 	var current_children: int = GameState.children.size()
