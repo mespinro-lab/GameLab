@@ -21,7 +21,7 @@
 ## P0 DONE BUG — S1-02 — Passive effect doble a unlockBranchTech (guard idempotència)
 
 - **Agent**: gameplay-programmer
-- **File**: `prototypes/life-tycoon-2/game.js:194`
+- **File**: `prototypes/bloodline/game.js:194`
 - **Source**: `production/playtests/2026-05-29b-full.md#S1-02`
 - **Fix**: Afegir early-return al principi de `unlockBranchTech()`: `if (state.character.unlockedBranchTechIds.has(bt.id)) return;`
 - **Acceptance**: Desbloquejar una branch tech via acció + event al mateix cicle aplica el passive_effect exactament una vegada.
@@ -32,7 +32,7 @@
 ## P0 DONE BUG — S1-01 — Naming "Provisions"/"Saber" inconsistent en tres llocs
 
 - **Agent**: gameplay-programmer
-- **File**: `prototypes/life-tycoon-2/game.js:254`
+- **File**: `prototypes/bloodline/game.js:254`
 - **Source**: `production/playtests/2026-05-29b-full.md#S1-01`
 - **Fix**: Canviar `game.js:254` de `"Saber insuficient"` → `"Provisions insuficients"`. Verificar que tots els literals de recurs 🧠 al game.js usen "Provisions" (grep "Saber").
 - **Acceptance**: Grep de "Saber" a game.js retorna 0 resultats. El log sempre mostra "Provisions".
@@ -43,7 +43,7 @@
 ## P0 DONE BALANCE — S1-03 — Branch techs estructuralment inalcançables en Gen 1
 
 - **Agent**: economy-designer
-- **File**: `prototypes/life-tycoon-2/data.js`, `design/gdd/life-tycoon-2/content-plan-era1.md`
+- **File**: `prototypes/bloodline/data.js`, `design/gdd/bloodline/content-plan-era1.md`
 - **Source**: `production/playtests/2026-05-29b-full.md#S1-03`
 - **Fix**: Afegir a data.js una nova acció base a zona Campament: `id: "act_contemplacio"`, `name: "Contemplació"`, `is_base: true`, side_effect `espiritualitat: +0.05`. Sense prerequisits de skill ni universal tech. Coût d'Aliment baix (1). Documentar a content-plan-era1.md que bt_pintura_rupestre requereix ~6 usos d'act_contemplacio per arribar a espiritualitat ≥ 0.30.
 - **Acceptance**: Simulació de 14 cicles amb act_contemplacio disponible des del cicle 0: espiritualitat pot arribar a ≥ 0.30 en Gen 1 dedicant ~6 cicles. bt_pintura_rupestre assequible sense modificar thresholds.
@@ -55,7 +55,7 @@
 ## P0 DONE BUG — REG-01 — getEligibleSkills() paràmetre `bt` vs `skill` — ReferenceError cada cicle
 
 - **Agent**: gameplay-programmer
-- **File**: `prototypes/life-tycoon-2/game.js:180`
+- **File**: `prototypes/bloodline/game.js:180`
 - **Source**: Detectat durant audit /drive 2026-06-01 (regressió de commit fcaddc5)
 - **Fix**: Canviar el paràmetre del filter de `bt` → `skill` a la línia 180: `return SKILL_DEFS.filter(skill =>`
 - **Acceptance**: `getEligibleSkills()` s'executa sense ReferenceError. La discovery-notification apareix correctament quan hi ha skills elegibles.
@@ -66,7 +66,7 @@
 ## P1 DONE BUG — S2-01 — Zona Ritual inaccessible (zone_id mismatch data.js vs game.js)
 
 - **Agent**: gameplay-programmer
-- **File**: `prototypes/life-tycoon-2/data.js:89`
+- **File**: `prototypes/bloodline/data.js:89`
 - **Source**: `production/playtests/2026-05-29b-full.md#S2-01`
 - **Fix**: `data.js:89` — canviar `zone_id: "zone_ritual"` → `zone_id: "Ritual"`.
 - **Acceptance**: Desbloquejar bt_pintura_rupestre fa aparèixer la targeta "Ritual" a la graella de zones.
@@ -77,7 +77,7 @@
 ## P1 DONE BUG — S2-02 — getBranchTechMaturity selecciona tech incorrecta amb múltiples elegibles
 
 - **Agent**: gameplay-programmer
-- **File**: `prototypes/life-tycoon-2/game.js:184`
+- **File**: `prototypes/bloodline/game.js:184`
 - **Source**: `production/playtests/2026-05-29b-full.md#S2-02`
 - **Fix**: A `getSkillMaturity()`: sumar NOMÉS l'excés sobre condicions `min` (`val - min` quan val > min); condicions `max` puntuen 0. A `performDiscoveryAction()`: quan múltiples techs empaten al score màxim, triar-ne una aleatòriament.
 - **Acceptance**: Una tech amb condicions `min` on el jugador ha invertit molt puntua més que una tech que es qualifica per defecte via `max` baix. Empats es trenquen aleatòriament.
@@ -89,7 +89,7 @@
 ## P1 DONE DESIGN — DEST-01 — Redisseny sistema de destreses: condicions multi-acció
 
 - **Agent**: game-designer
-- **File**: `design/gdd/life-tycoon-2/content-plan-era1.md`, `prototypes/life-tycoon-2/data.js`, `prototypes/life-tycoon-2/game.js`
+- **File**: `design/gdd/bloodline/content-plan-era1.md`, `prototypes/bloodline/data.js`, `prototypes/bloodline/game.js`
 - **Source**: S2-06 — revelat durant sessió 2026-06-01
 - **Fix**: (1) Definir condicions d'inclinació/stat per a cada destresa a data.js (substituir destresa_id/destresa_threshold per DESTRESA_DEFS amb inclination_conditions i stat_conditions). (2) A game.js: eliminar actionUseCounts per destreses; afegir checkDestresesAfterAction() que avalua condicions igual que getEligibleSkills(), descobreix automàticament les complides. (3) Herència a successió: es manté (destreses ja persisteixen com a Set).
 - **Acceptance**: Destreses es descobreixen sense comptadors d'usos. Diverses accions que elevin els eixos correctes contribueixen igualment. El sistema s'integra amb el renderProfile de destreses existent.
@@ -101,7 +101,7 @@
 ## P1 DONE BUG — S2-05 — randInt() comportament indefinit si min > max
 
 - **Agent**: gameplay-programmer
-- **File**: `prototypes/life-tycoon-2/game.js:512`
+- **File**: `prototypes/bloodline/game.js:512`
 - **Source**: `production/playtests/2026-05-29b-full.md#S2-05`
 - **Fix**: Afegir guard al principi de `randInt`: `if (min > max) return min;`
 - **Acceptance**: `randInt(5, 3)` retorna 5 (no NaN ni valor negatiu).
@@ -112,7 +112,7 @@
 ## P1 DEFERRED BUG — S2-06 — Comprar upgrade elimina progrés destresa de l'acció base
 
 - **Agent**: gameplay-programmer
-- **File**: `prototypes/life-tycoon-2/game.js` (lògica compra upgrade)
+- **File**: `prototypes/bloodline/game.js` (lògica compra upgrade)
 - **Source**: `production/playtests/2026-05-29b-full.md#S2-06`
 - **Fix**: (pendent decisió — veure Decision)
 - **Acceptance**: Comprar un upgrade no fa perdre el progrés de destresa de l'acció base.
@@ -127,7 +127,7 @@
 ## P1 DONE BUG — S2-07 — Modal successió crash si successor.inheritedInclination és undefined
 
 - **Agent**: gameplay-programmer
-- **File**: `prototypes/life-tycoon-2/game.js:1096`
+- **File**: `prototypes/bloodline/game.js:1096`
 - **Source**: `production/playtests/2026-05-29b-full.md#S2-07`
 - **Fix**: Substituir `successor.inheritedInclination[a]` → `(successor.inheritedInclination ?? {})[a] ?? 0` al reduce.
 - **Acceptance**: Crear un objecte successor sense `inheritedInclination` i obrir el modal no llança TypeError.
@@ -138,7 +138,7 @@
 ## P1 DONE BUG — S2-08 — act_tenir_fills sense early-return a executeAction (explotable)
 
 - **Agent**: gameplay-programmer
-- **File**: `prototypes/life-tycoon-2/game.js:350`
+- **File**: `prototypes/bloodline/game.js:350`
 - **Source**: `production/playtests/2026-05-29b-full.md#S2-08`
 - **Fix**: Afegir al bloc `act_tenir_fills` dins `executeAction()`: `if (state.character.children.length >= MAX_CHILDREN) return;`
 - **Acceptance**: Cridar `executeAction('act_tenir_fills')` amb 3 fills no avança el cicle ni executa efectes.
@@ -149,7 +149,7 @@
 ## P1 DONE BUG — S2-09 — Flag is_hidden mai llegit a game.js (codi mort a data.js)
 
 - **Agent**: gameplay-programmer
-- **File**: `prototypes/life-tycoon-2/game.js` (getEligibleBranchTechs), `prototypes/life-tycoon-2/data.js`
+- **File**: `prototypes/bloodline/game.js` (getEligibleBranchTechs), `prototypes/bloodline/data.js`
 - **Source**: `production/playtests/2026-05-29b-full.md#S2-09`
 - **Fix**: (pendent decisió — veure Decision)
 - **Acceptance**: El comportament de bt_guariment_plantes i bt_calendari_natural és consistent amb la decisió presa.
@@ -161,7 +161,7 @@
 ## P1 DONE FEAT — S2-10 — Text d'onboarding al cicle 0 (primer missatge orientatiu)
 
 - **Agent**: ui-programmer
-- **File**: `prototypes/life-tycoon-2/game.js` (init o renderAfterAction), `prototypes/life-tycoon-2/index.html`
+- **File**: `prototypes/bloodline/game.js` (init o renderAfterAction), `prototypes/bloodline/index.html`
 - **Source**: `production/playtests/2026-05-29b-full.md#S2-10`
 - **Fix**: Al cicle 0, injectar a `#last-result`: *"Comença explorant i recol·lectant. Executa accions per guanyar Aliment 🌾 i avançar cicles."*
 - **Acceptance**: Al carregar el joc per primera vegada (o quan `state.cycle === 0`), el panell de resultat mostra el text d'onboarding.
@@ -172,7 +172,7 @@
 ## P1 DONE FEAT — S2-11 — Destacar visualment accions que desbloquegen zones
 
 - **Agent**: ui-programmer
-- **File**: `prototypes/life-tycoon-2/game.js` (buildZoneCard), `prototypes/life-tycoon-2/style.css`
+- **File**: `prototypes/bloodline/game.js` (buildZoneCard), `prototypes/bloodline/style.css`
 - **Source**: `production/playtests/2026-05-29b-full.md#S2-11`
 - **Fix**: Afegir classe CSS `action-unlocks-zone` a botons d'accions amb `unlocks_zone` definit. Afegir prefix 🗺️ al text del botó.
 - **Acceptance**: act_explorar_voltants apareix amb prefix 🗺️ i estil visual distintiu. Cap altra acció del joc té aquest estil.
@@ -183,7 +183,7 @@
 ## P1 DONE BUG — S2-12 — Descoberta de zona no usa div de notificació en daurat
 
 - **Agent**: ui-programmer
-- **File**: `prototypes/life-tycoon-2/game.js` (lògica unlockZone / renderAfterAction)
+- **File**: `prototypes/bloodline/game.js` (lògica unlockZone / renderAfterAction)
 - **Source**: `production/playtests/2026-05-29b-full.md#S2-12`
 - **Fix**: Quan es descobreix una nova zona, usar el `#discovery-notification` div (daurat) igual que per a branch techs, i mantenir-lo visible un cicle.
 - **Acceptance**: Descobrir zona Bosc mostra el div daurat: *"Nova zona descoberta: Bosc 🌲"*. Desapareix al cicle següent.
@@ -194,7 +194,7 @@
 ## P1 DONE FEAT — S2-13 — Hint d'inclinació inline al panel de perfil
 
 - **Agent**: ui-programmer
-- **File**: `prototypes/life-tycoon-2/index.html` o `game.js` (renderProfile)
+- **File**: `prototypes/bloodline/index.html` o `game.js` (renderProfile)
 - **Source**: `production/playtests/2026-05-29b-full.md#S2-13`
 - **Fix**: Afegir sota la secció "Inclinació" del panel de perfil: *"La inclinació determina quines accions veus i pots aprendre."*
 - **Acceptance**: Text visible sense obrir el Glossari. Apareix des del cicle 0.
@@ -205,7 +205,7 @@
 ## P1 DONE FEAT — S2-14 — Notificació de branch tech unlock amb llista d'accions noves
 
 - **Agent**: ui-programmer
-- **File**: `prototypes/life-tycoon-2/game.js` (unlockBranchTech o renderAfterAction)
+- **File**: `prototypes/bloodline/game.js` (unlockBranchTech o renderAfterAction)
 - **Source**: `production/playtests/2026-05-29b-full.md#S2-14`
 - **Fix**: Expandir `lastResult` post-unlock: *"Habilitat nova: [nom]. Noves accions disponibles a [zona]: [accions]. Ves a 'Aprendre' per comprar-les."*
 - **Acceptance**: Desbloquejar bt_rasclador_fi mostra en lastResult les accions que ara es poden comprar i a quina zona estan.
@@ -216,7 +216,7 @@
 ## P1 DONE FEAT — S2-15 — Avís de successió anticipat i hint familiar des del principi
 
 - **Agent**: gameplay-programmer
-- **File**: `prototypes/life-tycoon-2/game.js:710`
+- **File**: `prototypes/bloodline/game.js:710`
 - **Source**: `production/playtests/2026-05-29b-full.md#S2-15`
 - **Fix**: (pendent decisió — veure Decision)
 - **Acceptance**: El jugador rep avís de la successió amb prou temps per tenir fills. El panel de Família dona context des del principi.
@@ -228,7 +228,7 @@
 ## P1 DONE BUG — S2-16 — Botó Glossari massa petit per toc mòbil (28px, mínim 32px)
 
 - **Agent**: ui-programmer
-- **File**: `prototypes/life-tycoon-2/style.css:95`
+- **File**: `prototypes/bloodline/style.css:95`
 - **Source**: `production/playtests/2026-05-29b-full.md#S2-16`
 - **Fix**: Al media query mòbil, afegir: `.btn-glossary { width: 44px; height: 44px; font-size: 16px; }`
 - **Acceptance**: En viewport ≤ 768px, `.btn-glossary` mesura ≥ 44×44px. En desktop, manté les dimensions actuals.
@@ -239,7 +239,7 @@
 ## P1 DONE BUG — S2-17 — Panel de perfil sense scroll amb 13 branch techs (mòbil)
 
 - **Agent**: ui-programmer
-- **File**: `prototypes/life-tycoon-2/style.css`
+- **File**: `prototypes/bloodline/style.css`
 - **Source**: `production/playtests/2026-05-29b-full.md#S2-17`
 - **Fix**: Al media query mòbil, afegir a `#unlocked-branch-techs`: `max-height: 240px; overflow-y: auto;`
 - **Acceptance**: En mòbil amb 13 branch techs descobertes, el panel de perfil no excedeix l'altura de la pantalla. L'usuari pot fer scroll dins la secció d'habilitats.
@@ -250,7 +250,7 @@
 ## P1 DONE BUG — S2-03 — Prerequisit de zona Bosc no apareix a pestanya "Bloq."
 
 - **Agent**: ui-programmer
-- **File**: `prototypes/life-tycoon-2/game.js` (buildZoneCard / renderBlocked)
+- **File**: `prototypes/bloodline/game.js` (buildZoneCard / renderBlocked)
 - **Source**: `production/playtests/2026-05-29b-full.md#S2-03`
 - **Fix**: Afegir a la descripció de l'acció bloquejada la condició de zona: *"Requereix zona [nom] ([acció de desbloqueig])"*.
 - **Acceptance**: act_rastreig_rutes a "Bloq." mostra: *"Requereix zona Bosc (explorar els voltants)"* a més dels prereqs de branch tech.
@@ -261,7 +261,7 @@
 ## P1 DONE FEAT — S2-04 — Avís de pèrdua de Provisions a successió (materials = 0)
 
 - **Agent**: ui-programmer
-- **File**: `prototypes/life-tycoon-2/game.js` (modal successió o avís últims cicles)
+- **File**: `prototypes/bloodline/game.js` (modal successió o avís últims cicles)
 - **Source**: `production/playtests/2026-05-29b-full.md#S2-04`
 - **Fix**: Si `state.materials > 0` quan s'activa el modal de successió, afegir: *"🧠 [N] Provisions sense gastar — compra accions ara, no passen a la generació!"*
 - **Acceptance**: Jugador amb 10🧠 al modal de successió veu l'avís. Jugador amb 0🧠 no el veu.
@@ -272,7 +272,7 @@
 ## P2 OPEN DESIGN — D-01 — Decidir si Universal Techs cicles 9 i 12 són intencionals Gen 2+
 
 - **Agent**: game-designer
-- **File**: `design/gdd/life-tycoon-2/content-plan-era1.md`
+- **File**: `design/gdd/bloodline/content-plan-era1.md`
 - **Source**: `production/playtests/2026-05-29b-full.md` (design decisions section)
 - **Fix**: (pendent decisió — veure Decision)
 - **Acceptance**: content-plan-era1.md té una secció "Universal Techs — Accessibilitat per Generació" amb la decisió documentada.
@@ -287,7 +287,7 @@
 ## P2 OPEN DESIGN — D-02 — Definir si discoveredZoneIds persisteix entre generacions (bug o feature)
 
 - **Agent**: game-designer
-- **File**: `design/gdd/life-tycoon-2/content-plan-era1.md`
+- **File**: `design/gdd/bloodline/content-plan-era1.md`
 - **Source**: `production/playtests/2026-05-29b-full.md` (design decisions section)
 - **Fix**: (pendent decisió — veure Decision)
 - **Acceptance**: Decisió documentada al GDD. Comportament al joc és consistent amb la decisió.
@@ -302,7 +302,7 @@
 ## P2 OPEN DESIGN — D-03 — Definir si events de descoberta es repeteixen intencionadament cada generació
 
 - **Agent**: game-designer
-- **File**: `design/gdd/life-tycoon-2/event-system.md`
+- **File**: `design/gdd/bloodline/event-system.md`
 - **Source**: `production/playtests/2026-05-29b-full.md` (design decisions section)
 - **Fix**: (pendent decisió — veure Decision)
 - **Acceptance**: event-system.md documenta el scope de single_use. El codi és consistent amb la decisió.
@@ -317,7 +317,7 @@
 ## P3 OPEN BALANCE — B-01 — Branca Recol·lector sense payoff accessible en Gen 1
 
 - **Agent**: economy-designer
-- **File**: `prototypes/life-tycoon-2/data.js`, `design/gdd/life-tycoon-2/content-plan-era1.md`
+- **File**: `prototypes/bloodline/data.js`, `design/gdd/bloodline/content-plan-era1.md`
 - **Source**: `production/playtests/2026-05-29b-full.md` (design decisions section)
 - **Fix**: (pendent decisió — veure Decision)
 - **Acceptance**: Hi ha almenys 1 payoff tangible de la branca Recol·lector accessible a Gen 1 amb estratègia normal.
@@ -332,7 +332,7 @@
 ## P3 OPEN CONTENT — C-01 — Efectes de les 13 branch techs pendents de definir (content-plan-era1.md)
 
 - **Agent**: game-designer
-- **File**: `design/gdd/life-tycoon-2/content-plan-era1.md`
+- **File**: `design/gdd/bloodline/content-plan-era1.md`
 - **Source**: `production/playtests/2026-05-29b-full.md` (pending section)
 - **Fix**: (pendent decisió — veure Decision)
 - **Acceptance**: Totes les 13 branch techs de data.js tenen efectes documentats al GDD content-plan-era1.md.
@@ -347,7 +347,7 @@
 ## P3 OPEN CONTENT — C-02 — Condicions exactes dels 6 títols de dinastia i 10 badges
 
 - **Agent**: game-designer
-- **File**: `design/gdd/life-tycoon-2/content-plan-era1.md`
+- **File**: `design/gdd/bloodline/content-plan-era1.md`
 - **Source**: `production/playtests/2026-05-29b-full.md` (pending section)
 - **Fix**: (pendent decisió — veure Decision)
 - **Acceptance**: content-plan-era1.md llista els 6 títols i 10 badges amb condicions numèriques/de branca verificables.

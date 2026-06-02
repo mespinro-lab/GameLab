@@ -1,6 +1,6 @@
 # Paleolític — Branches
 **Estat**: IMPORTAT de data.js — 2026-06-02
-**Font**: `prototypes/life-tycoon-2/data.js` (BRANCHES)
+**Font**: `prototypes/bloodline/data.js` (BRANCHES)
 
 ---
 

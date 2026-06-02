@@ -5,7 +5,7 @@ const path = require('path');
 const Anthropic = require('@anthropic-ai/sdk');
 
 const ROOT = path.resolve(__dirname, '..');
-const PROTO = path.join(ROOT, 'prototypes/life-tycoon-2');
+const PROTO = path.join(ROOT, 'prototypes/bloodline');
 
 const PERSPECTIVES = [
   {
@@ -54,7 +54,7 @@ async function main() {
   console.log('Reading source files...');
   const sources = readSources();
   if (!sources.trim()) {
-    console.error('No source files found in prototypes/life-tycoon-2/');
+    console.error('No source files found in prototypes/bloodline/');
     process.exit(1);
   }
   console.log(`  Source loaded: ${Math.round(sources.length / 1024)}KB`);
@@ -81,7 +81,7 @@ async function main() {
 
   const report = `# Playtest Report — ${date}
 
-**Game**: Life Tycoon 2 (prototypes/life-tycoon-2/)
+**Game**: Life Tycoon 2 (prototypes/bloodline/)
 **Perspectives**: Bug Audit · UX & Readability · Gameplay Balance
 
 ---

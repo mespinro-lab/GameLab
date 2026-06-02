@@ -1,6 +1,6 @@
 # Playtest Report — New Player (Mobile, 390 px)
 **Date**: 2026-05-29
-**Prototype**: `prototypes/life-tycoon-2/`
+**Prototype**: `prototypes/bloodline/`
 **Persona**: Native Catalan speaker, zero tycoon/dynasty experience, mobile phone 390 px, no tutorial
 **Sweep type**: First-session UX — confusion mapping
 

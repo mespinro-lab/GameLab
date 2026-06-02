@@ -1,6 +1,6 @@
 # Playtest Era 1 — 2026-06-02
 **Tester**: mespinro (autor)
-**Prototip**: prototypes/life-tycoon-2/index.html
+**Prototip**: prototypes/bloodline/index.html
 **Durada**: sessió curta exploratòria
 
 ---

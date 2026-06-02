@@ -1,6 +1,6 @@
 # Paleolític — Universal Technologies
 **Estat**: IMPORTAT de data.js — 2026-06-02
-**Font**: `prototypes/life-tycoon-2/data.js` (UNIVERSAL_TECHS)
+**Font**: `prototypes/bloodline/data.js` (UNIVERSAL_TECHS)
 **Nombre de techs**: 7
 **Escala**: ERA_CYCLES = 100 (cicles totals de l'era, multi-generació)
 

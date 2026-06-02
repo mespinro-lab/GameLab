@@ -1,7 +1,7 @@
 # Speed-Runner Pacing Report — Life Tycoon 2
 **Date**: 2026-05-29
 **Sweep**: #29b — Post-Content-Migration
-**Prototype**: prototypes/life-tycoon-2/ (game.js + data.js)
+**Prototype**: prototypes/bloodline/ (game.js + data.js)
 **Session type**: Code trace — speed-run pacing, tech tree reachability, action economy, inclination gate analysis
 **Story type**: Logic (formulas, state machines) + Integration (multi-system: tech unlocks × inclination × action economy × succession timing)
 **Gate level**: BLOCKING (Logic) / ADVISORY (Integration prototype)

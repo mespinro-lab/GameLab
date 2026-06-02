@@ -1,6 +1,6 @@
 # Paleolític — Habilitats (Branch Techs)
 **Estat**: IMPORTAT de data.js — 2026-06-02
-**Font**: `prototypes/life-tycoon-2/data.js` (SKILL_DEFS)
+**Font**: `prototypes/bloodline/data.js` (SKILL_DEFS)
 **Total**: 13 habilitats (5 compartides entre branques)
 
 ---

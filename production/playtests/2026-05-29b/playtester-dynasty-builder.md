@@ -1,7 +1,7 @@
 # Dynasty Builder Playtester Report — Life Tycoon 2
 **Date**: 2026-05-29
 **Sweep**: #29b — Post-Content-Migration
-**Prototype**: prototypes/life-tycoon-2/ (game.js + data.js)
+**Prototype**: prototypes/bloodline/ (game.js + data.js)
 **Session type**: Code trace — inheritance, succession, zone discovery, siblingPool, passive effects
 **Story type**: Integration (multi-system: succession × zone state × passive effects × siblingPool)
 **Gate level**: ADVISORY (prototype)

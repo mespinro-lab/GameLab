@@ -33,10 +33,10 @@
 
 ## Divergències GDD ↔ Implementació
 
-El fitxer `design/gdd/life-tycoon-2/content-plan-era1.md` és un disseny
+El fitxer `design/gdd/bloodline/content-plan-era1.md` és un disseny
 anterior que usa LIFE_EXPECTANCY com a escala de cicle (2, 4, 6, 9, 12).
 La implementació actual usa ERA_CYCLES (10, 22, 36, 50, 65, 80, 92).
-**Font de veritat**: `prototypes/life-tycoon-2/data.js`
+**Font de veritat**: `prototypes/bloodline/data.js`
 
 ## Pendents Identificats
 

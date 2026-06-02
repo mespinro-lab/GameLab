@@ -1,7 +1,7 @@
 # Scope del Prototip — Life Tycoon 2
 
 **Darrera actualització**: 2026-05-30
-**Prototip**: `prototypes/life-tycoon-2/` (HTML5 / Vanilla JS)
+**Prototip**: `prototypes/bloodline/` (HTML5 / Vanilla JS)
 **Pregunta que valida**: *"Does inclination-driven action visibility + branch tech discovery + succession feel engaging?"*
 
 ---

@@ -1,6 +1,6 @@
 # Playtest Report — 2026-05-29
 
-**Game**: Life Tycoon 2 (prototypes/life-tycoon-2/)
+**Game**: Life Tycoon 2 (prototypes/bloodline/)
 **Perspectives**: Bug Audit · UX & Readability · Gameplay Balance
 
 ---

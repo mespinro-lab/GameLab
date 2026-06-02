@@ -2,7 +2,7 @@
 
 **Status**: Living document
 **Owner**: Technical Director
-**Companion to**: `ADR-001-engine-godot4.md`, `design/gdd/life-tycoon-2/tech-architecture.md`
+**Companion to**: `ADR-001-engine-godot4.md`, `design/gdd/bloodline/tech-architecture.md`
 **Purpose**: an order-and-dependency guide for moving from validated prototype to
 production. This is **not** an exhaustive task list — it defines *what depends on
 what*, *what is reused vs. rewritten*, the *MVP cut*, *blocking unknowns*, and

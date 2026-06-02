@@ -2,7 +2,7 @@
 **Tester role**: playtester-casual-mobile
 **Date**: 2026-05-29
 **Build**: post-content-migration (branch: main, last commit 76ccc8d)
-**Files audited**: prototypes/life-tycoon-2/game.js · data.js · index.html · style.css
+**Files audited**: prototypes/bloodline/game.js · data.js · index.html · style.css
 **Target device profile**: 360 px wide viewport, touch input, short sessions
 
 ---

@@ -51,8 +51,8 @@ If no argument was provided, call `AskUserQuestion`:
 
 Before spawning any agent, read:
 
-1. `prototypes/life-tycoon-2/game.js` — current game logic
-2. `prototypes/life-tycoon-2/data.js` — current actions, branch techs, universal techs, events
+1. `prototypes/bloodline/game.js` — current game logic
+2. `prototypes/bloodline/data.js` — current actions, branch techs, universal techs, events
 3. `production/playtests/` — list existing report files so agents know what has already been covered
 
 Build a **briefing block** to pass to every spawned agent:
@@ -60,7 +60,7 @@ Build a **briefing block** to pass to every spawned agent:
 ```
 BRIEFING — Life Tycoon 2 (prototype):
 - Engine: HTML5 / Vanilla JS, runs from file://, no framework
-- Files: prototypes/life-tycoon-2/game.js + data.js
+- Files: prototypes/bloodline/game.js + data.js
 - Mobile target: 360px min width, touch via click events
 - UI language: Catalan
 - Core loop: Execute action → inclination shifts → branches emerge → branch tech unlocks → succession
@@ -71,7 +71,7 @@ BRIEFING — Life Tycoon 2 (prototype):
 - Destreses: discovered by repeating actions (threshold 5 uses, max 2, inherited intact)
 - Upgrades: 5 upgrade actions that replace base actions when purchased
 - Debug features active: inclination dot editor, delta tooltip on hover, tech strip
-- KNOWN OPEN: data.js uses simplified content vs. design/gdd/life-tycoon-2/content-plan-era1.md
+- KNOWN OPEN: data.js uses simplified content vs. design/gdd/bloodline/content-plan-era1.md
 - KNOWN OPEN: recurs secundari (Pells) decision pending — currently not in prototype
 - Do NOT re-report items already listed as S1/S2 in the latest playtest report
 - Write your raw findings to: production/playtests/[session-date]/[your-agent-name].md

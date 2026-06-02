@@ -1,7 +1,7 @@
 # Life Tycoon 2 — Casual Mobile Playtest
 **Date**: 2026-05-29
 **Persona**: Casual Mobile (5–10 min, one-handed, vertical phone, no prior knowledge)
-**Build**: prototypes/life-tycoon-2/ (index.html + style.css + game.js + data.js)
+**Build**: prototypes/bloodline/ (index.html + style.css + game.js + data.js)
 **Sweep**: First LT2 playtest — fresh eyes
 
 ---

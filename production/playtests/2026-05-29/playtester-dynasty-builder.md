@@ -1,6 +1,6 @@
 # Dynasty Builder Playtester Report — Life Tycoon 2
 **Date**: 2026-05-29
-**Prototype**: prototypes/life-tycoon-2/ (game.js + data.js)
+**Prototype**: prototypes/bloodline/ (game.js + data.js)
 **Session type**: Code trace — inheritance system, succession, multi-generation identity
 
 ---

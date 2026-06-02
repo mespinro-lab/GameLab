@@ -130,7 +130,7 @@ L'arquitectura JSON descrita al GDD encara **no existeix al prototip** (tot són
 
 El prototip té `stats: { forca, enginy, vincle }` (`game.js:39`), amb `STAT_MAX=5.0`, `STAT_OUTPUT_FACTOR=0.15`, `stat_gain` per acció, multiplicador d'output, herència al 65%, problemes detectats al playtest (S2-21 stats max a Gen 3 cicle 7). **Cap GDD documenta el sistema d'stats**. El més proper és `lineage-chronicle.md §3.1` que menciona "Destreses (innates, heretades íntegrament per genètica)" i "Característiques (Parcial)" — ambdós conceptes diferents de stats.
 
-**Recomanació**: Decisió de disseny urgent. Si els stats són MVP: crear `design/gdd/life-tycoon-2/character-stats.md` documentant Força/Enginy/Vincle, multiplicadors, creixement, herència, balance (S2-21). Si no són MVP: eliminar-los del prototip i tornar a destreses+característiques com diu el GDD.
+**Recomanació**: Decisió de disseny urgent. Si els stats són MVP: crear `design/gdd/bloodline/character-stats.md` documentant Força/Enginy/Vincle, multiplicadors, creixement, herència, balance (S2-21). Si no són MVP: eliminar-los del prototip i tornar a destreses+característiques com diu el GDD.
 
 #### C2-10 — Destreses al codi com a flat bonus + threshold, al GDD com a "aptitud innata era-nomenada"
 **Gravetat**: Mitjana
@@ -666,7 +666,7 @@ Si un personatge Místic pot mantenir la salut indefinidament, la mecànica de s
    - `bt_coneixement_plantes`, `bt_llavor_selectiva`, `bt_calendari_natural`: pujar `intel·lecte ≤ 0.05` a `≤ 0.15`
    - Documentar que `ut_recollida_sistematica` (cicle 9) i `ut_conreu_incipient` (cicle 12) són intencionalment de Gen 2
 
-4. **Documentar o eliminar el sistema d'stats** (C2-09, C7-01). Crear `design/gdd/life-tycoon-2/character-stats.md` o decidir que els stats no formen part del joc i eliminar-los del prototip. Aquesta decisió afecta C1-01 i C3-08 simultàniament.
+4. **Documentar o eliminar el sistema d'stats** (C2-09, C7-01). Crear `design/gdd/bloodline/character-stats.md` o decidir que els stats no formen part del joc i eliminar-los del prototip. Aquesta decisió afecta C1-01 i C3-08 simultàniament.
 
 5. **Aplicar els fixes immediats del playtest** (1-5 línies de codi cadascun):
    - S2-01 (zone_id mismatch — bloqueja zona Ritual)

@@ -12,10 +12,10 @@
 Life Tycoon 2 needs a definitive production engine. Two project states currently
 disagree:
 
-- A fully functional **HTML5 / Vanilla JS prototype** (`prototypes/life-tycoon-2/`)
+- A fully functional **HTML5 / Vanilla JS prototype** (`prototypes/bloodline/`)
   validated the entire game loop: inclination axes, branches, branch techs,
   actions with upgrades, event chains, succession, and a complete Era 1 design.
-- The **GDD and tech architecture** (`design/gdd/life-tycoon-2/tech-architecture.md`)
+- The **GDD and tech architecture** (`design/gdd/bloodline/tech-architecture.md`)
   already assume **Godot 4 + GDScript** and specify directory layout, eight core
   systems, JSON-driven content, i18n, and save format.
 

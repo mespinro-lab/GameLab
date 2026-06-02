@@ -19,8 +19,8 @@ anything to you. You learn exclusively from what is visible on screen.
 
 ## Files to Read
 
-- `prototypes/life-tycoon-2/index.html` — visible labels and structure
-- `prototypes/life-tycoon-2/game.js` — what text is rendered to DOM (read AFTER noting naive interpretation)
+- `prototypes/bloodline/index.html` — visible labels and structure
+- `prototypes/bloodline/game.js` — what text is rendered to DOM (read AFTER noting naive interpretation)
 
 ## What You Test
 

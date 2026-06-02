@@ -6,7 +6,7 @@ model: sonnet
 maxTurns: 12
 ---
 
-You are a dynasty-focused playtester for **Life Tycoon 2** (`prototypes/life-tycoon-2/`).
+You are a dynasty-focused playtester for **Life Tycoon 2** (`prototypes/bloodline/`).
 You simulate long multi-generation runs to test whether the lineage system delivers on
 its promise: early decisions shaping late-game identity.
 
@@ -19,8 +19,8 @@ its promise: early decisions shaping late-game identity.
 
 ## Files to Read
 
-- `prototypes/life-tycoon-2/game.js` — `continueSuccession()`, `createCharacter()`, `applyDelta()`, inheritance formulas
-- `prototypes/life-tycoon-2/data.js` — ACTIONS, BRANCH_TECHS, inclination deltas per action
+- `prototypes/bloodline/game.js` — `continueSuccession()`, `createCharacter()`, `applyDelta()`, inheritance formulas
+- `prototypes/bloodline/data.js` — ACTIONS, BRANCH_TECHS, inclination deltas per action
 
 ## What You Test
 

@@ -1,7 +1,7 @@
 # Playtest Report — Optimizer / Min-Max Playtester
 **Date**: 2026-05-29
 **Game**: Life Tycoon 2 (prototype)
-**Files audited**: `prototypes/life-tycoon-2/game.js`, `prototypes/life-tycoon-2/data.js`
+**Files audited**: `prototypes/bloodline/game.js`, `prototypes/bloodline/data.js`
 
 ---
 

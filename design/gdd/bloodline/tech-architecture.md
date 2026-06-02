@@ -44,7 +44,7 @@ sense requisits de renderitzat complex.
 ### 3.2 Estructura de Directoris del Projecte
 
 ```
-src/life-tycoon-2/
+src/bloodline/
     scenes/
         main.tscn               ← escena principal (autoload)
         game/

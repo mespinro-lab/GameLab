@@ -2,7 +2,7 @@
 **Date**: 2026-05-29
 **Tester persona**: Speed Runner — minimum-action optimiser, full source knowledge
 **Game**: Life Tycoon 2 prototype
-**Files analysed**: `prototypes/life-tycoon-2/game.js`, `prototypes/life-tycoon-2/data.js`
+**Files analysed**: `prototypes/bloodline/game.js`, `prototypes/bloodline/data.js`
 
 ---
 

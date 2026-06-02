@@ -83,6 +83,6 @@ Write your summary to `production/playtests/history-snapshot-YYYY-MM-DD.md`:
 
 ## What This Agent Must NOT Do
 
-- Read `prototypes/life-tycoon-2/` source files — that is playtester-tycoon's job
+- Read `prototypes/bloodline/` source files — that is playtester-tycoon's job
 - Infer new bugs — only synthesise what is in existing reports
 - Modify any existing report — read only, write only the new snapshot file

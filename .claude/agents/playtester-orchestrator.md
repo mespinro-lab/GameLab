@@ -66,8 +66,8 @@ After all six complete:
 ### Phase 1 — Briefing (before spawning)
 
 Read these files to build the briefing block:
-- `prototypes/life-tycoon-2/game.js` — current game logic
-- `prototypes/life-tycoon-2/data.js` — current game data
+- `prototypes/bloodline/game.js` — current game logic
+- `prototypes/bloodline/data.js` — current game data
 - `production/playtests/` — prior reports (avoid re-reporting known issues)
 
 Build a **briefing block** to pass to every spawned agent:
@@ -75,7 +75,7 @@ Build a **briefing block** to pass to every spawned agent:
 ```
 BRIEFING — Life Tycoon 2 (prototype):
 - Engine: HTML5 / Vanilla JS, runs from file://, no framework
-- Files: prototypes/life-tycoon-2/game.js + data.js
+- Files: prototypes/bloodline/game.js + data.js
 - Mobile target: 360px min width, touch via click events
 - UI language: Catalan
 - Core loop: Execute action → inclination shifts → branches emerge → branch tech unlocks → succession

@@ -4,7 +4,7 @@ Indie game development managed through 48 coordinated Claude Code subagents.
 Each agent owns a specific domain, enforcing separation of concerns and quality.
 
 > **Joc actiu**: **Bloodline** — dynasty tycoon, iOS+Android, Godot 4.6.
-> Codi intern: `life-tycoon-2`. Directori: `src/life-tycoon-2/`.
+> Codi intern: `bloodline`. Directori: `src/bloodline/`.
 
 ## Technology Stack
 
