@@ -397,10 +397,15 @@ function executeAction(actionId) {
     ? DESTRESA_BONUS : 0;
   const outputMinBonus = [...state.character.unlockedSkillIds].reduce((sum, skillId) => {
     const bt = SKILL_DEFS.find(t => t.id === skillId);
-    return (bt?.passive_effect?.type === 'bonus_action_output' && skill.passive_effect.action_id === actionId)
-      ? sum + skill.passive_effect.output_min_bonus : sum;
+    return (bt?.passive_effect?.type === 'bonus_action_output' && bt.passive_effect.action_id === actionId)
+      ? sum + (bt.passive_effect.output_min_bonus || 0) : sum;
   }, 0);
-  const output = Math.round(randInt(action.output_min + outputMinBonus, action.output_max) * getStatMultiplier(action)) + destresaBonus;
+  const outputMaxBonus = [...state.character.unlockedSkillIds].reduce((sum, skillId) => {
+    const bt = SKILL_DEFS.find(t => t.id === skillId);
+    return (bt?.passive_effect?.type === 'bonus_action_output' && bt.passive_effect.action_id === actionId)
+      ? sum + (bt.passive_effect.output_max_bonus || 0) : sum;
+  }, 0);
+  const output = Math.round(randInt(action.output_min + outputMinBonus, action.output_max + outputMaxBonus) * getStatMultiplier(action)) + destresaBonus;
   const outRes = action.output_resource || 'food';
   const outResDef = RESOURCE_DEFS.find(r => r.id === outRes);
   if (outResDef) {

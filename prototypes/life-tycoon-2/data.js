@@ -194,7 +194,7 @@ const SKILL_DEFS = [
     universal_prereq: "ut_eines",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "impuls", min: 0.25 }, { axis: "sociabilitat", max: 0.30 }] },
     unlocks_action_ids: ["act_caca_llanca", "act_emboscada_nocturna"],
-    passive_effect: null,
+    passive_effect: { type: "bonus_action_output", action_id: "act_espiar_ramat", output_min_bonus: 1, desc: "+1 mínim espiar ramat (la punta millora la caça base)" },
     is_hidden: false
   },
   {
@@ -212,7 +212,7 @@ const SKILL_DEFS = [
     universal_prereq: "ut_eines",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.25 }, { axis: "impuls", max: 0.20 }] },
     unlocks_action_ids: ["act_gravar_os", "act_intercanviar_eines"],
-    passive_effect: null,
+    passive_effect: { type: "bonus_action_output", action_id: "act_faonar_eines", output_min_bonus: 1, desc: "+1 mínim façonar eines (el burí permet formes més precises)" },
     is_hidden: false
   },
   {
@@ -229,8 +229,8 @@ const SKILL_DEFS = [
     inheritanceRate: 0.25,
     universal_prereq: "ut_corda",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "impuls", min: 0.10 }] },
-    unlocks_action_ids: ["act_parar_trampes"],
-    passive_effect: null,
+    unlocks_action_ids: ["act_parar_trampes", "act_revisar_trampes"],
+    passive_effect: { type: "bonus_action_output", action_id: "act_parar_trampes", output_min_bonus: 1, desc: "+1 mínim parar trampes (les trampes de corda son més eficaces)" },
     is_hidden: false
   },
   {
@@ -238,8 +238,8 @@ const SKILL_DEFS = [
     inheritanceRate: 0.45,
     universal_prereq: "ut_foc",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.25 }, { axis: "sociabilitat", min: 0.20 }] },
-    unlocks_action_ids: ["act_curar_herbes"],
-    passive_effect: null,
+    unlocks_action_ids: ["act_curar_herbes", "act_preparar_ungüent"],
+    passive_effect: { type: "grant_health", amount: 8, desc: "+8 Salut (el primer guariment és per a un mateix)" },
     is_hidden: false
   },
   {
@@ -257,7 +257,7 @@ const SKILL_DEFS = [
     universal_prereq: "ut_art",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "impuls", min: 0.20 }, { axis: "intel·lecte", min: 0.05 }] },
     unlocks_action_ids: ["act_marcar_territori", "act_rastreig_rutes"],
-    passive_effect: null,
+    passive_effect: { type: "unlock_zone", unlocks_zone: "Bosc", desc: "Les marques revelen camins al Bosc" },
     is_hidden: false
   },
   {
@@ -266,7 +266,7 @@ const SKILL_DEFS = [
     universal_prereq: "ut_art",
     inclination_conditions: { operator: "OR", conditions: [{ axis: "espiritualitat", min: 0.20 }, { axis: "sociabilitat", min: 0.25 }] },
     unlocks_action_ids: ["act_ornamentar_se", "act_consagrar_ornaments"],
-    passive_effect: null,
+    passive_effect: { type: "grant_material", amount: 3, desc: "+3 Provisions (els ornaments reforcen la identitat del clan)" },
     is_hidden: false
   },
   {
@@ -275,7 +275,7 @@ const SKILL_DEFS = [
     universal_prereq: "ut_corda",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", max: 0.05 }, { axis: "impuls", max: 0.10 }] },
     unlocks_action_ids: ["act_recollida_bolets", "act_assecament_plantes"],
-    passive_effect: null,
+    passive_effect: { type: "bonus_action_output", action_id: "act_recollida_bolets", output_max_bonus: 2, desc: "+2 màxim recollida de bolets (coneixes quins valen la pena)" },
     is_hidden: false
   },
   {
@@ -292,7 +292,7 @@ const SKILL_DEFS = [
     inheritanceRate: 0.35,
     universal_prereq: "ut_agricultura",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", max: 0.05 }, { axis: "impuls", max: 0.10 }] },
-    unlocks_action_ids: ["act_seleccionar_llavors"],
+    unlocks_action_ids: ["act_seleccionar_llavors", "act_preparar_terreny"],
     passive_effect: null,
     is_hidden: false
   },
@@ -301,7 +301,7 @@ const SKILL_DEFS = [
     inheritanceRate: 0.25,
     universal_prereq: "ut_agricultura",
     inclination_conditions: { operator: "OR", conditions: [{ axis: "impuls", min: 0.10 }, { axis: "intel·lecte", max: 0.05 }] },
-    unlocks_action_ids: ["act_control_territori"],
+    unlocks_action_ids: ["act_control_territori", "act_negociar_pastures"],
     passive_effect: { type: "grant_health", amount: 10, desc: "+10 Salut (domini del territori)" },
     is_hidden: false
   }
@@ -485,6 +485,14 @@ const ACTIONS = [
     inclination_deltas: { impuls: -0.01, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_caca"
   },
+  {
+    id: "act_revisar_trampes", name: "Revisar les Trampes", is_base: false, zona: "Bosc",
+    description: "Fas la ronda matinal per les trampes. Algunes han funcionat. Una t'ha agafat el dit.",
+    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 1, output_max: 4, side_effects: [{ resource: 'health', delta: -3 }],
+    stat_key: "enginy", stat_gain: 0.15,
+    inclination_deltas: { impuls: -0.01, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_caca"
+  },
 
   // GATHERER branch — bt_coneixement_plantes
   {
@@ -511,6 +519,14 @@ const ACTIONS = [
     purchase_cost: 4, execute_cost: 1, output_resource: "food", output_min: 3, output_max: 6,
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_recollecta"
+  },
+  {
+    id: "act_preparar_terreny", name: "Preparar el Terreny", is_base: false, zona: "Planes",
+    description: "Neteges una petita parcel·la de pedres i males herbes. El terra nu et sembla prometedor.",
+    purchase_cost: 4, execute_cost: 1, output_resource: "food", output_min: 2, output_max: 4, side_effects: [{ resource: 'health', delta: -5 }],
+    stat_key: "forca", stat_gain: 0.15,
+    inclination_deltas: { impuls: +0.01, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_recollecta"
   },
 
@@ -567,6 +583,14 @@ const ACTIONS = [
     purchase_cost: 3, execute_cost: 2, output_resource: "health", output_min: 5, output_max: 8,
     stat_key: "vincle", stat_gain: 0.20,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.03, sociabilitat: 0 },
+    event_pool_id: "pool_ritual"
+  },
+  {
+    id: "act_preparar_ungüent", name: "Preparar un Ungüent", is_base: false, zona: "Campament",
+    description: "Maceres arrels i fulles fins que la pasta agafa color. Dures hores, però el resultat guareix.",
+    purchase_cost: 3, execute_cost: 1, output_resource: "health", output_min: 6, output_max: 10,
+    stat_key: "enginy", stat_gain: 0.15,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.02, espiritualitat: +0.02, sociabilitat: 0 },
     event_pool_id: "pool_ritual"
   },
 
@@ -635,6 +659,14 @@ const ACTIONS = [
     purchase_cost: 5, execute_cost: 1, output_resource: "food", output_min: 3, output_max: 7, side_effects: [{ resource: 'health', delta: -5 }],
     stat_key: "forca", stat_gain: 0.15,
     inclination_deltas: { impuls: +0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.01 },
+    event_pool_id: "pool_social"
+  },
+  {
+    id: "act_negociar_pastures", name: "Negociar les Pastures", is_base: false, zona: "Planes",
+    description: "Trobes els rastres d'un altre grup a les teves zones. T'aproximes amb gestos oberts. Acabeu repartint el territori.",
+    purchase_cost: 5, execute_cost: 1, output_resource: "food", output_min: 3, output_max: 6, side_effects: [{ resource: 'health', delta: +3 }],
+    stat_key: "vincle", stat_gain: 0.15,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.04 },
     event_pool_id: "pool_social"
   },
 
