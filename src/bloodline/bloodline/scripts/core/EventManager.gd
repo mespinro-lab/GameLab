@@ -4,6 +4,7 @@ extends Node
 
 signal event_triggered(event: Dictionary)
 signal event_resolved(event_id: String, option_index: int, effects: Array)
+signal skill_discovered(skill_id: String)
 
 var _pending_event: Dictionary = {}
 
@@ -60,6 +61,7 @@ func resolve_option(option_index: int) -> void:
 		var skill_id: String = _pending_event.get("discovery_skill_id", "")
 		if skill_id != "" and skill_id not in GameState.unlocked_skill_ids:
 			GameState.unlocked_skill_ids.append(skill_id)
+			skill_discovered.emit(skill_id)
 
 	# skill_modifier: conditional health effect based on skill possession
 	var modifier: Dictionary = opt.get("skill_modifier", {})

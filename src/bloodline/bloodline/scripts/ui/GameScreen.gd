@@ -256,6 +256,7 @@ func _connect_signals() -> void:
 	LineageManager.era_ended.connect(_on_era_ended)
 	EventManager.event_triggered.connect(_on_event_triggered)
 	EventManager.event_resolved.connect(_on_event_resolved)
+	EventManager.skill_discovered.connect(_on_skill_discovered)
 
 
 # ── Refresh ───────────────────────────────────────────────────────────────────
@@ -418,6 +419,11 @@ func _get_zone_actions(zone_id: String) -> Array:
 		var vis: ActionManager.Visibility = ActionManager.get_action_visibility(action)
 		if vis != ActionManager.Visibility.HIDDEN:
 			result.append(action)
+	# Sort: base actions first, then by purchase cost ascending
+	result.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if a.get("is_base", false) != b.get("is_base", false):
+			return a.get("is_base", false)
+		return int(a.get("purchase_cost", 0)) < int(b.get("purchase_cost", 0)))
 	return result
 
 
@@ -509,6 +515,14 @@ func _on_event_triggered(event: Dictionary) -> void:
 
 func _on_event_resolved(_event_id: String, _option_index: int, _effects: Array) -> void:
 	_refresh()
+
+
+func _on_skill_discovered(skill_id: String) -> void:
+	# Format skill name from id: "bt_guariment_plantes" → "Guariment de Plantes"
+	var name_str: String = skill_id.replace("bt_", "").replace("_", " ").capitalize()
+	_show_overlay("Nova habilitat", "✨", name_str,
+		"Has après una nova habilitat que et permet accedir a noves accions.",
+		"Entès →", func() -> void: _refresh())
 
 
 func _show_event_overlay(event: Dictionary) -> void:
