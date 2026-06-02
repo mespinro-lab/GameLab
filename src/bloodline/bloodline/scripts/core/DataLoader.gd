@@ -42,11 +42,11 @@ func _read_json(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):
 		push_error("[DataLoader] File not found: %s" % path)
 		return {}
-	var file := FileAccess.open(path, FileAccess.READ)
-	var text := file.get_as_text()
+	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+	var text: String = file.get_as_text()
 	file.close()
-	var parsed := JSON.parse_string(text)
-	if parsed == null:
+	var parsed: Variant = JSON.parse_string(text)
+	if parsed == null or not (parsed is Dictionary):
 		push_error("[DataLoader] Invalid JSON: %s" % path)
 		return {}
-	return parsed
+	return parsed as Dictionary
