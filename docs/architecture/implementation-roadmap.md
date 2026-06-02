@@ -117,17 +117,16 @@ dominant inclinations feel notably different (GDD §8).
 These must be decided before the dependent system is implemented. Listed with the
 gate they block.
 
-| # | Open decision | Blocks | TD recommendation |
+| # | Decision | Blocks | **RESOLVED** |
 |---|---|---|---|
-| D1 | **Data object representation**: Resource vs Dictionary vs hybrid (architecture §3.4 leaves this open) | DataLoader, every consumer | **Hybrid** — typed `Resource` for stable entities, `Dictionary` for irregular payloads. Recorded in ADR-001 §Decision.4 as default; confirm before DataLoader. |
-| D2 | **Save schema versioning & migration**: format is decided, but the migrator strategy and the v1 schema freeze are not | SaveSystem | Freeze a `schema_version` field now; ship MVP with v1 and a no-op migrator slot. Cheap insurance; reversible. |
-| D3 | **i18n mechanism**: custom `tr(key)` over JSON dicts (per arch §3.9) vs Godot's built-in `TranslationServer`/CSV | LocalizationManager, all UI binding | Lean to the **custom JSON `tr()`** in the arch doc — keys live with content, matches the data-driven principle. Confirm vs. engine-native tooling cost. |
-| D4 | **UI architecture pattern**: how scenes bind to GameState — direct reads, signals-only, or a thin view-model layer | All Layer-5 scenes | Decide before building the second screen. **Signals from managers → UI listeners** keeps logic out of scenes and matches the audio-anchor pattern already in the arch. |
-| D5 | **Content authoring path**: hand-write JSON vs extend `tools/data-editor.html` vs `/era-design` pipeline output | Era 1 content migration (the bulkiest task) | Use the **`/era-design` pipeline → JSON** as the canonical output; data editor for fast edits. Lock the JSON schema (depends on D1) before mass authoring. |
-| D6 | **Test harness**: GUT vs gdUnit4 for GDScript unit tests (coding-standards mandates blocking unit tests for logic) | CI gate, Layer-1 onward | Pick one before the first BranchManager test. Either is fine; decide for consistency, not capability. |
+| D1 | Data object representation | DataLoader, every consumer | ✅ **Hybrid** — typed `Resource` for stable entities, `Dictionary` for irregular payloads (inclination_deltas, side_effects, event options). |
+| D2 | Save schema versioning | SaveSystem | ✅ **Version from day one** — `schema_version` field in save; v1 ships with MVP + no-op migrator slot. |
+| D3 | i18n mechanism | LocalizationManager, all UI | ✅ **Custom JSON `tr(key)`** — per arch §3.9. `ca.json`/`es.json`/`en.json` flat dicts. Keys live with content. |
+| D4 | UI architecture pattern | All Layer-5 scenes | ✅ **Signals-only** — managers emit signals, UI listens. No direct GameState reads from scenes. |
+| D5 | Content authoring path | Era 1 migration (XL) | ✅ **`/era-design` pipeline → JSON** — canonical output. Data editor for fast edits. Schema frozen after D1. |
+| D6 | GDScript test harness | CI gate, Layer-1 onward | ✅ **GUT** — established Godot standard, well-documented, CI plugins available. |
 
-**D1, D5, and D6 are the critical path** — they block the foundation and the
-highest-volume work. Resolve these first.
+**All 6 decisions resolved (2026-06-02). M-Foundation can begin.**
 
 ---
 
