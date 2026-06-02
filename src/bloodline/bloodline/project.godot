@@ -26,6 +26,7 @@ EventManager="*res://scripts/core/EventManager.gd"
 EraManager="*res://scripts/core/EraManager.gd"
 LineageManager="*res://scripts/core/LineageManager.gd"
 SaveSystem="*res://scripts/core/SaveSystem.gd"
+ScoringManager="*res://scripts/core/ScoringManager.gd"
 
 [display]
 

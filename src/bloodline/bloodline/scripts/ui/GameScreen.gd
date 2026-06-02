@@ -486,15 +486,21 @@ func _on_lineage_extinct() -> void:
 		func() -> void: get_tree().reload_current_scene())
 
 
-func _on_era_ended(summary: Dictionary) -> void:
-	var gens: int = int(summary.get("generations", 1))
-	var techs: int = (summary.get("discovered_techs", []) as Array).size()
-	var skills: int = (summary.get("unlocked_skills", []) as Array).size()
-	var sub: String = "%d generacion%s  ·  %d tecn.  ·  %d habilitats" % [
-		gens, "s" if gens > 1 else "", techs, skills]
-	_show_overlay("Era completa", "🌾", "El Paleolític ha acabat", sub,
+func _on_era_ended(_summary: Dictionary) -> void:
+	var score: Dictionary = ScoringManager.calculate_era_score()
+	var title: String = ScoringManager.get_dynasty_title(int(score.get("total", 0)))
+	var sub: String = "%s\n\n%d punts\n%dG · %dT · %dH" % [
+		title,
+		int(score.get("total", 0)),
+		int(score.get("generations", 1)),
+		int(score.get("techs", 0)),
+		int(score.get("skills", 0))
+	]
+	_show_overlay("Era completa", "🌾", GameState.dynasty_name, sub,
 		"Jugar de nou",
-		func() -> void: get_tree().reload_current_scene())
+		func() -> void:
+			SaveSystem.delete_save()
+			get_tree().reload_current_scene())
 
 
 func _on_event_triggered(event: Dictionary) -> void:
