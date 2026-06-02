@@ -41,6 +41,11 @@ func _load_era(era_id: String) -> void:
 		var action_id: String = a.get("id", "")
 		if action_id != "":
 			actions[action_id] = a
+	for skill: Variant in era.get("skills", []):
+		var s: Dictionary = skill as Dictionary
+		var skill_id: String = s.get("id", "")
+		if skill_id != "":
+			skills[skill_id] = s
 	_load_event_pools(era_id)
 
 

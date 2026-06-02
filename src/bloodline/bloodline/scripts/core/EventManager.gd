@@ -61,6 +61,7 @@ func resolve_option(option_index: int) -> void:
 		var skill_id: String = _pending_event.get("discovery_skill_id", "")
 		if skill_id != "" and skill_id not in GameState.unlocked_skill_ids:
 			GameState.unlocked_skill_ids.append(skill_id)
+			_apply_skill_passive_effect(skill_id)
 			skill_discovered.emit(skill_id)
 
 	# skill_modifier: conditional health effect based on skill possession
@@ -107,6 +108,19 @@ func has_pending_event() -> bool:
 
 func get_pending_event() -> Dictionary:
 	return _pending_event
+
+
+func _apply_skill_passive_effect(skill_id: String) -> void:
+	var skill: Dictionary = DataLoader.skills.get(skill_id, {})
+	var effect: Variant = skill.get("passive_effect", null)
+	if effect == null or not (effect is Dictionary):
+		return
+	var e: Dictionary = effect as Dictionary
+	match e.get("type", ""):
+		"unlock_zone":
+			var zone: String = e.get("unlocks_zone", "")
+			if zone != "" and zone not in GameState.discovered_zone_ids:
+				GameState.discovered_zone_ids.append(zone)
 
 
 func _clear_event() -> void:

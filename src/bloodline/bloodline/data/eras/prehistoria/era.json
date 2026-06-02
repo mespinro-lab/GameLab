@@ -30,6 +30,21 @@
     { "id": "ut_agricultura", "name": "L'Agricultura",       "icon": "🌾", "cycle": 92, "effect": {} }
   ],
 
+  "skills": [
+    { "id": "bt_guariment_plantes",   "name": "Guariment de Plantes",   "universal_prereq": "ut_foc",         "inheritance_rate": 0.20, "passive_effect": null },
+    { "id": "bt_pintura_rupestre",    "name": "Pintura Rupestre",       "universal_prereq": "ut_art",         "inheritance_rate": 0.15, "passive_effect": { "type": "unlock_zone", "unlocks_zone": "Ritual" } },
+    { "id": "bt_senyals_roca",        "name": "Senyals de Roca",        "universal_prereq": "ut_art",         "inheritance_rate": 0.15, "passive_effect": { "type": "unlock_zone", "unlocks_zone": "Bosc" } },
+    { "id": "bt_llancador",           "name": "Llançador",              "universal_prereq": "ut_eines",       "inheritance_rate": 0.20, "passive_effect": null },
+    { "id": "bt_agulla_os",           "name": "Agulla d'Os",            "universal_prereq": "ut_eines",       "inheritance_rate": 0.20, "passive_effect": null },
+    { "id": "bt_buri",                "name": "Burí",                   "universal_prereq": "ut_eines",       "inheritance_rate": 0.20, "passive_effect": null },
+    { "id": "bt_coneixement_plantes", "name": "Coneixement de Plantes", "universal_prereq": "ut_foc",         "inheritance_rate": 0.20, "passive_effect": null },
+    { "id": "bt_ornaments",           "name": "Ornaments",              "universal_prereq": "ut_vestimenta",  "inheritance_rate": 0.15, "passive_effect": null },
+    { "id": "bt_rasclador_fi",        "name": "Rasclador Fi",           "universal_prereq": "ut_eines",       "inheritance_rate": 0.20, "passive_effect": null },
+    { "id": "bt_calendari_natural",   "name": "Calendari Natural",      "universal_prereq": "ut_art",         "inheritance_rate": 0.15, "passive_effect": null },
+    { "id": "bt_domini_terra",        "name": "Domini del Territori",   "universal_prereq": "ut_corda",       "inheritance_rate": 0.15, "passive_effect": null },
+    { "id": "bt_llavor_selectiva",    "name": "Llavor Selectiva",       "universal_prereq": "ut_agricultura", "inheritance_rate": 0.25, "passive_effect": null }
+  ],
+
   "branches": [
     {
       "id": "branch_cacador",
