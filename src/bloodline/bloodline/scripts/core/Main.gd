@@ -3,12 +3,19 @@ extends Node
 
 func _ready() -> void:
 	DataLoader.load_all()
+	EraManager.start_era("prehistoria")
+	GameState.dynasty_name = "Test"
+	GameState.character_label = "Auri"
 
-	# Smoke test: print loaded era token name
-	var era: Dictionary = DataLoader.eras.get("prehistoria", {})
-	var token: Dictionary = era.get("token", {})
-	var token_key: String = token.get("name_key", "")
 	print("[Main] Era: ", DataLoader.loc("era.prehistoria.name"))
-	print("[Main] Token: ", DataLoader.loc(token_key))
-	print("[Main] Config inertia: ", DataLoader.config.get("inclination", {}).get("inertia_factor", "?"))
+	print("[Main] Token: ", DataLoader.loc("era.prehistoria.token.name"))
+	print("[Main] Food: ", GameState.food, " | Health: ", GameState.health)
+
+	# Save/load smoke test
+	SaveSystem.save()
+	var old_food: float = GameState.food
+	GameState.food = 0.0
+	SaveSystem.load_save()
+	print("[Main] Save/Load OK: ", GameState.food == old_food)
+
 	print("[Main] Ready.")

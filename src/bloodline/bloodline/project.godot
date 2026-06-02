@@ -25,6 +25,7 @@ ActionManager="*res://scripts/core/ActionManager.gd"
 EventManager="*res://scripts/core/EventManager.gd"
 EraManager="*res://scripts/core/EraManager.gd"
 LineageManager="*res://scripts/core/LineageManager.gd"
+SaveSystem="*res://scripts/core/SaveSystem.gd"
 
 [display]
 
