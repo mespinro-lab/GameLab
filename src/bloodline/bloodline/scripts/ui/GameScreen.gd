@@ -69,7 +69,10 @@ var _suppress_next_result: bool = false
 var _pending_pool_id: String = ""
 
 
+const BloodlineThemeScript = preload("res://scripts/ui/BloodlineTheme.gd")
+
 func _ready() -> void:
+	theme = BloodlineThemeScript.build()
 	_build_layout()
 	_connect_signals()
 	_refresh()

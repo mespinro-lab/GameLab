@@ -14,7 +14,10 @@ const PLACEHOLDER_NAMES: Array[String] = [
 ]
 
 
+const BloodlineThemeScript = preload("res://scripts/ui/BloodlineTheme.gd")
+
 func _ready() -> void:
+	theme = BloodlineThemeScript.build()
 	_build_layout()
 
 
