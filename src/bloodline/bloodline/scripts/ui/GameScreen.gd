@@ -319,6 +319,13 @@ func _refresh_top_bar() -> void:
 	_label_gen.text = "Gen %d · Edat %d · Era %d%%" % [GameState.generation, age, era_pct]
 	_label_resources.text = "🌾%d  ❤️%d  🦴%d" % [
 		int(GameState.food), int(GameState.health), int(GameState.tokens)]
+	# Warn when food or health is critical
+	var food_critical: bool = GameState.food <= 3.0
+	var health_critical: bool = GameState.health <= 20.0
+	if food_critical or health_critical:
+		_label_resources.add_theme_color_override("font_color", Color(0.94, 0.27, 0.37))
+	else:
+		_label_resources.add_theme_color_override("font_color", Color(0.85, 0.80, 0.65))
 
 
 func _refresh_inclination() -> void:
@@ -397,7 +404,8 @@ func _build_action_row(action: Dictionary) -> Control:
 	btn.add_theme_font_size_override("font_size", 13)
 
 	if vis == ActionManager.Visibility.ACTIVE:
-		btn.text = "%s  +%d–%d 🦴" % [name_str, out_min, out_max]
+		var side_str: String = _side_effect_badge(action)
+		btn.text = "%s  +%d–%d 🦴%s" % [name_str, out_min, out_max, side_str]
 		var dom_col: Color = _dominant_axis_color(action)
 		btn.add_theme_color_override("font_color", dom_col)
 		btn.pressed.connect(_on_action_pressed.bind(action_id))
@@ -672,6 +680,19 @@ func _show_succession_overlay(successors: Array) -> void:
 
 
 # ── Style helpers ─────────────────────────────────────────────────────────────
+
+func _side_effect_badge(action: Dictionary) -> String:
+	var ses: Array = action.get("side_effects", [])
+	var parts: PackedStringArray = []
+	for se: Variant in ses:
+		var s: Dictionary = se as Dictionary
+		var delta: int = int(s.get("delta", 0))
+		if s.get("resource") == "food"   and delta != 0: parts.append("%+d🌾" % delta)
+		if s.get("resource") == "health" and delta != 0: parts.append("%+d❤️" % delta)
+	if parts.is_empty():
+		return ""
+	return "  " + "  ".join(parts)
+
 
 func _add_log(entry: String) -> void:
 	_log_entries.append(entry)
