@@ -11,6 +11,7 @@ var _label_gen: Label
 var _label_resources: Label
 var _incl_bars: Dictionary = {}
 var _branch_bar: HBoxContainer
+var _era_progress_fill: Panel
 var _zone_container: VBoxContainer
 var _log_label: Label
 var _log_entries: Array[String] = []
@@ -22,6 +23,7 @@ var _ov_title: Label
 var _ov_sub: Label
 var _ov_btn: Button
 var _ov_vbox: VBoxContainer
+var _suppress_next_result: bool = false
 
 const AXIS_LABELS: Dictionary = {
 	"impuls": "Impuls",
@@ -73,6 +75,7 @@ func _build_layout() -> void:
 	add_child(root)
 
 	root.add_child(_build_top_bar())
+	root.add_child(_build_era_bar())
 	root.add_child(_build_branch_bar())
 	root.add_child(_build_incl_panel())
 	root.add_child(_build_zone_area())
@@ -118,6 +121,18 @@ func _build_top_bar() -> Control:
 	hbox.add_child(reset_btn)
 
 	return bar
+
+
+func _build_era_bar() -> Control:
+	var track := Panel.new()
+	track.custom_minimum_size = Vector2(0, 3)
+	track.add_theme_stylebox_override("panel", _flat_style(Color(0.15, 0.12, 0.08)))
+	track.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_era_progress_fill = Panel.new()
+	_era_progress_fill.add_theme_stylebox_override("panel", _flat_style(Color(0.95, 0.75, 0.20)))
+	_era_progress_fill.custom_minimum_size = Vector2(0, 3)
+	track.add_child(_era_progress_fill)
+	return track
 
 
 func _build_branch_bar() -> Control:
@@ -280,6 +295,7 @@ func _refresh() -> void:
 	_refresh_top_bar()
 	_refresh_branches()
 	call_deferred("_refresh_inclination")
+	call_deferred("_refresh_era_bar")
 	_refresh_zones()
 
 
@@ -326,6 +342,17 @@ func _refresh_top_bar() -> void:
 		_label_resources.add_theme_color_override("font_color", Color(0.94, 0.27, 0.37))
 	else:
 		_label_resources.add_theme_color_override("font_color", Color(0.85, 0.80, 0.65))
+
+
+func _refresh_era_bar() -> void:
+	if _era_progress_fill == null:
+		return
+	var track_w: float = _era_progress_fill.get_parent().size.x
+	if track_w <= 0.0:
+		return
+	var pct: float = EraManager.get_era_progress_pct()
+	_era_progress_fill.size.x = track_w * pct
+	_era_progress_fill.position.x = 0.0
 
 
 func _refresh_inclination() -> void:
@@ -472,6 +499,7 @@ func _on_action_pressed(action_id: String) -> void:
 
 func _on_action_executed(action_id: String, output: float, side_effects: Array) -> void:
 	if action_id == "child_born":
+		_suppress_next_result = true
 		var child_label: String = ""
 		for se: Variant in side_effects:
 			var s: Dictionary = se as Dictionary
@@ -480,6 +508,10 @@ func _on_action_executed(action_id: String, output: float, side_effects: Array) 
 		_show_overlay("Nou membre del llinatge", "👶", child_label,
 			"Fill de %s" % GameState.character_label, "Benvingut →",
 			func() -> void: _refresh())
+		return
+	if _suppress_next_result:
+		_suppress_next_result = false
+		_refresh()
 		return
 	var action: Dictionary = DataLoader.actions.get(action_id, {})
 	var name_str: String = action.get("name_key", action.get("name", action_id))
@@ -506,7 +538,24 @@ func _on_tech_discovered(tech: Dictionary) -> void:
 
 
 func _on_succession_required(successors: Array) -> void:
-	_show_succession_overlay(successors)
+	# First show death screen, then succession on dismiss
+	var dying_label: String = GameState.character_label
+	var dying_age: int = LineageManager.character_age()
+	var dying_emoji: String = _char_emoji()
+	var cause: String = "Salut esgotada" if GameState.health <= 0.0 else "Vida complerta"
+	_show_overlay("Fi d'una vida", dying_emoji, dying_label,
+		"%d cicles · %s" % [dying_age, cause],
+		"El llinatge continua →",
+		func() -> void: _show_succession_overlay(successors))
+
+
+func _char_emoji() -> String:
+	var inc: Dictionary = GameState.inclination
+	if (inc.get("impuls", 0.0) as float) > 0.3:       return "🏹"
+	if (inc.get("intel_lectus", 0.0) as float) > 0.3:  return "🪨"
+	if (inc.get("espiritualitat", 0.0) as float) > 0.3: return "🔥"
+	if (inc.get("sociabilitat", 0.0) as float) > 0.3:  return "👥"
+	return "🦴"
 
 
 func _on_lineage_extinct() -> void:
