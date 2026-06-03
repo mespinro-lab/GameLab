@@ -351,8 +351,9 @@ func _build_top_bar() -> Control:
 func _v_div() -> Control:
 	var sep := Panel.new()
 	sep.custom_minimum_size = Vector2(1, 32)
-	sep.add_theme_stylebox_override("panel", _flat(C_BORDER, 0))
-	(sep.get_theme_stylebox("panel") as StyleBoxFlat).bg_color = C_BORDER
+	var sep_style := StyleBoxFlat.new()
+	sep_style.bg_color = C_BORDER
+	sep.add_theme_stylebox_override("panel", sep_style)
 	return sep
 
 
@@ -528,7 +529,8 @@ func _refresh_top_bar() -> void:
 func _set_pill_state(pill: Label, critical: bool, normal_col: Color) -> void:
 	var col: Color = C_ACCENT if critical else normal_col
 	pill.add_theme_color_override("font_color", col)
-	var style := pill.get_theme_stylebox("normal").duplicate() as StyleBoxFlat
+	var raw: StyleBox = pill.get_theme_stylebox("normal")
+	var style := raw.duplicate() as StyleBoxFlat
 	style.border_color = C_ACCENT.lerp(C_BORDER, 0.0 if critical else 1.0)
 	pill.add_theme_stylebox_override("normal", style)
 
