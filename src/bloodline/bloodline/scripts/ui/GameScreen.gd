@@ -762,7 +762,6 @@ func _on_action_executed(action_id: String, output: float, side_effects: Array) 
 	_add_log("[C%d] %s  %s" % [GameState.era_cycle, name_str, output_str])
 	_show_overlay("RESULTAT", "", name_str, output_str, "Continuar →",
 		func() -> void:
-			_close_zone()
 			_refresh()
 			if _pending_pool_id != "":
 				var pool: String = _pending_pool_id
