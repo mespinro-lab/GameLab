@@ -3,6 +3,8 @@ extends Control
 ## Main game screen — portrait layout, touch-first.
 ## Builds UI programmatically; replace with .tscn when artist joins.
 
+signal request_new_game()
+
 # UI node references
 var _label_char: Label
 var _label_gen: Label
@@ -99,7 +101,7 @@ func _build_top_bar() -> Control:
 	reset_btn.add_theme_color_override("font_color", Color(0.45, 0.40, 0.35))
 	reset_btn.pressed.connect(func() -> void:
 		SaveSystem.delete_save()
-		get_tree().reload_current_scene())
+		request_new_game.emit())
 	hbox.add_child(reset_btn)
 
 	return bar
@@ -483,7 +485,7 @@ func _on_succession_required(successors: Array) -> void:
 func _on_lineage_extinct() -> void:
 	_show_overlay("Fi del llinatge", "💀", "El llinatge s'extingeix",
 		"El personatge ha mort sense hereus.", "Tornar a jugar",
-		func() -> void: get_tree().reload_current_scene())
+		func() -> void: request_new_game.emit())
 
 
 func _on_era_ended(_summary: Dictionary) -> void:
@@ -500,7 +502,7 @@ func _on_era_ended(_summary: Dictionary) -> void:
 		"Jugar de nou",
 		func() -> void:
 			SaveSystem.delete_save()
-			get_tree().reload_current_scene())
+			request_new_game.emit())
 
 
 func _on_event_triggered(event: Dictionary) -> void:
