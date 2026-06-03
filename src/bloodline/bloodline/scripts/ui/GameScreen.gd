@@ -48,13 +48,8 @@ var _label_meta: Label
 var _era_fill: Panel
 var _branch_bar: HBoxContainer
 var _incl_bars: Dictionary = {}
-var _zone_grid_wrap: VBoxContainer   # expand — shows 2×2 zone buttons
-var _zone_grid: GridContainer
-var _zone_detail_wrap: VBoxContainer # expand — shows carousel for selected zone
-var _zone_detail_scroll: ScrollContainer
-var _zone_detail_col: VBoxContainer
-var _carousel: Node                  # ActionCarousel instance
-var _action_detail_panel: VBoxContainer # shows selected action info below carousel
+var _zone_scroll: ScrollContainer    # inline zone cards (LT1 style)
+var _zone_container: VBoxContainer
 var _log_label: Label
 var _log_entries: Array[String] = []
 var _overlay: Control
@@ -66,7 +61,6 @@ var _ov_btn: Button
 var _ov_vbox: VBoxContainer
 var _suppress_next_result: bool = false
 var _pending_pool_id: String = ""
-var _selected_zone: String = ""  # "" = show grid, non-empty = show detail
 
 
 func _ready() -> void:
@@ -95,38 +89,22 @@ func _build_layout() -> void:
 	root.add_child(_build_branch_strip())
 	root.add_child(_build_incl_panel())
 
-	# Zone grid view (default)
-	_zone_grid_wrap = VBoxContainer.new()
-	_zone_grid_wrap.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_zone_grid_wrap.add_theme_constant_override("separation", 0)
-	_zone_grid = GridContainer.new()
-	_zone_grid.columns = 2
-	_zone_grid.add_theme_constant_override("h_separation", 8)
-	_zone_grid.add_theme_constant_override("v_separation", 8)
-	var grid_margin := MarginContainer.new()
-	grid_margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	grid_margin.add_theme_constant_override("margin_left", 12)
-	grid_margin.add_theme_constant_override("margin_right", 12)
-	grid_margin.add_theme_constant_override("margin_top", 12)
-	grid_margin.add_theme_constant_override("margin_bottom", 4)
-	grid_margin.add_child(_zone_grid)
-	_zone_grid_wrap.add_child(grid_margin)
-	root.add_child(_zone_grid_wrap)
-
-	# Zone detail view (shown on zone tap)
-	_zone_detail_wrap = VBoxContainer.new()
-	_zone_detail_wrap.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_zone_detail_wrap.add_theme_constant_override("separation", 0)
-	_zone_detail_wrap.visible = false
-	_zone_detail_scroll = ScrollContainer.new()
-	_zone_detail_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_zone_detail_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_zone_detail_col = VBoxContainer.new()
-	_zone_detail_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_zone_detail_col.add_theme_constant_override("separation", 6)
-	_zone_detail_scroll.add_child(_zone_detail_col)
-	_zone_detail_wrap.add_child(_zone_detail_scroll)
-	root.add_child(_zone_detail_wrap)
+	# Inline zone cards (LT1 style — always visible, scroll vertically)
+	_zone_scroll = ScrollContainer.new()
+	_zone_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_zone_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_zone_container = VBoxContainer.new()
+	_zone_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_zone_container.add_theme_constant_override("separation", 8)
+	var zone_margin := MarginContainer.new()
+	zone_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	zone_margin.add_theme_constant_override("margin_left", 12)
+	zone_margin.add_theme_constant_override("margin_right", 12)
+	zone_margin.add_theme_constant_override("margin_top", 8)
+	zone_margin.add_theme_constant_override("margin_bottom", 4)
+	zone_margin.add_child(_zone_container)
+	_zone_scroll.add_child(zone_margin)
+	root.add_child(_zone_scroll)
 
 	root.add_child(_build_log_strip())
 
@@ -507,369 +485,215 @@ func _refresh_era_fill() -> void:
 
 
 func _refresh_zones() -> void:
-	# Rebuild grid buttons
-	for child: Node in _zone_grid.get_children():
+	for child: Node in _zone_container.get_children():
 		child.queue_free()
 
 	var era: Dictionary = DataLoader.eras.get(GameState.current_era_id, {})
 	var zone_order: Array = era.get("zone_order", ["Campament", "Planes", "Bosc", "Ritual"])
 
 	for zone_id: String in zone_order:
-		_zone_grid.add_child(_build_zone_grid_btn(zone_id))
-
-	# If a zone detail is open, refresh it too
-	if _selected_zone != "":
-		_open_zone(_selected_zone)
+		_zone_container.add_child(_build_lt1_zone_card(zone_id))
 
 
-func _build_zone_grid_btn(zone_id: String) -> Control:
+## Zone colors per LT1 (header bg + border accent)
+const ZONE_COLORS: Dictionary = {
+	"Campament": Color(0.376, 0.647, 0.980),  # blue
+	"Planes":    Color(0.961, 0.651, 0.137),  # gold
+	"Bosc":      Color(0.306, 0.871, 0.502),  # green
+	"Ritual":    Color(0.753, 0.510, 0.988),  # purple
+}
+
+
+func _build_lt1_zone_card(zone_id: String) -> Control:
 	var discovered: bool = zone_id in GameState.discovered_zone_ids
-	var icon: String = ZONE_ICONS.get(zone_id, "📍")
-	var has_actions: bool = discovered and not _get_zone_actions(zone_id).is_empty()
+	var zone_col: Color = ZONE_COLORS.get(zone_id, C_DIM)
+	var actions: Array = _get_zone_actions(zone_id) if discovered else []
+	var n_active: int = 0
+	var n_buy: int = 0
+	for a: Variant in actions:
+		var vis: ActionManager.Visibility = ActionManager.get_action_visibility(a as Dictionary)
+		if vis == ActionManager.Visibility.ACTIVE:  n_active += 1
+		elif vis == ActionManager.Visibility.LOCKED: n_buy   += 1
 
-	var btn := Button.new()
-	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	btn.custom_minimum_size = Vector2(0, 100)
-	btn.text = "%s\n%s" % [icon, zone_id]
-	btn.add_theme_font_size_override("font_size", 13)
+	# Outer card
+	var card := PanelContainer.new()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var card_style := StyleBoxFlat.new()
+	card_style.bg_color = C_SURFACE
+	card_style.border_width_left = 1; card_style.border_width_right = 1
+	card_style.border_width_top = 1; card_style.border_width_bottom = 1
+	card_style.border_color = C_BORDER if discovered else C_BORDER.darkened(0.4)
+	card_style.corner_radius_top_left = 8; card_style.corner_radius_top_right = 8
+	card_style.corner_radius_bottom_left = 8; card_style.corner_radius_bottom_right = 8
+	card.add_theme_stylebox_override("panel", card_style)
+	if not discovered:
+		card.modulate = Color(1, 1, 1, 0.45)
 
-	var bg: Color
-	var border: Color
-	var txt: Color
-	if discovered:
-		bg = C_SURFACE
-		border = C_BORDER
-		txt = C_TEXT
-	else:
-		bg = C_BG
-		border = C_BORDER.darkened(0.4)
-		txt = C_DIM.darkened(0.3)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 0)
+	card.add_child(col)
 
-	var style := StyleBoxFlat.new()
-	style.bg_color = bg
-	style.border_width_left = 1; style.border_width_right = 1
-	style.border_width_top = 1; style.border_width_bottom = 1
-	style.border_color = border
-	style.corner_radius_top_left = 10; style.corner_radius_top_right = 10
-	style.corner_radius_bottom_left = 10; style.corner_radius_bottom_right = 10
-	btn.add_theme_stylebox_override("normal", style)
-	btn.add_theme_color_override("font_color", txt)
+	# ── Header (coloured) ──────────────────────────────────────────────────
+	var header_style := StyleBoxFlat.new()
+	header_style.bg_color = zone_col.darkened(0.88) if discovered else C_SURFACE2
+	header_style.border_width_bottom = 1
+	header_style.border_color = zone_col.darkened(0.5) if discovered else C_BORDER
+	header_style.content_margin_left = 12; header_style.content_margin_right = 12
+	header_style.content_margin_top = 7;   header_style.content_margin_bottom = 7
+	header_style.corner_radius_top_left = 8; header_style.corner_radius_top_right = 8
+	var header := PanelContainer.new()
+	header.add_theme_stylebox_override("panel", header_style)
 
-	if discovered:
-		var hover_style := style.duplicate() as StyleBoxFlat
-		hover_style.bg_color = C_SURFACE2
-		hover_style.border_color = C_GOLD if has_actions else C_BORDER
-		btn.add_theme_stylebox_override("hover", hover_style)
-		btn.pressed.connect(func() -> void: _open_zone(zone_id))
-	else:
-		btn.disabled = true
+	var hrow := HBoxContainer.new()
+	hrow.add_theme_constant_override("separation", 6)
+	header.add_child(hrow)
 
-	return btn
+	var icon_lbl := Label.new()
+	icon_lbl.text = ZONE_ICONS.get(zone_id, "📍")
+	icon_lbl.add_theme_font_size_override("font_size", 13)
+	hrow.add_child(icon_lbl)
 
+	var title_lbl := Label.new()
+	title_lbl.text = zone_id.to_upper()
+	title_lbl.add_theme_color_override("font_color", zone_col if discovered else C_DIM)
+	title_lbl.add_theme_font_size_override("font_size", 11)
+	title_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hrow.add_child(title_lbl)
 
-const ActionCarouselScript = preload("res://scripts/ui/ActionCarousel.gd")
+	if discovered and not actions.is_empty():
+		var summary_lbl := Label.new()
+		var parts: Array[String] = []
+		if n_active > 0: parts.append("%d act" % n_active)
+		if n_buy   > 0: parts.append("%d comp" % n_buy)
+		summary_lbl.text = "  ·  ".join(parts)
+		summary_lbl.add_theme_color_override("font_color", C_DIM)
+		summary_lbl.add_theme_font_size_override("font_size", 10)
+		hrow.add_child(summary_lbl)
+	elif not discovered:
+		var hint_lbl := Label.new()
+		hint_lbl.text = "per descobrir"
+		hint_lbl.add_theme_color_override("font_color", C_DIM)
+		hint_lbl.add_theme_font_size_override("font_size", 10)
+		hrow.add_child(hint_lbl)
 
-func _open_zone(zone_id: String) -> void:
-	_selected_zone = zone_id
-	_zone_grid_wrap.visible = false
-	_zone_detail_wrap.visible = true
+	col.add_child(header)
 
-	for child: Node in _zone_detail_col.get_children():
-		child.queue_free()
-	_carousel = null
-	_action_detail_panel = null
+	if not discovered:
+		return card
 
-	# ── Atmospheric header ──────────────────────────────────────────────────
-	_zone_detail_col.add_child(_build_zone_header(zone_id))
+	# ── Action rows ────────────────────────────────────────────────────────
+	var content := VBoxContainer.new()
+	content.add_theme_constant_override("separation", 0)
+	col.add_child(content)
 
-	var actions: Array = _get_zone_actions(zone_id)
 	if actions.is_empty():
-		var empty_lbl := Label.new()
-		empty_lbl.text = "Cap acció disponible en aquesta zona."
-		empty_lbl.add_theme_color_override("font_color", C_DIM)
-		empty_lbl.add_theme_font_size_override("font_size", 11)
-		_zone_detail_col.add_child(_section_wrap(empty_lbl))
-		return
+		var em := Label.new()
+		em.text = "Sense accions disponibles"
+		em.add_theme_color_override("font_color", C_DIM)
+		em.add_theme_font_size_override("font_size", 10)
+		var em_mc := MarginContainer.new()
+		em_mc.add_theme_constant_override("margin_left", 12)
+		em_mc.add_theme_constant_override("margin_top", 8)
+		em_mc.add_theme_constant_override("margin_bottom", 8)
+		em_mc.add_child(em)
+		content.add_child(em_mc)
+	else:
+		for action: Variant in actions:
+			content.add_child(_build_lt1_action_row(action as Dictionary))
 
-	# ── Carousel ────────────────────────────────────────────────────────────
-	var carousel_node := ActionCarouselScript.new()
-	carousel_node.custom_minimum_size = Vector2(0, 110)
-	carousel_node.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	carousel_node.setup(actions)
-	carousel_node.action_selected.connect(func(_idx: int) -> void: _refresh_action_detail())
-	_zone_detail_col.add_child(carousel_node)
-	_carousel = carousel_node
-
-	# ── Dot indicator ────────────────────────────────────────────────────────
-	var dots_row := HBoxContainer.new()
-	dots_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	dots_row.add_theme_constant_override("separation", 6)
-	_zone_detail_col.add_child(_section_wrap(dots_row))
-
-	# ── Action detail panel ──────────────────────────────────────────────────
-	_action_detail_panel = VBoxContainer.new()
-	_action_detail_panel.add_theme_constant_override("separation", 8)
-	_action_detail_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_zone_detail_col.add_child(_section_wrap(_action_detail_panel))
-
-	_refresh_action_detail()
+	return card
 
 
-func _build_zone_header(zone_id: String) -> Control:
-	const PALETTES: Dictionary = {
-		"Campament": {"top": Color(0.05,0.03,0.01), "bot": Color(0.22,0.09,0.02), "glow": Color(0.95,0.45,0.10,0.35)},
-		"Planes":    {"top": Color(0.04,0.07,0.13), "bot": Color(0.08,0.13,0.20), "glow": Color(0.55,0.75,0.95,0.22)},
-		"Bosc":      {"top": Color(0.02,0.06,0.03), "bot": Color(0.05,0.14,0.06), "glow": Color(0.20,0.75,0.25,0.22)},
-		"Ritual":    {"top": Color(0.05,0.02,0.12), "bot": Color(0.12,0.04,0.22), "glow": Color(0.65,0.30,0.95,0.32)},
-	}
-	var pal: Dictionary = PALETTES.get(zone_id, {"top":C_BG,"bot":C_SURFACE,"glow":Color(1,1,1,0.1)})
-
-	var root := Control.new()
-	root.custom_minimum_size = Vector2(0, 160)
-	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	root.clip_contents = true
-
-	# 1. Base gradient
-	root.add_child(_grad_rect(pal["top"], pal["bot"], false))
-
-	# 2. Radial glow (bottom-center)
-	var gc: Color = pal["glow"]
-	root.add_child(_radial_rect(gc, Color(gc.r, gc.g, gc.b, 0.0)))
-
-	# 3. Fade to BG at bottom
-	root.add_child(_grad_rect(Color(C_BG.r,C_BG.g,C_BG.b,0.0), C_BG, false, Vector2(0.5,0.55), Vector2(0.5,1.0)))
-
-	# 4. Big ghost icon (right side)
-	var ghost := Label.new()
-	ghost.text = ZONE_ICONS.get(zone_id, "")
-	ghost.add_theme_font_size_override("font_size", 96)
-	ghost.modulate = Color(1,1,1,0.12)
-	ghost.anchor_left = 0.55; ghost.anchor_right = 1.0
-	ghost.anchor_top = 0.0;   ghost.anchor_bottom = 1.0
-	ghost.offset_right = -8
-	ghost.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	ghost.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	root.add_child(ghost)
-
-	# 5. Overlay: back btn (top-left) + zone name (bottom-left)
-	var overlay := Control.new()
-	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root.add_child(overlay)
-
-	var back_btn := Button.new()
-	back_btn.text = "← Zones"
-	back_btn.flat = true
-	back_btn.add_theme_color_override("font_color", C_GOLD)
-	back_btn.add_theme_font_size_override("font_size", 12)
-	back_btn.anchor_left = 0.0; back_btn.anchor_top = 0.0
-	back_btn.offset_left = 8; back_btn.offset_top = 6
-	back_btn.offset_right = 110; back_btn.offset_bottom = 34
-	back_btn.pressed.connect(_close_zone)
-	overlay.add_child(back_btn)
-
-	var name_lbl := Label.new()
-	name_lbl.text = zone_id.to_upper()
-	name_lbl.add_theme_color_override("font_color", C_TEXT)
-	name_lbl.add_theme_font_size_override("font_size", 22)
-	name_lbl.anchor_left = 0.0; name_lbl.anchor_bottom = 1.0
-	name_lbl.anchor_top  = 1.0; name_lbl.anchor_right  = 0.55
-	name_lbl.offset_top = -38; name_lbl.offset_bottom = -12
-	name_lbl.offset_left = 16
-	overlay.add_child(name_lbl)
-
-	return root
-
-
-func _grad_rect(c0: Color, c1: Color, _horiz: bool = false,
-		from: Vector2 = Vector2(0.5, 0.0), to: Vector2 = Vector2(0.5, 1.0)) -> TextureRect:
-	var grad := Gradient.new()
-	grad.set_color(0, c0); grad.set_color(1, c1)
-	var tex := GradientTexture2D.new()
-	tex.gradient = grad
-	tex.fill = GradientTexture2D.FILL_LINEAR
-	tex.fill_from = from; tex.fill_to = to
-	var rect := TextureRect.new()
-	rect.texture = tex
-	rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	rect.stretch_mode = TextureRect.STRETCH_SCALE
-	return rect
-
-
-func _radial_rect(center: Color, edge: Color) -> TextureRect:
-	var grad := Gradient.new()
-	grad.set_color(0, center); grad.set_color(1, edge)
-	var tex := GradientTexture2D.new()
-	tex.gradient = grad
-	tex.fill = GradientTexture2D.FILL_RADIAL
-	tex.fill_from = Vector2(0.5, 1.1)
-	tex.fill_to   = Vector2(0.5, 0.3)
-	var rect := TextureRect.new()
-	rect.texture = tex
-	rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	rect.stretch_mode = TextureRect.STRETCH_SCALE
-	return rect
-
-
-func _close_zone() -> void:
-	_selected_zone = ""
-	_carousel = null
-	_action_detail_panel = null
-	_zone_detail_wrap.visible = false
-	_zone_grid_wrap.visible = true
-
-
-func _refresh_action_detail() -> void:
-	if _action_detail_panel == null or _carousel == null:
-		return
-	for child: Node in _action_detail_panel.get_children():
-		child.queue_free()
-
-	var action: Dictionary = _carousel.get_selected_action()
-	if action.is_empty():
-		return
-
+func _build_lt1_action_row(action: Dictionary) -> Control:
 	var action_id: String = action.get("id", "")
-	var name_str: String = action.get("name_key", action.get("name", action_id))
-	var out_min: int = int(action.get("output_min", 0))
-	var out_max: int = int(action.get("output_max", 0))
+	var name_str: String  = action.get("name_key", action.get("name", action_id))
+	var out_min: int      = int(action.get("output_min", 0))
+	var out_max: int      = int(action.get("output_max", 0))
 	var vis: ActionManager.Visibility = ActionManager.get_action_visibility(action)
-	var cost: int = int(action.get("purchase_cost", 0))
+	var cost: int         = int(action.get("purchase_cost", 0))
+	var side_str: String  = _side_effect_badge(action)
+	var is_upgrade: bool  = action.get("is_upgrade", false)
 
-	# Action name
+	# Row outer container
+	var row_mc := MarginContainer.new()
+	row_mc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row_mc.add_theme_constant_override("margin_left", 8)
+	row_mc.add_theme_constant_override("margin_right", 8)
+	row_mc.add_theme_constant_override("margin_top", 4)
+	row_mc.add_theme_constant_override("margin_bottom", 4)
+
+	# Inner styled panel
+	var row_bg := PanelContainer.new()
+	var row_style := StyleBoxFlat.new()
+	if is_upgrade:
+		row_style.bg_color = Color(C_GREEN.r, C_GREEN.g, C_GREEN.b, 0.04)
+		row_style.border_color = Color(C_GREEN.r, C_GREEN.g, C_GREEN.b, 0.30)
+	else:
+		row_style.bg_color = C_SURFACE2
+		row_style.border_color = C_BORDER
+	row_style.border_width_left = 1; row_style.border_width_right = 1
+	row_style.border_width_top = 1; row_style.border_width_bottom = 1
+	row_style.corner_radius_top_left = 5; row_style.corner_radius_top_right = 5
+	row_style.corner_radius_bottom_left = 5; row_style.corner_radius_bottom_right = 5
+	row_style.content_margin_left = 8; row_style.content_margin_right = 8
+	row_style.content_margin_top = 5; row_style.content_margin_bottom = 5
+	row_bg.add_theme_stylebox_override("panel", row_style)
+	row_mc.add_child(row_bg)
+
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 8)
+	row_bg.add_child(hbox)
+
+	# Left: name + meta
+	var info_col := VBoxContainer.new()
+	info_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info_col.add_theme_constant_override("separation", 2)
+	hbox.add_child(info_col)
+
 	var name_lbl := Label.new()
 	name_lbl.text = name_str
-	name_lbl.add_theme_color_override("font_color", C_TEXT)
-	name_lbl.add_theme_font_size_override("font_size", 16)
-	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_action_detail_panel.add_child(name_lbl)
-
-	# Output + side effects
-	var meta_str: String = "+%d–%d 🦴%s" % [out_min, out_max, _side_effect_badge(action)]
-	var meta_lbl := Label.new()
-	meta_lbl.text = meta_str
-	meta_lbl.add_theme_color_override("font_color", C_DIM)
-	meta_lbl.add_theme_font_size_override("font_size", 12)
-	meta_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_action_detail_panel.add_child(meta_lbl)
-
-	# Execute / Buy button
-	var btn := Button.new()
-	btn.custom_minimum_size = Vector2(0, 52)
-	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	btn.add_theme_font_size_override("font_size", 14)
-
+	name_lbl.add_theme_font_size_override("font_size", 12)
 	if vis == ActionManager.Visibility.ACTIVE:
-		btn.text = "Executar →"
-		btn.add_theme_color_override("font_color", Color(0.05, 0.12, 0.05))
-		var s := _btn_style(C_GREEN.darkened(0.15), C_GREEN)
-		s.bg_color = C_GREEN.darkened(0.2)
-		btn.add_theme_stylebox_override("normal", s)
-		btn.add_theme_stylebox_override("hover",  _btn_style(C_GREEN.darkened(0.05), C_GREEN))
-		btn.pressed.connect(func() -> void: _on_action_pressed(action_id))
+		name_lbl.add_theme_color_override("font_color", C_TEXT)
+	else:
+		name_lbl.add_theme_color_override("font_color", C_DIM)
+	info_col.add_child(name_lbl)
+
+	var meta_lbl := Label.new()
+	meta_lbl.text = "+%d–%d 🦴%s" % [out_min, out_max, side_str]
+	meta_lbl.add_theme_color_override("font_color", C_DIM)
+	meta_lbl.add_theme_font_size_override("font_size", 10)
+	info_col.add_child(meta_lbl)
+
+	# Right: button
+	if vis == ActionManager.Visibility.ACTIVE:
+		var exec_btn := Button.new()
+		exec_btn.text = "▶"
+		exec_btn.add_theme_font_size_override("font_size", 13)
+		exec_btn.custom_minimum_size = Vector2(36, 36)
+		exec_btn.add_theme_color_override("font_color", Color(0.03, 0.10, 0.03))
+		exec_btn.add_theme_stylebox_override("normal", _btn_style(C_GREEN.darkened(0.2), C_GREEN))
+		exec_btn.add_theme_stylebox_override("hover",  _btn_style(C_GREEN.darkened(0.1), C_GREEN))
+		exec_btn.pressed.connect(func() -> void: _on_action_pressed(action_id))
+		hbox.add_child(exec_btn)
 	elif vis == ActionManager.Visibility.LOCKED and cost > 0:
 		var can_buy: bool = GameState.tokens >= float(cost)
-		btn.text = "Comprar — %d 🦴" % cost
-		btn.disabled = not can_buy
-		var bcol: Color = C_BLUE if can_buy else C_DIM
-		btn.add_theme_color_override("font_color", Color(0.04, 0.08, 0.18) if can_buy else C_DIM)
-		btn.add_theme_stylebox_override("normal", _btn_style(
-			C_BLUE.darkened(0.2) if can_buy else C_SURFACE2,
-			bcol))
-		btn.pressed.connect(func() -> void:
-			ActionManager.purchase_action(action_id)
-			_refresh_zones()
-			_refresh_action_detail())
-	else:
-		btn.text = name_str
-		btn.disabled = true
-		btn.add_theme_color_override("font_color", C_DIM)
-		btn.add_theme_stylebox_override("normal", _btn_style(C_SURFACE2, C_BORDER))
-
-	_action_detail_panel.add_child(btn)
-
-
-func _section_wrap(child: Control) -> MarginContainer:
-	var mc := MarginContainer.new()
-	mc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	mc.add_theme_constant_override("margin_left", 12)
-	mc.add_theme_constant_override("margin_right", 12)
-	mc.add_theme_constant_override("margin_top", 4)
-	mc.add_theme_constant_override("margin_bottom", 4)
-	mc.add_child(child)
-	return mc
-
-
-func _build_action_card(action: Dictionary) -> Control:
-	var action_id: String = action.get("id", "")
-	var name_str: String = action.get("name_key", action.get("name", action_id))
-	var out_min: int = int(action.get("output_min", 0))
-	var out_max: int = int(action.get("output_max", 0))
-	var vis: ActionManager.Visibility = ActionManager.get_action_visibility(action)
-	var cost: int = int(action.get("purchase_cost", 0))
-	var side_str: String = _side_effect_badge(action)
-
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
-	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	if vis == ActionManager.Visibility.LOCKED and cost > 0:
-		# Locked purchasable action
-		var info := _action_info_box(name_str, out_min, out_max, side_str, C_DIM, false)
-		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(info)
-
 		var buy_btn := Button.new()
-		buy_btn.text = "🦴 %d" % cost
-		buy_btn.add_theme_font_size_override("font_size", 12)
-		buy_btn.custom_minimum_size = Vector2(64, 44)
-		var can_buy: bool = GameState.tokens >= float(cost)
-		var buy_col: Color = C_GOLD if can_buy else C_DIM
-		buy_btn.add_theme_color_override("font_color", buy_col)
-		var bstyle := _btn_style(C_SURFACE2, C_GOLD.darkened(0.5) if can_buy else C_BORDER)
-		buy_btn.add_theme_stylebox_override("normal", bstyle)
+		buy_btn.text = "🦴%d" % cost
+		buy_btn.add_theme_font_size_override("font_size", 11)
+		buy_btn.custom_minimum_size = Vector2(48, 36)
 		buy_btn.disabled = not can_buy
+		buy_btn.add_theme_color_override("font_color",
+			Color(0.03, 0.06, 0.14) if can_buy else C_DIM)
+		buy_btn.add_theme_stylebox_override("normal",
+			_btn_style(C_BLUE.darkened(0.2) if can_buy else C_SURFACE2,
+			C_BLUE if can_buy else C_BORDER))
 		buy_btn.pressed.connect(func() -> void:
 			ActionManager.purchase_action(action_id)
 			_refresh_zones())
-		row.add_child(buy_btn)
-	elif vis == ActionManager.Visibility.ACTIVE:
-		var dom_col: Color = _dominant_axis_color(action)
-		var btn := Button.new()
-		var output_str: String = "+%d–%d 🦴%s" % [out_min, out_max, side_str]
-		btn.text = "%s\n%s" % [name_str, output_str]
-		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		btn.custom_minimum_size.y = 52
-		btn.add_theme_font_size_override("font_size", 12)
-		btn.add_theme_color_override("font_color", dom_col)
-		btn.add_theme_stylebox_override("normal", _btn_style(C_SURFACE2, dom_col.darkened(0.6)))
-		btn.add_theme_stylebox_override("hover",  _btn_style(dom_col.darkened(0.65), dom_col))
-		btn.add_theme_stylebox_override("pressed",_btn_style(dom_col.darkened(0.5),  dom_col))
-		btn.pressed.connect(_on_action_pressed.bind(action_id))
-		row.add_child(btn)
-	else:
-		# Hidden or inaccessible — skip
-		pass
+		hbox.add_child(buy_btn)
 
-	return row
-
-
-func _action_info_box(name_str: String, out_min: int, out_max: int,
-		side_str: String, col: Color, _active: bool) -> Control:
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 2)
-	var n := Label.new()
-	n.text = name_str
-	n.add_theme_color_override("font_color", col)
-	n.add_theme_font_size_override("font_size", 12)
-	box.add_child(n)
-	var sub := Label.new()
-	sub.text = "+%d–%d 🦴%s" % [out_min, out_max, side_str]
-	sub.add_theme_color_override("font_color", C_DIM)
-	sub.add_theme_font_size_override("font_size", 10)
-	box.add_child(sub)
-	return box
+	return row_mc
 
 
 func _btn_style(bg: Color, border: Color) -> StyleBoxFlat:
@@ -880,8 +704,8 @@ func _btn_style(bg: Color, border: Color) -> StyleBoxFlat:
 	s.border_color = border
 	s.corner_radius_top_left = 6; s.corner_radius_top_right = 6
 	s.corner_radius_bottom_left = 6; s.corner_radius_bottom_right = 6
-	s.content_margin_left = 10; s.content_margin_right = 10
-	s.content_margin_top = 6; s.content_margin_bottom = 6
+	s.content_margin_left = 8; s.content_margin_right = 8
+	s.content_margin_top = 4; s.content_margin_bottom = 4
 	return s
 
 
@@ -926,7 +750,6 @@ func _on_action_executed(action_id: String, output: float, side_effects: Array) 
 		_show_overlay("NOU MEMBRE", "👶", child_label,
 			"Fill/a de %s" % GameState.character_label, "Benvingut →",
 			func() -> void:
-				_close_zone()
 				_refresh())
 		return
 	if _suppress_next_result:
@@ -945,6 +768,7 @@ func _on_action_executed(action_id: String, output: float, side_effects: Array) 
 				var pool: String = _pending_pool_id
 				_pending_pool_id = ""
 				EventManager.try_trigger_event(pool))
+
 
 
 func _on_zone_unlocked(zone_id: String) -> void:
