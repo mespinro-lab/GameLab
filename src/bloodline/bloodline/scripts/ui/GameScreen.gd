@@ -34,6 +34,18 @@ const AXIS_COLORS: Dictionary = {
 	"espiritualitat": Color(0.67, 0.48, 0.98),
 	"sociabilitat": Color(0.29, 0.87, 0.50),
 }
+const BRANCH_COLORS: Dictionary = {
+	"branch_cacador":   Color(0.94, 0.27, 0.37),
+	"branch_recollector": Color(0.29, 0.87, 0.50),
+	"branch_artesa":    Color(0.38, 0.65, 0.98),
+	"branch_mistic":    Color(0.67, 0.48, 0.98),
+}
+const ZONE_ICONS: Dictionary = {
+	"Campament": "🏕",
+	"Planes":    "🌾",
+	"Bosc":      "🌲",
+	"Ritual":    "🔥",
+}
 
 
 func _ready() -> void:
@@ -284,9 +296,10 @@ func _refresh_branches() -> void:
 		pill.text = b.get("name", bid)
 		pill.add_theme_font_size_override("font_size", 11)
 		if is_active:
-			pill.add_theme_color_override("font_color", Color(0.95, 0.88, 0.50))
+			var bcol: Color = BRANCH_COLORS.get(bid, Color(0.95, 0.88, 0.50))
+			pill.add_theme_color_override("font_color", bcol)
 		else:
-			pill.add_theme_color_override("font_color", Color(0.35, 0.30, 0.25))
+			pill.add_theme_color_override("font_color", Color(0.30, 0.27, 0.22))
 		_branch_bar.add_child(pill)
 		if branches.find(branch) < branches.size() - 1:
 			var sep := Label.new()
@@ -337,11 +350,15 @@ func _refresh_zones() -> void:
 
 
 func _build_zone_card(zone_id: String) -> Control:
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _flat_style(Color(0.09, 0.07, 0.05)))
 	var card := VBoxContainer.new()
 	card.add_theme_constant_override("separation", 4)
+	panel.add_child(card)
 
+	var icon: String = ZONE_ICONS.get(zone_id, "📍")
 	var header := Label.new()
-	header.text = zone_id.to_upper()
+	header.text = "%s  %s" % [icon, zone_id.to_upper()]
 	header.add_theme_color_override("font_color", Color(0.55, 0.50, 0.42))
 	header.add_theme_font_size_override("font_size", 10)
 	card.add_child(header)
@@ -353,12 +370,12 @@ func _build_zone_card(zone_id: String) -> Control:
 		empty.add_theme_color_override("font_color", Color(0.40, 0.36, 0.30))
 		empty.add_theme_font_size_override("font_size", 11)
 		card.add_child(empty)
-		return card
+		return panel
 
 	for action: Dictionary in actions:
 		card.add_child(_build_action_row(action))
 
-	return card
+	return panel
 
 
 func _build_action_row(action: Dictionary) -> Control:
@@ -380,7 +397,8 @@ func _build_action_row(action: Dictionary) -> Control:
 
 	if vis == ActionManager.Visibility.ACTIVE:
 		btn.text = "%s  +%d–%d 🦴" % [name_str, out_min, out_max]
-		btn.add_theme_color_override("font_color", Color(0.92, 0.85, 0.68))
+		var dom_col: Color = _dominant_axis_color(action)
+		btn.add_theme_color_override("font_color", dom_col)
 		btn.pressed.connect(_on_action_pressed.bind(action_id))
 	elif vis == ActionManager.Visibility.LOCKED and cost > 0:
 		btn.text = "%s  +%d–%d 🦴" % [name_str, out_min, out_max]
@@ -642,6 +660,19 @@ func _show_succession_overlay(successors: Array) -> void:
 
 
 # ── Style helpers ─────────────────────────────────────────────────────────────
+
+func _dominant_axis_color(action: Dictionary) -> Color:
+	var deltas: Dictionary = action.get("inclination_deltas", {})
+	var best_axis: String = ""
+	var best_val: float = 0.02
+	for ax: String in deltas:
+		if absf(float(deltas[ax])) > best_val:
+			best_axis = ax
+			best_val = absf(float(deltas[ax]))
+	if best_axis == "":
+		return Color(0.92, 0.85, 0.68)
+	return AXIS_COLORS.get(best_axis, Color(0.92, 0.85, 0.68))
+
 
 func _flat_style(color: Color) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
