@@ -50,9 +50,11 @@ var _branch_bar: HBoxContainer
 var _incl_bars: Dictionary = {}
 var _zone_grid_wrap: VBoxContainer   # expand — shows 2×2 zone buttons
 var _zone_grid: GridContainer
-var _zone_detail_wrap: VBoxContainer # expand — shows action list for selected zone
+var _zone_detail_wrap: VBoxContainer # expand — shows carousel for selected zone
 var _zone_detail_scroll: ScrollContainer
 var _zone_detail_col: VBoxContainer
+var _carousel: Node                  # ActionCarousel instance
+var _action_detail_panel: VBoxContainer # shows selected action info below carousel
 var _log_label: Label
 var _log_entries: Array[String] = []
 var _overlay: Control
@@ -565,6 +567,8 @@ func _build_zone_grid_btn(zone_id: String) -> Control:
 	return btn
 
 
+const ActionCarouselScript = preload("res://scripts/ui/ActionCarousel.gd")
+
 func _open_zone(zone_id: String) -> void:
 	_selected_zone = zone_id
 	_zone_grid_wrap.visible = false
@@ -572,11 +576,12 @@ func _open_zone(zone_id: String) -> void:
 
 	for child: Node in _zone_detail_col.get_children():
 		child.queue_free()
+	_carousel = null
+	_action_detail_panel = null
 
 	# ── Atmospheric header ──────────────────────────────────────────────────
 	_zone_detail_col.add_child(_build_zone_header(zone_id))
 
-	# ── Actions ─────────────────────────────────────────────────────────────
 	var actions: Array = _get_zone_actions(zone_id)
 	if actions.is_empty():
 		var empty_lbl := Label.new()
@@ -584,9 +589,30 @@ func _open_zone(zone_id: String) -> void:
 		empty_lbl.add_theme_color_override("font_color", C_DIM)
 		empty_lbl.add_theme_font_size_override("font_size", 11)
 		_zone_detail_col.add_child(_section_wrap(empty_lbl))
-	else:
-		for action: Dictionary in actions:
-			_zone_detail_col.add_child(_section_wrap(_build_action_card(action)))
+		return
+
+	# ── Carousel ────────────────────────────────────────────────────────────
+	var carousel_node := ActionCarouselScript.new()
+	carousel_node.custom_minimum_size = Vector2(0, 110)
+	carousel_node.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	carousel_node.setup(actions)
+	carousel_node.action_selected.connect(func(_idx: int) -> void: _refresh_action_detail())
+	_zone_detail_col.add_child(carousel_node)
+	_carousel = carousel_node
+
+	# ── Dot indicator ────────────────────────────────────────────────────────
+	var dots_row := HBoxContainer.new()
+	dots_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	dots_row.add_theme_constant_override("separation", 6)
+	_zone_detail_col.add_child(_section_wrap(dots_row))
+
+	# ── Action detail panel ──────────────────────────────────────────────────
+	_action_detail_panel = VBoxContainer.new()
+	_action_detail_panel.add_theme_constant_override("separation", 8)
+	_action_detail_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_zone_detail_col.add_child(_section_wrap(_action_detail_panel))
+
+	_refresh_action_detail()
 
 
 func _build_zone_header(zone_id: String) -> Control:
@@ -688,8 +714,80 @@ func _radial_rect(center: Color, edge: Color) -> TextureRect:
 
 func _close_zone() -> void:
 	_selected_zone = ""
+	_carousel = null
+	_action_detail_panel = null
 	_zone_detail_wrap.visible = false
 	_zone_grid_wrap.visible = true
+
+
+func _refresh_action_detail() -> void:
+	if _action_detail_panel == null or _carousel == null:
+		return
+	for child: Node in _action_detail_panel.get_children():
+		child.queue_free()
+
+	var action: Dictionary = _carousel.get_selected_action()
+	if action.is_empty():
+		return
+
+	var action_id: String = action.get("id", "")
+	var name_str: String = action.get("name_key", action.get("name", action_id))
+	var out_min: int = int(action.get("output_min", 0))
+	var out_max: int = int(action.get("output_max", 0))
+	var vis: ActionManager.Visibility = ActionManager.get_action_visibility(action)
+	var cost: int = int(action.get("purchase_cost", 0))
+
+	# Action name
+	var name_lbl := Label.new()
+	name_lbl.text = name_str
+	name_lbl.add_theme_color_override("font_color", C_TEXT)
+	name_lbl.add_theme_font_size_override("font_size", 16)
+	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_action_detail_panel.add_child(name_lbl)
+
+	# Output + side effects
+	var meta_str: String = "+%d–%d 🦴%s" % [out_min, out_max, _side_effect_badge(action)]
+	var meta_lbl := Label.new()
+	meta_lbl.text = meta_str
+	meta_lbl.add_theme_color_override("font_color", C_DIM)
+	meta_lbl.add_theme_font_size_override("font_size", 12)
+	meta_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_action_detail_panel.add_child(meta_lbl)
+
+	# Execute / Buy button
+	var btn := Button.new()
+	btn.custom_minimum_size = Vector2(0, 52)
+	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn.add_theme_font_size_override("font_size", 14)
+
+	if vis == ActionManager.Visibility.ACTIVE:
+		btn.text = "Executar →"
+		btn.add_theme_color_override("font_color", Color(0.05, 0.12, 0.05))
+		var s := _btn_style(C_GREEN.darkened(0.15), C_GREEN)
+		s.bg_color = C_GREEN.darkened(0.2)
+		btn.add_theme_stylebox_override("normal", s)
+		btn.add_theme_stylebox_override("hover",  _btn_style(C_GREEN.darkened(0.05), C_GREEN))
+		btn.pressed.connect(func() -> void: _on_action_pressed(action_id))
+	elif vis == ActionManager.Visibility.LOCKED and cost > 0:
+		var can_buy: bool = GameState.tokens >= float(cost)
+		btn.text = "Comprar — %d 🦴" % cost
+		btn.disabled = not can_buy
+		var bcol: Color = C_BLUE if can_buy else C_DIM
+		btn.add_theme_color_override("font_color", Color(0.04, 0.08, 0.18) if can_buy else C_DIM)
+		btn.add_theme_stylebox_override("normal", _btn_style(
+			C_BLUE.darkened(0.2) if can_buy else C_SURFACE2,
+			bcol))
+		btn.pressed.connect(func() -> void:
+			ActionManager.purchase_action(action_id)
+			_refresh_zones()
+			_refresh_action_detail())
+	else:
+		btn.text = name_str
+		btn.disabled = true
+		btn.add_theme_color_override("font_color", C_DIM)
+		btn.add_theme_stylebox_override("normal", _btn_style(C_SURFACE2, C_BORDER))
+
+	_action_detail_panel.add_child(btn)
 
 
 func _section_wrap(child: Control) -> MarginContainer:
