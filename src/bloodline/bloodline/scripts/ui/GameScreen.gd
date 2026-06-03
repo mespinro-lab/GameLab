@@ -570,30 +570,13 @@ func _open_zone(zone_id: String) -> void:
 	_zone_grid_wrap.visible = false
 	_zone_detail_wrap.visible = true
 
-	# Clear and rebuild detail
 	for child: Node in _zone_detail_col.get_children():
 		child.queue_free()
 
-	# Back header
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 8)
-	var back_btn := Button.new()
-	back_btn.text = "← Zones"
-	back_btn.flat = true
-	back_btn.add_theme_color_override("font_color", C_GOLD)
-	back_btn.add_theme_font_size_override("font_size", 13)
-	back_btn.pressed.connect(_close_zone)
-	header.add_child(back_btn)
-	var zone_title := Label.new()
-	zone_title.text = "%s  %s" % [ZONE_ICONS.get(zone_id, ""), zone_id.to_upper()]
-	zone_title.add_theme_color_override("font_color", C_DIM)
-	zone_title.add_theme_font_size_override("font_size", 10)
-	zone_title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	header.add_child(zone_title)
-	var wrap := _section_wrap(header)
-	_zone_detail_col.add_child(wrap)
+	# ── Atmospheric header ──────────────────────────────────────────────────
+	_zone_detail_col.add_child(_build_zone_header(zone_id))
 
-	# Actions
+	# ── Actions ─────────────────────────────────────────────────────────────
 	var actions: Array = _get_zone_actions(zone_id)
 	if actions.is_empty():
 		var empty_lbl := Label.new()
@@ -603,8 +586,104 @@ func _open_zone(zone_id: String) -> void:
 		_zone_detail_col.add_child(_section_wrap(empty_lbl))
 	else:
 		for action: Dictionary in actions:
-			var card := _build_action_card(action)
-			_zone_detail_col.add_child(_section_wrap(card))
+			_zone_detail_col.add_child(_section_wrap(_build_action_card(action)))
+
+
+func _build_zone_header(zone_id: String) -> Control:
+	const PALETTES: Dictionary = {
+		"Campament": {"top": Color(0.05,0.03,0.01), "bot": Color(0.22,0.09,0.02), "glow": Color(0.95,0.45,0.10,0.35)},
+		"Planes":    {"top": Color(0.04,0.07,0.13), "bot": Color(0.08,0.13,0.20), "glow": Color(0.55,0.75,0.95,0.22)},
+		"Bosc":      {"top": Color(0.02,0.06,0.03), "bot": Color(0.05,0.14,0.06), "glow": Color(0.20,0.75,0.25,0.22)},
+		"Ritual":    {"top": Color(0.05,0.02,0.12), "bot": Color(0.12,0.04,0.22), "glow": Color(0.65,0.30,0.95,0.32)},
+	}
+	var pal: Dictionary = PALETTES.get(zone_id, {"top":C_BG,"bot":C_SURFACE,"glow":Color(1,1,1,0.1)})
+
+	var root := Control.new()
+	root.custom_minimum_size = Vector2(0, 160)
+	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	root.clip_contents = true
+
+	# 1. Base gradient
+	root.add_child(_grad_rect(pal["top"], pal["bot"], false))
+
+	# 2. Radial glow (bottom-center)
+	var gc: Color = pal["glow"]
+	root.add_child(_radial_rect(gc, Color(gc.r, gc.g, gc.b, 0.0)))
+
+	# 3. Fade to BG at bottom
+	root.add_child(_grad_rect(Color(C_BG.r,C_BG.g,C_BG.b,0.0), C_BG, false, Vector2(0.5,0.55), Vector2(0.5,1.0)))
+
+	# 4. Big ghost icon (right side)
+	var ghost := Label.new()
+	ghost.text = ZONE_ICONS.get(zone_id, "")
+	ghost.add_theme_font_size_override("font_size", 96)
+	ghost.modulate = Color(1,1,1,0.12)
+	ghost.anchor_left = 0.55; ghost.anchor_right = 1.0
+	ghost.anchor_top = 0.0;   ghost.anchor_bottom = 1.0
+	ghost.offset_right = -8
+	ghost.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	ghost.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	root.add_child(ghost)
+
+	# 5. Overlay: back btn (top-left) + zone name (bottom-left)
+	var overlay := Control.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root.add_child(overlay)
+
+	var back_btn := Button.new()
+	back_btn.text = "← Zones"
+	back_btn.flat = true
+	back_btn.add_theme_color_override("font_color", C_GOLD)
+	back_btn.add_theme_font_size_override("font_size", 12)
+	back_btn.anchor_left = 0.0; back_btn.anchor_top = 0.0
+	back_btn.offset_left = 8; back_btn.offset_top = 6
+	back_btn.offset_right = 110; back_btn.offset_bottom = 34
+	back_btn.pressed.connect(_close_zone)
+	overlay.add_child(back_btn)
+
+	var name_lbl := Label.new()
+	name_lbl.text = zone_id.to_upper()
+	name_lbl.add_theme_color_override("font_color", C_TEXT)
+	name_lbl.add_theme_font_size_override("font_size", 22)
+	name_lbl.anchor_left = 0.0; name_lbl.anchor_bottom = 1.0
+	name_lbl.anchor_top  = 1.0; name_lbl.anchor_right  = 0.55
+	name_lbl.offset_top = -38; name_lbl.offset_bottom = -12
+	name_lbl.offset_left = 16
+	overlay.add_child(name_lbl)
+
+	return root
+
+
+func _grad_rect(c0: Color, c1: Color, _horiz: bool = false,
+		from: Vector2 = Vector2(0.5, 0.0), to: Vector2 = Vector2(0.5, 1.0)) -> TextureRect:
+	var grad := Gradient.new()
+	grad.set_color(0, c0); grad.set_color(1, c1)
+	var tex := GradientTexture2D.new()
+	tex.gradient = grad
+	tex.fill = GradientTexture2D.FILL_LINEAR
+	tex.fill_from = from; tex.fill_to = to
+	var rect := TextureRect.new()
+	rect.texture = tex
+	rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.stretch_mode = TextureRect.STRETCH_SCALE
+	return rect
+
+
+func _radial_rect(center: Color, edge: Color) -> TextureRect:
+	var grad := Gradient.new()
+	grad.set_color(0, center); grad.set_color(1, edge)
+	var tex := GradientTexture2D.new()
+	tex.gradient = grad
+	tex.fill = GradientTexture2D.FILL_RADIAL
+	tex.fill_from = Vector2(0.5, 1.1)
+	tex.fill_to   = Vector2(0.5, 0.3)
+	var rect := TextureRect.new()
+	rect.texture = tex
+	rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.stretch_mode = TextureRect.STRETCH_SCALE
+	return rect
 
 
 func _close_zone() -> void:
