@@ -40,16 +40,22 @@ const ZONE_ICONS: Dictionary = {
 }
 
 # ── Node refs ─────────────────────────────────────────────────────────────────
+# Top bar
 var _pill_food: Label
 var _pill_health: Label
 var _pill_tokens: Label
+var _era_fill: Panel
+# Left panel (player)
 var _label_char: Label
 var _label_meta: Label
-var _era_fill: Panel
-var _branch_bar: HBoxContainer
+var _branch_bar: VBoxContainer
 var _incl_bars: Dictionary = {}
-var _zone_scroll: ScrollContainer    # inline zone cards (LT1 style)
+var _family_bar: Label
+var _skills_bar: VBoxContainer
+# Right panel (zones)
+var _zone_scroll: ScrollContainer
 var _zone_container: VBoxContainer
+# Log
 var _log_label: Label
 var _log_entries: Array[String] = []
 var _overlay: Control
@@ -79,6 +85,7 @@ func _build_layout() -> void:
 	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
+	# Root: vertical stack — topbar / era strip / middle / log
 	var root := VBoxContainer.new()
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.add_theme_constant_override("separation", 0)
@@ -86,25 +93,45 @@ func _build_layout() -> void:
 
 	root.add_child(_build_top_bar())
 	root.add_child(_build_era_strip())
-	root.add_child(_build_branch_strip())
-	root.add_child(_build_incl_panel())
 
-	# Inline zone cards (LT1 style — always visible, scroll vertically)
+	# ── Middle: 1/3 player  |  2/3 zones ──────────────────────────────────
+	var middle := HBoxContainer.new()
+	middle.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	middle.add_theme_constant_override("separation", 0)
+	root.add_child(middle)
+
+	# Left panel: player info (1 part)
+	var left_scroll := ScrollContainer.new()
+	left_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	left_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left_scroll.size_flags_stretch_ratio = 1.0
+	left_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	var left_border := StyleBoxFlat.new()
+	left_border.bg_color = C_SURFACE
+	left_border.border_width_right = 1
+	left_border.border_color = C_BORDER
+	left_scroll.add_theme_stylebox_override("panel", left_border)
+	middle.add_child(left_scroll)
+	left_scroll.add_child(_build_left_panel())
+
+	# Right panel: zones (2 parts)
 	_zone_scroll = ScrollContainer.new()
 	_zone_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_zone_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_zone_scroll.size_flags_stretch_ratio = 2.0
 	_zone_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	middle.add_child(_zone_scroll)
 	_zone_container = VBoxContainer.new()
 	_zone_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_zone_container.add_theme_constant_override("separation", 8)
-	var zone_margin := MarginContainer.new()
-	zone_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	zone_margin.add_theme_constant_override("margin_left", 12)
-	zone_margin.add_theme_constant_override("margin_right", 12)
-	zone_margin.add_theme_constant_override("margin_top", 8)
-	zone_margin.add_theme_constant_override("margin_bottom", 4)
-	zone_margin.add_child(_zone_container)
-	_zone_scroll.add_child(zone_margin)
-	root.add_child(_zone_scroll)
+	_zone_container.add_theme_constant_override("separation", 6)
+	var zm := MarginContainer.new()
+	zm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	zm.add_theme_constant_override("margin_left", 8)
+	zm.add_theme_constant_override("margin_right", 8)
+	zm.add_theme_constant_override("margin_top", 8)
+	zm.add_theme_constant_override("margin_bottom", 4)
+	zm.add_child(_zone_container)
+	_zone_scroll.add_child(zm)
 
 	root.add_child(_build_log_strip())
 
@@ -112,57 +139,221 @@ func _build_layout() -> void:
 	add_child(_overlay)
 
 
-func _build_top_bar() -> Control:
-	var bar := _card(C_SURFACE, 0)
-	bar.add_theme_constant_override("margin_left", 12)
-	bar.add_theme_constant_override("margin_right", 12)
-	bar.add_theme_constant_override("margin_top", 8)
-	bar.add_theme_constant_override("margin_bottom", 8)
-
+func _build_left_panel() -> Control:
 	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 4)
-	bar.add_child(col)
+	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	col.add_theme_constant_override("separation", 0)
 
-	# Row 1: char name + meta
-	var row1 := HBoxContainer.new()
-	row1.add_theme_constant_override("separation", 8)
-	col.add_child(row1)
+	# ── Character name + gen ───────────────────────────────────────────────
+	var char_mc := MarginContainer.new()
+	char_mc.add_theme_constant_override("margin_left", 10)
+	char_mc.add_theme_constant_override("margin_right", 6)
+	char_mc.add_theme_constant_override("margin_top", 10)
+	char_mc.add_theme_constant_override("margin_bottom", 4)
+	var char_col := VBoxContainer.new()
+	char_col.add_theme_constant_override("separation", 2)
+	char_mc.add_child(char_col)
 
 	_label_char = Label.new()
-	_label_char.add_theme_color_override("font_color", C_TEXT)
-	_label_char.add_theme_font_size_override("font_size", 15)
-	_label_char.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row1.add_child(_label_char)
-
-	var reset_btn := Button.new()
-	reset_btn.text = "↺"
-	reset_btn.flat = true
-	reset_btn.add_theme_color_override("font_color", C_DIM)
-	reset_btn.add_theme_font_size_override("font_size", 14)
-	reset_btn.custom_minimum_size = Vector2(28, 28)
-	reset_btn.pressed.connect(func() -> void:
-		SaveSystem.delete_save()
-		request_new_game.emit())
-	row1.add_child(reset_btn)
+	_label_char.add_theme_color_override("font_color", C_ACCENT)
+	_label_char.add_theme_font_size_override("font_size", 14)
+	char_col.add_child(_label_char)
 
 	_label_meta = Label.new()
 	_label_meta.add_theme_color_override("font_color", C_DIM)
-	_label_meta.add_theme_font_size_override("font_size", 10)
-	col.add_child(_label_meta)
+	_label_meta.add_theme_font_size_override("font_size", 9)
+	_label_meta.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	char_col.add_child(_label_meta)
 
-	# Row 3: resource pills
-	var pills := HBoxContainer.new()
-	pills.add_theme_constant_override("separation", 6)
-	col.add_child(pills)
+	_family_bar = Label.new()
+	_family_bar.add_theme_color_override("font_color", C_DIM)
+	_family_bar.add_theme_font_size_override("font_size", 10)
+	char_col.add_child(_family_bar)
+	col.add_child(char_mc)
 
-	_pill_food    = _resource_pill("🌾", "0", C_GOLD)
-	_pill_health  = _resource_pill("❤️", "0", C_ACCENT)
-	_pill_tokens  = _resource_pill("🦴", "0", C_GOLD)
-	pills.add_child(_pill_food)
-	pills.add_child(_pill_health)
-	pills.add_child(_pill_tokens)
+	col.add_child(_h_sep())
+
+	# ── Section: Branques ──────────────────────────────────────────────────
+	col.add_child(_section_label("Branques"))
+	var branch_mc := MarginContainer.new()
+	branch_mc.add_theme_constant_override("margin_left", 10)
+	branch_mc.add_theme_constant_override("margin_right", 6)
+	branch_mc.add_theme_constant_override("margin_bottom", 6)
+	_branch_bar = VBoxContainer.new()
+	_branch_bar.add_theme_constant_override("separation", 3)
+	branch_mc.add_child(_branch_bar)
+	col.add_child(branch_mc)
+
+	col.add_child(_h_sep())
+
+	# ── Section: Inclinació ────────────────────────────────────────────────
+	col.add_child(_section_label("Inclinació"))
+	var incl_mc := MarginContainer.new()
+	incl_mc.add_theme_constant_override("margin_left", 10)
+	incl_mc.add_theme_constant_override("margin_right", 6)
+	incl_mc.add_theme_constant_override("margin_bottom", 6)
+	var incl_col := VBoxContainer.new()
+	incl_col.add_theme_constant_override("separation", 5)
+	incl_mc.add_child(incl_col)
+	col.add_child(incl_mc)
+
+	for axis: String in ["impuls", "intel_lectus", "espiritualitat", "sociabilitat"]:
+		var row := VBoxContainer.new()
+		row.add_theme_constant_override("separation", 2)
+
+		var label_row := HBoxContainer.new()
+		label_row.add_theme_constant_override("separation", 4)
+		var lbl := Label.new()
+		lbl.text = AXIS_LABELS[axis]
+		lbl.add_theme_color_override("font_color", C_DIM)
+		lbl.add_theme_font_size_override("font_size", 9)
+		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		label_row.add_child(lbl)
+		var val_lbl := Label.new()
+		val_lbl.add_theme_color_override("font_color", AXIS_COLORS[axis])
+		val_lbl.add_theme_font_size_override("font_size", 9)
+		val_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		label_row.add_child(val_lbl)
+		row.add_child(label_row)
+
+		var track := Panel.new()
+		track.custom_minimum_size = Vector2(0, 5)
+		track.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		track.add_theme_stylebox_override("panel", _flat(C_SURFACE2))
+		var center_line := Panel.new()
+		center_line.add_theme_stylebox_override("panel", _flat(C_BORDER))
+		center_line.custom_minimum_size = Vector2(1, 5)
+		track.add_child(center_line)
+		var fill := Panel.new()
+		fill.add_theme_stylebox_override("panel", _flat(AXIS_COLORS[axis]))
+		fill.custom_minimum_size.y = 5
+		track.add_child(fill)
+		row.add_child(track)
+
+		_incl_bars[axis] = {"track": track, "center": center_line, "fill": fill, "val": val_lbl}
+		incl_col.add_child(row)
+
+	col.add_child(_h_sep())
+
+	# ── Section: Habilitats ────────────────────────────────────────────────
+	col.add_child(_section_label("Habilitats"))
+	var skills_mc := MarginContainer.new()
+	skills_mc.add_theme_constant_override("margin_left", 10)
+	skills_mc.add_theme_constant_override("margin_right", 6)
+	skills_mc.add_theme_constant_override("margin_bottom", 8)
+	_skills_bar = VBoxContainer.new()
+	_skills_bar.add_theme_constant_override("separation", 2)
+	skills_mc.add_child(_skills_bar)
+	col.add_child(skills_mc)
+
+	# Reset button at bottom
+	var reset_mc := MarginContainer.new()
+	reset_mc.add_theme_constant_override("margin_left", 10)
+	reset_mc.add_theme_constant_override("margin_bottom", 8)
+	var reset_btn := Button.new()
+	reset_btn.text = "↺ Reset"
+	reset_btn.flat = true
+	reset_btn.add_theme_color_override("font_color", C_DIM)
+	reset_btn.add_theme_font_size_override("font_size", 10)
+	reset_btn.pressed.connect(func() -> void:
+		SaveSystem.delete_save()
+		request_new_game.emit())
+	reset_mc.add_child(reset_btn)
+	col.add_child(reset_mc)
+
+	return col
+
+
+func _h_sep() -> HSeparator:
+	var s := HSeparator.new()
+	s.add_theme_color_override("color", C_BORDER)
+	return s
+
+
+func _section_label(text: String) -> Control:
+	var mc := MarginContainer.new()
+	mc.add_theme_constant_override("margin_left", 10)
+	mc.add_theme_constant_override("margin_top", 8)
+	mc.add_theme_constant_override("margin_bottom", 4)
+	var lbl := Label.new()
+	lbl.text = text.to_upper()
+	lbl.add_theme_color_override("font_color", C_DIM)
+	lbl.add_theme_font_size_override("font_size", 9)
+	mc.add_child(lbl)
+	return mc
+
+
+func _build_top_bar() -> Control:
+	# Compact top bar: game title | vitals | resources | cycle
+	var style := StyleBoxFlat.new()
+	style.bg_color = C_SURFACE
+	style.border_width_bottom = 1; style.border_color = C_BORDER
+	style.content_margin_left = 12; style.content_margin_right = 12
+	style.content_margin_top = 6; style.content_margin_bottom = 6
+	var bar := PanelContainer.new()
+	bar.add_theme_stylebox_override("panel", style)
+
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 10)
+	bar.add_child(hbox)
+
+	# Game name
+	var title_col := VBoxContainer.new()
+	title_col.add_theme_constant_override("separation", 1)
+	var game_lbl := Label.new()
+	game_lbl.text = "Bloodline"
+	game_lbl.add_theme_color_override("font_color", C_ACCENT)
+	game_lbl.add_theme_font_size_override("font_size", 13)
+	title_col.add_child(game_lbl)
+	hbox.add_child(title_col)
+
+	var div1 := _v_div()
+	hbox.add_child(div1)
+
+	# Vitals section
+	var vitals_col := VBoxContainer.new()
+	vitals_col.add_theme_constant_override("separation", 2)
+	var vitals_lbl := Label.new()
+	vitals_lbl.text = "VITALS"
+	vitals_lbl.add_theme_color_override("font_color", C_DIM)
+	vitals_lbl.add_theme_font_size_override("font_size", 8)
+	vitals_col.add_child(vitals_lbl)
+	var vitals_pills := HBoxContainer.new()
+	vitals_pills.add_theme_constant_override("separation", 4)
+	_pill_food   = _resource_pill("🌾", "0", C_GOLD)
+	_pill_health = _resource_pill("❤️", "0", C_GREEN)
+	vitals_pills.add_child(_pill_food)
+	vitals_pills.add_child(_pill_health)
+	vitals_col.add_child(vitals_pills)
+	hbox.add_child(vitals_col)
+
+	var div2 := _v_div()
+	hbox.add_child(div2)
+
+	# Resources section
+	var res_col := VBoxContainer.new()
+	res_col.add_theme_constant_override("separation", 2)
+	var res_lbl := Label.new()
+	res_lbl.text = "RECURSOS"
+	res_lbl.add_theme_color_override("font_color", C_DIM)
+	res_lbl.add_theme_font_size_override("font_size", 8)
+	res_col.add_child(res_lbl)
+	var res_pills := HBoxContainer.new()
+	res_pills.add_theme_constant_override("separation", 4)
+	_pill_tokens = _resource_pill("🦴", "0", C_GOLD)
+	res_pills.add_child(_pill_tokens)
+	res_col.add_child(res_pills)
+	hbox.add_child(res_col)
 
 	return bar
+
+
+func _v_div() -> Control:
+	var sep := Panel.new()
+	sep.custom_minimum_size = Vector2(1, 32)
+	sep.add_theme_stylebox_override("panel", _flat(C_BORDER, 0))
+	(sep.get_theme_stylebox("panel") as StyleBoxFlat).bg_color = C_BORDER
+	return sep
 
 
 func _resource_pill(icon: String, value: String, col: Color) -> Label:
@@ -199,73 +390,6 @@ func _build_era_strip() -> Control:
 	return wrap
 
 
-func _build_branch_strip() -> Control:
-	var wrap := PanelContainer.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = C_SURFACE
-	style.border_width_bottom = 1; style.border_color = C_BORDER
-	style.content_margin_left = 12; style.content_margin_right = 12
-	style.content_margin_top = 6; style.content_margin_bottom = 6
-	wrap.add_theme_stylebox_override("panel", style)
-
-	_branch_bar = HBoxContainer.new()
-	_branch_bar.add_theme_constant_override("separation", 4)
-	wrap.add_child(_branch_bar)
-	return wrap
-
-
-func _build_incl_panel() -> Control:
-	var wrap := PanelContainer.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = C_SURFACE
-	style.border_width_bottom = 1; style.border_color = C_BORDER
-	style.content_margin_left = 12; style.content_margin_right = 12
-	style.content_margin_top = 8; style.content_margin_bottom = 8
-	wrap.add_theme_stylebox_override("panel", style)
-
-	var grid := VBoxContainer.new()
-	grid.add_theme_constant_override("separation", 6)
-	wrap.add_child(grid)
-
-	for axis: String in ["impuls", "intel_lectus", "espiritualitat", "sociabilitat"]:
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 8)
-		grid.add_child(row)
-
-		var lbl := Label.new()
-		lbl.text = AXIS_LABELS[axis].to_upper()
-		lbl.add_theme_color_override("font_color", C_DIM)
-		lbl.add_theme_font_size_override("font_size", 9)
-		lbl.custom_minimum_size.x = 84
-		row.add_child(lbl)
-
-		var track := Panel.new()
-		track.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		track.custom_minimum_size.y = 6
-		track.add_theme_stylebox_override("panel", _flat(C_SURFACE2))
-
-		var center_line := Panel.new()
-		center_line.add_theme_stylebox_override("panel", _flat(C_BORDER))
-		center_line.custom_minimum_size = Vector2(1, 6)
-		track.add_child(center_line)
-
-		var fill := Panel.new()
-		fill.add_theme_stylebox_override("panel", _flat(AXIS_COLORS[axis]))
-		fill.custom_minimum_size.y = 6
-		fill.name = "Fill"
-		track.add_child(fill)
-		row.add_child(track)
-
-		var val_lbl := Label.new()
-		val_lbl.add_theme_color_override("font_color", AXIS_COLORS[axis])
-		val_lbl.add_theme_font_size_override("font_size", 10)
-		val_lbl.custom_minimum_size.x = 42
-		val_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		row.add_child(val_lbl)
-
-		_incl_bars[axis] = {"track": track, "center": center_line, "fill": fill, "val": val_lbl}
-
-	return wrap
 
 
 func _build_log_strip() -> Control:
@@ -385,25 +509,20 @@ func _refresh() -> void:
 
 
 func _refresh_top_bar() -> void:
+	_pill_food.text   = "🌾 %d" % int(GameState.food)
+	_pill_health.text = "❤️ %d" % int(GameState.health)
+	_pill_tokens.text = "🦴 %d" % int(GameState.tokens)
+	_set_pill_state(_pill_food,   GameState.food   <= 3.0,  C_GOLD)
+	_set_pill_state(_pill_health, GameState.health <= 20.0, C_GREEN)
+
+	# Left panel char info
 	var age: int = LineageManager.character_age()
 	var partner: String = " 💑" if GameState.has_partner else ""
 	var kids: String = " 👶×%d" % GameState.children.size() if not GameState.children.is_empty() else ""
-	_label_char.text = GameState.character_label + partner + kids
-	var era_pct: int = int(EraManager.get_era_progress_pct() * 100)
-	_label_meta.text = "GEN %d  ·  EDAT %d  ·  %s  ·  ERA %d%%" % [
-		GameState.generation, age, GameState.dynasty_name.to_upper(), era_pct]
-
-	var food: int = int(GameState.food)
-	var health: int = int(GameState.health)
-	var tokens: int = int(GameState.tokens)
-	_pill_food.text   = "🌾 %d" % food
-	_pill_health.text = "❤️ %d" % health
-	_pill_tokens.text = "🦴 %d" % tokens
-
-	var food_crit: bool   = GameState.food   <= 3.0
-	var health_crit: bool = GameState.health <= 20.0
-	_set_pill_state(_pill_food,   food_crit,   C_GOLD)
-	_set_pill_state(_pill_health, health_crit, C_ACCENT)
+	_label_char.text  = GameState.character_label + partner + kids
+	_label_meta.text  = "Gen %d · Edat %d · %s" % [GameState.generation, age, GameState.dynasty_name]
+	var era_pct: int  = int(EraManager.get_era_progress_pct() * 100)
+	_family_bar.text  = "Era %d%%" % era_pct
 
 
 func _set_pill_state(pill: Label, critical: bool, normal_col: Color) -> void:
@@ -422,38 +541,39 @@ func _refresh_branches() -> void:
 	var branches: Array = era.get("branches", [])
 	var active_ids: Array = BranchManager.get_active_branch_ids()
 
-	var label_lbl := Label.new()
-	label_lbl.text = "BRANQUES"
-	label_lbl.add_theme_color_override("font_color", C_DIM)
-	label_lbl.add_theme_font_size_override("font_size", 9)
-	_branch_bar.add_child(label_lbl)
-
 	for branch: Variant in branches:
 		var b: Dictionary = branch as Dictionary
 		var bid: String = b.get("id", "")
 		var is_active: bool = bid in active_ids
-
-		var pill := Label.new()
-		pill.text = b.get("name", bid)
-		pill.add_theme_font_size_override("font_size", 11)
 		var bcol: Color = BRANCH_COLORS.get(bid, C_DIM)
-		var pill_style := StyleBoxFlat.new()
+
+		var chip := Label.new()
+		chip.text = b.get("name", bid)
+		chip.add_theme_font_size_override("font_size", 10)
 		if is_active:
-			pill_style.bg_color = bcol.darkened(0.65)
-			pill_style.border_color = bcol
-			pill.add_theme_color_override("font_color", bcol)
+			chip.add_theme_color_override("font_color", bcol)
 		else:
-			pill_style.bg_color = C_SURFACE2
-			pill_style.border_color = C_BORDER
-			pill.add_theme_color_override("font_color", C_DIM)
-		pill_style.border_width_left = 1; pill_style.border_width_right = 1
-		pill_style.border_width_top = 1; pill_style.border_width_bottom = 1
-		pill_style.corner_radius_top_left = 20; pill_style.corner_radius_top_right = 20
-		pill_style.corner_radius_bottom_left = 20; pill_style.corner_radius_bottom_right = 20
-		pill_style.content_margin_left = 8; pill_style.content_margin_right = 8
-		pill_style.content_margin_top = 2; pill_style.content_margin_bottom = 2
-		pill.add_theme_stylebox_override("normal", pill_style)
-		_branch_bar.add_child(pill)
+			chip.add_theme_color_override("font_color", C_DIM)
+		_branch_bar.add_child(chip)
+
+	# Skills
+	for child: Node in _skills_bar.get_children():
+		child.queue_free()
+	if GameState.unlocked_skill_ids.is_empty():
+		var none_lbl := Label.new()
+		none_lbl.text = "—"
+		none_lbl.add_theme_color_override("font_color", C_DIM)
+		none_lbl.add_theme_font_size_override("font_size", 10)
+		_skills_bar.add_child(none_lbl)
+	else:
+		for skill_id: String in GameState.unlocked_skill_ids:
+			var sk := DataLoader.skills.get(skill_id, {})
+			var skill_name: String = sk.get("name", skill_id.replace("bt_", "").replace("_", " ").capitalize())
+			var sl := Label.new()
+			sl.text = "• " + skill_name
+			sl.add_theme_color_override("font_color", C_GOLD)
+			sl.add_theme_font_size_override("font_size", 10)
+			_skills_bar.add_child(sl)
 
 
 func _refresh_incl_bars() -> void:
