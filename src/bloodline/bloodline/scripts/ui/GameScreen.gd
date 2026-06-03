@@ -48,8 +48,11 @@ var _label_meta: Label
 var _era_fill: Panel
 var _branch_bar: HBoxContainer
 var _incl_bars: Dictionary = {}
-var _zone_scroll: ScrollContainer
-var _zone_container: VBoxContainer
+var _zone_grid_wrap: VBoxContainer   # expand — shows 2×2 zone buttons
+var _zone_grid: GridContainer
+var _zone_detail_wrap: VBoxContainer # expand — shows action list for selected zone
+var _zone_detail_scroll: ScrollContainer
+var _zone_detail_col: VBoxContainer
 var _log_label: Label
 var _log_entries: Array[String] = []
 var _overlay: Control
@@ -61,6 +64,7 @@ var _ov_btn: Button
 var _ov_vbox: VBoxContainer
 var _suppress_next_result: bool = false
 var _pending_pool_id: String = ""
+var _selected_zone: String = ""  # "" = show grid, non-empty = show detail
 
 
 func _ready() -> void:
@@ -89,14 +93,38 @@ func _build_layout() -> void:
 	root.add_child(_build_branch_strip())
 	root.add_child(_build_incl_panel())
 
-	_zone_scroll = ScrollContainer.new()
-	_zone_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_zone_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_zone_container = VBoxContainer.new()
-	_zone_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_zone_container.add_theme_constant_override("separation", 8)
-	_zone_scroll.add_child(_zone_container)
-	root.add_child(_zone_scroll)
+	# Zone grid view (default)
+	_zone_grid_wrap = VBoxContainer.new()
+	_zone_grid_wrap.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_zone_grid_wrap.add_theme_constant_override("separation", 0)
+	_zone_grid = GridContainer.new()
+	_zone_grid.columns = 2
+	_zone_grid.add_theme_constant_override("h_separation", 8)
+	_zone_grid.add_theme_constant_override("v_separation", 8)
+	var grid_margin := MarginContainer.new()
+	grid_margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	grid_margin.add_theme_constant_override("margin_left", 12)
+	grid_margin.add_theme_constant_override("margin_right", 12)
+	grid_margin.add_theme_constant_override("margin_top", 12)
+	grid_margin.add_theme_constant_override("margin_bottom", 4)
+	grid_margin.add_child(_zone_grid)
+	_zone_grid_wrap.add_child(grid_margin)
+	root.add_child(_zone_grid_wrap)
+
+	# Zone detail view (shown on zone tap)
+	_zone_detail_wrap = VBoxContainer.new()
+	_zone_detail_wrap.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_zone_detail_wrap.add_theme_constant_override("separation", 0)
+	_zone_detail_wrap.visible = false
+	_zone_detail_scroll = ScrollContainer.new()
+	_zone_detail_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_zone_detail_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_zone_detail_col = VBoxContainer.new()
+	_zone_detail_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_zone_detail_col.add_theme_constant_override("separation", 6)
+	_zone_detail_scroll.add_child(_zone_detail_col)
+	_zone_detail_wrap.add_child(_zone_detail_scroll)
+	root.add_child(_zone_detail_wrap)
 
 	root.add_child(_build_log_strip())
 
@@ -477,63 +505,123 @@ func _refresh_era_fill() -> void:
 
 
 func _refresh_zones() -> void:
-	for child: Node in _zone_container.get_children():
+	# Rebuild grid buttons
+	for child: Node in _zone_grid.get_children():
 		child.queue_free()
 
 	var era: Dictionary = DataLoader.eras.get(GameState.current_era_id, {})
-	var zone_order: Array = era.get("zone_order", ["Campament"])
+	var zone_order: Array = era.get("zone_order", ["Campament", "Planes", "Bosc", "Ritual"])
 
 	for zone_id: String in zone_order:
-		if zone_id not in GameState.discovered_zone_ids:
-			continue
-		_zone_container.add_child(_build_zone_card(zone_id))
+		_zone_grid.add_child(_build_zone_grid_btn(zone_id))
+
+	# If a zone detail is open, refresh it too
+	if _selected_zone != "":
+		_open_zone(_selected_zone)
 
 
-func _build_zone_card(zone_id: String) -> Control:
-	var card := PanelContainer.new()
+func _build_zone_grid_btn(zone_id: String) -> Control:
+	var discovered: bool = zone_id in GameState.discovered_zone_ids
+	var icon: String = ZONE_ICONS.get(zone_id, "📍")
+	var has_actions: bool = discovered and not _get_zone_actions(zone_id).is_empty()
+
+	var btn := Button.new()
+	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn.custom_minimum_size = Vector2(0, 100)
+	btn.text = "%s\n%s" % [icon, zone_id]
+	btn.add_theme_font_size_override("font_size", 13)
+
+	var bg: Color
+	var border: Color
+	var txt: Color
+	if discovered:
+		bg = C_SURFACE
+		border = C_BORDER
+		txt = C_TEXT
+	else:
+		bg = C_BG
+		border = C_BORDER.darkened(0.4)
+		txt = C_DIM.darkened(0.3)
+
 	var style := StyleBoxFlat.new()
-	style.bg_color = C_SURFACE
+	style.bg_color = bg
 	style.border_width_left = 1; style.border_width_right = 1
 	style.border_width_top = 1; style.border_width_bottom = 1
-	style.border_color = C_BORDER
-	style.corner_radius_top_left = 8; style.corner_radius_top_right = 8
-	style.corner_radius_bottom_left = 8; style.corner_radius_bottom_right = 8
-	style.content_margin_left = 12; style.content_margin_right = 12
-	style.content_margin_top = 10; style.content_margin_bottom = 10
-	card.add_theme_stylebox_override("panel", style)
+	style.border_color = border
+	style.corner_radius_top_left = 10; style.corner_radius_top_right = 10
+	style.corner_radius_bottom_left = 10; style.corner_radius_bottom_right = 10
+	btn.add_theme_stylebox_override("normal", style)
+	btn.add_theme_color_override("font_color", txt)
 
-	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 6)
-	card.add_child(col)
+	if discovered:
+		var hover_style := style.duplicate() as StyleBoxFlat
+		hover_style.bg_color = C_SURFACE2
+		hover_style.border_color = C_GOLD if has_actions else C_BORDER
+		btn.add_theme_stylebox_override("hover", hover_style)
+		btn.pressed.connect(func() -> void: _open_zone(zone_id))
+	else:
+		btn.disabled = true
 
+	return btn
+
+
+func _open_zone(zone_id: String) -> void:
+	_selected_zone = zone_id
+	_zone_grid_wrap.visible = false
+	_zone_detail_wrap.visible = true
+
+	# Clear and rebuild detail
+	for child: Node in _zone_detail_col.get_children():
+		child.queue_free()
+
+	# Back header
 	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 6)
-	col.add_child(header)
+	header.add_theme_constant_override("separation", 8)
+	var back_btn := Button.new()
+	back_btn.text = "← Zones"
+	back_btn.flat = true
+	back_btn.add_theme_color_override("font_color", C_GOLD)
+	back_btn.add_theme_font_size_override("font_size", 13)
+	back_btn.pressed.connect(_close_zone)
+	header.add_child(back_btn)
+	var zone_title := Label.new()
+	zone_title.text = "%s  %s" % [ZONE_ICONS.get(zone_id, ""), zone_id.to_upper()]
+	zone_title.add_theme_color_override("font_color", C_DIM)
+	zone_title.add_theme_font_size_override("font_size", 10)
+	zone_title.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	header.add_child(zone_title)
+	var wrap := _section_wrap(header)
+	_zone_detail_col.add_child(wrap)
 
-	var icon_lbl := Label.new()
-	icon_lbl.text = ZONE_ICONS.get(zone_id, "📍")
-	icon_lbl.add_theme_font_size_override("font_size", 13)
-	header.add_child(icon_lbl)
-
-	var zone_lbl := Label.new()
-	zone_lbl.text = zone_id.to_upper()
-	zone_lbl.add_theme_color_override("font_color", C_DIM)
-	zone_lbl.add_theme_font_size_override("font_size", 9)
-	zone_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	header.add_child(zone_lbl)
-
+	# Actions
 	var actions: Array = _get_zone_actions(zone_id)
 	if actions.is_empty():
 		var empty_lbl := Label.new()
-		empty_lbl.text = "Cap acció disponible"
+		empty_lbl.text = "Cap acció disponible en aquesta zona."
 		empty_lbl.add_theme_color_override("font_color", C_DIM)
 		empty_lbl.add_theme_font_size_override("font_size", 11)
-		col.add_child(empty_lbl)
+		_zone_detail_col.add_child(_section_wrap(empty_lbl))
 	else:
 		for action: Dictionary in actions:
-			col.add_child(_build_action_card(action))
+			var card := _build_action_card(action)
+			_zone_detail_col.add_child(_section_wrap(card))
 
-	return card
+
+func _close_zone() -> void:
+	_selected_zone = ""
+	_zone_detail_wrap.visible = false
+	_zone_grid_wrap.visible = true
+
+
+func _section_wrap(child: Control) -> MarginContainer:
+	var mc := MarginContainer.new()
+	mc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	mc.add_theme_constant_override("margin_left", 12)
+	mc.add_theme_constant_override("margin_right", 12)
+	mc.add_theme_constant_override("margin_top", 4)
+	mc.add_theme_constant_override("margin_bottom", 4)
+	mc.add_child(child)
+	return mc
 
 
 func _build_action_card(action: Dictionary) -> Control:
@@ -681,6 +769,7 @@ func _on_action_executed(action_id: String, output: float, side_effects: Array) 
 
 func _on_zone_unlocked(zone_id: String) -> void:
 	_add_log("🗺️ Nova zona: %s" % zone_id)
+	_refresh_zones()
 
 
 func _on_tech_discovered(tech: Dictionary) -> void:
