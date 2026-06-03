@@ -748,7 +748,9 @@ func _on_action_executed(action_id: String, output: float, side_effects: Array) 
 				child_label = s.get("label", "")
 		_show_overlay("NOU MEMBRE", "👶", child_label,
 			"Fill/a de %s" % GameState.character_label, "Benvingut →",
-			func() -> void: _refresh())
+			func() -> void:
+				_close_zone()
+				_refresh())
 		return
 	if _suppress_next_result:
 		_suppress_next_result = false
@@ -760,6 +762,7 @@ func _on_action_executed(action_id: String, output: float, side_effects: Array) 
 	_add_log("[C%d] %s  %s" % [GameState.era_cycle, name_str, output_str])
 	_show_overlay("RESULTAT", "", name_str, output_str, "Continuar →",
 		func() -> void:
+			_close_zone()
 			_refresh()
 			if _pending_pool_id != "":
 				var pool: String = _pending_pool_id
