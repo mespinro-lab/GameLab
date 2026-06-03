@@ -530,7 +530,7 @@ func _set_pill_state(pill: Label, critical: bool, normal_col: Color) -> void:
 	var col: Color = C_ACCENT if critical else normal_col
 	pill.add_theme_color_override("font_color", col)
 	var raw: StyleBox = pill.get_theme_stylebox("normal")
-	var style := raw.duplicate() as StyleBoxFlat
+	var style: StyleBoxFlat = raw.duplicate() as StyleBoxFlat
 	style.border_color = C_ACCENT.lerp(C_BORDER, 0.0 if critical else 1.0)
 	pill.add_theme_stylebox_override("normal", style)
 
@@ -569,7 +569,7 @@ func _refresh_branches() -> void:
 		_skills_bar.add_child(none_lbl)
 	else:
 		for skill_id: String in GameState.unlocked_skill_ids:
-			var sk := DataLoader.skills.get(skill_id, {})
+			var sk: Dictionary = DataLoader.skills.get(skill_id, {}) as Dictionary
 			var skill_name: String = sk.get("name", skill_id.replace("bt_", "").replace("_", " ").capitalize())
 			var sl := Label.new()
 			sl.text = "• " + skill_name
