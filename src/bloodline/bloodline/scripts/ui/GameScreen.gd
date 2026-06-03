@@ -13,6 +13,7 @@ var _incl_bars: Dictionary = {}
 var _branch_bar: HBoxContainer
 var _zone_container: VBoxContainer
 var _log_label: Label
+var _log_entries: Array[String] = []
 var _overlay: Control
 # Overlay child refs (direct, avoids get_node path issues)
 var _ov_tag: Label
@@ -192,12 +193,12 @@ func _build_zone_area() -> Control:
 
 func _build_log_panel() -> Control:
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _flat_style(Color(0.08, 0.06, 0.04)))
-	panel.custom_minimum_size.y = 60
+	panel.add_theme_stylebox_override("panel", _flat_style(Color(0.07, 0.05, 0.03)))
+	panel.custom_minimum_size.y = 68
 
 	_log_label = Label.new()
-	_log_label.add_theme_color_override("font_color", Color(0.55, 0.50, 0.42))
-	_log_label.add_theme_font_size_override("font_size", 11)
+	_log_label.add_theme_color_override("font_color", Color(0.45, 0.40, 0.33))
+	_log_label.add_theme_font_size_override("font_size", 10)
 	_log_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	panel.add_child(_log_label)
 	return panel
@@ -475,7 +476,7 @@ func _on_action_executed(action_id: String, output: float, side_effects: Array) 
 	var action: Dictionary = DataLoader.actions.get(action_id, {})
 	var name_str: String = action.get("name_key", action.get("name", action_id))
 	var output_str: String = "+%d 🦴" % int(output) if output > 0 else ""
-	_log_label.text = "[Cicle %d] %s  %s" % [GameState.era_cycle, name_str, output_str]
+	_add_log("[C%d] %s  %s" % [GameState.era_cycle, name_str, output_str])
 	_show_overlay("Resultat", "", name_str, output_str, "Continuar →",
 		func() -> void:
 			_refresh()
@@ -486,7 +487,7 @@ func _on_action_executed(action_id: String, output: float, side_effects: Array) 
 
 
 func _on_zone_unlocked(zone_id: String) -> void:
-	_log_label.text = "Nova zona descoberta: %s" % zone_id
+	_add_log("🗺️ Nova zona: %s" % zone_id)
 
 
 func _on_tech_discovered(tech: Dictionary) -> void:
@@ -539,7 +540,18 @@ func _on_event_triggered(event: Dictionary) -> void:
 				_refresh())
 
 
-func _on_event_resolved(_event_id: String, _option_index: int, _effects: Array) -> void:
+func _on_event_resolved(event_id: String, option_index: int, effects: Array) -> void:
+	var food_delta: float = 0.0
+	var health_delta: float = 0.0
+	for e: Variant in effects:
+		var ef: Dictionary = e as Dictionary
+		if ef.get("resource") == "food":   food_delta   += float(ef.get("delta", 0))
+		if ef.get("resource") == "health": health_delta += float(ef.get("delta", 0))
+	var parts: Array[String] = []
+	if food_delta != 0.0:   parts.append("%+d🌾" % int(food_delta))
+	if health_delta != 0.0: parts.append("%+d❤️" % int(health_delta))
+	if not parts.is_empty():
+		_add_log("📜 Ev: %s" % "  ".join(parts))
 	_refresh()
 
 
@@ -660,6 +672,13 @@ func _show_succession_overlay(successors: Array) -> void:
 
 
 # ── Style helpers ─────────────────────────────────────────────────────────────
+
+func _add_log(entry: String) -> void:
+	_log_entries.append(entry)
+	if _log_entries.size() > 4:
+		_log_entries.pop_front()
+	_log_label.text = "\n".join(_log_entries)
+
 
 func _dominant_axis_color(action: Dictionary) -> Color:
 	var deltas: Dictionary = action.get("inclination_deltas", {})
