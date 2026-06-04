@@ -67,7 +67,10 @@
             <span id="char-age-inlay">—</span>
           </div>
         </div>
-        <div id="knowledge-row"></div>
+        <div id="knowledge-row">
+          <div id="branch-badges"></div>
+          <div id="skill-badges"></div>
+        </div>
       </div>
     </div>
 
@@ -109,7 +112,6 @@
           <span id="panel-food-val">—</span>
           <small id="panel-food-fc"></small>
         </div>
-        <button id="btn-rest-cycle" class="rest-btn hidden">→ Passar</button>
       </div>
       <ul id="session-log-list"></ul>
     </div>
@@ -269,13 +271,17 @@
       </div>
     </div>
 
-    <!-- OVERLAY: Game Over -->
+    <!-- OVERLAY: Fi de partida -->
     <div id="overlay-gameover" class="overlay hidden">
-      <div class="overlay-card">
-        <div class="overlay-big-icon">💀</div>
-        <h2>Fi del Llinatge</h2>
-        <p id="go-text"></p>
-        <button id="btn-go-restart">Jugar de nou</button>
+      <div class="overlay-card end-card">
+        <div id="end-header">
+          <div id="end-icon">🦴</div>
+          <h2 id="end-dynasty-name"></h2>
+          <p id="end-tagline"></p>
+        </div>
+        <div id="end-stats-row"></div>
+        <div id="end-genealogy"></div>
+        <button id="btn-go-restart">Jugar de nou →</button>
       </div>
     </div>
 
