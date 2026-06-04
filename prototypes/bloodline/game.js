@@ -1,40 +1,102 @@
 // PROTOTYPE - NOT FOR PRODUCTION
-// Question: Does inclination-driven action visibility + branch tech discovery + succession feel engaging?
-// Date: 2026-05-26
-
+// Visual: Life Tycoon UI shell — Bloodline mechanics
 'use strict';
 
-// --- Logic Constants (engine behaviour — design values live in data.js) ---
-const INERTIA_FACTOR  = 2.0;
-const DEBUG_MODE      = false;
-const INCL_DOT_VALUES = [-1.0, -0.5, 0.0, 0.5, 1.0];
+// ═══════════════════════════════════════════════════════════ ENGINE CONSTANTS
+const INERTIA_FACTOR = 2.0;
+// FADE_MARGIN is defined in data.js
 
-// --- Derived Lookups (from data.js defs) ---
+// ═══════════════════════════════════════════════════════════ DERIVED LOOKUPS
 const AXES        = AXIS_DEFS.map(a => a.id);
 const AXIS_LABELS = Object.fromEntries(AXIS_DEFS.map(a => [a.id, { left: a.left, right: a.right }]));
-const ZONE_ORDER  = ZONE_DEFS.map(z => z.id);
 
-// Returns health lost this cycle due to aging — accelerates exponentially past AGING_THRESHOLD
-function getAgingLoss(cycle) {
-  const excess = Math.max(0, cycle - AGING_THRESHOLD);
+// ═══════════════════════════════════════════════════════════ ZONE MAP CONFIG
+const ZONE_POS = {
+  'Campament': { left: 63, top: 74 },
+  'Planes':    { left: 80, top: 32 },
+  'Bosc':      { left: 20, top: 35 },
+  'Ritual':    { left: 23, top: 76 },
+};
+const ZONE_IMG = {
+  'Campament': 'HOME',
+  'Planes':    'WILD',
+  'Bosc':      'FOREST',
+  'Ritual':    'TOWN',
+};
+const ZONE_ICONS = {
+  'Campament': '🏕️',
+  'Planes':    '🌾',
+  'Bosc':      '🌲',
+  'Ritual':    '🌀',
+};
+
+// ═══════════════════════════════════════════════════════════ ACTION ICONS
+const ACTION_ICONS = {
+  act_espiar_ramat:       '👁️',
+  act_recollectar_arrels: '🌿',
+  act_tallar_pedra:       '🪨',
+  act_ritual_foc:         '🔥',
+  act_contemplacio:       '🌙',
+  act_vigilar_campament:  '🛡️',
+  act_explorar_voltants:  '🧭',
+  act_cercar_parella:     '💕',
+  act_tenir_fills:        '👶',
+  act_ensenyar:           '📖',
+  act_escoltar_estrangers:'👥',
+  act_caca_llanca:        '🏹',
+  act_emboscada_nocturna: '🌑',
+  act_marcar_territori:   '⛰️',
+  act_rastreig_rutes:     '🦶',
+  act_molda_grans:        '🌾',
+  act_parar_trampes:      '🪤',
+  act_revisar_trampes:    '🔍',
+  act_faonar_eines:       '⚒️',
+  act_gravar_os:          '🦴',
+  act_intercanviar_eines: '🤝',
+  act_cosir_pells:        '🧵',
+  act_construir_refugi:   '🏗️',
+  act_curar_herbes:       '🌱',
+  act_preparar_ungüent:   '💊',
+  act_pintar_parets:      '🎨',
+  act_narrar_llegendes:   '📜',
+  act_ornamentar_se:      '✨',
+  act_consagrar_ornaments:'🌟',
+  act_recollida_bolets:   '🍄',
+  act_assecament_plantes: '🍃',
+  act_seleccionar_llavors:'🌰',
+  act_preparar_terreny:   '⛏️',
+};
+function getActionIcon(action) {
+  return ACTION_ICONS[action.id] ||
+    (action.output_resource === 'material' ? '🪨' :
+     action.output_resource === 'health'   ? '💊' : '🌾');
+}
+
+// ═══════════════════════════════════════════════════════════ DOM HELPERS
+function el(id) { return document.getElementById(id); }
+function show(id) { const e = el(id); if (e) e.classList.remove('hidden'); }
+function hide(id) { const e = el(id); if (e) e.classList.add('hidden'); }
+
+// ═══════════════════════════════════════════════════════════ GAME STATE
+let state = null;
+
+function getAgingLoss(age) {
+  const excess = Math.max(0, age - AGING_THRESHOLD);
   return AGING_BASE + Math.floor(Math.pow(excess, AGING_POWER) * AGING_SCALE);
 }
-
-function characterAge() {
-  return state.cycle - (state.character.birthCycle || 0);
+function characterAge() { return state.cycle - (state.character.birthCycle || 0); }
+function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function addLog(msg) {
+  state.log.unshift(msg);
+  if (state.log.length > 8) state.log.length = 8;
 }
 
-// --- Game State ---
-let state = null;
-let zoneFilters = Object.fromEntries(ZONE_DEFS.map(z => [z.id, 'active']));
-
-function getCharEmoji(char) {
-  const inc = char?.inclination || {};
-  if ((inc.impuls || 0) > 0.3)         return '🏹';
-  if ((inc['intel·lecte'] || 0) > 0.3) return '🪨';
-  if ((inc.espiritualitat || 0) > 0.3) return '🔥';
-  if ((inc.sociabilitat || 0) > 0.3)   return '👥';
-  return '🦴';
+const RANDOM_NAMES = [
+  "Braven", "Dorna", "Hellra", "Kael", "Lysara",
+  "Morveth", "Niela", "Ostara", "Praxa", "Ruvek",
+];
+function randomDynastyName() {
+  return RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)];
 }
 
 function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedSkillIds, inheritedStats, inheritedDestreses, birthCycle = 0, label = '') {
@@ -44,7 +106,9 @@ function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedS
     inclination: { ...inheritedInclination },
     purchasedActionIds: new Set(inheritedPurchasedIds),
     unlockedSkillIds: new Set(inheritedSkillIds),
-    stats: inheritedStats ? { ...inheritedStats } : Object.fromEntries(STAT_DEFS.map(s => [s.id, STAT_STARTING_VALUE])),
+    stats: inheritedStats
+      ? { ...inheritedStats }
+      : Object.fromEntries(STAT_DEFS.map(s => [s.id, STAT_STARTING_VALUE])),
     destreses: new Set(inheritedDestreses),
     firedSingleUseEventIds: new Set(),
     charState: Object.fromEntries(CHARACTER_STATE_DEFS.map(d => [d.id, d.startVal])),
@@ -56,12 +120,13 @@ function freshInclination() {
   return Object.fromEntries(AXIS_DEFS.map(a => [a.id, 0.0]));
 }
 
-function initState() {
+function initState(dynastyName, race) {
   const inclination = freshInclination();
-  // Base actions are purchased from the start
   const basePurchased = new Set(ACTIONS.filter(a => a.is_base).map(a => a.id));
-
   state = {
+    dynastyName: dynastyName || randomDynastyName(),
+    race: race || 'MED',
+    gender: Math.random() < 0.5 ? 'M' : 'F',
     cycle: 0,
     generation: 1,
     ...Object.fromEntries(RESOURCE_DEFS.map(r => [r.id, r.startVal])),
@@ -69,109 +134,72 @@ function initState() {
     discoveredUniversalTechIds: new Set(),
     discoveredZoneIds: new Set(ZONE_DEFS.filter(z => z.starts_discovered).map(z => z.id)),
     log: [],
-    lastResult: null,
-    gameOverReason: null,
+    siblingPool: [],
     pendingEvent: null,
     pendingSuccession: null,
-    pendingZoneDiscovery: null,
     pendingDiscoveries: [],
-    pendingActionResult: null,
     pendingBirths: [],
     pendingDeath: null,
     pendingNewGen: null,
-    siblingPool: [],
     gameOver: false,
-    onboardingDismissed: localStorage.getItem('lt2_skip_onboarding') === '1',
+    gameOverReason: null,
   };
 }
 
-function dismissOnboarding(skip) {
-  state.onboardingDismissed = true;
-  if (skip) localStorage.setItem('lt2_skip_onboarding', '1');
-  render();
-}
-
-// --- Inclination Logic ---
+// ═══════════════════════════════════════════════════════════ INCLINATION LOGIC
 function applyDelta(current, delta) {
-  const deltaEfectiu = delta / (1 + Math.abs(current) * INERTIA_FACTOR);
-  return Math.max(-1.0, Math.min(1.0, current + deltaEfectiu));
+  const effective = delta / (1 + Math.abs(current) * INERTIA_FACTOR);
+  return Math.max(-1.0, Math.min(1.0, current + effective));
 }
-
 function applyInclinationDeltas(deltas) {
   for (const axis of AXES) {
     const d = deltas[axis] || 0;
-    if (d !== 0) {
-      state.character.inclination[axis] = applyDelta(state.character.inclination[axis], d);
-    }
+    if (d !== 0) state.character.inclination[axis] = applyDelta(state.character.inclination[axis], d);
   }
 }
 
-// --- Action Visibility ---
-// Returns "ACTIVE", "FADED", or "HIDDEN"
+// ═══════════════════════════════════════════════════════════ ACTION VISIBILITY
 function getActionVisibility(action) {
-  if (!action.inclination_requirements) return "ACTIVE";
-
+  if (!action.inclination_requirements) return 'ACTIVE';
   for (const [axis, range] of Object.entries(action.inclination_requirements)) {
     const val = state.character.inclination[axis];
     const min = range.min !== undefined ? range.min : -Infinity;
     const max = range.max !== undefined ? range.max : Infinity;
-
-    const inRange = val >= min && val <= max;
-    if (inRange) continue; // this axis is fine
-
-    // Out of range — check FADE_MARGIN
-    const tooLow = range.min !== undefined && val < range.min;
+    if (val >= min && val <= max) continue;
+    const tooLow  = range.min !== undefined && val < range.min;
     const tooHigh = range.max !== undefined && val > range.max;
-
-    const nearLow  = tooLow  && (val >= range.min - FADE_MARGIN);
-    const nearHigh = tooHigh && (val <= range.max + FADE_MARGIN);
-
-    if (nearLow || nearHigh) return "FADED";
-    return "HIDDEN";
+    if ((tooLow  && val >= range.min - FADE_MARGIN) ||
+        (tooHigh && val <= range.max + FADE_MARGIN)) return 'FADED';
+    return 'HIDDEN';
   }
-  return "ACTIVE";
+  return 'ACTIVE';
 }
 
-// --- Branch Conditions ---
+// ═══════════════════════════════════════════════════════════ BRANCH CONDITIONS
 function evaluateConditions(condObj, inclination) {
   if (!condObj) return true;
   const inc = inclination || state.character.inclination;
   const results = condObj.conditions.map(cond => {
     const val = inc[cond.axis];
-    const okMin = cond.min === undefined || val >= cond.min;
-    const okMax = cond.max === undefined || val <= cond.max;
-    return okMin && okMax;
+    return (cond.min === undefined || val >= cond.min) &&
+           (cond.max === undefined || val <= cond.max);
   });
-  if (condObj.operator === "AND") return results.every(Boolean);
-  return results.some(Boolean); // OR
+  return condObj.operator === 'AND' ? results.every(Boolean) : results.some(Boolean);
 }
-
 function getActiveBranches() {
   return BRANCHES.filter(b => evaluateConditions(b.conditions));
 }
 
-function getStatMultiplier(action) {
-  if (!action.stat_key) return 1;
-  return 1 + (state.character.stats[action.stat_key] - STAT_STARTING_VALUE) * STAT_OUTPUT_FACTOR;
-}
-
-// --- Universal Tech Discovery ---
+// ═══════════════════════════════════════════════════════════ TECH DISCOVERY
 function getDiscoverableTechs() {
   return UNIVERSAL_TECHS.filter(t =>
     state.cycle >= t.cycle && !state.discoveredUniversalTechIds.has(t.id)
   );
 }
-
-function discoverTech(techId) {
-  if (state.discoveredUniversalTechIds.has(techId)) return;
-  state.discoveredUniversalTechIds.add(techId);
-  const tech = UNIVERSAL_TECHS.find(t => t.id === techId);
-  addLog(`${tech.icon} Descoberta: ${tech.name}`);
-  applyUniversalTechEffect(tech);
-  render();
+function applyUniversalTechEffect(tech) {
+  if (!tech.effect) return;
+  if (tech.effect.healthBonus) state.health = Math.min(HEALTH_MAX, state.health + tech.effect.healthBonus);
 }
-
-// Auto-applies any universal techs whose cycle has been reached (no render — callers handle it).
 function autoDiscoverUniversalTechs() {
   for (const tech of getDiscoverableTechs()) {
     state.discoveredUniversalTechIds.add(tech.id);
@@ -181,124 +209,53 @@ function autoDiscoverUniversalTechs() {
   }
 }
 
-function dismissDiscovery() {
-  state.pendingDiscoveries.shift();
-  render();
-}
-
-function dismissActionResult() {
-  state.pendingActionResult = null;
-  render();
-}
-
-function dismissBirth() {
-  state.pendingBirths.shift();
-  render();
-}
-
-function dismissDeath() {
-  const d = state.pendingDeath;
-  state.pendingDeath = null;
-  state.pendingSuccession = d.successionPayload;
-  render();
-}
-
-function dismissNewGen() {
-  state.pendingNewGen = null;
-  render();
-}
-
-function applyUniversalTechEffect(tech) {
-  if (!tech.effect) return;
-  if (tech.effect.healthBonus) {
-    state.health = Math.min(HEALTH_MAX, state.health + tech.effect.healthBonus);
-  }
-  if (tech.effect.desc) addLog(`✨ ${tech.effect.desc}`);
-}
-
-// --- Branch Tech Discovery ---
-
+// ═══════════════════════════════════════════════════════════ SKILL (BRANCH TECH) LOGIC
 function getEligibleSkills() {
-  return SKILL_DEFS.filter(skill =>
-    !skill.is_hidden &&
-    (!skill.universal_prereq || state.discoveredUniversalTechIds.has(skill.universal_prereq)) &&
-    !state.character.unlockedSkillIds.has(skill.id) &&
-    evaluateConditions(skill.inclination_conditions)
+  return SKILL_DEFS.filter(bt =>
+    !bt.is_hidden &&
+    (!bt.universal_prereq || state.discoveredUniversalTechIds.has(bt.universal_prereq)) &&
+    !state.character.unlockedSkillIds.has(bt.id) &&
+    evaluateConditions(bt.inclination_conditions)
   );
 }
-
-function getSkillMaturity(skill) {
+function getSkillMaturity(bt) {
   let score = 0;
-  for (const cond of skill.inclination_conditions.conditions) {
+  for (const cond of bt.inclination_conditions.conditions) {
     const val = state.character.inclination[cond.axis];
     if (cond.min !== undefined) score += Math.max(0, val - cond.min);
   }
   return score;
 }
-
-function unlockSkill(skill) {
-  if (state.character.unlockedSkillIds.has(skill.id)) return;
-  state.character.unlockedSkillIds.add(skill.id);
-  addLog(`Nova habilitat: ${skill.name}`);
-  const pe = skill.passive_effect;
+function unlockSkill(bt) {
+  if (state.character.unlockedSkillIds.has(bt.id)) return;
+  state.character.unlockedSkillIds.add(bt.id);
+  addLog(`Nova habilitat: ${bt.name}`);
+  const pe = bt.passive_effect;
   if (pe) {
-    if (pe.type === 'grant_health')    state.health    = Math.min(HEALTH_MAX, state.health + pe.amount);
+    if (pe.type === 'grant_health')   state.health    = Math.min(HEALTH_MAX, state.health + pe.amount);
     if (pe.type === 'grant_material') state.material += pe.amount;
-    if (pe.type === 'unlock_zone')        state.discoveredZoneIds.add(pe.unlocks_zone);
-    if (pe.desc) addLog(`Efecte passiu: ${pe.desc}`);
+    if (pe.type === 'unlock_zone')    state.discoveredZoneIds.add(pe.unlocks_zone);
   }
-  const newActions = ACTIONS.filter(a => skill.unlocks_action_ids.includes(a.id));
-  if (newActions.length > 0) {
-    const byZone = {};
-    for (const a of newActions) {
-      (byZone[a.zona] = byZone[a.zona] || []).push(a.name);
+}
+
+// ═══════════════════════════════════════════════════════════ DESTRESA DISCOVERY
+function checkDestresesAfterAction() {
+  if (state.character.destreses.size >= DESTRESA_MAX) return;
+  for (const def of DESTRESA_DEFS) {
+    if (state.character.destreses.has(def.id)) continue;
+    const met = def.conditions.every(c => {
+      const val = state.character.inclination[c.axis] ?? 0;
+      return (c.min === undefined || val >= c.min) && (c.max === undefined || val <= c.max);
+    });
+    if (met) {
+      state.character.destreses.add(def.id);
+      addLog(`⭐ Destresa: ${def.name}`);
+      state.pendingDiscoveries.push({ _isDestresa: true, icon: '⭐', name: def.name, desc: `Has après la destresa "${def.name}" per la teva inclinació vital.`, effect: null });
     }
-    const parts = Object.entries(byZone).map(([z, names]) => `${z}: ${names.join(', ')}`);
-    state.lastResult = `Habilitat nova: ${skill.name} · Noves accions — ${parts.join('; ')}. Ves a 'Aprendre' per comprar-les.`;
-  } else {
-    state.lastResult = `Habilitat nova apresa: ${skill.name}`;
   }
 }
 
-function performDiscoveryAction(chosenBtId) {
-  const eligible = getEligibleSkills();
-  if (eligible.length === 0) {
-    addLog("No hi ha tècniques noves a descobrir ara.");
-    render();
-    return;
-  }
-  const chosen = chosenBtId
-    ? (eligible.find(bt => bt.id === chosenBtId) ?? eligible[0])
-    : (() => {
-        const maxScore = Math.max(...eligible.map(bt => getSkillMaturity(bt)));
-        const top = eligible.filter(bt => getSkillMaturity(bt) === maxScore);
-        return top[Math.floor(Math.random() * top.length)];
-      })();
-  unlockSkill(chosen);
-  state.cycle++;
-  autoDiscoverUniversalTechs();
-  state.food   = Math.max(0, state.food   - FOOD_UPKEEP);
-  state.health = Math.max(0, state.health - getAgingLoss(characterAge()));
-
-  if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) {
-    if (!state.pendingEvent) triggerSuccession();
-  }
-  render();
-}
-
-function evaluateBlockedIf(conditions) {
-  if (!conditions || conditions.length === 0) return false;
-  return conditions.some(cond => {
-    if (cond.type === 'has_skill')      return state.character.unlockedSkillIds.has(cond.id);
-    if (cond.type === 'not_has_skill')  return !state.character.unlockedSkillIds.has(cond.id);
-    if (cond.type === 'has_destresa')   return state.character.destreses.has(cond.id);
-    if (cond.type === 'stat_min')       return (state.character.stats[cond.stat] || 0) >= cond.min;
-    if (cond.type === 'axis_above')     return (state.character.inclination[cond.axis] || 0) >= cond.value;
-    if (cond.type === 'resource_below') return (state[cond.resource] || 0) < cond.value;
-    return false;
-  });
-}
-
+// ═══════════════════════════════════════════════════════════ CHARACTER STATE
 function evaluateCharacterRequires(action) {
   if (!action.requires || action.requires.length === 0) return true;
   return action.requires.every(req => {
@@ -315,7 +272,6 @@ function evaluateCharacterRequires(action) {
     return true;
   });
 }
-
 function applyCharacterEffect(action) {
   const eff = action.character_effect;
   if (!eff) return;
@@ -326,10 +282,6 @@ function applyCharacterEffect(action) {
     state.character.charState[eff.state] = def?.max != null
       ? Math.min(def.max, Math.max(0, newVal))
       : newVal;
-    if (eff.message) {
-      state.lastResult = eff.message;
-      addLog(eff.message.split('.')[0]);
-    }
   }
   if (eff.type === 'add_child') {
     const nameIdx = (state.generation * 7 + state.character.children.length * 3) % CHILD_NAMES.length;
@@ -338,331 +290,74 @@ function applyCharacterEffect(action) {
     state.character.children.push(child);
     state.character.charState.fills = state.character.children.length;
     const n = state.character.children.length;
-    const msg = n === 1
-      ? `Primer fill nascut. La successió és assegurada.`
-      : `${n}è fill nascut. Podreu triar successor.`;
-    state.lastResult = msg;
+    state.pendingBirths.push({ childLabel, n });
     addLog(`Fill nascut (${n}/${MAX_CHILDREN}).`);
-    state.pendingBirths.push({ childLabel, parentLabel: state.character.label || `Gen ${state.generation}`, n });
   }
 }
 
-// Filter a pool to only eligible events (excludes discovery events whose conditions aren't met)
+// ═══════════════════════════════════════════════════════════ EVENT SYSTEM
 function getEligiblePoolEvents(pool) {
   return pool.filter(ev => {
     if (ev.is_single_use && state.character.firedSingleUseEventIds.has(ev.id)) return false;
     if (ev.blocked_if && evaluateBlockedIf(ev.blocked_if)) return false;
     if (!ev.is_discovery_event) return true;
-    const skillId = ev.discovery_skill_id;
-    if (state.character.unlockedSkillIds.has(skillId)) return false;
-    const bt = SKILL_DEFS.find(t => t.id === skillId);
+    const bt = SKILL_DEFS.find(t => t.id === ev.discovery_skill_id);
     if (!bt) return false;
-    if (!state.discoveredUniversalTechIds.has(skill.universal_prereq)) return false;
-    return evaluateConditions(skill.inclination_conditions);
+    if (!state.discoveredUniversalTechIds.has(bt.universal_prereq)) return false;
+    return evaluateConditions(bt.inclination_conditions);
+  });
+}
+function evaluateBlockedIf(conditions) {
+  if (!conditions || conditions.length === 0) return false;
+  return conditions.some(cond => {
+    if (cond.type === 'has_skill')      return state.character.unlockedSkillIds.has(cond.id);
+    if (cond.type === 'not_has_skill')  return !state.character.unlockedSkillIds.has(cond.id);
+    if (cond.type === 'has_destresa')   return state.character.destreses.has(cond.id);
+    if (cond.type === 'stat_min')       return (state.character.stats[cond.stat] || 0) >= cond.min;
+    if (cond.type === 'axis_above')     return (state.character.inclination[cond.axis] || 0) >= cond.value;
+    if (cond.type === 'resource_below') return (state[cond.resource] || 0) < cond.value;
+    return false;
   });
 }
 
-// --- Action Purchase & Execute ---
-function purchaseAction(actionId) {
-  const action = ACTIONS.find(a => a.id === actionId);
-  if (!action || action.is_base) return;
-  if (state.character.purchasedActionIds.has(actionId)) return;
-
-  const vis = getActionVisibility(action);
-  if (vis !== "ACTIVE") {
-    addLog("Acció no disponible en l'estat actual.");
-    return;
-  }
-  if (state.material < action.purchase_cost) {
-    addLog(`Provisions insuficients per aprendre ${action.name}.`);
-    render();
-    return;
-  }
-
-  state.material -= action.purchase_cost;
-  state.character.purchasedActionIds.add(actionId);
-
-  addLog(`Après: ${action.name} (−${action.purchase_cost} 🧠)`);
-  render();
-}
-
-function checkDestresesAfterAction() {
-  if (state.character.destreses.size >= DESTRESA_MAX) return;
-  for (const def of DESTRESA_DEFS) {
-    if (state.character.destreses.has(def.id)) continue;
-    const met = def.conditions.every(c => {
-      const val = state.character.inclination[c.axis] ?? 0;
-      if (c.min !== undefined && val < c.min) return false;
-      if (c.max !== undefined && val > c.max) return false;
-      return true;
-    });
-    if (met) {
-      state.character.destreses.add(def.id);
-      addLog(`⭐ Destresa: ${def.name}`);
-      state.lastResult = `Has après la destresa "${def.name}" per la teva inclinació vital.`;
-    }
-  }
-}
-
-function executeAction(actionId) {
-  const action = ACTIONS.find(a => a.id === actionId);
-  if (!action) return;
-  if (!state.character.purchasedActionIds.has(actionId)) return;
-  if (state.pendingEvent) return;
-  if (state.pendingSuccession) return;
-  if (state.gameOver) return;
-  state.pendingZoneDiscovery = null;
-
-  const vis = getActionVisibility(action);
-  if (vis !== "ACTIVE") {
-    addLog(`${action.name} no és executable en l'estat actual.`);
-    render();
-    return;
-  }
-
-  const age = characterAge();
-  if (action.minAge !== undefined && age < action.minAge) {
-    addLog(`${action.name} requereix edat mínima ${action.minAge}.`);
-    render();
-    return;
-  }
-  if (action.maxAge !== undefined && age > action.maxAge) {
-    addLog(`${action.name} no disponible passats ${action.maxAge} cicles.`);
-    render();
-    return;
-  }
-
-  if (!evaluateCharacterRequires(action)) {
-    render();
-    return;
-  }
-
-  // Roll output: stat multiplier + destresa flat bonus
-  const destresaBonus = (action.destresa_id && state.character.destreses.has(action.destresa_id))
-    ? DESTRESA_BONUS : 0;
-  const outputMinBonus = [...state.character.unlockedSkillIds].reduce((sum, skillId) => {
-    const bt = SKILL_DEFS.find(t => t.id === skillId);
-    return (bt?.passive_effect?.type === 'bonus_action_output' && bt.passive_effect.action_id === actionId)
-      ? sum + (bt.passive_effect.output_min_bonus || 0) : sum;
-  }, 0);
-  const outputMaxBonus = [...state.character.unlockedSkillIds].reduce((sum, skillId) => {
-    const bt = SKILL_DEFS.find(t => t.id === skillId);
-    return (bt?.passive_effect?.type === 'bonus_action_output' && bt.passive_effect.action_id === actionId)
-      ? sum + (bt.passive_effect.output_max_bonus || 0) : sum;
-  }, 0);
-  const output = Math.round(randInt(action.output_min + outputMinBonus, action.output_max + outputMaxBonus) * getStatMultiplier(action)) + destresaBonus;
-  const outRes = action.output_resource || 'food';
-  const outResDef = RESOURCE_DEFS.find(r => r.id === outRes);
-  if (outResDef) {
-    const newVal = (state[outRes] || 0) + output;
-    state[outRes] = outResDef.max != null ? Math.min(outResDef.max, newVal) : newVal;
-  }
-
-  // Side-effects (risky / restorative actions)
-  if (action.side_effects) {
-    for (const se of action.side_effects) {
-      const resDef = RESOURCE_DEFS.find(r => r.id === se.resource);
-      if (!resDef) continue;
-      const newVal = (state[se.resource] || 0) + se.delta;
-      state[se.resource] = resDef.max != null
-        ? Math.max(0, Math.min(resDef.max, newVal))
-        : Math.max(0, newVal);
-    }
-  }
-
-  // Apply inclination deltas
-  applyInclinationDeltas(action.inclination_deltas);
-
-  // Grow the relevant stat
-  if (action.stat_key && action.stat_gain) {
-    state.character.stats[action.stat_key] = Math.min(STAT_MAX,
-      state.character.stats[action.stat_key] + action.stat_gain);
-  }
-
-  // Check destresa discovery by inclination conditions
-  checkDestresesAfterAction();
-
-  // Advance cycle
-  state.cycle++;
-  autoDiscoverUniversalTechs();
-
-  const resLabel = outResDef ? outResDef.label : outRes;
-  if (output > 0) addLog(`[${state.cycle}] ${action.name}: +${output} ${resLabel}`);
-  if (output > 0) state.lastResult = `Cicle ${state.cycle} — ${action.name}: +${output} ${resLabel}`;
-
-  if (action.unlocks_zone && !state.discoveredZoneIds.has(action.unlocks_zone)) {
-    state.discoveredZoneIds.add(action.unlocks_zone);
-    addLog(`Nova zona descoberta: ${action.unlocks_zone}`);
-    state.pendingZoneDiscovery = action.unlocks_zone;
-    state.lastResult = null;
-  }
-
-  // Apply character state effects and reputation
-  applyCharacterEffect(action);
-  if (action.reputation_gain) state.reputacio = (state.reputacio || 0) + action.reputation_gain;
-
-  // Upkeep (food + health lost to survival and aging)
-  const agingLoss = getAgingLoss(characterAge());
-  state.food   = Math.max(0, state.food   - FOOD_UPKEEP);
-  state.health = Math.max(0, state.health - agingLoss);
-  if (state.food   === 0) addLog(`⚠ Provisions crítiques.`);
-  if (state.health === 0) addLog(`💀 Salut crítica.`);
-  if (characterAge() === AGING_THRESHOLD + 1) addLog(`L'envelliment s'accelera.`);
-
-  // Trigger event — only fires EVENT_TRIGGER_CHANCE of the time
-  if (action.event_pool_id && EVENT_POOLS[action.event_pool_id] && Math.random() < EVENT_TRIGGER_CHANCE) {
-    const pool = getEligiblePoolEvents(EVENT_POOLS[action.event_pool_id]);
-    if (pool.length > 0) {
-      state.pendingEvent = pool[Math.floor(Math.random() * pool.length)];
-    }
-  }
-
-  // Check succession: end of life OR health depleted
-  if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) {
-    if (!state.pendingEvent) triggerSuccession();
-  }
-
-  // Result screen
-  const resIcon = outRes === 'food' ? '🌾' : outRes === 'health' ? '❤️' : '📦';
-  state.pendingActionResult = {
-    name: action.name,
-    output,
-    resIcon,
-    sideEffects: (action.side_effects || []).map(se => ({
-      delta: se.delta,
-      icon: se.resource === 'health' ? '❤️' : se.resource === 'food' ? '🌾' : '📦',
-    })),
-  };
-
-  render();
-}
-
-function showActionToast(lines) {
-  const el = document.getElementById("action-toast");
-  if (!el) return;
-  el.innerHTML = lines.map(l => `<div>${l}</div>`).join("");
-  el.classList.remove("hidden");
-  clearTimeout(el._hideTimer);
-  el._hideTimer = setTimeout(() => el.classList.add("hidden"), 2200);
-}
-
-function dismissEvent() {
-  const ev = state.pendingEvent;
-  if (!ev) return;
-  if (ev.is_single_use) state.character.firedSingleUseEventIds.add(ev.id);
-
-  if (ev.effects) {
-    if (ev.effects.food)   { state.food   = Math.max(0, Math.min(FOOD_MAX, state.food + ev.effects.food));   addLog(`Esdeveniment: ${ev.effects.food   >= 0 ? '+' : ''}${ev.effects.food} Aliment`); }
-    if (ev.effects.health) { state.health = Math.max(0, Math.min(HEALTH_MAX, state.health + ev.effects.health)); addLog(`Esdeveniment: ${ev.effects.health >= 0 ? '+' : ''}${ev.effects.health} Salut`); }
-  }
-
-  state.pendingEvent = null;
-  if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
-  render();
-}
-
-function resolveDiscoveryOption(optionIndex) {
-  const ev = state.pendingEvent;
-  if (!ev || !ev.options) return;
-  const opt = ev.options[optionIndex];
-
-  if (opt.food_delta) {
-    state.food = Math.max(0, Math.min(FOOD_MAX, state.food + opt.food_delta));
-    addLog(`Esdeveniment: ${opt.food_delta >= 0 ? '+' : ''}${opt.food_delta} Aliment`);
-  }
-
-  // Conditional health_delta: skill_modifier overrides base health_delta if skill absent
-  let healthDelta = opt.health_delta ?? 0;
-  if (opt.skill_modifier && !state.character.unlockedSkillIds.has(opt.skill_modifier.skill_id)) {
-    const roll = Math.random();
-    healthDelta = opt.skill_modifier.absent_health_options
-      ? opt.skill_modifier.absent_health_options[Math.floor(roll * opt.skill_modifier.absent_health_options.length)]
-      : (opt.skill_modifier.absent_health_delta ?? healthDelta);
-  } else if (opt.skill_modifier && state.character.unlockedSkillIds.has(opt.skill_modifier.skill_id)) {
-    healthDelta = opt.skill_modifier.present_health_delta ?? healthDelta;
-  }
-  if (healthDelta !== 0) {
-    state.health = Math.max(0, Math.min(HEALTH_MAX, state.health + healthDelta));
-    addLog(`Esdeveniment: ${healthDelta >= 0 ? '+' : ''}${healthDelta} Salut`);
-  }
-
-  if (opt.material_delta) {
-    state.material = Math.max(0, state.material + opt.material_delta);
-    if (opt.material_delta !== 0) addLog(`Esdeveniment: ${opt.material_delta >= 0 ? '+' : ''}${opt.material_delta} Provisions`);
-  }
-
-  if (opt.discovers && ev.discovery_skill_id) {
-    const bt = SKILL_DEFS.find(t => t.id === ev.discovery_skill_id);
-    if (bt) unlockSkill(bt);
-  }
-
-  if (ev.is_single_use) state.character.firedSingleUseEventIds.add(ev.id);
-  state.pendingEvent = null;
-  if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
-  render();
-}
-
+// ═══════════════════════════════════════════════════════════ SUCCESSION
 function triggerSuccession() {
-  if (state.cycle >= ERA_CYCLES) {
-    state.gameOver = true;
-    state.gameOverReason = 'era_complete';
-    return;
-  }
-
-  const children   = state.character.children;
-  const siblings   = state.siblingPool;
-
+  if (state.cycle >= ERA_CYCLES) { state.gameOver = true; state.gameOverReason = 'era_complete'; return; }
+  const children = state.character.children;
+  const siblings = state.siblingPool;
   if (children.length === 0 && siblings.length === 0) {
-    state.gameOver = true;
-    state.gameOverReason = 'no_heir';
-    return;
+    state.gameOver = true; state.gameOverReason = 'no_heir'; return;
   }
-
   const topAxis = AXES.reduce((a, b) =>
     Math.abs(state.character.inclination[a]) > Math.abs(state.character.inclination[b]) ? a : b
   );
-
-  // Pre-compute inheritance from current character (same for all children)
   const inheritedInclination = Object.fromEntries(
     AXES.map(a => [a, state.character.inclination[a] * INCLINATION_INHERITANCE_RATE])
   );
-  const parentStats = state.character.stats;
   const inheritedStats = Object.fromEntries(
-    STAT_DEFS.map(s => [s.id, parentStats[s.id] * INCLINATION_INHERITANCE_RATE + STAT_STARTING_VALUE * (1 - INCLINATION_INHERITANCE_RATE)])
+    STAT_DEFS.map(s => [s.id,
+      state.character.stats[s.id] * INCLINATION_INHERITANCE_RATE +
+      STAT_STARTING_VALUE * (1 - INCLINATION_INHERITANCE_RATE)
+    ])
   );
-  const inheritedPurchased   = new Set(state.character.purchasedActionIds);
-  const inheritedSkills = new Set(state.character.unlockedSkillIds);
-  const inheritedDestreses   = new Set(state.character.destreses);
-  const hasEnsenyat          = state.character.charState.ensenyat === 1;
-
+  const inheritedPurchased = new Set(state.character.purchasedActionIds);
+  const inheritedSkills    = new Set(state.character.unlockedSkillIds);
+  const inheritedDestreses = new Set(state.character.destreses);
+  const hasEnsenyat        = state.character.charState.ensenyat === 1;
   const childSuccessors = children.map(c => ({
-    ...c,
-    is_sibling: false,
-    inheritedInclination,
-    inheritedStats,
-    inheritedPurchased,
-    inheritedSkills,
-    inheritedDestreses,
-    hasEnsenyat,
+    ...c, is_sibling: false,
+    inheritedInclination, inheritedStats, inheritedPurchased, inheritedSkills, inheritedDestreses, hasEnsenyat,
   }));
-
   const siblingSuccessors = siblings.map(s => ({ ...s, is_sibling: true }));
-
   const successionPayload = {
     generation: state.generation,
-    cyclesLived: characterAge(),
-    topAxis,
-    topAxisVal: state.character.inclination[topAxis].toFixed(2),
     successors: [...childSuccessors, ...siblingSuccessors],
   };
-
   state.pendingDeath = {
     label: state.character.label || `Gen ${state.generation}`,
-    emoji: getCharEmoji(state.character),
     age: characterAge(),
     cause: state.health <= 0 ? 'Salut esgotada' : 'Vida complerta',
     topAxis,
-    topAxisVal: state.character.inclination[topAxis].toFixed(2),
     successionPayload,
   };
 }
@@ -670,40 +365,28 @@ function triggerSuccession() {
 function continueSuccession(successorId) {
   if (!state.pendingSuccession) return;
   const s = state.pendingSuccession;
-
   const chosen = s.successors.find(c => c.id === successorId);
   if (!chosen) return;
-
-  // Unchosen children become siblings for the next generation
-  const unchosenChildren = s.successors.filter(c => !c.is_sibling && c.id !== successorId);
+  const unchosen = s.successors.filter(c => !c.is_sibling && c.id !== successorId);
   state.siblingPool = [
-    ...unchosenChildren,
+    ...unchosen,
     ...state.siblingPool.filter(sib => sib.id !== successorId),
   ];
-
   state.pendingSuccession = null;
-
-  // Reset non-persistent resources; apply inheritDecay on persistent ones that define it
   for (const res of RESOURCE_DEFS) {
-    if (!res.persistent) {
-      state[res.id] = res.startVal;
-    } else if (res.inheritDecay != null) {
-      state[res.id] = Math.floor((state[res.id] || 0) * res.inheritDecay);
-    }
+    if (!res.persistent)             state[res.id] = res.startVal;
+    else if (res.inheritDecay != null) state[res.id] = Math.floor((state[res.id] || 0) * res.inheritDecay);
   }
-
   state.generation++;
-  // state.cycle does NOT reset — it is an era-wide counter
-
-  // Probabilistic branch tech inheritance (parent teaching bonus applied)
   const teachingBonus = chosen.hasEnsenyat ? TEACHING_BONUS : 0;
   const inheritedSkills = new Set();
   for (const skillId of chosen.inheritedSkills) {
     const bt = SKILL_DEFS.find(t => t.id === skillId);
-    const rate = Math.min(1, (bt ? (skill.inheritanceRate || 0) : 0) + teachingBonus);
+    const rate = Math.min(1, (bt ? (bt.inheritanceRate || 0) : 0) + teachingBonus);
     if (Math.random() < rate) inheritedSkills.add(skillId);
   }
-
+  const gender = Math.random() < 0.5 ? 'M' : 'F';
+  state.gender = gender;
   state.character = createCharacter(
     chosen.inheritedInclination,
     chosen.inheritedPurchased,
@@ -713,1091 +396,1000 @@ function continueSuccession(successorId) {
     state.cycle,
     chosen.label
   );
-
-  state.lastResult = null;
-  state.pendingZoneDiscovery = null;
   addLog(`--- Generació ${state.generation} ---`);
-
-  state.pendingNewGen = {
-    label: chosen.label,
-    emoji: getCharEmoji(state.character),
-    generation: state.generation,
-    topAxis: chosen.inheritedInclination
-      ? AXES.reduce((a, b) => Math.abs(chosen.inheritedInclination[a]||0) > Math.abs(chosen.inheritedInclination[b]||0) ? a : b)
-      : null,
-  };
-  render();
+  state.pendingNewGen = { label: chosen.label, generation: state.generation };
+  renderAll();
 }
 
-function restartGame() {
-  initState();
-  render();
+// ═══════════════════════════════════════════════════════════ STAT MULTIPLIER
+function getStatMultiplier(action) {
+  if (!action.stat_key) return 1;
+  return 1 + (state.character.stats[action.stat_key] - STAT_STARTING_VALUE) * STAT_OUTPUT_FACTOR;
 }
 
-// --- Helpers ---
-function randInt(min, max) {
-  if (min > max) return min;
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+// ═══════════════════════════════════════════════════════════ ACTION EXECUTION
+function executeAction(actionId) {
+  if (state.pendingEvent || state.pendingSuccession || state.gameOver) return;
+  const action = ACTIONS.find(a => a.id === actionId);
+  if (!action || !state.character.purchasedActionIds.has(actionId)) return;
+  if (getActionVisibility(action) !== 'ACTIVE') return;
+  const age = characterAge();
+  if (action.minAge !== undefined && age < action.minAge) return;
+  if (action.maxAge !== undefined && age > action.maxAge) return;
+  if (!evaluateCharacterRequires(action)) return;
 
-function addLog(msg) {
-  state.log.unshift(msg);
-  if (state.log.length > 8) state.log.length = 8;
-}
-
-// --- Rendering ---
-
-
-function getInclinationHint(action) {
-  const deltas = action.inclination_deltas;
-  const hints = Object.entries(deltas)
-    .filter(([, d]) => Math.abs(d) >= 0.01)
-    .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
-    .slice(0, 2)
-    .map(([axis, d]) => {
-      const labels = AXIS_LABELS[axis];
-      return d > 0 ? labels.right : labels.left;
+  // Handle discovery action (learn a branch tech)
+  if (action.is_discovery_action) {
+    const eligible = getEligibleSkills();
+    if (eligible.length === 0) { addLog('No hi ha tècniques noves ara.'); renderAll(); return; }
+    const maxScore = Math.max(...eligible.map(bt => getSkillMaturity(bt)));
+    const top = eligible.filter(bt => getSkillMaturity(bt) === maxScore);
+    const chosen = top[Math.floor(Math.random() * top.length)];
+    hide('overlay-zone-actions');
+    showDonutAnimation(action, null, () => {
+      const snap = snapshotNums();
+      unlockSkill(chosen);
+      state.cycle++;
+      autoDiscoverUniversalTechs();
+      state.food   = Math.max(0, state.food   - FOOD_UPKEEP);
+      state.health = Math.max(0, state.health - getAgingLoss(characterAge()));
+      applyFxFloaters(snap);
+      addLog(`[${state.cycle}] ${action.name}`);
+      if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
+      renderAll();
     });
-  return hints.length ? '→ ' + hints.join(' · ') : '';
-}
-
-function inclinationToDotIndex(val) {
-  if (val < -0.5) return 0;
-  if (val < -0.1) return 1;
-  if (val <=  0.1) return 2;
-  if (val <=  0.5) return 3;
-  return 4;
-}
-
-function render() {
-  renderTopBar();
-  renderProfilePanel();
-  renderActionsPanel();
-  renderModals();
-}
-
-function renderTopBar() {
-  document.getElementById("cycle-counter").textContent = `Era ${state.cycle}/${ERA_CYCLES}`;
-  document.getElementById("gen-counter").textContent = `Gen ${state.generation} · Edat ${characterAge()}`;
-
-  const vitalsEl    = document.getElementById("top-vitals");
-  const resourcesEl = document.getElementById("top-resources");
-  vitalsEl.innerHTML    = "";
-  resourcesEl.innerHTML = "";
-
-  const agingNow = getAgingLoss(characterAge());
-  for (const res of RESOURCE_DEFS) {
-    const val  = state[res.id];
-    const pill = document.createElement("span");
-    pill.id    = `${res.id}-counter`;
-
-    let inner = `${res.emoji} ${val}`;
-    if (res.showMax)              inner += `/<span class="stat-cap">${res.max}</span>`;
-    if (res.rateType === 'fixed') inner += `<span class="stat-rate">-${res.upkeep}/t</span>`;
-    if (res.rateType === 'aging') inner += `<span class="stat-rate">-${agingNow}/t</span>`;
-    pill.innerHTML = inner;
-
-    if (res.color)       pill.style.color       = res.color;
-    if (res.borderColor) pill.style.borderColor = res.borderColor;
-
-    let cls = `stat-pill stat-${res.id}`;
-    if (res.critAt !== undefined && val <= res.critAt)      cls += ' stat-critical';
-    else if (res.warnAt !== undefined && val <= res.warnAt) cls += ' stat-warning';
-    if (res.rateType === 'aging' && agingNow >= 10)         cls += ' aging-fast';
-    pill.className = cls;
-
-    (res.section === 'vitals' ? vitalsEl : resourcesEl).appendChild(pill);
-  }
-}
-
-function renderProfilePanel() {
-  // Profile label — dominant branch name or default
-  const activeBranchesNow = getActiveBranches();
-  document.getElementById("profile-label").textContent =
-    activeBranchesNow.length > 0 ? activeBranchesNow[0].name : "Explorador";
-
-  // Stats (Força / Enginy / Vincle)
-  const statsEl = document.getElementById("stats-display");
-  statsEl.innerHTML = "";
-  for (const { id, label } of STAT_DEFS) {
-    const val = state.character.stats[id];
-    const pct = Math.min(100, Math.max(0, (val - STAT_STARTING_VALUE) / (STAT_MAX - STAT_STARTING_VALUE) * 100));
-    const row = document.createElement("div");
-    row.className = "stat-row";
-    row.innerHTML = `<span class="stat-name">${label}</span>` +
-      `<div class="stat-bar-track"><div class="stat-bar-fill" style="width:${pct.toFixed(1)}%"></div></div>` +
-      `<span class="stat-value">${val.toFixed(1)}</span>`;
-    statsEl.appendChild(row);
+    return;
   }
 
-  // Inclination dots
-  const inclEl = document.getElementById("inclination-rows");
-  inclEl.innerHTML = "";
-  for (const axis of AXES) {
-    const val = state.character.inclination[axis];
-    const labels = AXIS_LABELS[axis];
-    const activeDot = inclinationToDotIndex(val);
-
-    const row = document.createElement("div");
-    row.className = "incl-row";
-    row.dataset.axis = axis;
-
-    const leftLbl = document.createElement("span");
-    leftLbl.className = "incl-pole";
-    leftLbl.textContent = labels.left;
-
-    const dotsEl = document.createElement("span");
-    dotsEl.className = "incl-dots";
-    for (let i = 0; i < 5; i++) {
-      const dot = document.createElement("span");
-      dot.className = "incl-dot";
-      dot.dataset.idx = i;
-      if (i === activeDot) {
-        dot.classList.add(i < 2 ? "active-left" : i === 2 ? "active-center" : "active-right");
+  // Normal action execution
+  hide('overlay-zone-actions');
+  showDonutAnimation(action, null, () => {
+    const snap = snapshotNums();
+    // Output resource
+    const destresaBonus = (action.destresa_id && state.character.destreses.has(action.destresa_id)) ? DESTRESA_BONUS : 0;
+    const outMinBonus = [...state.character.unlockedSkillIds].reduce((s, sid) => {
+      const bt = SKILL_DEFS.find(t => t.id === sid);
+      return bt?.passive_effect?.type === 'bonus_action_output' && bt.passive_effect.action_id === actionId
+        ? s + (bt.passive_effect.output_min_bonus || 0) : s;
+    }, 0);
+    const outMaxBonus = [...state.character.unlockedSkillIds].reduce((s, sid) => {
+      const bt = SKILL_DEFS.find(t => t.id === sid);
+      return bt?.passive_effect?.type === 'bonus_action_output' && bt.passive_effect.action_id === actionId
+        ? s + (bt.passive_effect.output_max_bonus || 0) : s;
+    }, 0);
+    const output = Math.round(randInt(action.output_min + outMinBonus, action.output_max + outMaxBonus) * getStatMultiplier(action)) + destresaBonus;
+    const outRes = action.output_resource || 'food';
+    const outDef = RESOURCE_DEFS.find(r => r.id === outRes);
+    if (outDef) {
+      const newVal = (state[outRes] || 0) + output;
+      state[outRes] = outDef.max != null ? Math.min(outDef.max, newVal) : newVal;
+    }
+    // Side effects
+    if (action.side_effects) {
+      for (const se of action.side_effects) {
+        const resDef = RESOURCE_DEFS.find(r => r.id === se.resource);
+        if (!resDef) continue;
+        const newVal = (state[se.resource] || 0) + se.delta;
+        state[se.resource] = resDef.max != null
+          ? Math.max(0, Math.min(resDef.max, newVal))
+          : Math.max(0, newVal);
       }
-      dotsEl.appendChild(dot);
     }
+    // Inclination
+    applyInclinationDeltas(action.inclination_deltas);
+    // Stat growth
+    if (action.stat_key && action.stat_gain) {
+      state.character.stats[action.stat_key] = Math.min(STAT_MAX, state.character.stats[action.stat_key] + action.stat_gain);
+    }
+    // Reputation
+    if (action.reputation_gain) state.reputacio = (state.reputacio || 0) + action.reputation_gain;
+    // Character state
+    applyCharacterEffect(action);
+    // Destresa check
+    checkDestresesAfterAction();
+    // Zone unlock
+    if (action.unlocks_zone && !state.discoveredZoneIds.has(action.unlocks_zone)) {
+      state.discoveredZoneIds.add(action.unlocks_zone);
+      addLog(`Nova zona: ${action.unlocks_zone}!`);
+      state.pendingDiscoveries.push({
+        _isZone: true, icon: ZONE_ICONS[action.unlocks_zone] || '🗺️',
+        name: action.unlocks_zone, desc: `Has descobert ${action.unlocks_zone}. Ara apareix al teu mapa.`,
+      });
+    }
+    // Cycle advance + upkeep
+    state.cycle++;
+    autoDiscoverUniversalTechs();
+    state.food   = Math.max(0, state.food   - FOOD_UPKEEP);
+    state.health = Math.max(0, state.health - getAgingLoss(characterAge()));
+    // Log
+    if (output > 0) addLog(`[${state.cycle}] ${action.name}: +${output} ${outDef?.label || outRes}`);
+    else            addLog(`[${state.cycle}] ${action.name}`);
+    // Floaters + resource balls
+    spawnResBalls(snap);
+    applyFxFloaters(snap);
+    // Event
+    if (action.event_pool_id && EVENT_POOLS[action.event_pool_id] && Math.random() < EVENT_TRIGGER_CHANCE) {
+      const pool = getEligiblePoolEvents(EVENT_POOLS[action.event_pool_id]);
+      if (pool.length > 0) state.pendingEvent = pool[Math.floor(Math.random() * pool.length)];
+    }
+    // Succession check
+    if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) {
+      if (!state.pendingEvent) triggerSuccession();
+    }
+    renderAll();
+  });
+}
 
-    const rightLbl = document.createElement("span");
-    rightLbl.className = "incl-pole right";
-    rightLbl.textContent = labels.right;
+// ═══════════════════════════════════════════════════════════ ANIMATION SYSTEM
 
-    row.appendChild(leftLbl);
-    row.appendChild(dotsEl);
-    row.appendChild(rightLbl);
-    inclEl.appendChild(row);
+// Snapshot current numeric values
+function snapshotNums() {
+  return {
+    food:      state.food,
+    health:    state.health,
+    material:  state.material,
+    reputacio: state.reputacio,
+    forca:  state.character.stats['forca'],
+    enginy: state.character.stats['enginy'],
+    vincle: state.character.stats['vincle'],
+  };
+}
+
+// Floating +/- numbers near UI elements
+function applyFxFloaters(before) {
+  const cur = snapshotNums();
+  const anchorMap = {
+    food:      'hex-food',
+    health:    'hex-health',
+    material:  'tok-material-val',
+    reputacio: 'tok-reputacio-val',
+    forca:     'hex-forca',
+    enginy:    'hex-enginy',
+    vincle:    'hex-vincle',
+  };
+  for (const [k, anchorId] of Object.entries(anchorMap)) {
+    const delta = (cur[k] || 0) - (before[k] || 0);
+    if (Math.abs(delta) < 0.001) continue;
+    const anchor = el(anchorId);
+    if (!anchor) continue;
+    const rect = anchor.getBoundingClientRect();
+    const div = document.createElement('div');
+    div.className = `float-num ${delta > 0 ? 'pos' : 'neg'}`;
+    div.textContent = (delta > 0 ? '+' : '') + (Number.isInteger(delta) ? delta : delta.toFixed(1));
+    div.style.left = (rect.left + rect.width / 2 - 14) + 'px';
+    div.style.top  = rect.top + 'px';
+    document.body.appendChild(div);
+    div.addEventListener('animationend', () => div.remove());
   }
-  const inclHintEl = document.createElement("div");
-  inclHintEl.className = "dim incl-hint";
-  inclHintEl.textContent = "Les accions mouen la inclinació → desbloquegen branques";
-  inclEl.appendChild(inclHintEl);
+}
 
-  // Family status
-  const famEl = document.getElementById("family-status");
-  famEl.innerHTML = `
-    <span class="family-badge ${state.character.charState.parella ? 'achieved' : ''}">Parella</span>
-    <span class="family-badge ${state.character.children.length > 0 ? 'achieved' : ''}">Fills (${state.character.children.length}/${MAX_CHILDREN})</span>
-    ${state.siblingPool.length > 0 ? `<span class="family-badge achieved" style="background:rgba(245,166,35,0.15);border-color:rgba(245,166,35,0.3)">Germans (${state.siblingPool.length})</span>` : ''}
-    ${state.character.charState.ensenyat ? `<span class="family-badge achieved" style="background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.3)">Ensenyat ✓</span>` : ''}
-  `;
-  if (!state.gameOver) {
-    const cyclesRem = LIFE_EXPECTANCY - characterAge();
-    const hintEl = document.createElement("div");
-    hintEl.className = "dim incl-hint";
-    hintEl.textContent = `Queden ${cyclesRem} cicle${cyclesRem === 1 ? '' : 's'}. Assegura la successió.`;
-    famEl.appendChild(hintEl);
+// Resource balls flying from donut to top bar
+function spawnResBalls(before) {
+  const cur = snapshotNums();
+  const resConfig = [
+    { key: 'material',  targetId: 'tok-material',  valId: 'tok-material-val'  },
+    { key: 'reputacio', targetId: 'tok-reputacio', valId: 'tok-reputacio-val' },
+  ];
+  const sourceEl = el('exec-donut-wrap');
+  if (!sourceEl) return;
+  const srcRect = sourceEl.getBoundingClientRect();
+  const srcCX = srcRect.left + srcRect.width / 2;
+  const srcCY = srcRect.top  + srcRect.height / 2;
+
+  resConfig.forEach(({ key, targetId, valId }) => {
+    const delta = Math.round((cur[key] || 0) - (before[key] || 0));
+    if (delta <= 0) return;
+    const targetEl = el(targetId);
+    const valEl    = el(valId);
+    if (!targetEl || !valEl) return;
+    const tRect = targetEl.getBoundingClientRect();
+    const tCX = tRect.left + tRect.width / 2;
+    const tCY = tRect.top  + tRect.height / 2;
+    const count  = Math.min(delta, 5);
+    const perBall = Math.floor(delta / count);
+    for (let i = 0; i < count; i++) {
+      const amount = i === count - 1 ? delta - perBall * (count - 1) : perBall;
+      setTimeout(() => {
+        const ball = document.createElement('div');
+        ball.className = `res-ball res-ball-${key}`;
+        ball.style.left = srcCX + 'px';
+        ball.style.top  = srcCY + 'px';
+        document.body.appendChild(ball);
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          ball.style.transition = 'left 0.5s cubic-bezier(0.2,0.8,0.4,1), top 0.5s cubic-bezier(0.2,0.8,0.4,1), opacity 0.2s ease 0.35s';
+          ball.style.left    = tCX + 'px';
+          ball.style.top     = tCY + 'px';
+          ball.style.opacity = '0';
+          setTimeout(() => {
+            ball.remove();
+            valEl.textContent = parseInt(valEl.textContent || '0') + amount;
+            targetEl.classList.remove('tok-bump');
+            void targetEl.offsetWidth;
+            targetEl.classList.add('tok-bump');
+          }, 560);
+        }));
+      }, i * 80);
+    }
+  });
+}
+
+// Animated counter tick for char panel stats
+function animateCounters(before) {
+  const cur = snapshotNums();
+  const targets = [
+    { key: 'food',   id: 'hex-food',   fmt: v => Math.round(v) },
+    { key: 'health', id: 'hex-health', fmt: v => Math.round(v) },
+    { key: 'reputacio', id: 'hex-reputation', fmt: v => Math.round(v) },
+    { key: 'forca',  id: 'hex-forca',  fmt: v => v.toFixed(1) },
+    { key: 'enginy', id: 'hex-enginy', fmt: v => v.toFixed(1) },
+    { key: 'vincle', id: 'hex-vincle', fmt: v => v.toFixed(1) },
+  ];
+  const anyChange = targets.some(t => Math.abs((cur[t.key]||0) - (before[t.key]||0)) > 0.001);
+  if (!anyChange) return;
+  const start = performance.now();
+  const dur   = 500;
+  function tick(now) {
+    const t    = Math.min(1, (now - start) / dur);
+    const ease = 1 - Math.pow(1 - t, 3);
+    for (const { key, id, fmt } of targets) {
+      const e = el(id);
+      if (!e) continue;
+      const from = before[key] || 0;
+      const to   = cur[key]    || 0;
+      e.textContent = fmt(from + (to - from) * ease);
+    }
+    if (t < 1) requestAnimationFrame(tick);
   }
+  requestAnimationFrame(tick);
+}
 
-  // Branches
-  const branchesEl = document.getElementById("active-branches");
-  branchesEl.innerHTML = "";
-  const activeBranches = getActiveBranches();
-  if (activeBranches.length === 0) {
-    branchesEl.innerHTML = '<span class="no-branch">Cap branca activa</span>';
-  } else {
-    for (const b of activeBranches) {
-      const chip = document.createElement("span");
-      chip.className = "branch-chip";
-      chip.textContent = b.name;
-      branchesEl.appendChild(chip);
+// Donut animation over the map zone
+function showDonutAnimation(action, label, onComplete) {
+  const icon = getActionIcon(action);
+  el('exec-donut-icon').textContent = icon;
+  const labelEl = el('exec-donut-label');
+  if (labelEl) labelEl.textContent = label || action.name || '';
+  const ring = el('exec-donut-ring');
+  const C    = 106.8;
+  ring.style.stroke          = 'var(--gold)';
+  ring.style.transition      = 'none';
+  ring.style.strokeDasharray = `0 ${C}`;
+  show('exec-donut-overlay');
+  document.body.classList.add('donut-active');
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    ring.style.transition      = `stroke-dasharray 1.8s linear`;
+    ring.style.strokeDasharray = `${C} 0`;
+  }));
+  setTimeout(() => {
+    hide('exec-donut-overlay');
+    ring.style.transition      = 'none';
+    ring.style.strokeDasharray = `0 ${C}`;
+    document.body.classList.remove('donut-active');
+    onComplete();
+  }, 1950);
+}
+
+// ═══════════════════════════════════════════════════════════ ZONE MAP RENDERING
+function renderZoneNodes() {
+  const mapZone = el('map-zone');
+  mapZone.innerHTML = '';
+  for (const zoneDef of ZONE_DEFS) {
+    if (!state.discoveredZoneIds.has(zoneDef.id)) continue;
+    const pos = ZONE_POS[zoneDef.id] || { left: 50, top: 50 };
+    const imgCode = ZONE_IMG[zoneDef.id] || zoneDef.id.toUpperCase();
+    const node = document.createElement('button');
+    node.className    = 'zone-node';
+    node.dataset.zone = zoneDef.id;
+    node.style.left   = pos.left + '%';
+    node.style.top    = pos.top  + '%';
+    const imgSrc = `../../design/life-tycoon/zones/ZONA-PRE-${imgCode}.png`;
+    node.innerHTML = `
+      <img class="zone-node-img" src="${imgSrc}" alt=""
+           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+      <div class="zone-node-icon" style="display:none;font-size:3rem">${ZONE_ICONS[zoneDef.id] || '❓'}</div>
+      <span class="zone-node-name">${zoneDef.label || zoneDef.id}</span>`;
+    node.addEventListener('touchstart', e => { e.preventDefault(); node.classList.add('zone-node-pressed'); }, { passive: false });
+    node.addEventListener('touchend', e => {
+      e.preventDefault();
+      node.classList.remove('zone-node-pressed');
+      if (document.querySelector('#overlay-zone-actions:not(.hidden), #overlay-action:not(.hidden)')) return;
+      openZoneSheet(zoneDef.id);
+    });
+    node.addEventListener('touchcancel', () => node.classList.remove('zone-node-pressed'));
+    node.addEventListener('mousedown',   () => node.classList.add('zone-node-pressed'));
+    node.addEventListener('mouseup', () => {
+      node.classList.remove('zone-node-pressed');
+      if (document.querySelector('#overlay-zone-actions:not(.hidden), #overlay-action:not(.hidden)')) return;
+      openZoneSheet(zoneDef.id);
+    });
+    node.addEventListener('mouseleave', () => node.classList.remove('zone-node-pressed'));
+    mapZone.appendChild(node);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════ CAROUSEL
+const CAROUSEL = { actions: [], idx: 0, zoneId: null, dragStartX: 0, dragDelta: 0, dragging: false, didDrag: false };
+const CAROUSEL_STEP = 110;
+
+function getZoneActions(zoneId) {
+  const base = ACTIONS.filter(a => {
+    if (a.zona !== zoneId) return false;
+    if (!state.character.purchasedActionIds.has(a.id)) return false;
+    const age = characterAge();
+    if (a.minAge !== undefined && age < a.minAge) return false;
+    if (a.maxAge !== undefined && age > a.maxAge) return false;
+    if (!evaluateCharacterRequires(a)) return false;
+    return true;
+  });
+  // Show discovery action if eligible skills exist
+  const disc = ACTIONS.find(a => a.is_discovery_action && a.zona === zoneId);
+  if (disc && getEligibleSkills().length > 0) base.unshift(disc);
+  return base;
+}
+
+function openZoneSheet(zoneId) {
+  const zoneDef = ZONE_DEFS.find(z => z.id === zoneId);
+  if (!zoneDef) return;
+  el('zone-sheet-icon').textContent = ZONE_ICONS[zoneId] || '📍';
+  el('zone-sheet-name').textContent = zoneDef.label || zoneId;
+  CAROUSEL.actions   = getZoneActions(zoneId);
+  CAROUSEL.idx       = 0;
+  CAROUSEL.zoneId    = zoneId;
+  CAROUSEL.dragDelta = 0;
+  CAROUSEL.didDrag   = false;
+  buildCarouselItems();
+  updateCarouselPositions(0);
+  updateCarouselInfo();
+  show('overlay-zone-actions');
+}
+
+function buildCarouselItems() {
+  const vp = el('zone-carousel-viewport');
+  vp.innerHTML = '';
+  CAROUSEL.actions.forEach((action, i) => {
+    const blocked = getActionVisibility(action) !== 'ACTIVE';
+    const item = document.createElement('div');
+    item.className = 'zc-item' + (blocked ? ' zc-blocked' : '');
+    item.dataset.idx = i;
+    item.innerHTML = `<span class="zc-icon">${getActionIcon(action)}</span><button class="zc-info-btn" aria-label="Info">ⓘ</button>`;
+    vp.appendChild(item);
+  });
+  const dotsEl = el('zc-dots');
+  dotsEl.innerHTML = '';
+  if (CAROUSEL.actions.length > 1) {
+    CAROUSEL.actions.forEach((_, i) => {
+      const d = document.createElement('div');
+      d.className = 'zc-dot' + (i === 0 ? ' active' : '');
+      dotsEl.appendChild(d);
+    });
+  }
+}
+
+function applyCarouselItem(item, offset, dragPx) {
+  const x       = offset * CAROUSEL_STEP + dragPx;
+  const absNorm = Math.abs(x) / CAROUSEL_STEP;
+  const scale   = Math.max(0.48, 1 - Math.min(absNorm, 2) * 0.26);
+  const rotY    = -(x / CAROUSEL_STEP) * 18;
+  const opacity = Math.max(0.35, 1 - absNorm * 0.25);
+  const zi      = Math.max(0, Math.round(10 - Math.abs(x) / 18));
+  item.style.transition = dragPx !== 0 ? 'none' : 'transform 0.32s cubic-bezier(0.25,0.46,0.45,0.94), opacity 0.3s';
+  item.style.transform  = `translateX(${x}px) scale(${scale}) rotateY(${rotY}deg)`;
+  item.style.opacity    = opacity;
+  item.style.zIndex     = zi;
+  item.classList.toggle('zc-active', Math.abs(x) < 5 && dragPx === 0);
+}
+
+function updateCarouselPositions(dragPx) {
+  const n = CAROUSEL.actions.length;
+  Array.from(el('zone-carousel-viewport').querySelectorAll('.zc-item')).forEach(item => {
+    let offset = parseInt(item.dataset.idx) - CAROUSEL.idx;
+    if (n > 1) {
+      while (offset >  n / 2) offset -= n;
+      while (offset < -n / 2) offset += n;
+    }
+    applyCarouselItem(item, offset, dragPx);
+  });
+  Array.from(el('zc-dots').children).forEach((d, i) => d.classList.toggle('active', i === CAROUSEL.idx));
+}
+
+function springEffect(dir) {
+  const n = CAROUSEL.actions.length;
+  if (n <= 1) return;
+  const items = Array.from(el('zone-carousel-viewport').querySelectorAll('.zc-item'));
+  if (!items.length) return;
+  const wrappedOffset = i => {
+    let o = i - CAROUSEL.idx;
+    while (o >  n / 2) o -= n;
+    while (o < -n / 2) o += n;
+    return o;
+  };
+  items.forEach(item => {
+    item.style.transition = 'none';
+    applyCarouselItem(item, wrappedOffset(parseInt(item.dataset.idx)), dir * 14);
+  });
+  requestAnimationFrame(() => requestAnimationFrame(() =>
+    items.forEach(item => applyCarouselItem(item, wrappedOffset(parseInt(item.dataset.idx)), 0))
+  ));
+}
+
+function carouselNavigate(newIdx) {
+  const n = CAROUSEL.actions.length;
+  if (n === 0) return;
+  const dir = newIdx > CAROUSEL.idx ? 1 : -1;
+  CAROUSEL.idx = ((newIdx % n) + n) % n;
+  updateCarouselPositions(0);
+  updateCarouselInfo();
+  springEffect(dir);
+}
+
+function updateCarouselInfo() {
+  const { actions, idx } = CAROUSEL;
+  if (!actions.length) {
+    el('zc-name').textContent     = 'Cap acció disponible';
+    el('zc-benefits').textContent = '';
+    el('zc-desc').textContent     = 'Desbloqueja accions aprenent habilitats.';
+    return;
+  }
+  const action  = actions[idx];
+  const blocked = getActionVisibility(action) !== 'ACTIVE';
+  const outIcons = { food: '🌾', material: '🧠', health: '❤️', reputacio: '🏛️' };
+  const parts = [];
+  if (!blocked && action.output_resource && action.output_min != null) {
+    const icon = outIcons[action.output_resource] || '📦';
+    parts.push(`${icon} ${action.output_min}–${action.output_max}`);
+  }
+  if (action.side_effects) {
+    for (const se of action.side_effects) {
+      const icon = outIcons[se.resource] || '📦';
+      parts.push(`${icon} ${se.delta > 0 ? '+' : ''}${se.delta}`);
     }
   }
+  el('zc-name').textContent     = action.name;
+  el('zc-benefits').textContent = parts.join('  ');
+  el('zc-desc').textContent     = blocked
+    ? '🔒 Inclinació insuficient'
+    : (action.description || '');
+}
 
-  // Branch tech skills
-  const btEl = document.getElementById("unlocked-branch-techs");
-  btEl.innerHTML = "";
+function carouselOpenCurrent() {
+  const action = CAROUSEL.actions[CAROUSEL.idx];
+  if (!action) return;
+  executeAction(action.id);
+}
+
+// ═══════════════════════════════════════════════════════════ CHARACTER PANEL
+function bustImgSrc() {
+  const race   = state.race   || 'MED';
+  const gender = state.gender || 'M';
+  return `../../design/life-tycoon/characters/PRE-${race}-${gender}-BUST.png`;
+}
+
+function renderCharPanel() {
+  // Bust
+  el('char-bust-img').src    = bustImgSrc();
+  el('char-name-inlay').textContent = state.character.label || state.dynastyName || '—';
+  el('char-age-inlay').textContent  = `${characterAge()} cicles · Gen ${state.generation}`;
+
+  // Left column: Aliment / Salut / Reputació
+  el('hex-food').textContent       = Math.round(state.food);
+  el('hex-health').textContent     = Math.round(state.health);
+  el('hex-reputation').textContent = Math.round(state.reputacio || 0);
+
+  // Right column: Força / Enginy / Vincle
+  el('hex-forca').textContent  = (state.character.stats['forca']  || 0).toFixed(1);
+  el('hex-enginy').textContent = (state.character.stats['enginy'] || 0).toFixed(1);
+  el('hex-vincle').textContent = (state.character.stats['vincle'] || 0).toFixed(1);
+
+  // Knowledge row: unlocked branch techs as pills
+  const kr = el('knowledge-row');
+  kr.innerHTML = '';
   if (state.character.unlockedSkillIds.size === 0) {
-    btEl.innerHTML = '<div class="dim">Cap habilitat desblocada</div>';
+    const empty = document.createElement('span');
+    empty.style.cssText = 'font-size:0.65rem;color:var(--text-dim)';
+    empty.textContent   = 'Cap habilitat';
+    kr.appendChild(empty);
   } else {
     for (const skillId of state.character.unlockedSkillIds) {
       const bt = SKILL_DEFS.find(t => t.id === skillId);
       if (!bt) continue;
-      const div = document.createElement("div");
-      div.className = "skill-item";
-      div.textContent = skill.name;
-      // S2-03: warn if all actions from this tech are in undiscovered zones
-      const skillActions = ACTIONS.filter(a => skill.unlocks_action_ids.includes(a.id));
-      const allLocked = skillActions.length > 0 && skillActions.every(a => !state.discoveredZoneIds.has(a.zona));
-      if (allLocked) {
-        const hint = document.createElement("span");
-        hint.className = "skill-zone-hint";
-        hint.title = `Zona necessària: ${skillActions[0].zona}`;
-        hint.textContent = " 🔒";
-        div.appendChild(hint);
-      }
-      btEl.appendChild(div);
-    }
-  }
-
-  // Destreses
-  const destEl = document.getElementById("destreses-display");
-  destEl.innerHTML = "";
-  if (state.character.destreses.size === 0) {
-    destEl.innerHTML = `<div class="dim">Cap destresa (màx ${DESTRESA_MAX})</div>`;
-  } else {
-    for (const destId of state.character.destreses) {
-      const def = DESTRESA_DEFS.find(d => d.id === destId);
-      const name = def ? def.name : destId;
-      const div = document.createElement("div");
-      div.className = "skill-item destresa-item";
-      div.textContent = `⭐ ${name}`;
-      destEl.appendChild(div);
-    }
-    if (state.character.destreses.size < DESTRESA_MAX) {
-      const note = document.createElement("div");
-      note.className = "dim";
-      note.textContent = `${state.character.destreses.size}/${DESTRESA_MAX} — en pots aprendre ${DESTRESA_MAX - state.character.destreses.size} més`;
-      destEl.appendChild(note);
+      const pill = document.createElement('span');
+      pill.className   = 'skill-pill';
+      pill.textContent = bt.name;
+      kr.appendChild(pill);
     }
   }
 }
 
-function renderActionsPanel() {
-  // Last result
-  const lrEl = document.getElementById("last-result");
-  if (state.lastResult) {
-    lrEl.innerHTML = `<div class="last-result-label">Últim resultat</div><div class="last-result-text">${state.lastResult}</div>`;
-    lrEl.classList.remove("hidden");
-  } else {
-    lrEl.classList.add("hidden");
-  }
+// ═══════════════════════════════════════════════════════════ TOP BAR
+function renderTopBar() {
+  el('tok-material-val').textContent  = Math.round(state.material || 0);
+  el('tok-reputacio-val').textContent = Math.round(state.reputacio || 0);
+}
 
-  // Succession warning
-  const warnEl = document.getElementById("succession-warning");
-  const cyclesLeft = LIFE_EXPECTANCY - characterAge();
-  const hasHeir = state.character.children.length > 0 || state.siblingPool.length > 0;
-  if (!state.gameOver) {
-    let warnText = '';
-    if (cyclesLeft <= 6 && !hasHeir) {
-      warnText = `⚠ Queden ${cyclesLeft} cicle${cyclesLeft === 1 ? '' : 's'} de vida. Cal tenir fills per assegurar la successió.`;
-    }
-    if (cyclesLeft <= 3 && state.material > 0) {
-      const mWarn = `🧠 ${state.material} Provisions sense gastar — compra accions ara, no passen a la generació!`;
-      warnText = warnText ? warnText + ' · ' + mWarn : `⚠ ${mWarn}`;
-    }
-    if (warnText) {
-      warnEl.textContent = warnText;
-      warnEl.classList.remove("hidden");
+// ═══════════════════════════════════════════════════════════ BOTTOM PANEL
+function renderBottomPanel() {
+  // Cycle counter
+  el('panel-turn-info').textContent = `Cicle ${state.cycle}/${ERA_CYCLES}`;
+  // Food
+  el('panel-food-val').textContent = Math.round(state.food);
+  el('panel-food-fc').textContent  = `-${FOOD_UPKEEP}/t`;
+  // Time pips: show 5 life-stage pips
+  const pips = el('time-pips');
+  pips.innerHTML = '';
+  const lifePct = Math.min(1, characterAge() / LIFE_EXPECTANCY);
+  for (let i = 0; i < 5; i++) {
+    const pip = document.createElement('div');
+    pip.className = 'time-pip' + (i < Math.ceil(lifePct * 5) ? ' active' : '');
+    pips.appendChild(pip);
+  }
+  // Log
+  const logEl = el('session-log-list');
+  logEl.innerHTML = '';
+  for (const msg of state.log) {
+    const li = document.createElement('li');
+    li.textContent = msg;
+    logEl.appendChild(li);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════ IN-MAP OVERLAYS
+function renderInMapOverlay() {
+  // Pending discoveries (tech / skill / zone / destresa)
+  if (state.pendingDiscoveries.length > 0) {
+    const disc = state.pendingDiscoveries[0];
+    el('disc-icon').textContent  = disc.icon;
+    el('disc-name').textContent  = disc.name;
+    el('disc-badge').textContent = disc._isDestresa ? '⭐ Nova destresa' : disc._isZone ? '🗺️ Zona descoberta' : '✨ Nou descobriment';
+    el('disc-desc').textContent  = disc.description || disc.desc || '';
+    if (disc.effect?.desc) {
+      el('disc-effects').textContent = disc.effect.desc;
     } else {
-      warnEl.classList.add("hidden");
+      el('disc-effects').textContent = '';
     }
-  } else {
-    warnEl.classList.add("hidden");
-  }
-
-  // Discovery notification — zone discovery takes priority over branch tech hint
-  const notifEl = document.getElementById("discovery-notification");
-  if (state.pendingZoneDiscovery) {
-    notifEl.textContent = `🗺️ Nova zona descoberta: ${state.pendingZoneDiscovery}! Ara apareix al teu mapa.`;
-    notifEl.classList.remove("hidden");
-  } else if (getEligibleSkills().length > 0) {
-    notifEl.textContent = "Hi ha estrangers al poblat que expliquen tècniques noves.";
-    notifEl.classList.remove("hidden");
-  } else {
-    notifEl.classList.add("hidden");
-  }
-
-  // Onboarding panel
-  const onbEl = document.getElementById("onboarding-panel");
-  if (state.cycle === 0 && !state.onboardingDismissed) {
-    onbEl.classList.remove("hidden");
-  } else {
-    onbEl.classList.add("hidden");
-  }
-
-  renderUniversalTechs();
-  renderTechStrip();
-  renderZoneGrid();
-  renderLog();
-}
-
-function renderUniversalTechs() {
-  // Techs auto-discover via autoDiscoverUniversalTechs() — no player action needed.
-  // Section stays hidden; the tech strip and log show discovery status.
-  document.getElementById("universal-techs-section").classList.add("empty");
-}
-
-function renderTechStrip() {
-  const el = document.getElementById("tech-status-strip");
-  el.innerHTML = "";
-  for (const tech of UNIVERSAL_TECHS) {
-    const discovered = state.discoveredUniversalTechIds.has(tech.id);
-    const available  = !discovered && state.cycle >= tech.cycle;
-    const pill = document.createElement("div");
-    pill.className = "ts-pill" + (discovered ? " ts-discovered" : available ? " ts-available" : " ts-pending");
-    const cycleStr = !discovered ? ` <span class="ts-cycle">c${tech.cycle}</span>` : '';
-    pill.innerHTML = `${tech.icon ? `<span>${tech.icon}</span>` : ''}<span class="ts-name">${tech.name}</span>${cycleStr}`;
-    el.appendChild(pill);
-  }
-}
-
-// --- Zone Grid (debug layout) ---
-
-function buildLookupTables() {
-  const purchasableActionIds = new Set();
-  for (const skillId of state.character.unlockedSkillIds) {
-    const bt = SKILL_DEFS.find(t => t.id === skillId);
-    if (!bt) continue;
-    for (const aid of bt.unlocks_action_ids) purchasableActionIds.add(aid);
-  }
-  const upgradedBaseActionIds = new Set();
-  for (const a of ACTIONS) {
-    if (a.is_upgrade && state.character.purchasedActionIds.has(a.id)) {
-      upgradedBaseActionIds.add(a.upgrades_action_id);
-    }
-  }
-  return { purchasableActionIds, upgradedBaseActionIds };
-}
-
-function buildUndiscoveredCard(zona) {
-  const card = document.createElement("div");
-  card.className = "zone-card zone-undiscovered";
-  const header = document.createElement("div");
-  header.className = "zone-header";
-  header.innerHTML = `<span class="zone-name zone-undiscovered-name">🔒 ${zona}</span>`;
-  const hint = document.createElement("div");
-  hint.className = "zone-undiscovered-hint";
-
-  const lockedHere = ACTIONS.filter(a =>
-    a.zona === zona && !a.is_base && !a.is_discovery_action &&
-    [...state.character.unlockedSkillIds].some(skillId => {
-      const bt = SKILL_DEFS.find(t => t.id === skillId);
-      return bt?.unlocks_action_ids.includes(a.id);
-    })
-  );
-  const discoverAction = ACTIONS.find(a => a.unlocks_zone === zona);
-
-  if (lockedHere.length > 0 && discoverAction) {
-    hint.textContent = `Zona no explorada · ${lockedHere.length} acció${lockedHere.length > 1 ? 'ns' : ''} disponible${lockedHere.length > 1 ? 's' : ''} quan la descobreixis · Requereix: "${discoverAction.name}"`;
-  } else {
-    hint.textContent = "Zona no explorada";
-  }
-
-  card.appendChild(header);
-  card.appendChild(hint);
-  return card;
-}
-
-function renderZoneGrid() {
-  const grid = document.getElementById("zone-grid");
-  grid.innerHTML = "";
-  const tables = buildLookupTables();
-  for (const zona of ZONE_ORDER) {
-    if (state.discoveredZoneIds.has(zona)) {
-      grid.appendChild(buildZoneCard(zona, tables));
-    } else {
-      grid.appendChild(buildUndiscoveredCard(zona));
-    }
-  }
-}
-
-function buildZoneCard(zona, { purchasableActionIds, upgradedBaseActionIds }) {
-  const hasEligibleSkills = getEligibleSkills().length > 0;
-
-  const active = [], buy = [], other = [];
-
-  const currentAge = characterAge();
-
-  // Discovery action appears in whichever zone it declares
-  if (hasEligibleSkills) {
-    const disc = ACTIONS.find(a => a.is_discovery_action && a.zona === zona);
-    if (disc) active.push({ action: disc, purchased: true, vis: "ACTIVE", isDiscovery: true });
-  }
-
-  for (const action of ACTIONS) {
-    if (action.zona !== zona) continue;
-    if (action.is_discovery_action) continue;
-    if (action.minAge !== undefined && currentAge < action.minAge) continue;
-    if (action.maxAge !== undefined && currentAge > action.maxAge) continue;
-    if (!evaluateCharacterRequires(action)) continue;
-
-    if (upgradedBaseActionIds.has(action.id)) continue; // replaced by upgrade
-
-    if (action.is_upgrade) {
-      if (!state.character.purchasedActionIds.has(action.upgrades_action_id)) continue;
-      const purchased = state.character.purchasedActionIds.has(action.id);
-      const vis = getActionVisibility(action);
-      if (purchased) {
-        active.push({ action, purchased, vis, isUpgrade: true });
-      } else {
-        buy.push({ action, purchased: false, vis, isUpgrade: true });
-      }
-      continue;
-    }
-
-    const purchased = state.character.purchasedActionIds.has(action.id);
-    const vis = getActionVisibility(action);
-
-    if (purchased) {
-      if (vis === "HIDDEN") {
-        other.push({ action, purchased, blocked: "inclination" });
-      } else {
-        active.push({ action, purchased, vis });
-      }
-    } else {
-      if (purchasableActionIds.has(action.id)) {
-        buy.push({ action, purchased: false, vis });
-      } else {
-        other.push({ action, purchased: false, blocked: "locked" });
-      }
-    }
-  }
-
-  // Build card
-  const card = document.createElement("div");
-  card.className = "zone-card";
-  card.dataset.zona = zona;
-
-  // Header
-  const hdr = document.createElement("div");
-  hdr.className = `zone-card-header zone-${zona.toLowerCase()}`;
-  hdr.innerHTML =
-    `<span class="zone-card-title">${zona}</span>` +
-    `<span class="zone-card-summary">` +
-    `<span class="zcs-active">${active.length}▶</span> ` +
-    `<span class="zcs-buy">${buy.length}🧠</span> ` +
-    `<span class="zcs-other">${other.length}🔒</span>` +
-    `</span>`;
-  card.appendChild(hdr);
-
-  // Filter tabs
-  const currentFilter = zoneFilters[zona] || 'active';
-  const tabs = document.createElement("div");
-  tabs.className = "zone-filter-tabs";
-  for (const [fkey, flabel] of [
-    ['active', `Actives (${active.length})`],
-    ['buy',    `Aprendre (${buy.length})`],
-    ['other',  `Bloq. (${other.length})`],
-  ]) {
-    const btn = document.createElement("button");
-    btn.className = `zone-filter-btn${currentFilter === fkey ? ' active' : ''}`;
-    btn.dataset.filter = fkey;
-    btn.textContent = flabel;
-    tabs.appendChild(btn);
-  }
-  card.appendChild(tabs);
-
-  // Content
-  const content = document.createElement("div");
-  content.className = "zone-content";
-  const items = { active, buy, other }[currentFilter] || active;
-
-  if (items.length === 0) {
-    const empty = document.createElement("div");
-    empty.className = "dim zone-empty";
-    empty.textContent = "Cap acció en aquesta categoria";
-    content.appendChild(empty);
-  } else {
-    for (const item of items) {
-      content.appendChild(
-        currentFilter === 'other' ? buildBlockedRow(item) : buildZoneActionRow(item)
-      );
-    }
-  }
-  card.appendChild(content);
-  return card;
-}
-
-function buildZoneActionRow({ action, purchased, vis, isUpgrade, isDiscovery }) {
-  const row = document.createElement("div");
-  row.className = `zone-action-row` +
-    (vis === "FADED" ? " faded" : "") +
-    (isUpgrade ? " upgrade" : "") +
-    (isDiscovery ? " discovery" : "");
-  row.dataset.actionId = action.id;
-
-  // Name
-  const nameEl = document.createElement("div");
-  nameEl.className = "zar-name";
-  nameEl.textContent = isUpgrade ? `↑ ${action.name}` : action.name;
-  if (action.unlocks_zone && !state.discoveredZoneIds.has(action.unlocks_zone)) {
-    const zoneHint = document.createElement("span");
-    zoneHint.className = "zar-zone-hint";
-    zoneHint.title = `Descobreix ${action.unlocks_zone}`;
-    zoneHint.textContent = " 🗺️";
-    nameEl.appendChild(zoneHint);
-  }
-  const negSideEffects = (action.side_effects || []).filter(se => se.delta < 0);
-  if (negSideEffects.length > 0) {
-    const risk = document.createElement("span");
-    risk.className = "zar-risk";
-    const riskRes = RESOURCE_DEFS.find(r => r.id === negSideEffects[0].resource);
-    risk.textContent = ` ⚠${negSideEffects[0].delta}${riskRes ? riskRes.emoji : ''}`;
-    nameEl.appendChild(risk);
-  }
-  row.appendChild(nameEl);
-
-  if (!isDiscovery) {
-    // Meta: cost → output · stat · inclination hint · destresa
-    const outRes = action.output_resource || 'food';
-    const resIcon = (RESOURCE_DEFS.find(r => r.id === outRes) || RESOURCE_DEFS[0]).emoji;
-    const statStr = action.stat_key
-      ? `${action.stat_key.charAt(0).toUpperCase() + action.stat_key.slice(1)} ${state.character.stats[action.stat_key].toFixed(1)}`
-      : '';
-    const inclHint = getInclinationHint(action);
-    const metaEl = document.createElement("div");
-    metaEl.className = "zar-meta";
-    metaEl.textContent =
-      `+${action.output_min}–${action.output_max}${resIcon}` +
-      (statStr ? ` · ${statStr}` : '') +
-      (inclHint ? ` · ${inclHint}` : '');
-    row.appendChild(metaEl);
-
-    // Destresa progress — based on inclination proximity to conditions
-    const destresaSrcId = action.destresa_id
-      ?? (isUpgrade && action.upgrades_action_id
-          ? ACTIONS.find(a => a.id === action.upgrades_action_id)?.destresa_id : null);
-    if (destresaSrcId && purchased) {
-      const def = DESTRESA_DEFS.find(d => d.id === destresaSrcId);
-      const achieved = state.character.destreses.has(destresaSrcId);
-      if (def && (achieved || state.character.destreses.size < DESTRESA_MAX)) {
-        const destRow = document.createElement("div");
-        destRow.className = "zar-destresa";
-        if (achieved) {
-          destRow.innerHTML = `<span class="zar-destresa-name">⭐ ${def.name}</span>`;
-        } else {
-          const pct = Math.min(100, ...def.conditions.map(c => {
-            const val = state.character.inclination[c.axis] ?? 0;
-            return c.min !== undefined ? (val / c.min * 100) : 100;
-          })).toFixed(1);
-          destRow.innerHTML =
-            `<span class="zar-destresa-bar-track"><span class="zar-destresa-bar-fill" style="width:${pct}%"></span></span>` +
-            `<span class="zar-destresa-count">${def.name}: ${pct}%</span>`;
-        }
-        row.appendChild(destRow);
-      }
-    }
-
-    // Faded reason
-    if (vis === "FADED" && action.inclination_requirements) {
-      const issues = getInclinationIssues(action);
-      if (issues.length) {
-        const noteEl = document.createElement("div");
-        noteEl.className = "zar-faded-note";
-        noteEl.textContent = "Fora de rang: " + issues.join(", ");
-        row.appendChild(noteEl);
-      }
-    }
-  }
-
-  // Button
-  if (isDiscovery) {
-    const eligible = getEligibleSkills();
-    if (eligible.length === 1) {
-      const btn = document.createElement("button");
-      btn.className = "btn-discovery btn-small";
-      btn.textContent = `Escoltar: ${eligible[0].name}`;
-      btn.onclick = () => performDiscoveryAction(eligible[0].id);
-      row.appendChild(btn);
-    } else {
-      const wrap = document.createElement("div");
-      wrap.className = "discovery-choices";
-      for (const bt of eligible) {
-        const btn = document.createElement("button");
-        btn.className = "btn-discovery btn-small";
-        btn.textContent = skill.name;
-        btn.onclick = () => performDiscoveryAction(skill.id);
-        wrap.appendChild(btn);
-      }
-      row.appendChild(wrap);
-    }
-  } else if (purchased && vis !== "FADED") {
-    const btn = document.createElement("button");
-    btn.className = "btn-execute btn-small";
-    btn.textContent = "Executar";
-    btn.onclick = () => executeAction(action.id);
-    row.appendChild(btn);
-  } else if (!purchased) {
-    const btn = document.createElement("button");
-    btn.className = "btn-buy btn-small";
-    btn.textContent = isUpgrade
-      ? `Millorar (−${action.purchase_cost}🧠)`
-      : `Aprendre (−${action.purchase_cost}🧠)`;
-    btn.onclick = () => purchaseAction(action.id);
-    row.appendChild(btn);
-  }
-
-  return row;
-}
-
-function buildBlockedRow({ action, purchased, blocked }) {
-  const row = document.createElement("div");
-  row.className = "zone-blocked-row";
-
-  const nameEl = document.createElement("div");
-  nameEl.className = "zbr-name";
-  nameEl.textContent = `🔒 ${action.name}`;
-  row.appendChild(nameEl);
-
-  const infoEl = document.createElement("div");
-  infoEl.className = "zbr-reason";
-
-  if (blocked === "inclination" && purchased) {
-    // Owned but hidden due to inclination
-    const issues = getInclinationIssues(action);
-    infoEl.textContent = "Ocult per inclinació: " + (issues.length ? issues.join(" · ") : "?");
-  } else {
-    // Locked behind branch tech
-    const bt = SKILL_DEFS.find(b => b.unlocks_action_ids.includes(action.id));
-    if (!bt) {
-      infoEl.textContent = "Origen desconegut";
-    } else if (bt.universal_prereq && !state.discoveredUniversalTechIds.has(bt.universal_prereq)) {
-      const ut = UNIVERSAL_TECHS.find(t => t.id === bt.universal_prereq);
-      infoEl.textContent = `Via: ${bt.name} → Requereix: ${ut ? ut.name : bt.universal_prereq} (Cicle ${ut ? ut.cycle : '?'}, ara: ${state.cycle})`;
-    } else {
-      // Universal met, inclination not
-      const conds = bt.inclination_conditions?.conditions || [];
-      const lines = conds.map(c => {
-        const val = state.character.inclination[c.axis];
-        if (c.min !== undefined && val < c.min) {
-          return `${c.axis} ≥${c.min} (ara ${val.toFixed(2)}, falta +${(c.min - val).toFixed(2)})`;
-        }
-        if (c.max !== undefined && val > c.max) {
-          return `${c.axis} ≤${c.max} (ara ${val.toFixed(2)}, excés +${(val - c.max).toFixed(2)})`;
-        }
-        return `${c.axis} ✓`;
-      });
-      infoEl.innerHTML = `Via: <strong>${bt.name}</strong><br>${lines.join('<br>')}`;
-    }
-  }
-  row.appendChild(infoEl);
-  return row;
-}
-
-function getInclinationIssues(action) {
-  if (!action.inclination_requirements) return [];
-  const issues = [];
-  for (const [axis, range] of Object.entries(action.inclination_requirements)) {
-    const val = state.character.inclination[axis];
-    if (range.min !== undefined && val < range.min)
-      issues.push(`${axis} < ${range.min} (${val.toFixed(2)})`);
-    if (range.max !== undefined && val > range.max)
-      issues.push(`${axis} > ${range.max} (${val.toFixed(2)})`);
-  }
-  return issues;
-}
-
-function renderLog() {
-  const el = document.getElementById("action-log");
-  el.innerHTML = "";
-  if (state.log.length === 0) {
-    el.innerHTML = '<div class="dim">Cap entrada</div>';
+    showPane('pane-discovery');
     return;
   }
-  for (const entry of state.log) {
-    const div = document.createElement("div");
-    div.className = "log-entry";
-    div.textContent = entry;
-    el.appendChild(div);
+  // Pending births
+  if (state.pendingBirths.length > 0) {
+    const birth = state.pendingBirths[0];
+    el('birth-avatar').textContent = '👶';
+    el('birth-name').textContent   = birth.childLabel;
+    el('birth-virtue').textContent = birth.n === 1
+      ? 'La successió és assegurada.'
+      : `${birth.n}è fill. Podreu triar successor.`;
+    showPane('pane-birth');
+    return;
   }
-}
-
-function renderModals() {
-  // Result modal (highest priority — shown right after action)
-  const resultModal = document.getElementById("result-modal");
-  if (resultModal) {
-    if (state.pendingActionResult && !state.pendingBirths.length) {
-      const r = state.pendingActionResult;
-      document.getElementById("result-action-name").textContent = r.name;
-      const outputEl = document.getElementById("result-output");
-      outputEl.innerHTML = r.output > 0 ? `<span class="result-big">+${r.output} ${r.resIcon}</span>` : '';
-      const fxEl = document.getElementById("result-side-effects");
-      fxEl.innerHTML = r.sideEffects.map(se =>
-        `<span class="result-fx ${se.delta < 0 ? 'neg' : 'pos'}">${se.delta > 0 ? '+' : ''}${se.delta} ${se.icon}</span>`
-      ).join('');
-      resultModal.classList.remove("hidden");
-    } else {
-      resultModal.classList.add("hidden");
-    }
-  }
-
-  // Birth modal
-  const birthModal = document.getElementById("birth-modal");
-  if (birthModal) {
-    if (state.pendingBirths.length > 0 && !state.pendingActionResult) {
-      const b = state.pendingBirths[0];
-      document.getElementById("birth-name").textContent = b.childLabel;
-      document.getElementById("birth-parent").textContent = b.parentLabel;
-      document.getElementById("birth-n").textContent = b.n === 1 ? "Primera descendència" : `${b.n}a descendència`;
-      birthModal.classList.remove("hidden");
-    } else {
-      birthModal.classList.add("hidden");
-    }
-  }
-
-  // Death modal
-  const deathModal = document.getElementById("death-modal");
-  if (deathModal) {
-    if (state.pendingDeath) {
-      const d = state.pendingDeath;
-      document.getElementById("death-emoji").textContent = d.emoji;
-      document.getElementById("death-name").textContent = d.label;
-      document.getElementById("death-age").textContent = `${d.age} cicles · ${d.cause}`;
-      const axisLabel = parseFloat(d.topAxisVal) >= 0
-        ? AXIS_LABELS[d.topAxis].right : AXIS_LABELS[d.topAxis].left;
-      document.getElementById("death-axis").textContent = `${axisLabel} (${d.topAxisVal})`;
-      deathModal.classList.remove("hidden");
-    } else {
-      deathModal.classList.add("hidden");
-    }
-  }
-
-  // Discovery modal
-  const discoveryModal = document.getElementById("discovery-modal");
-  if (discoveryModal) {
-    if (state.pendingDiscoveries && state.pendingDiscoveries.length > 0 && !state.pendingEvent) {
-      const tech = state.pendingDiscoveries[0];
-      document.getElementById("discovery-icon").textContent = tech.icon || "⭐";
-      document.getElementById("discovery-name").textContent = tech.name;
-      document.getElementById("discovery-desc").textContent = tech.description || "";
-      discoveryModal.classList.remove("hidden");
-    } else {
-      discoveryModal.classList.add("hidden");
-    }
-  }
-
-  // Event modal
-  const eventModal = document.getElementById("event-modal");
+  // Pending event
   if (state.pendingEvent) {
     const ev = state.pendingEvent;
-    document.getElementById("event-text").textContent = ev.text;
-    const choicesEl = document.getElementById("event-choices");
-    const dismissBtn = document.getElementById("btn-dismiss-event");
-
-    if (ev.options) {
-      dismissBtn.classList.add("hidden");
-      choicesEl.innerHTML = "";
-      choicesEl.classList.remove("hidden");
-      const hasChildren = state.character.children.length > 0;
-      ev.options.forEach((opt, i) => {
-        if (opt.requires_skill && !state.character.unlockedSkillIds.has(opt.requires_skill)) return;
-        if (opt.requires_children && !hasChildren) return;
-        if (opt.requires_no_children && hasChildren) return;
-        const btn = document.createElement("button");
-        btn.className = "btn-choice";
-        btn.textContent = opt.text;
-        btn.onclick = () => resolveDiscoveryOption(i);
+    el('ev-icon').textContent = '⚡';
+    el('ev-name').textContent = 'Esdeveniment';
+    el('ev-text').textContent = ev.text || '';
+    const choicesEl = el('ev-choices');
+    choicesEl.innerHTML = '';
+    const dismissBtn = el('btn-dismiss-event');
+    if (ev.options && ev.options.length > 0) {
+      dismissBtn.style.display = 'none';
+      for (let i = 0; i < ev.options.length; i++) {
+        const opt = ev.options[i];
+        const btn = document.createElement('button');
+        btn.className = 'ev-choice-btn';
+        btn.innerHTML = `<span class="ev-choice-name">${opt.text}</span>`;
+        btn.dataset.idx = i;
+        btn.addEventListener('click', () => resolveDiscoveryOption(i));
         choicesEl.appendChild(btn);
-      });
-      document.getElementById("event-effect").textContent = "";
+      }
     } else {
-      dismissBtn.classList.remove("hidden");
-      choicesEl.classList.add("hidden");
-      const fx = ev.effects;
-      const fxParts = [];
-      if (fx && fx.food)   fxParts.push(`${fx.food >= 0 ? "+" : ""}${fx.food} Aliment`);
-      if (fx && fx.health) fxParts.push(`${fx.health >= 0 ? "+" : ""}${fx.health} Salut`);
-      document.getElementById("event-effect").textContent = fxParts.length ? `Efecte: ${fxParts.join(' · ')}` : "";
+      dismissBtn.style.display = '';
     }
-    eventModal.classList.remove("hidden");
-  } else {
-    eventModal.classList.add("hidden");
+    showPane('pane-event');
+    return;
   }
+  hide('overlay-action');
+}
 
-  // Succession modal
-  // New generation modal
-  const newgenModal = document.getElementById("newgen-modal");
-  if (newgenModal) {
-    if (state.pendingNewGen && !state.pendingDeath) {
-      const ng = state.pendingNewGen;
-      document.getElementById("newgen-emoji").textContent = ng.emoji;
-      document.getElementById("newgen-name").textContent = ng.label;
-      document.getElementById("newgen-gen").textContent = `Generació ${ng.generation}`;
-      const axisLabel = ng.topAxis
-        ? (state.character.inclination[ng.topAxis] >= 0
-           ? AXIS_LABELS[ng.topAxis].right : AXIS_LABELS[ng.topAxis].left)
-        : '';
-      document.getElementById("newgen-axis").textContent = axisLabel;
-      newgenModal.classList.remove("hidden");
+function showPane(paneId) {
+  show('overlay-action');
+  ['pane-event', 'pane-discovery', 'pane-birth'].forEach(id => {
+    el(id).classList.toggle('hidden', id !== paneId);
+  });
+}
+
+function dismissDiscovery() {
+  state.pendingDiscoveries.shift();
+  renderAll();
+}
+function dismissBirth() {
+  state.pendingBirths.shift();
+  renderAll();
+}
+function dismissEvent() {
+  const ev = state.pendingEvent;
+  if (!ev) return;
+  if (ev.is_single_use) state.character.firedSingleUseEventIds.add(ev.id);
+  if (ev.effects) {
+    if (ev.effects.food)   state.food   = Math.max(0, Math.min(FOOD_MAX, state.food + ev.effects.food));
+    if (ev.effects.health) state.health = Math.max(0, Math.min(HEALTH_MAX, state.health + ev.effects.health));
+  }
+  state.pendingEvent = null;
+  if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
+  renderAll();
+}
+function resolveDiscoveryOption(optionIndex) {
+  const ev = state.pendingEvent;
+  if (!ev || !ev.options) return;
+  const opt = ev.options[optionIndex];
+  if (opt.food_delta)     state.food     = Math.max(0, Math.min(FOOD_MAX, state.food + opt.food_delta));
+  if (opt.material_delta) state.material = Math.max(0, state.material + opt.material_delta);
+  let healthDelta = opt.health_delta ?? 0;
+  if (opt.skill_modifier) {
+    const hasSk = state.character.unlockedSkillIds.has(opt.skill_modifier.skill_id);
+    if (!hasSk && opt.skill_modifier.absent_health_options) {
+      const roll = Math.random();
+      healthDelta = opt.skill_modifier.absent_health_options[Math.floor(roll * opt.skill_modifier.absent_health_options.length)];
+    } else if (!hasSk) {
+      healthDelta = opt.skill_modifier.absent_health_delta ?? healthDelta;
     } else {
-      newgenModal.classList.add("hidden");
+      healthDelta = opt.skill_modifier.present_health_delta ?? healthDelta;
     }
   }
+  if (healthDelta !== 0) state.health = Math.max(0, Math.min(HEALTH_MAX, state.health + healthDelta));
+  if (opt.discovers && ev.discovery_skill_id) {
+    const bt = SKILL_DEFS.find(t => t.id === ev.discovery_skill_id);
+    if (bt) unlockSkill(bt);
+  }
+  if (ev.is_single_use) state.character.firedSingleUseEventIds.add(ev.id);
+  state.pendingEvent = null;
+  if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
+  renderAll();
+}
 
-  const succModal = document.getElementById("succession-modal");
-  if (state.pendingSuccession && !state.gameOver && !state.pendingDeath) {
+// ═══════════════════════════════════════════════════════════ FULL-SCREEN OVERLAYS
+function renderSuccessionOverlays() {
+  hide('overlay-death-summary');
+  hide('overlay-succession');
+  hide('overlay-new-gen');
+  hide('overlay-gameover');
+  // Death summary → show before succession choice
+  if (state.pendingDeath) {
+    const d = state.pendingDeath;
+    el('ds-bust').src         = bustImgSrc();
+    el('ds-name').textContent = `${d.label} ${state.dynastyName}`;
+    el('ds-subtitle').textContent = `Generació ${d.successionPayload.generation} · ${d.age} cicles`;
+    el('ds-cause').textContent    = d.cause;
+    show('overlay-death-summary');
+    return;
+  }
+  // Succession choice
+  if (state.pendingSuccession) {
     const s = state.pendingSuccession;
-    document.getElementById("succ-gen").textContent = s.generation;
-    document.getElementById("succ-cycles").textContent = s.cyclesLived;
-    const topLabel = parseFloat(s.topAxisVal) >= 0 ? AXIS_LABELS[s.topAxis].right : AXIS_LABELS[s.topAxis].left;
-    document.getElementById("succ-axis").textContent = `${topLabel} (${s.topAxisVal})`;
-
-    const succList = document.getElementById("succ-successors");
-    succList.innerHTML = "";
-    for (const successor of s.successors) {
-      const incl = successor.inheritedInclination ?? {};
-      const dominantAxis = AXES.reduce((a, b) =>
-        Math.abs(incl[a] ?? 0) > Math.abs(incl[b] ?? 0) ? a : b
-      );
-      const dominantVal = incl[dominantAxis] ?? 0;
-      const axisLabel = dominantVal >= 0
-        ? AXIS_LABELS[dominantAxis].right
-        : AXIS_LABELS[dominantAxis].left;
-      const phrase = Math.abs(dominantVal) < 0.1
-        ? SUCCESSION_PHRASES.neutral
-        : (SUCCESSION_PHRASES[dominantAxis]?.[dominantVal >= 0 ? 'pos' : 'neg'] ?? axisLabel);
-      const sibTag = successor.is_sibling ? '<span class="succ-tag-sibling">Germà</span>' : '';
-      const item = document.createElement("div");
-      item.className = "succ-option" + (successor.is_sibling ? " succ-sibling" : "");
-      item.innerHTML =
-        `<div class="succ-option-info">
-          <span class="succ-option-label">${successor.label}</span>${sibTag}
-          <span class="succ-option-phrase">${phrase}</span>
-          <span class="succ-option-axis">${axisLabel}</span>
-        </div>
-        <button class="btn-succ-choose" onclick="continueSuccession('${successor.id}')">Tria</button>`;
-      succList.appendChild(item);
-    }
-
-    succModal.classList.remove("hidden");
-  } else {
-    succModal.classList.add("hidden");
-  }
-
-  // Game over modal
-  const gameOverModal = document.getElementById("gameover-modal");
-  if (state.gameOver) {
-    const reasons = {
-      era_complete: `L'era de la Prehistòria ha acabat. ${state.generation} generació${state.generation > 1 ? 's' : ''} de llinatge queden gravades a les roques.`,
-      no_heir: "El personatge ha mort sense fills. El llinatge s'extingeix en aquesta generació.",
-    };
-    document.getElementById("gameover-text").textContent =
-      reasons[state.gameOverReason] || reasons.era_complete;
-    gameOverModal.classList.remove("hidden");
-  } else {
-    gameOverModal.classList.add("hidden");
-  }
-}
-
-// --- Glossary ---
-function showGlossary() {
-  // Helpers
-  function fmtConds(condObj) {
-    if (!condObj || !condObj.conditions.length) return '—';
-    return condObj.conditions.map(c => {
-      const n = c.axis.charAt(0).toUpperCase() + c.axis.slice(1);
-      if (c.min !== undefined && c.max !== undefined) return `${c.min} ≤ ${n} ≤ ${c.max}`;
-      if (c.min !== undefined) return `${n} ≥ ${c.min}`;
-      return `${n} ≤ ${c.max}`;
-    }).join(condObj.operator === 'AND' ? ' · ' : ' o ');
-  }
-
-  function bdg(label, color) {
-    const colors = {
-      green:  'background:rgba(74,222,128,0.15);color:#4ade80;border:1px solid rgba(74,222,128,0.3)',
-      yellow: 'background:rgba(245,166,35,0.15);color:#f5a623;border:1px solid rgba(245,166,35,0.3)',
-      blue:   'background:rgba(96,165,250,0.15);color:#60a5fa;border:1px solid rgba(96,165,250,0.3)',
-      orange: 'background:rgba(251,146,60,0.15);color:#fb923c;border:1px solid rgba(251,146,60,0.3)',
-      grey:   'background:rgba(107,110,133,0.10);color:#6b6e85;border:1px solid rgba(107,110,133,0.2)',
-    };
-    return `<span class="glossary-badge" style="${colors[color] || colors.grey}">${label}</span>`;
-  }
-
-  function row(icon, name, desc, badge, dimmed = false) {
-    return `<div class="glossary-item${dimmed ? ' pending' : ''}">
-      <span class="glossary-icon">${icon}</span>
-      <div class="glossary-info"><strong>${name}</strong><span>${desc}</span></div>
-      ${badge}
-    </div>`;
-  }
-
-  function sec(title, rows) {
-    return `<div class="glossary-section">
-      <div class="glossary-section-title">${title}</div>${rows.join('')}
-    </div>`;
-  }
-
-  const activeBranches    = getActiveBranches();
-  const eligibleSkills = getEligibleSkills();
-  const pct               = Math.round(INCLINATION_INHERITANCE_RATE * 100);
-
-  let html = '';
-
-  // 1 — Recursos
-  html += sec('Recursos', [
-    ...RESOURCE_DEFS.map(res => {
-      const val = state[res.id];
-      const rateStr = res.rateType === 'aging' ? ` Ara: −${getAgingLoss(characterAge())}/torn.` : '';
-      const valStr  = res.showMax ? ` Actual: ${val}/${res.max}.` : ` Actual: ${val}.`;
-      return row(res.emoji, res.label, res.glossaryDesc + rateStr + valStr, bdg('Actiu', 'green'));
-    }),
-    row('🦌', 'Pells (Era 1 — proposta)', 'Generat per caça i trampatge. Gastat en cosit i intercanvi. Decisió de disseny pendent (C3-03).', bdg('Pendent', 'grey'), true),
-  ]);
-
-  // 2 — Inclinació
-  html += sec('Inclinació (4 eixos, -1 a +1)', [
-    row('', 'Com funciona', `Una acció és ACTIVA si la inclinació cau dins del seu rang · FADED (visible però no executable) si sobrepassa el llindar en ≤${FADE_MARGIN} · OCULTA si el supera en >${FADE_MARGIN}. Les accions comprades mai es perden: es reactiven si la inclinació torna.`, bdg('Actiu', 'green')),
-    ...AXES.map(axis => {
-      const labels = AXIS_LABELS[axis];
-      const val    = state.character.inclination[axis];
-      const valStr = val.toFixed(2);
-      const color  = Math.abs(val) >= 0.3 ? (val > 0 ? 'green' : 'orange') : 'grey';
-      return row('', `${axis.charAt(0).toUpperCase() + axis.slice(1)}`,
-        `${labels.left} (−1) ↔ ${labels.right} (+1). Valors possibles: −1 · −0.5 · 0 · +0.5 · +1 (5 posicions). Actual: ${valStr}.`,
-        bdg(valStr, color));
-    }),
-  ]);
-
-  // 3 — Branques
-  html += sec('Branques (Era 1 — 4 definides)', BRANCHES.map(b => {
-    const isActive = activeBranches.some(ab => ab.id === b.id);
-    return row('', b.name,
-      `Condicions: ${fmtConds(b.conditions)}.`,
-      isActive ? bdg('Activa', 'green') : bdg('Inactiva', 'grey'), !isActive);
-  }));
-
-  // 4 — Tecnologies Universals
-  html += sec(`Tecnologies Universals (${state.discoveredUniversalTechIds.size}/${UNIVERSAL_TECHS.length} descobertes)`,
-    UNIVERSAL_TECHS.map(ut => {
-      const discovered = state.discoveredUniversalTechIds.has(ut.id);
-      const effectStr  = ut.effect ? ` Efecte: ${ut.effect.desc}.` : ' Sense efecte directe.';
-      return row(ut.icon || '🔬', ut.name,
-        `${ut.description}${effectStr}`,
-        discovered ? bdg(`✓ Descoberta · c${ut.cycle}`, 'green') : bdg(`Cicle ${ut.cycle}`, 'grey'),
-        !discovered);
-    })
-  );
-
-  // 5 — Habilitats
-  const unlockedCount = state.character.unlockedSkillIds.size;
-  html += sec(`Habilitats (${unlockedCount}/${SKILL_DEFS.length} desblocades)`,
-    SKILL_DEFS.map(bt => {
-      const unlocked  = state.character.unlockedSkillIds.has(skill.id);
-      const eligible  = eligibleSkills.some(e => e.id === skill.id);
-      const prereqMet = !skill.universal_prereq || state.discoveredUniversalTechIds.has(skill.universal_prereq);
-      const prereqTech = skill.universal_prereq ? UNIVERSAL_TECHS.find(t => t.id === skill.universal_prereq) : null;
-      const prereqName = prereqTech ? prereqTech.name : (skill.universal_prereq || '—');
-
-      let badge;
-      if (unlocked)       badge = bdg('✓ Desblocada', 'green');
-      else if (eligible)  badge = bdg('Elegible — descobrir!', 'yellow');
-      else if (prereqMet) badge = bdg('Inclinació insuficient', 'orange');
-      else                badge = bdg(`Espera: ${prereqName}`, 'grey');
-
-      const dimmed = !unlocked && !eligible;
-      return row('', skill.name,
-        `Prereq: ${prereqName}. Condicions: ${fmtConds(skill.inclination_conditions)}.`,
-        badge, dimmed);
-    })
-  );
-
-  // 6 — Zones
-  html += sec(`Zones (${state.discoveredZoneIds.size}/${ZONE_ORDER.length} descobertes)`,
-    ZONE_DEFS.map(z => {
-      const disc = state.discoveredZoneIds.has(z.id);
-      return row('', z.label, z.description,
-        disc ? bdg('Descoberta', 'green') : bdg('No descoberta', 'grey'), !disc);
-    })
-  );
-
-  // 7 — Atributs
-  html += sec('Atributs del Personatge', STAT_DEFS.map(s => {
-    const val = state.character.stats[s.id].toFixed(2);
-    return row('', s.label,
-      `${s.description} Rang: ${STAT_STARTING_VALUE.toFixed(1)}–${STAT_MAX.toFixed(1)}. Hereta al ${pct}%. Actual: ${val}.`,
-      bdg(val, 'blue'));
-  }));
-
-  // 8 — Destreses
-  const destresesNames = [...state.character.destreses].map(destId => {
-    const def = DESTRESA_DEFS.find(d => d.id === destId);
-    return def ? def.name : destId;
-  });
-  const destresesDesc = (destresesNames.length > 0 ? `Actuals: ${destresesNames.join(', ')}. ` : 'Cap destresa encara. ') +
-    `Es descobreixen quan la inclinació compleix les condicions de cada destresa. Màxim ${DESTRESA_MAX}. Heretades 100%.`;
-  html += sec('Destreses', [
-    row('⭐', `Destreses (${state.character.destreses.size}/${DESTRESA_MAX})`, destresesDesc,
-      bdg(`${state.character.destreses.size}/${DESTRESA_MAX}`, state.character.destreses.size > 0 ? 'green' : 'grey')),
-  ]);
-
-  // 9 — Llinatge i Successió
-  const childLabels  = state.character.children.map(c => c.label).join(', ') || 'Cap fill nascut';
-  html += sec('Llinatge i Successió', [
-    row('', `Fills (${state.character.children.length}/${MAX_CHILDREN})`,
-      `${childLabels}. Heretaran inclinació al ${pct}%, atributs al ${pct}%, habilitats 100%, destreses 100%.`,
-      bdg(`${state.character.children.length}/${MAX_CHILDREN}`, state.character.children.length > 0 ? 'green' : 'grey')),
-    row('', `Germans disponibles (${state.siblingPool.length})`,
-      state.siblingPool.length > 0
-        ? `Fills no escollits de generacions anteriors: ${state.siblingPool.map(s => s.label).join(', ')}.`
-        : 'Cap germà disponible. Si el personatge mor sense fills, serà game over.',
-      bdg(`${state.siblingPool.length}`, state.siblingPool.length > 0 ? 'yellow' : 'grey'),
-      state.siblingPool.length === 0),
-    row('', 'Crònica del Llinatge', 'Narració generada automàticament a partir de les decisions del jugador. Exportable al final de l\'era.', bdg('Pendent', 'grey'), true),
-  ]);
-
-  document.getElementById("glossary-content").innerHTML = html;
-  document.getElementById("glossary-modal").classList.remove("hidden");
-}
-
-// --- Boot ---
-document.addEventListener("DOMContentLoaded", () => {
-  // Wire modal buttons
-  document.getElementById("btn-dismiss-event").onclick = dismissEvent;
-  document.getElementById("btn-restart").onclick = restartGame;
-  const btnDismissDiscovery = document.getElementById("btn-dismiss-discovery");
-  if (btnDismissDiscovery) btnDismissDiscovery.onclick = dismissDiscovery;
-  const btnDismissResult = document.getElementById("btn-dismiss-result");
-  if (btnDismissResult) btnDismissResult.onclick = dismissActionResult;
-  const btnDismissBirth = document.getElementById("btn-dismiss-birth");
-  if (btnDismissBirth) btnDismissBirth.onclick = dismissBirth;
-  const btnDismissDeath = document.getElementById("btn-dismiss-death");
-  if (btnDismissDeath) btnDismissDeath.onclick = dismissDeath;
-  const btnDismissNewgen = document.getElementById("btn-dismiss-newgen");
-  if (btnDismissNewgen) btnDismissNewgen.onclick = dismissNewGen;
-  document.getElementById("btn-glossary").onclick = showGlossary;
-  document.getElementById("btn-close-glossary").onclick = () =>
-    document.getElementById("glossary-modal").classList.add("hidden");
-
-  // Zone grid filter — event delegation (survives re-renders)
-  const zoneGridEl = document.getElementById("zone-grid");
-  zoneGridEl.addEventListener("click", e => {
-    const btn = e.target.closest(".zone-filter-btn");
-    if (!btn) return;
-    const card = btn.closest(".zone-card");
-    if (!card) return;
-    zoneFilters[card.dataset.zona] = btn.dataset.filter;
-    renderZoneGrid();
-  });
-
-  // Inclination dot editor — debug only; disabled in normal play
-  if (DEBUG_MODE) {
-    document.getElementById("inclination-rows").addEventListener("click", e => {
-      const dot = e.target.closest(".incl-dot[data-idx]");
-      if (!dot) return;
-      const row = dot.closest(".incl-row[data-axis]");
-      if (!row) return;
-      state.character.inclination[row.dataset.axis] = INCL_DOT_VALUES[parseInt(dot.dataset.idx, 10)];
-      render();
-    });
-  }
-
-  // Inclination delta tooltip — show on hover over action rows
-  const tooltipEl = document.getElementById("incl-tooltip");
-  zoneGridEl.addEventListener("mouseover", e => {
-    const row = e.target.closest("[data-action-id]");
-    if (!row) { tooltipEl.classList.add("hidden"); return; }
-    const action = ACTIONS.find(a => a.id === row.dataset.actionId);
-    if (!action || !action.inclination_deltas) { tooltipEl.classList.add("hidden"); return; }
-    const lines = Object.entries(action.inclination_deltas)
-      .filter(([, d]) => Math.abs(d) >= 0.001)
-      .map(([axis, d]) => {
-        const labels = AXIS_LABELS[axis];
-        return d > 0 ? `+${d.toFixed(3)} ${labels.right}` : `${d.toFixed(3)} ${labels.left}`;
+    el('succ-death-msg').textContent = `El llinatge ${state.dynastyName} continua.`;
+    const list = el('succ-children-list');
+    list.innerHTML = '';
+    for (const c of s.successors) {
+      const btn = document.createElement('button');
+      btn.className = 'succ-child-btn';
+      const dominant = c.inheritedInclination
+        ? AXES.reduce((a, b) => Math.abs(c.inheritedInclination[a]||0) > Math.abs(c.inheritedInclination[b]||0) ? a : b)
+        : null;
+      btn.innerHTML = `<span class="succ-child-name">${c.label} ${state.dynastyName}</span><span class="succ-child-sub">${c.is_sibling ? 'Germà' : 'Fill'} · ${dominant ? `Inclinació: ${dominant}` : ''}</span>`;
+      btn.addEventListener('click', () => {
+        hide('overlay-succession');
+        continueSuccession(c.id);
       });
-    if (!lines.length) { tooltipEl.classList.add("hidden"); return; }
-    tooltipEl.textContent = lines.join("  ·  ");
-    tooltipEl.classList.remove("hidden");
-    tooltipEl.style.left = (e.clientX + 14) + "px";
-    tooltipEl.style.top  = (e.clientY - 32) + "px";
-  });
-  zoneGridEl.addEventListener("mousemove", e => {
-    if (!tooltipEl.classList.contains("hidden")) {
-      tooltipEl.style.left = (e.clientX + 14) + "px";
-      tooltipEl.style.top  = (e.clientY - 32) + "px";
+      list.appendChild(btn);
     }
-  });
-  zoneGridEl.addEventListener("mouseleave", () => tooltipEl.classList.add("hidden"));
+    show('overlay-succession');
+    return;
+  }
+  // New generation presentation
+  if (state.pendingNewGen) {
+    const ng = state.pendingNewGen;
+    el('new-gen-bust').src    = bustImgSrc();
+    el('new-gen-name').textContent    = `${ng.label} ${state.dynastyName}`;
+    el('new-gen-subtitle').textContent = `Generació ${ng.generation}`;
+    const ring = el('new-gen-ring');
+    const C    = 106.8;
+    ring.style.transition      = 'none';
+    ring.style.strokeDasharray = `0 ${C}`;
+    show('overlay-new-gen');
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      ring.style.transition      = `stroke-dasharray 1.2s linear`;
+      ring.style.strokeDasharray = `${C} 0`;
+    }));
+    return;
+  }
+  // Game over
+  if (state.gameOver) {
+    el('go-text').textContent = state.gameOverReason === 'no_heir'
+      ? 'No hi ha hereus. El llinatge s\'ha extingit.'
+      : `L'era ha finalitzat al cicle ${state.cycle}.`;
+    show('overlay-gameover');
+    return;
+  }
+  // Hide all succession overlays if nothing pending
+  hide('overlay-death-summary');
+  hide('overlay-succession');
+  hide('overlay-new-gen');
+  hide('overlay-gameover');
+}
 
+// ═══════════════════════════════════════════════════════════ TESTING PANEL
+function renderTestingPanel() {
+  const incl = state.character.inclination;
+  const inclEl = el('test-incl-rows');
+  inclEl.innerHTML = '';
+  for (const axis of AXES) {
+    const val    = incl[axis] || 0;
+    const labels = AXIS_LABELS[axis];
+    const row    = document.createElement('div');
+    row.className = 'incl-row';
+    const pct    = Math.abs(val) * 50;
+    row.innerHTML = `
+      <span class="incl-pole">${labels.left}</span>
+      <div class="incl-track">
+        <div class="incl-center-tick"></div>
+        <div class="incl-fill-neg" style="width:${val < 0 ? pct : 0}%"></div>
+        <div class="incl-fill-pos" style="width:${val > 0 ? pct : 0}%"></div>
+      </div>
+      <span class="incl-pole right">${labels.right}</span>
+      <span class="incl-val">${val.toFixed(2)}</span>`;
+    inclEl.appendChild(row);
+  }
+
+  // Branches
+  const activeBranches = getActiveBranches();
+  const brEl = el('test-branches');
+  brEl.innerHTML = activeBranches.length
+    ? activeBranches.map(b => `<span class="test-badge test-badge-branch">${b.name}</span>`).join('')
+    : '<span style="font-size:0.7rem;color:var(--text-dim)">Cap</span>';
+
+  // Skills
+  const skEl = el('test-skills');
+  skEl.innerHTML = SKILL_DEFS.map(bt => {
+    const have = state.character.unlockedSkillIds.has(bt.id);
+    return `<span class="test-badge test-badge-skill${have ? '' : ' locked'}">${have ? '✓' : '○'} ${bt.name}</span>`;
+  }).join('');
+
+  // Destreses
+  const dsEl = el('test-destreses');
+  dsEl.innerHTML = DESTRESA_DEFS.map(d => {
+    const have = state.character.destreses.has(d.id);
+    return have
+      ? `<span class="test-badge test-badge-destresa">⭐ ${d.name}</span>`
+      : `<span class="test-badge test-badge-skill locked">○ ${d.name}</span>`;
+  }).join('');
+
+  // Zones
+  const zoEl = el('test-zones');
+  zoEl.innerHTML = ZONE_DEFS.map(z => {
+    const have = state.discoveredZoneIds.has(z.id);
+    return `<span class="test-badge test-badge-zone ${have ? 'yes' : 'no'}">${have ? '✓' : '○'} ${z.id}</span>`;
+  }).join('');
+
+  // Universal techs
+  const utEl = el('test-utechs');
+  utEl.innerHTML = UNIVERSAL_TECHS.map(t => {
+    const have = state.discoveredUniversalTechIds.has(t.id);
+    return `<span class="test-badge test-badge-skill${have ? '' : ' locked'}">${t.icon} ${t.name}${have ? '' : ` (c${t.cycle})`}</span>`;
+  }).join('');
+
+  // Char state
+  const csEl = el('test-charstate');
+  csEl.innerHTML = Object.entries(state.character.charState).map(([k, v]) =>
+    `<div class="test-kv">${k} <span>${v}</span></div>`
+  ).join('') +
+  `<div class="test-kv">fills <span>${state.character.children.length}/${MAX_CHILDREN}</span></div>` +
+  `<div class="test-kv">germans pool <span>${state.siblingPool.length}</span></div>`;
+
+  // Log
+  const lgEl = el('test-log');
+  lgEl.innerHTML = state.log.map(m => `<div class="test-log-item">${m}</div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════ RENDER ALL
+function renderAll() {
+  // Guard: hide succession overlays if nothing pending
+  const anyFullscreen = state.pendingDeath || state.pendingSuccession || state.pendingNewGen || state.gameOver;
+  if (anyFullscreen) {
+    renderSuccessionOverlays();
+    renderTopBar();
+    renderCharPanel();
+    return;
+  }
+  hide('overlay-death-summary');
+  hide('overlay-succession');
+  hide('overlay-new-gen');
+  hide('overlay-gameover');
+
+  renderTopBar();
+  renderCharPanel();
+  renderBottomPanel();
+  renderZoneNodes();
+  renderInMapOverlay();
+
+  // Update testing panel if open
+  if (!el('overlay-test-panel').classList.contains('hidden')) {
+    renderTestingPanel();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════ EVENT LISTENERS
+function setupEventListeners() {
+  // Menu
+  el('btn-open-menu').addEventListener('click', () => show('overlay-menu'));
+  el('btn-continue-game').addEventListener('click', () => { hide('overlay-menu'); renderAll(); });
+  el('btn-new-game').addEventListener('click', () => { hide('overlay-menu'); show('overlay-new-game'); });
+
+  // New game form
+  el('btn-start-new-game').addEventListener('click', () => {
+    const name  = el('input-dynasty-name').value.trim() || randomDynastyName();
+    const race  = document.querySelector('.race-btn.active')?.dataset.race || 'MED';
+    hide('overlay-new-game');
+    initState(name, race);
+    renderAll();
+  });
+  el('btn-cancel-new-game').addEventListener('click', () => { hide('overlay-new-game'); show('overlay-menu'); });
+  document.querySelectorAll('.race-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.race-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  // Menu overlay click-outside
+  el('overlay-menu').addEventListener('click', e => {
+    if (e.target === el('overlay-menu')) hide('overlay-menu');
+  });
+
+  // Zone carousel
+  el('btn-close-zone-sheet').addEventListener('click', () => hide('overlay-zone-actions'));
+  el('overlay-zone-actions').addEventListener('click', e => {
+    if (e.target === el('overlay-zone-actions')) hide('overlay-zone-actions');
+  });
+
+  // Carousel touch
+  const carVp = el('zone-carousel-viewport');
+  carVp.addEventListener('touchstart', e => {
+    CAROUSEL.dragStartX = e.touches[0].clientX;
+    CAROUSEL.dragDelta  = 0;
+    CAROUSEL.didDrag    = false;
+    CAROUSEL.dragging   = true;
+  }, { passive: true });
+  carVp.addEventListener('touchmove', e => {
+    if (!CAROUSEL.dragging) return;
+    CAROUSEL.dragDelta = e.touches[0].clientX - CAROUSEL.dragStartX;
+    if (Math.abs(CAROUSEL.dragDelta) > 8) CAROUSEL.didDrag = true;
+    updateCarouselPositions(CAROUSEL.dragDelta);
+  }, { passive: true });
+  carVp.addEventListener('touchend', () => {
+    if (!CAROUSEL.dragging) return;
+    CAROUSEL.dragging = false;
+    const dx = CAROUSEL.dragDelta;
+    if (!CAROUSEL.didDrag) return;
+    if (dx < -50)     carouselNavigate(CAROUSEL.idx + 1);
+    else if (dx > 50) carouselNavigate(CAROUSEL.idx - 1);
+    else              updateCarouselPositions(0);
+  });
+  carVp.addEventListener('click', e => {
+    if (CAROUSEL.didDrag) { CAROUSEL.didDrag = false; return; }
+    if (e.target.closest('.zc-info-btn')) {
+      const item = e.target.closest('.zc-item');
+      if (item) showActionInfo(CAROUSEL.actions[parseInt(item.dataset.idx)]);
+      return;
+    }
+    const item = e.target.closest('.zc-item');
+    if (!item) return;
+    const i = parseInt(item.dataset.idx);
+    if (i !== CAROUSEL.idx) carouselNavigate(i);
+    else carouselOpenCurrent();
+  });
+  // Mouse drag (desktop)
+  let _carMouse = false;
+  carVp.addEventListener('mousedown', e => {
+    _carMouse = true;
+    CAROUSEL.dragStartX = e.clientX;
+    CAROUSEL.dragDelta  = 0;
+    CAROUSEL.didDrag    = false;
+  });
+  carVp.addEventListener('mousemove', e => {
+    if (!_carMouse) return;
+    CAROUSEL.dragDelta = e.clientX - CAROUSEL.dragStartX;
+    if (Math.abs(CAROUSEL.dragDelta) > 8) CAROUSEL.didDrag = true;
+    updateCarouselPositions(CAROUSEL.dragDelta);
+  });
+  const carMouseEnd = () => {
+    if (!_carMouse) return;
+    _carMouse = false;
+    const dx = CAROUSEL.dragDelta;
+    if (!CAROUSEL.didDrag) return;
+    if (dx < -50)     carouselNavigate(CAROUSEL.idx + 1);
+    else if (dx > 50) carouselNavigate(CAROUSEL.idx - 1);
+    else              updateCarouselPositions(0);
+  };
+  carVp.addEventListener('mouseup', carMouseEnd);
+  carVp.addEventListener('mouseleave', carMouseEnd);
+
+  // Action info overlay
+  el('btn-close-action-info').addEventListener('click', () => hide('overlay-action-info'));
+  el('overlay-action-info').addEventListener('click', e => {
+    if (e.target === el('overlay-action-info')) hide('overlay-action-info');
+  });
+
+  // In-map overlay buttons
+  el('btn-dismiss-discovery').addEventListener('click', dismissDiscovery);
+  el('btn-dismiss-birth').addEventListener('click', dismissBirth);
+  el('btn-dismiss-event').addEventListener('click', dismissEvent);
+
+  // Death summary → succession choice
+  el('ds-btn-continue').addEventListener('click', () => {
+    hide('overlay-death-summary');
+    state.pendingSuccession = state.pendingDeath.successionPayload;
+    state.pendingDeath = null;
+    renderAll();
+  });
+
+  // New gen dismiss
+  el('btn-new-gen-continue').addEventListener('click', () => {
+    state.pendingNewGen = null;
+    hide('overlay-new-gen');
+    renderAll();
+  });
+
+  // Game over restart
+  el('btn-go-restart').addEventListener('click', () => {
+    hide('overlay-gameover');
+    initState();
+    show('overlay-menu');
+    renderAll();
+  });
+
+  // Testing panel
+  el('btn-test-panel').addEventListener('click', () => {
+    renderTestingPanel();
+    show('overlay-test-panel');
+  });
+  el('btn-close-test-panel').addEventListener('click', () => hide('overlay-test-panel'));
+  el('test-close-area').addEventListener('click', () => hide('overlay-test-panel'));
+
+  // Pass turn button (if needed)
+  el('btn-rest-cycle').addEventListener('click', () => {
+    state.cycle++;
+    autoDiscoverUniversalTechs();
+    state.food   = Math.max(0, state.food   - FOOD_UPKEEP);
+    state.health = Math.max(0, state.health - getAgingLoss(characterAge()));
+    addLog(`[${state.cycle}] Torn passat.`);
+    if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
+    renderAll();
+  });
+}
+
+function showActionInfo(action) {
+  if (!action) return;
+  el('ai-icon').textContent = getActionIcon(action);
+  el('ai-name').textContent = action.name;
+  el('ai-desc').textContent = action.description || '';
+  const outIcons = { food: '🌾', material: '🧠', health: '❤️', reputacio: '🏛️' };
+  const parts = [];
+  if (action.output_resource && action.output_min != null) {
+    parts.push(`${outIcons[action.output_resource] || '📦'} ${action.output_min}–${action.output_max}`);
+  }
+  if (action.side_effects) {
+    for (const se of action.side_effects) {
+      parts.push(`${outIcons[se.resource] || '📦'} ${se.delta > 0 ? '+' : ''}${se.delta}`);
+    }
+  }
+  el('ai-benefits').innerHTML = parts.map(p => `<span class="impact-tag">${p}</span>`).join(' ');
+  show('overlay-action-info');
+}
+
+// ═══════════════════════════════════════════════════════════ INIT
+window.addEventListener('DOMContentLoaded', () => {
   initState();
-  render();
+  setupEventListeners();
+  // Show menu on first load; continue-game disabled since fresh state
+  el('btn-continue-game').disabled = false;
+  show('overlay-menu');
+  renderAll();
 });

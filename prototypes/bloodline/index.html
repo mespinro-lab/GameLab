@@ -1,229 +1,348 @@
 <!DOCTYPE html>
 <!-- PROTOTYPE - NOT FOR PRODUCTION -->
-<!-- Question: Does inclination-driven action visibility + branch tech discovery + succession feel engaging? -->
-<!-- Date: 2026-05-26 -->
+<!-- Visual: Life Tycoon UI shell — Bloodline mechanics wired underneath -->
 <html lang="ca">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Life Tycoon 2 — Prototip</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#1c1208">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Bloodline</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div id="app">
 
-  <header id="top-bar">
-    <div class="top-section top-title">
-      <span class="top-label">Joc</span>
-      <strong>Life Tycoon 2</strong>
-    </div>
-    <div class="top-divider"></div>
-    <div class="top-section">
-      <span class="top-label">Vitals</span>
-      <div id="top-vitals" class="top-pills"></div>
-    </div>
-    <div class="top-divider"></div>
-    <div class="top-section">
-      <span class="top-label">Recursos</span>
-      <div id="top-resources" class="top-pills"></div>
-    </div>
-    <div class="top-divider"></div>
-    <div class="top-section">
-      <span class="top-label">Progrés</span>
-      <div class="top-pills">
-        <span id="cycle-counter" class="stat-pill">Cicle 0</span>
-        <span id="gen-counter"   class="stat-pill">Gen 1/5</span>
-      </div>
-    </div>
-    <button id="btn-glossary" class="btn-glossary" title="Glossari del joc">?</button>
-  </header>
+    <!-- MAP BACKGROUND -->
+    <div id="map-bg"></div>
 
-  <main id="main">
-
-    <!-- LEFT: Full debug profile — everything visible, no tabs -->
-    <aside id="profile-panel">
-
-      <div id="profile-label" class="profile-label">Explorador</div>
-
-      <div class="profile-section">
-        <div class="section-label">Atributs</div>
-        <div id="stats-display"></div>
-      </div>
-
-      <div class="profile-section">
-        <div class="section-label">Inclinació</div>
-        <div class="section-hint">La inclinació determina quines accions veus i pots aprendre.</div>
-        <div id="inclination-rows"></div>
-      </div>
-
-      <div class="panel-group-label">Llinatge</div>
-
-      <div class="profile-section">
-        <div class="section-label">Família</div>
-        <div id="family-status"></div>
-      </div>
-
-      <div class="profile-section">
-        <div class="section-label">Branques actives</div>
-        <div id="active-branches"></div>
-      </div>
-
-      <div class="profile-section">
-        <div class="section-label">Habilitats</div>
-        <div id="unlocked-branch-techs"></div>
-      </div>
-
-      <div class="profile-section">
-        <div class="section-label">Destreses</div>
-        <div id="destreses-display"></div>
-      </div>
-
-    </aside>
-
-    <!-- RIGHT: Notifications + zone grid + log -->
-    <section id="actions-panel">
-
-      <div id="last-result" class="last-result hidden"></div>
-      <div id="succession-warning" class="succession-warning hidden"></div>
-      <div id="discovery-notification" class="discovery-notification hidden"></div>
-
-      <div id="universal-techs-section" class="panel-block">
-        <div class="section-label">Tecnologies noves</div>
-        <div id="universal-techs-list"></div>
-      </div>
-
-      <div id="tech-status-strip" class="tech-status-strip"></div>
-
-      <!-- Onboarding panel — shown on cycle 0 unless dismissed -->
-      <div id="onboarding-panel" class="onboarding-panel hidden">
-        <div class="onboarding-tips">
-          <div class="onboarding-tip">🌾 Executa accions per aconseguir Aliment. Es consumeix −1 cada torn.</div>
-          <div class="onboarding-tip">🧠 Les accions d'artesania generen Provisions per aprendre accions noves (pestanya "Aprendre").</div>
-          <div class="onboarding-tip">↕ Les accions canvien la teva <strong>inclinació</strong> — quan arribes a cert pol, desbloquegen branques.</div>
-          <div class="onboarding-tip">👨‍👩‍👧 Tingues fills abans del cicle 14 per assegurar que el llinatge continua.</div>
+    <!-- TOP PANEL: Character dashboard (1/3 screen) -->
+    <div id="panel-top">
+      <div id="panel-top-bar">
+        <div id="panel-top-tokens">
+          <span class="shop-token" id="tok-material">🧠 <span class="shop-token-val" id="tok-material-val">0</span></span>
+          <span class="shop-token" id="tok-reputacio">🏛️ <span class="shop-token-val" id="tok-reputacio-val">0</span></span>
         </div>
-        <div class="onboarding-actions">
-          <button class="btn-onboarding-ok" onclick="dismissOnboarding(false)">Entès, comencem!</button>
-          <button class="btn-onboarding-skip" onclick="dismissOnboarding(true)">Salta (test)</button>
+        <button id="btn-test-panel">🔬 Test</button>
+        <button id="btn-open-menu">☰</button>
+      </div>
+      <div id="char-dashboard">
+        <div id="char-section">
+          <div id="char-tricolumn">
+            <div id="char-col-left">
+              <div class="col-stat">
+                <img class="col-icon" src="../../design/life-tycoon/icons/ICON-MENJAR.svg" alt="">
+                <span id="hex-food">—</span>
+              </div>
+              <div class="col-stat">
+                <img class="col-icon" src="../../design/life-tycoon/icons/ICON-SALUT.svg" alt="">
+                <span id="hex-health">—</span>
+              </div>
+              <div class="col-stat">
+                <img class="col-icon" src="../../design/life-tycoon/icons/ICON-REPUTACIO.svg" alt="">
+                <span id="hex-reputation">—</span>
+              </div>
+            </div>
+            <div id="char-bust-wrap">
+              <img id="char-bust-img" src="../../design/life-tycoon/characters/PRE-MED-M-BUST.png" alt="">
+              <span id="char-name-inlay">—</span>
+            </div>
+            <div id="char-col-right">
+              <div class="col-stat">
+                <img class="col-icon" src="../../design/life-tycoon/icons/ICON-FORCA.svg" alt="">
+                <span id="hex-forca">—</span>
+              </div>
+              <div class="col-stat">
+                <img class="col-icon" src="../../design/bloodline/icons/ICON-ENGINY.svg" alt="">
+                <span id="hex-enginy">—</span>
+              </div>
+              <div class="col-stat">
+                <img class="col-icon" src="../../design/bloodline/icons/ICON-VINCLE.svg" alt="">
+                <span id="hex-vincle">—</span>
+              </div>
+            </div>
+          </div>
+          <div id="char-section-bot">
+            <span id="char-age-inlay">—</span>
+          </div>
+        </div>
+        <div id="knowledge-row"></div>
+      </div>
+    </div>
+
+    <!-- MAP ZONE: interactive map with zone nodes (middle section) -->
+    <div id="map-zone">
+      <!-- Zone nodes rendered dynamically by JS -->
+    </div>
+
+    <!-- ZONE ACTIONS: positioned over map zone -->
+    <div id="overlay-zone-actions" class="hidden">
+      <div class="zone-actions-sheet">
+        <div id="zone-sheet-header">
+          <span id="zone-sheet-icon"></span>
+          <span id="zone-sheet-name"></span>
+          <button id="btn-close-zone-sheet">×</button>
+        </div>
+        <div id="zone-carousel-viewport"></div>
+        <div id="zc-dots"></div>
+        <div id="zone-carousel-info">
+          <div id="zc-name"></div>
+          <div id="zc-benefits"></div>
+          <div id="zc-desc"></div>
         </div>
       </div>
+    </div>
 
-      <!-- 2×2 zone grid — populated by JS -->
-      <div id="zone-grid"></div>
+    <!-- No-time banner -->
+    <div id="no-time-banner" class="hidden">
+      ⏰ Sense accions disponibles — <strong>Passar torn →</strong>
+    </div>
 
-      <div class="panel-block log-block">
-        <div class="section-label">Registre</div>
-        <div id="action-log"></div>
+    <!-- BOTTOM PANEL: resources + turn + log (1/6 screen) -->
+    <div id="panel-bottom">
+      <div id="panel-bottom-bar">
+        <span id="panel-turn-info">Cicle 0</span>
+        <div id="time-pips"></div>
+        <div id="panel-food">
+          <span class="food-icon">🌾</span>
+          <span id="panel-food-val">—</span>
+          <small id="panel-food-fc"></small>
+        </div>
+        <button id="btn-rest-cycle" class="rest-btn hidden">→ Passar</button>
       </div>
-
-    </section>
-
-  </main>
-
-  <!-- RESULT MODAL (post-action) -->
-  <div id="result-modal" class="modal-overlay hidden">
-    <div class="modal-box ceremony-box">
-      <div class="ceremony-tag">Resultat</div>
-      <div id="result-action-name" class="ceremony-title"></div>
-      <div id="result-output" class="result-output"></div>
-      <div id="result-side-effects" class="result-fx-row"></div>
-      <button class="btn-modal" id="btn-dismiss-result">Continuar →</button>
+      <ul id="session-log-list"></ul>
     </div>
-  </div>
 
-  <!-- BIRTH MODAL -->
-  <div id="birth-modal" class="modal-overlay hidden">
-    <div class="modal-box ceremony-box">
-      <div class="ceremony-tag">Nou membre del llinatge</div>
-      <div class="ceremony-emoji">👶</div>
-      <div id="birth-name" class="ceremony-title"></div>
-      <div id="birth-n" class="ceremony-sub"></div>
-      <div class="ceremony-parent">Fill de <span id="birth-parent"></span></div>
-      <button class="btn-modal" id="btn-dismiss-birth">Benvingut al món →</button>
-    </div>
-  </div>
+    <!-- IN-MAP OVERLAY: event/discovery/birth phases -->
+    <div id="overlay-action" class="hidden">
+      <div id="action-panel">
 
-  <!-- DEATH MODAL -->
-  <div id="death-modal" class="modal-overlay hidden">
-    <div class="modal-box ceremony-box">
-      <div class="ceremony-tag">Fi d'una vida</div>
-      <div id="death-emoji" class="ceremony-emoji"></div>
-      <div id="death-name" class="ceremony-title"></div>
-      <div id="death-age" class="ceremony-sub"></div>
-      <div id="death-axis" class="ceremony-axis"></div>
-      <button class="btn-modal" id="btn-dismiss-death">El llinatge continua →</button>
-    </div>
-  </div>
+        <!-- PHASE: event -->
+        <div id="pane-event" class="pane hidden">
+          <div id="ev-header">
+            <span id="ev-icon"></span>
+            <span id="ev-name"></span>
+          </div>
+          <p id="ev-text"></p>
+          <div id="ev-choices"></div>
+          <button id="btn-dismiss-event" style="display:none">Continua →</button>
+        </div>
 
-  <!-- NEW GENERATION MODAL -->
-  <div id="newgen-modal" class="modal-overlay hidden">
-    <div class="modal-box ceremony-box">
-      <div class="ceremony-tag">Nova generació</div>
-      <div id="newgen-emoji" class="ceremony-emoji"></div>
-      <div id="newgen-name" class="ceremony-title"></div>
-      <div id="newgen-gen" class="ceremony-sub"></div>
-      <div id="newgen-axis" class="ceremony-axis"></div>
-      <button class="btn-modal" id="btn-dismiss-newgen">Comença →</button>
-    </div>
-  </div>
+        <!-- PHASE: discovery (tech / skill / zone) -->
+        <div id="pane-discovery" class="pane hidden">
+          <div id="disc-header">
+            <span id="disc-icon"></span>
+            <span id="disc-name"></span>
+          </div>
+          <p class="disc-badge" id="disc-badge">✨ Nou descobriment</p>
+          <p id="disc-desc"></p>
+          <div id="disc-effects"></div>
+          <button id="btn-dismiss-discovery">Entès →</button>
+        </div>
 
-  <!-- DISCOVERY MODAL -->
-  <div id="discovery-modal" class="modal-overlay hidden">
-    <div class="modal-box discovery-box">
-      <div id="discovery-icon" class="discovery-icon"></div>
-      <h2 id="discovery-name"></h2>
-      <p id="discovery-desc"></p>
-      <button class="btn-modal" id="btn-dismiss-discovery">Continuar</button>
-    </div>
-  </div>
+        <!-- PHASE: birth -->
+        <div id="pane-birth" class="pane hidden">
+          <div class="birth-card">
+            <p class="birth-label">✨ Un nou membre del llinatge</p>
+            <div class="birth-avatar-wrap"><span id="birth-avatar">👶</span></div>
+            <h2 id="birth-name"></h2>
+            <p class="birth-virtue" id="birth-virtue"></p>
+            <button id="btn-dismiss-birth">Benvingut al món →</button>
+          </div>
+        </div>
 
-  <!-- ACTION TOAST -->
-  <div id="action-toast" class="action-toast hidden"></div>
+      </div><!-- /#action-panel -->
+    </div><!-- /#overlay-action -->
 
-  <!-- EVENT MODAL -->
-  <div id="event-modal" class="modal-overlay hidden">
-    <div class="modal-box">
-      <div class="modal-tag">Esdeveniment</div>
-      <p id="event-text"></p>
-      <p class="modal-effect" id="event-effect"></p>
-      <div id="event-choices" class="event-choices hidden"></div>
-      <button class="btn-modal" id="btn-dismiss-event">Continua</button>
-    </div>
-  </div>
-
-  <!-- SUCCESSION MODAL -->
-  <div id="succession-modal" class="modal-overlay hidden">
-    <div class="modal-box">
-      <div class="modal-tag">Successió</div>
-      <p>El personatge ha completat la seva vida.</p>
-      <div class="modal-summary">
-        Generació: <span id="succ-gen"></span><br>
-        Cicles viscuts: <span id="succ-cycles"></span><br>
-        Eix dominant: <span id="succ-axis"></span>
+    <!-- DONUT execution timer (appears over map zone during action) -->
+    <div id="exec-donut-overlay" class="hidden">
+      <div id="exec-donut-wrap">
+        <svg id="exec-donut-svg" viewBox="0 0 42 42">
+          <circle cx="21" cy="21" r="17" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="3.5"/>
+          <circle id="exec-donut-ring" cx="21" cy="21" r="17" fill="none" stroke-width="3.5"
+            stroke-linecap="round" stroke-dasharray="0 106.8"
+            style="transform:rotate(-90deg);transform-origin:50% 50%"/>
+        </svg>
+        <span id="exec-donut-icon"></span>
       </div>
-      <p class="succ-desc">Tria qui continua el llinatge. Les habilitats, destreses i stats s'hereten al <strong>65%</strong>.</p>
-      <div id="succ-successors" class="succ-successors"></div>
+      <div id="exec-donut-label"></div>
     </div>
-  </div>
 
-  <!-- GAME OVER MODAL -->
-  <div id="gameover-modal" class="modal-overlay hidden">
-    <div class="modal-box">
-      <div class="modal-tag">Fi del Llinatge</div>
-      <p id="gameover-text">Cinc generacions han passat. El coneixement del teu llinatge queda gravat a les roques.</p>
-      <button class="btn-modal" id="btn-restart">Reiniciar</button>
+    <!-- ACTION INFO overlay (ⓘ button on carousel) -->
+    <div id="overlay-action-info" class="hidden">
+      <div class="zone-actions-sheet action-info-sheet">
+        <div id="ai-header">
+          <span id="ai-icon"></span>
+          <span id="ai-name"></span>
+          <button id="btn-close-action-info">✕</button>
+        </div>
+        <p id="ai-desc"></p>
+        <div id="ai-benefits"></div>
+      </div>
     </div>
-  </div>
 
-  <!-- GLOSSARY MODAL -->
-  <div id="glossary-modal" class="modal-overlay hidden">
-    <div class="modal-box modal-box-wide">
-      <div class="modal-tag">Glossari del Joc</div>
-      <div id="glossary-content" class="glossary-content"></div>
-      <button class="btn-modal" id="btn-close-glossary">Tanca</button>
+    <!-- OVERLAY: Main Menu -->
+    <div id="overlay-menu" class="overlay">
+      <div class="menu-screen">
+        <div class="menu-hero">
+          <div class="game-logo">🦴</div>
+          <h1 class="game-title">Bloodline</h1>
+          <p class="game-sub">Forja el llinatge que marcarà la història</p>
+        </div>
+        <nav class="menu-nav">
+          <button id="btn-continue-game" class="menu-btn menu-btn-primary" disabled>
+            <span class="menu-btn-icon">▶</span><span>Continuar partida</span>
+          </button>
+          <button id="btn-new-game" class="menu-btn">
+            <span class="menu-btn-icon">✦</span><span>Nova partida</span>
+          </button>
+        </nav>
+      </div>
     </div>
-  </div>
 
-  <div id="incl-tooltip" class="incl-tooltip hidden"></div>
+    <!-- OVERLAY: Nova Partida -->
+    <div id="overlay-new-game" class="overlay hidden">
+      <div class="overlay-card new-game-card">
+        <div class="new-game-hero">✦</div>
+        <h3 class="new-game-title">Nova Partida</h3>
+        <p class="new-game-hint">Tria el nom del teu llinatge. El seu destí dependrà de les decisions que prendràs.</p>
+        <div class="new-game-field">
+          <label class="new-game-label" for="input-dynasty-name">Nom del llinatge</label>
+          <input id="input-dynasty-name" class="new-game-input" type="text" maxlength="30"
+                 placeholder="Ex: Braven, Oscura, Llum..." autocomplete="off">
+          <p class="new-game-sublabel">Si el deixes en blanc, el joc en generarà un d'aleatori.</p>
+        </div>
+        <div class="new-game-field">
+          <label class="new-game-label">Origen ètnic</label>
+          <div id="race-selector" class="race-selector">
+            <button class="race-btn active" data-race="MED">🌊 Mediterrani</button>
+            <button class="race-btn" data-race="AFR">🌍 Africà</button>
+            <button class="race-btn" data-race="IND">❄️ Indoeuropeu</button>
+            <button class="race-btn" data-race="ORI">🏜️ Orient Pròx.</button>
+            <button class="race-btn" data-race="ASI">🌸 Est Asiàtic</button>
+            <button class="race-btn" data-race="AME">🌿 Amèrica</button>
+          </div>
+        </div>
+        <button id="btn-start-new-game" class="new-game-btn-primary">Comença →</button>
+        <button id="btn-cancel-new-game" class="new-game-btn-back">← Tornar</button>
+      </div>
+    </div>
+
+    <!-- OVERLAY: Succession -->
+    <div id="overlay-succession" class="overlay hidden">
+      <div class="overlay-card succ-card">
+        <div id="succ-death-msg"></div>
+        <div class="succ-divider"></div>
+        <h3 id="succ-title">El Llinatge Continua</h3>
+        <div id="succ-children-list"></div>
+        <p class="succ-note">Tria el successor per continuar.</p>
+      </div>
+    </div>
+
+    <!-- OVERLAY: Death summary -->
+    <div id="overlay-death-summary" class="overlay hidden">
+      <div id="ds-card">
+        <img id="ds-bust" src="" alt="">
+        <div id="ds-name"></div>
+        <div id="ds-subtitle"></div>
+        <div id="ds-cause"></div>
+        <button id="ds-btn-continue">Continuar →</button>
+      </div>
+    </div>
+
+    <!-- OVERLAY: New Generation -->
+    <div id="overlay-new-gen" class="overlay hidden">
+      <div id="new-gen-card">
+        <div id="new-gen-hero">
+          <img id="new-gen-bust" src="" alt="">
+          <svg id="new-gen-ring-svg" viewBox="0 0 42 42">
+            <circle cx="21" cy="21" r="17" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="3"/>
+            <circle id="new-gen-ring" cx="21" cy="21" r="17" fill="none" stroke-width="3"
+              stroke-linecap="round" stroke-dasharray="0 106.8"
+              style="transform:rotate(-90deg);transform-origin:50% 50%"/>
+          </svg>
+        </div>
+        <div id="new-gen-name"></div>
+        <div id="new-gen-subtitle"></div>
+        <button id="btn-new-gen-continue">Comença →</button>
+      </div>
+    </div>
+
+    <!-- OVERLAY: Game Over -->
+    <div id="overlay-gameover" class="overlay hidden">
+      <div class="overlay-card">
+        <div class="overlay-big-icon">💀</div>
+        <h2>Fi del Llinatge</h2>
+        <p id="go-text"></p>
+        <button id="btn-go-restart">Jugar de nou</button>
+      </div>
+    </div>
+
+    <!-- OVERLAY: Testing Panel (slide-in from left) -->
+    <div id="overlay-test-panel" class="hidden">
+      <div id="test-panel-sheet">
+        <div id="test-panel-title">
+          🔬 Debug
+          <button id="btn-close-test-panel">✕</button>
+        </div>
+
+        <div class="test-section">
+          <div class="test-section-label">Inclinació</div>
+          <div id="test-incl-rows"></div>
+        </div>
+
+        <div class="test-section">
+          <div class="test-section-label">Branques actives</div>
+          <div id="test-branches" class="test-badges"></div>
+        </div>
+
+        <div class="test-section">
+          <div class="test-section-label">Habilitats (branch techs)</div>
+          <div id="test-skills" class="test-badges"></div>
+        </div>
+
+        <div class="test-section">
+          <div class="test-section-label">Destreses</div>
+          <div id="test-destreses" class="test-badges"></div>
+        </div>
+
+        <div class="test-section">
+          <div class="test-section-label">Zones</div>
+          <div id="test-zones" class="test-badges"></div>
+        </div>
+
+        <div class="test-section">
+          <div class="test-section-label">Techs universals</div>
+          <div id="test-utechs" class="test-badges"></div>
+        </div>
+
+        <div class="test-section">
+          <div class="test-section-label">Estat del personatge</div>
+          <div id="test-charstate"></div>
+        </div>
+
+        <div class="test-section">
+          <div class="test-section-label">Registre</div>
+          <div id="test-log"></div>
+        </div>
+      </div>
+      <div class="test-close-area" id="test-close-area"></div>
+    </div>
+
+    <!-- OVERLAY: Loading splash -->
+    <div id="overlay-loading" class="hidden">
+      <div id="loading-card">
+        <svg id="loading-donut-svg" viewBox="0 0 40 40" width="72" height="72">
+          <circle cx="20" cy="20" r="17" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="4"/>
+          <circle id="loading-ring" cx="20" cy="20" r="17" fill="none" stroke="var(--gold)"
+                  stroke-width="4" stroke-dasharray="36 71" stroke-linecap="round"/>
+        </svg>
+        <div id="loading-title">Bloodline</div>
+      </div>
+    </div>
+
+  </div><!-- /#app -->
 
   <script src="data.js"></script>
   <script src="game.js"></script>
