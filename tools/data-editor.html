@@ -1,0 +1,1939 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Life Tycoon — Editor de Dades</title>
+  <script src="../src/life-tycoon/data.js"></script>
+  <style>
+/* ── Reset & Tokens ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:   #f4ead8; --bg2: #ede0c8; --bg3: #e2d0b4; --bg4: #d4bc98;
+  --gold: #7a4800; --text: #2c1608; --dim: #8a6848;
+  --bdr:  rgba(90,55,15,0.2);
+  --c-era:      #f39c12; --c-zone:     #3498db; --c-tech:    #e67e22;
+  --c-skill:    #9b59b6; --c-action:   #27ae60; --c-event:   #e74c3c;
+  --c-destresa: #00bcd4; --c-learning: #fd79a8;
+  --hdr: 52px; --fbar: 46px;
+}
+html,body { height:100%; overflow:hidden; background:var(--bg); color:var(--text);
+  font-family:system-ui,-apple-system,sans-serif; font-size:16px; }
+
+/* ── Layout ── */
+#app { display:flex; flex-direction:column; height:100%; }
+
+/* Header */
+#hdr {
+  display:flex; align-items:center; gap:0.45rem;
+  padding:0 0.7rem; height:var(--hdr); flex-shrink:0;
+  background:var(--bg2); border-bottom:1px solid var(--bdr); z-index:10;
+}
+#hdr-title { font-weight:700; color:var(--gold); font-size:0.85rem; flex:1; white-space:nowrap; }
+#era-select {
+  background:var(--bg3); border:1px solid var(--bdr); color:var(--text);
+  border-radius:8px; padding:0.28rem 0.45rem; font-size:0.78rem; max-width:130px;
+}
+.hbtn {
+  background:var(--bg3); border:1px solid var(--bdr); color:var(--text);
+  border-radius:8px; padding:0.3rem 0.55rem; font-size:0.82rem; cursor:pointer;
+  white-space:nowrap; flex-shrink:0;
+}
+
+/* Graph viewport */
+#gvp {
+  flex:1; overflow:hidden; position:relative; touch-action:none;
+  background:radial-gradient(ellipse at 50% 30%, #ece0cc 0%, #f4ead8 100%);
+}
+#gc { position:absolute; top:0; left:0; transform-origin:0 0; will-change:transform; }
+#csvg { position:absolute; top:0; left:0; pointer-events:none; overflow:visible; }
+
+/* Type filter bar */
+#fbar {
+  display:flex; gap:0.35rem; padding:0.45rem 0.7rem;
+  overflow-x:auto; flex-shrink:0; height:var(--fbar);
+  background:var(--bg2); border-top:1px solid var(--bdr);
+  scrollbar-width:none;
+}
+#fbar::-webkit-scrollbar { display:none; }
+.tychip {
+  display:flex; align-items:center; gap:0.22rem;
+  padding:0.18rem 0.55rem; border-radius:20px; font-size:0.72rem;
+  border:1.5px solid transparent; cursor:pointer; white-space:nowrap;
+  transition:opacity 0.15s; user-select:none;
+}
+.tychip.on  { border-color:currentColor; opacity:1; }
+.tychip.off { opacity:0.35; }
+
+/* ── Graph nodes ── */
+.gnode {
+  position:absolute; display:flex; flex-direction:column;
+  align-items:center; cursor:pointer; user-select:none; touch-action:none;
+  transition:filter 0.15s;
+}
+.gnode:active { filter:brightness(1.3); }
+.nrow { display:flex; align-items:center; gap:5px; }
+.nshape {
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.25rem; flex-shrink:0; position:relative;
+  transition:transform 0.12s;
+}
+.gnode:active .nshape { transform:scale(0.88); }
+.nlabel {
+  font-size:0.56rem; color:var(--dim); text-align:center; margin-top:2px;
+  max-width:72px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.nbadges { display:flex; flex-direction:column; gap:3px; align-items:center; min-width:28px; }
+.nbadge {
+  display:flex; align-items:center; gap:2px;
+  font-size:0.58rem; background:rgba(0,0,0,0.07);
+  border-radius:7px; padding:1px 5px; white-space:nowrap; color:var(--dim);
+}
+
+/* Shapes */
+.sh-circle {
+  width:52px; height:52px; border-radius:50%;
+  border:2px solid var(--nc); background:color-mix(in srgb,var(--nc) 14%,var(--bg));
+  box-shadow:0 0 14px color-mix(in srgb,var(--nc) 28%,transparent);
+}
+.sh-diamond {
+  width:46px; height:46px;
+  border:2px solid var(--nc); background:color-mix(in srgb,var(--nc) 14%,var(--bg));
+  transform:rotate(45deg);
+  box-shadow:0 0 14px color-mix(in srgb,var(--nc) 28%,transparent);
+}
+.sh-diamond .ni { transform:rotate(-45deg); width:100%; height:100%;
+  display:flex; align-items:center; justify-content:center; }
+.sh-roundsq {
+  width:48px; height:48px; border-radius:11px;
+  border:2px solid var(--nc); background:color-mix(in srgb,var(--nc) 14%,var(--bg));
+  box-shadow:0 0 14px color-mix(in srgb,var(--nc) 28%,transparent);
+}
+.sh-smallc {
+  width:38px; height:38px; border-radius:50%;
+  border:1.5px solid var(--nc); background:color-mix(in srgb,var(--nc) 10%,var(--bg));
+  box-shadow:0 0 10px color-mix(in srgb,var(--nc) 22%,transparent);
+}
+.sh-hex {
+  width:54px; height:54px;
+  background:color-mix(in srgb,var(--nc) 14%,var(--bg));
+  clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  filter:drop-shadow(0 0 5px color-mix(in srgb,var(--nc) 45%,transparent));
+}
+
+/* Connections */
+.cline { stroke:rgba(90,55,15,0.28); stroke-width:1.5; fill:none; stroke-dasharray:5 3; }
+.cline.hard { stroke:rgba(90,55,15,0.55); stroke-dasharray:none; }
+.cline.gate { stroke:rgba(122,72,0,0.75); stroke-dasharray:none; stroke-width:2; }
+
+/* ── Overlays backdrop ── */
+.backdrop {
+  position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:40; display:none;
+}
+.backdrop.on { display:block; }
+
+/* ── Side menu ── */
+#smenu {
+  position:fixed; top:0; right:0; bottom:0; width:270px;
+  background:var(--bg2); border-left:1px solid var(--bdr);
+  z-index:50; transform:translateX(100%); transition:transform 0.25s;
+  display:flex; flex-direction:column; overflow-y:auto;
+}
+#smenu.on { transform:translateX(0); }
+.smenu-hdr {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0.9rem 1rem; border-bottom:1px solid var(--bdr); flex-shrink:0;
+}
+.smenu-hdr span { font-weight:700; color:var(--gold); }
+.xbtn { background:none; border:none; color:var(--dim); font-size:1.15rem; cursor:pointer; padding:0.2rem; }
+.mtype-row {
+  display:flex; align-items:center; gap:0.6rem;
+  padding:0.65rem 1rem; cursor:pointer; font-size:0.83rem;
+  border-bottom:1px solid rgba(255,255,255,0.035);
+}
+.mtype-row:active { background:rgba(255,255,255,0.04); }
+.mtype-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+.mtype-ct { margin-left:auto; font-size:0.7rem; color:var(--dim); }
+#smenu-foot { padding:0.9rem 1rem; border-top:1px solid var(--bdr); margin-top:auto; }
+#smenu-stats { font-size:0.68rem; color:var(--dim); text-align:center; line-height:1.5; }
+
+/* ── Entity list panel ── */
+#elpanel {
+  position:fixed; inset:0; background:var(--bg); z-index:55;
+  transform:translateX(100%); transition:transform 0.25s;
+  display:flex; flex-direction:column;
+}
+#elpanel.on { transform:translateX(0); }
+#el-hdr {
+  display:flex; align-items:center; gap:0.55rem;
+  padding:0.7rem 1rem; background:var(--bg2); border-bottom:1px solid var(--bdr);
+  flex-shrink:0;
+}
+#el-title { font-size:0.92rem; font-weight:700; flex:1; }
+#btn-add-e {
+  background:var(--gold); color:var(--bg); border:none;
+  border-radius:8px; padding:0.28rem 0.65rem; font-size:0.8rem; font-weight:700; cursor:pointer;
+}
+#el-list { flex:1; overflow-y:auto; }
+.eli {
+  display:flex; align-items:center; gap:0.7rem;
+  padding:0.75rem 1rem; border-bottom:1px solid rgba(255,255,255,0.035); cursor:pointer;
+}
+.eli:active { background:rgba(255,255,255,0.04); }
+.eli-ico { font-size:1.2rem; }
+.eli-name { font-size:0.86rem; flex:1; }
+.eli-sub  { font-size:0.7rem; color:var(--dim); }
+.eli-del  { background:none; border:none; color:var(--dim); font-size:0.95rem; cursor:pointer; padding:0.3rem; }
+
+/* ── Detail card ── */
+#dcard {
+  position:fixed; bottom:0; left:0; right:0;
+  background:var(--bg2); border-top:2px solid var(--bdr);
+  border-radius:20px 20px 0 0; z-index:45;
+  max-height:82dvh; transform:translateY(100%);
+  transition:transform 0.3s; display:flex; flex-direction:column;
+  box-shadow:0 -8px 40px rgba(0,0,0,0.75);
+}
+#dcard.on { transform:translateY(0); }
+#dcard-handle { width:36px; height:4px; border-radius:2px;
+  background:rgba(255,255,255,0.18); margin:10px auto 0; flex-shrink:0; }
+#dcard-hdr {
+  display:flex; align-items:center; gap:0.55rem;
+  padding:0.5rem 1rem 0.65rem; flex-shrink:0;
+}
+#dc-icon { font-size:1.55rem; }
+#dc-name { font-size:0.97rem; font-weight:700; color:var(--gold); flex:1; }
+#dc-badge { font-size:0.62rem; padding:0.12rem 0.45rem; border-radius:8px; border:1px solid currentColor; }
+#dc-scroll { overflow-y:auto; padding:0 1rem 0.5rem; }
+.dsec { margin-bottom:1rem; }
+.dsec-title { font-size:0.68rem; color:var(--dim); text-transform:uppercase;
+  letter-spacing:0.07em; margin-bottom:0.45rem; }
+.dfield { margin-bottom:0.55rem; }
+.dfield label { font-size:0.7rem; color:var(--dim); display:block; margin-bottom:0.18rem; }
+.dfield input, .dfield textarea, .dfield select {
+  width:100%; background:var(--bg3); border:1px solid var(--bdr); color:var(--text);
+  border-radius:8px; padding:0.42rem 0.58rem; font-size:0.83rem; font-family:inherit;
+}
+.dfield textarea { resize:vertical; min-height:56px; }
+.dfield input[type=number] { max-width:120px; }
+.chips { display:flex; flex-wrap:wrap; gap:0.3rem; }
+.chip {
+  display:inline-flex; align-items:center; gap:0.22rem;
+  padding:0.22rem 0.55rem; border-radius:18px; font-size:0.72rem; cursor:pointer;
+}
+.chip-req  { background:rgba(52,120,219,0.1);  border:1px solid rgba(52,120,219,0.35); color:#1a5fa8; }
+.chip-eff  { background:rgba(39,140,80,0.1);   border:1px solid rgba(39,140,80,0.35);  color:#1a7a40; }
+.chip-add  { background:rgba(0,0,0,0.04); border:1px dashed rgba(0,0,0,0.22); color:var(--dim); }
+.chip-rm   { font-size:0.6rem; opacity:0.55; }
+.dcard-save {
+  width:calc(100% - 2rem); margin:0.6rem 1rem 1rem;
+  background:var(--gold); color:var(--bg); border:none; border-radius:10px;
+  padding:0.68rem; font-size:0.88rem; font-weight:700; cursor:pointer; flex-shrink:0;
+}
+
+/* ── Picker dialog ── */
+#picker { position:fixed; inset:0; z-index:80; display:none; align-items:flex-end; background:rgba(0,0,0,0.6); }
+#picker.on { display:flex; }
+#picker-panel {
+  background:var(--bg2); border-radius:20px 20px 0 0; width:100%; max-height:62dvh;
+  display:flex; flex-direction:column;
+}
+#picker-hdr { padding:0.75rem 1rem; font-weight:700; border-bottom:1px solid var(--bdr); flex-shrink:0; }
+#picker-search {
+  width:calc(100% - 2rem); margin:0.5rem 1rem;
+  background:var(--bg3); border:1px solid var(--bdr); color:var(--text);
+  border-radius:8px; padding:0.38rem 0.58rem; font-size:0.83rem;
+}
+#picker-list { overflow-y:auto; flex:1; }
+.pitem {
+  display:flex; align-items:center; gap:0.7rem;
+  padding:0.65rem 1rem; border-bottom:1px solid rgba(255,255,255,0.035); cursor:pointer;
+}
+.pitem:active { background:rgba(255,255,255,0.05); }
+.pitem-ico { font-size:1.15rem; flex-shrink:0; }
+.pitem-name { font-size:0.84rem; flex:1; }
+.pitem-sub  { font-size:0.7rem; color:var(--dim); }
+
+/* ── I/O Panel ── */
+#iopanel {
+  position:fixed; inset:0; background:var(--bg); z-index:60;
+  transform:translateY(100%); transition:transform 0.25s;
+  display:flex; flex-direction:column;
+}
+#iopanel.on { transform:translateY(0); }
+.io-hdr {
+  display:flex; align-items:center; gap:0.6rem; padding:0.75rem 1rem;
+  background:var(--bg2); border-bottom:1px solid var(--bdr); flex-shrink:0;
+}
+#io-ta {
+  flex:1; width:100%; background:var(--bg3); border:none; color:var(--text);
+  font-family:monospace; font-size:0.72rem; padding:1rem; resize:none; outline:none;
+}
+.io-foot { display:flex; gap:0.5rem; padding:0.7rem; background:var(--bg2); border-top:1px solid var(--bdr); }
+.iobtn { flex:1; background:var(--bg3); border:1px solid var(--bdr); color:var(--text);
+  border-radius:8px; padding:0.58rem; font-size:0.83rem; cursor:pointer; }
+.iobtn.pri { background:var(--gold); color:var(--bg); border-color:var(--gold); font-weight:700; }
+
+/* ── Toast ── */
+#toast {
+  position:fixed; bottom:72px; left:50%; transform:translateX(-50%);
+  background:rgba(36,26,10,0.96); border:1px solid var(--bdr); color:var(--text);
+  padding:0.45rem 0.9rem; border-radius:20px; font-size:0.8rem;
+  z-index:100; opacity:0; transition:opacity 0.2s; pointer-events:none; white-space:nowrap;
+}
+#toast.on { opacity:1; }
+
+/* ── Empty state ── */
+#empty-state {
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  flex-direction:column; gap:0.5rem; pointer-events:none; display:none;
+}
+#empty-state.on { display:flex; }
+#empty-state p { color:var(--dim); font-size:0.85rem; }
+
+/* ── Picker categories ── */
+.pcat { display:flex; align-items:center; gap:0.5rem; padding:0.65rem 0.9rem;
+  border-radius:10px; cursor:pointer; font-size:0.82rem; font-weight:600;
+  border:1.5px solid var(--bdr); background:var(--bg3); transition:background 0.12s; }
+.pcat:active { background:var(--bg4); }
+.pcats { display:flex; flex-wrap:wrap; gap:0.5rem; padding:0.7rem 0.9rem; overflow-y:auto; flex:1; }
+#picker-back { background:none; border:none; color:var(--gold); font-size:1.1rem; cursor:pointer; padding:0 0.5rem; }
+
+/* ── Node focus highlight ── */
+.gnode.hi { filter: drop-shadow(0 0 10px var(--nc)); z-index:2; }
+.gnode.dimmed { opacity: 0.12; pointer-events: none; }
+.cline.hi { opacity: 1 !important; stroke: rgba(90,55,15,0.85) !important; stroke-width: 2.5 !important; }
+.cline.dim { opacity: 0.06; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HEADER -->
+  <header id="hdr">
+    <span id="hdr-title">🎮 LT Editor</span>
+    <select id="era-select"></select>
+    <button class="hbtn" id="btn-io" title="Import/Export">⬆⬇</button>
+    <button class="hbtn" id="btn-migrate" title="Migrar dades del joc" style="background:#27ae60;border-color:#27ae60;color:#fff;font-weight:700">⬇ Migrar</button>
+    <button class="hbtn" id="btn-export-game" title="Exportar per al joc (JSON per integrar a data.js)" style="background:#2980b9;border-color:#2980b9;color:#fff;font-weight:700">📤 Joc</button>
+    <button class="hbtn" id="btn-reset" title="Reiniciar dades seed">↺</button>
+    <button class="hbtn" id="btn-menu-open">≡</button>
+  </header>
+
+  <!-- GRAPH VIEWPORT -->
+  <div id="gvp">
+    <div id="gc">
+      <svg id="csvg"></svg>
+    </div>
+    <div id="empty-state">
+      <span style="font-size:2rem">🗺️</span>
+      <p>Cap entitat visible. Activa tipus al filtre o afegeix-ne al menú.</p>
+    </div>
+  </div>
+
+  <!-- TYPE FILTER BAR -->
+  <div id="fbar"></div>
+
+  <!-- BACKDROP -->
+  <div class="backdrop" id="backdrop"></div>
+
+  <!-- SIDE MENU -->
+  <div id="smenu">
+    <div class="smenu-hdr">
+      <span>Tipus d'Entitat</span>
+      <button class="xbtn" id="btn-menu-close">✕</button>
+    </div>
+    <div id="smenu-types"></div>
+    <div id="smenu-foot"><div id="smenu-stats"></div></div>
+  </div>
+
+  <!-- ENTITY LIST PANEL -->
+  <div id="elpanel">
+    <div id="el-hdr">
+      <button class="xbtn" id="btn-el-back">←</button>
+      <span id="el-title"></span>
+      <button id="btn-add-e">+ Nova</button>
+    </div>
+    <div id="el-list"></div>
+  </div>
+
+  <!-- DETAIL CARD -->
+  <div id="dcard">
+    <div id="dcard-handle"></div>
+    <div id="dcard-hdr">
+      <span id="dc-icon"></span>
+      <span id="dc-name"></span>
+      <span id="dc-badge"></span>
+      <button class="xbtn" id="btn-dcard-close">✕</button>
+    </div>
+    <div id="dc-scroll"></div>
+    <button class="dcard-save" id="btn-save-detail">Guardar canvis</button>
+  </div>
+
+  <!-- PICKER DIALOG -->
+  <div id="picker">
+    <div id="picker-panel">
+      <div id="picker-hdr" style="display:flex;align-items:center;gap:0.3rem;"><button id="picker-back">←</button><span id="picker-hdr-title"></span></div>
+      <input id="picker-search" placeholder="Cerca..." autocomplete="off">
+      <div id="picker-list"></div>
+    </div>
+  </div>
+
+  <!-- I/O PANEL -->
+  <div id="iopanel">
+    <div class="io-hdr">
+      <button class="xbtn" id="btn-io-close">←</button>
+      <span style="font-weight:700;flex:1">Import / Export JSON</span>
+    </div>
+    <textarea id="io-ta" placeholder="Enganxa JSON aquí per importar..."></textarea>
+    <div class="io-foot">
+      <button class="iobtn" id="btn-export">⬇ Exportar</button>
+      <button class="iobtn pri" id="btn-import">⬆ Importar</button>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+</div><!-- #app -->
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+const TYPES = [
+  { id:'era',      label:'Eres',          icon:'🌍', color:'#f39c12', shape:'hex'     },
+  { id:'zone',     label:'Zones',         icon:'🗺️',  color:'#3498db', shape:'roundsq' },
+  { id:'tech',     label:'Tecnologies',   icon:'📜', color:'#e67e22', shape:'diamond' },
+  { id:'skill',    label:'Habilitats',    icon:'🔨', color:'#9b59b6', shape:'roundsq' },
+  { id:'action',   label:'Accions',       icon:'⚡', color:'#27ae60', shape:'circle'  },
+  { id:'event',    label:'Events',        icon:'🎭', color:'#e74c3c', shape:'circle'  },
+  { id:'destresa', label:'Destreses',     icon:'✨', color:'#00bcd4', shape:'smallc'  },
+  { id:'learning', label:'Aprenentatges', icon:'📚', color:'#fd79a8', shape:'smallc'  },
+];
+const TMAP  = Object.fromEntries(TYPES.map(t => [t.id, t]));
+const LS    = 'lt_gamedata_editor';
+
+// Fixed resource/stat targets used in effects
+const FIXED = [
+  { id:'food',            icon:'🍖', name:'Menjar',           group:'recurs' },
+  { id:'health',          icon:'❤️', name:'Salut',            group:'indicador' },
+  { id:'happiness',       icon:'😊', name:'Felicitat',        group:'indicador' },
+  { id:'familyRep',       icon:'👑', name:'Reputació família',group:'indicador' },
+  { id:'physical',        icon:'💪', name:'Força física',     group:'stat' },
+  { id:'intelligence',    icon:'🧠', name:'Intel·ligència',   group:'stat' },
+  { id:'social',          icon:'🤝', name:'Social',           group:'stat' },
+  { id:'vigor',           icon:'⚡', name:'Vigor (compra)',   group:'compra' },
+  { id:'saber',           icon:'📚', name:'Saber (compra)',   group:'compra' },
+  { id:'prestigi',        icon:'🌟', name:'Prestigi (compra)',group:'compra' },
+  { id:'money',           icon:'💰', name:'Diners',           group:'recurs' },
+  { id:'era_cycle',       icon:'🕐', name:'Cicle',            group:'cicle' },
+];
+const FMAP = Object.fromEntries(FIXED.map(f => [f.id, f]));
+
+// Node geometry
+const NW = 130, NH = 94, HGAP = 36, VGAP = 80;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DATA MODEL  (normalized — scalable to a real DB)
+// ═══════════════════════════════════════════════════════════════════════════
+// DB.entities  — all game entities (flat)
+// DB.deps      — requirements/dependencies  {owner_id → req_id}
+// DB.effects   — outputs/effects            {owner_id → target}
+// DB.mechanics — era-level config values    {era_id, key, value}
+// ═══════════════════════════════════════════════════════════════════════════
+
+let DB = { entities:[], deps:[], effects:[], mechanics:[] };
+let _nid = 1;
+const uid = () => 'e' + String(_nid++).padStart(4,'0');
+
+function loadDB() {
+  try {
+    const raw = localStorage.getItem(LS);
+    if (raw) {
+      DB = JSON.parse(raw);
+      const mx = Math.max(0, ...[...DB.entities,...DB.deps,...DB.effects,...DB.mechanics]
+        .map(x => parseInt((x.id||'e0').slice(1))||0));
+      _nid = mx + 1;
+      return true;
+    }
+  } catch(e) { console.warn('DB load error', e); }
+  return false;
+}
+function saveDB() { localStorage.setItem(LS, JSON.stringify(DB)); }
+
+// Entity CRUD
+const getAll  = (type)   => DB.entities.filter(e => e.type === type);
+const getById = (id)     => DB.entities.find(e => e.id === id);
+const getDeps = (oid)    => DB.deps.filter(d => d.owner_id === oid);
+const getEff  = (oid)    => DB.effects.filter(e => e.owner_id === oid);
+
+function addEntity(type, props) {
+  const e = { id:uid(), type, ...props };
+  DB.entities.push(e); saveDB(); return e;
+}
+function updateEntity(id, props) {
+  const i = DB.entities.findIndex(e => e.id === id);
+  if (i >= 0) { Object.assign(DB.entities[i], props); saveDB(); }
+}
+function deleteEntity(id) {
+  DB.entities = DB.entities.filter(e => e.id !== id);
+  DB.deps     = DB.deps.filter(d => d.owner_id !== id && d.req_id !== id);
+  DB.effects  = DB.effects.filter(e => e.owner_id !== id);
+  DB.mechanics= DB.mechanics.filter(m => m.era_id !== id);
+  saveDB();
+}
+function addDep(ownerId, ownerType, reqId, reqType, cond, value) {
+  const d = { id:uid(), owner_id:ownerId, owner_type:ownerType,
+              req_id:reqId, req_type:reqType, cond:cond||'requires', value:value??null };
+  DB.deps.push(d); saveDB(); return d;
+}
+function removeDep(id)    { DB.deps    = DB.deps.filter(d=>d.id!==id);    saveDB(); }
+function addEffect(ownerId, ownerType, effectType, targetId, value, formula) {
+  const e = { id:uid(), owner_id:ownerId, owner_type:ownerType,
+              effect_type:effectType, target_id:targetId, value:value??0, formula:formula||null };
+  DB.effects.push(e); saveDB(); return e;
+}
+function removeEffect(id) { DB.effects = DB.effects.filter(e=>e.id!==id); saveDB(); }
+function addMechanic(eraId, key, value) {
+  const m = { id:uid(), era_id:eraId, key, value };
+  DB.mechanics.push(m); saveDB(); return m;
+}
+function updateMechanic(id, value) {
+  const m = DB.mechanics.find(x=>x.id===id);
+  if (m) { m.value = value; saveDB(); }
+}
+function removeMechanic(id) { DB.mechanics = DB.mechanics.filter(m=>m.id!==id); saveDB(); }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SEED DATA  (minimal representative subset of Prehistòria)
+// ═══════════════════════════════════════════════════════════════════════════
+function _e(type,p){ const e={id:uid(),type,...p}; DB.entities.push(e); return e; }
+function _d(oid,ot,rid,rt,c,v){ DB.deps.push({id:uid(),owner_id:oid,owner_type:ot,req_id:rid,req_type:rt,cond:c||'requires',value:v??null}); }
+function _f(oid,ot,ft,tid,val){ DB.effects.push({id:uid(),owner_id:oid,owner_type:ot,effect_type:ft,target_id:tid,value:val??0,formula:null}); }
+function _m(eraId,key,val){ DB.mechanics.push({id:uid(),era_id:eraId,key,value:val}); }
+
+function seedDB() {
+  DB = { entities:[], deps:[], effects:[], mechanics:[] };
+  _nid = 1;
+
+  // Eres
+  const preh = _e('era',{ name:'Prehistòria',  icon:'🦴', description:'Supervivència i primers coneixements.',
+    life_base:30, life_max:45, health_loss_cycle:2, subsistence:5 });
+  const neol = _e('era',{ name:'Neolític',     icon:'🌾', description:'Agricultura i primers assentaments.',
+    life_base:35, life_max:55, health_loss_cycle:1.5, subsistence:4 });
+  const anti = _e('era',{ name:'Edat Antiga',  icon:'🏛️', description:'Civilitzacions i imperis.',
+    life_base:40, life_max:65, health_loss_cycle:1.2, subsistence:6 });
+
+  // Mecàniques d'era
+  _m(preh.id,'action_slots',3);    _m(preh.id,'max_children',6);  _m(preh.id,'stat_cap_physical',6);  _m(preh.id,'stat_cap_intel',5);
+  _m(neol.id,'action_slots',4);    _m(neol.id,'max_children',4);  _m(neol.id,'stat_cap_physical',7);  _m(neol.id,'stat_cap_intel',7);
+  _m(anti.id,'action_slots',5);    _m(anti.id,'max_children',3);  _m(anti.id,'stat_cap_physical',8);  _m(anti.id,'stat_cap_intel',10);
+
+  // Tecnologies
+  const tFire  = _e('tech',{ name:'Foc',               icon:'🔥', description:'Control i ús del foc.' });
+  const tStone = _e('tech',{ name:'Eines de Pedra',    icon:'🪨', description:'Talla de sílex i os.' });
+  const tLang  = _e('tech',{ name:'Llengua Bàsica',    icon:'👄', description:'Comunicació rudimentària.' });
+  const tSymb  = _e('tech',{ name:'Pensament Simbòlic',icon:'🧠', description:'Abstracció i símbols.' });
+  const tTrib  = _e('tech',{ name:'Organitz. Tribal',  icon:'👥', description:'Estructura social bàsica.' });
+  const tAg    = _e('tech',{ name:'Agricultura',       icon:'🌱', description:'Cultiu sistemàtic de plantes.' });
+
+  // Dependencies de techs
+  _d(tSymb.id,'tech', tLang.id,'tech','requires');
+  _d(tTrib.id,'tech', tLang.id,'tech','requires');
+  _d(tAg.id,  'tech', tStone.id,'tech','requires');
+
+  // Era gate: Neolític s'obre quan s'obté Agricultura; Antiga quan s'obté Pensament Simbòlic
+  _d(neol.id,'era', tAg.id,'tech','gate_tech');
+  _d(anti.id,'era', tSymb.id,'tech','gate_tech');
+
+  // Destreses
+  const dMed   = _e('destresa',{ name:'Plantes Medicinals',icon:'🌿', description:'Reconèixer i usar plantes curatives.', disc_chance:0.3 });
+  const dTrack = _e('destresa',{ name:'Rastreig',          icon:'🐾', description:'Seguir rastres d\'animals.', disc_chance:0.25 });
+  const dCook  = _e('destresa',{ name:'Cuina',             icon:'🍳', description:'Cuinar amb tècnica.', disc_chance:0.2 });
+  const dFish  = _e('destresa',{ name:'Pesca',             icon:'🎣', description:'Pescar amb mètode.', disc_chance:0.2 });
+
+  // Efectes de destreses (bonus passiu)
+  _f(dMed.id,  'destresa','bonus','health',   5);
+  _f(dTrack.id,'destresa','bonus_pct','food', 0.5);
+  _f(dCook.id, 'destresa','bonus','health',   8);
+  _f(dFish.id, 'destresa','bonus','food',     15);
+
+  // Habilitats (Taller)
+  const sPers  = _e('skill',{ name:'Persuasió',         icon:'🗣️', description:'Art de convèncer.', cost_saber:3 });
+  const sChief = _e('skill',{ name:'Cap de Tribu',      icon:'👑', description:'Lideratge tribal.', cost_prestigi:5 });
+  const sOral  = _e('skill',{ name:'Tradició Oral',     icon:'📖', description:'Narrar gestes.', cost_saber:4 });
+  const sProto = _e('skill',{ name:'Proto-Agricultura', icon:'🌱', description:'Primers conreus.', cost_saber:6 });
+
+  // Deps habilitats
+  _d(sPers.id, 'skill', tLang.id, 'tech','requires');
+  _d(sChief.id,'skill', sPers.id, 'skill','requires_skill');
+  _d(sOral.id, 'skill', tLang.id, 'tech','requires');
+  _d(sProto.id,'skill', tStone.id,'tech','requires');
+
+  // Zones (Prehistòria)
+  const zWild  = _e('zone',{ name:'Natura Salvatge', icon:'🌲', description:'Bosc i camps oberts.', era_id:preh.id, map_x:20, map_y:30 });
+  const zForest= _e('zone',{ name:'Bosc de Caça',   icon:'🏹', description:'Zona de caça major.',  era_id:preh.id, map_x:25, map_y:60 });
+  const zTown  = _e('zone',{ name:'Poble',           icon:'🏕️', description:'Assentament tribal.',  era_id:preh.id, map_x:50, map_y:45 });
+  const zHome  = _e('zone',{ name:'Llar',            icon:'🏠', description:'Espai domèstic.',      era_id:preh.id, map_x:75, map_y:60 });
+
+  // Accions
+  const aGather = _e('action',{ name:'Recol·lectar',     icon:'🫐', zone_id:zWild.id,   stat_key:'intelligence', health_risk:0,  base_risk:1.0,  description:'Baies, arrels i bolets.' });
+  const aObserve= _e('action',{ name:'Observar Natura',  icon:'🦋', zone_id:zWild.id,   stat_key:'intelligence', health_risk:0,  description:'Contemplar l\'entorn.' });
+  const aHunt   = _e('action',{ name:'Caçar',            icon:'🏹', zone_id:zForest.id, stat_key:'physical',     health_risk:15, base_risk:0.95, description:'Sortir a caçar.' });
+  const aCraft  = _e('action',{ name:'Fabricar Eines',   icon:'🪓', zone_id:zTown.id,   stat_key:'intelligence', health_risk:0,  description:'Treballa la pedra i l\'os.' });
+  const aListen = _e('action',{ name:'Escoltar Estrangers',icon:'👂',zone_id:zTown.id,  stat_key:'social',       health_risk:0,  discovers_skill:true, description:'Aprendre de viatgers.' });
+  const aTaller = _e('action',{ name:'Taller',           icon:'🔨', zone_id:zTown.id,   stat_key:'intelligence', health_risk:0,  opens_taller:true, description:'Aprendre tècniques noves.' });
+  const aCook   = _e('action',{ name:'Cuinar',           icon:'🥘', zone_id:zHome.id,   stat_key:'intelligence', health_risk:0,  description:'Cuinar sobre el foc.' });
+  const aExplore= _e('action',{ name:'Explorar',         icon:'🧭', zone_id:zForest.id, stat_key:'physical',     health_risk:20, base_risk:0.70, description:'Aventurar-se lluny.' });
+  const aNeg    = _e('action',{ name:'Negociar',         icon:'🤝', zone_id:zTown.id,   stat_key:'social',       health_risk:0,  description:'Acords beneficiosos.' });
+  const aStories= _e('action',{ name:'Contar Gestes',    icon:'🔥', zone_id:zTown.id,   stat_key:'intelligence', health_risk:0,  description:'Narrar gestes al voltant del foc.' });
+  const aLeadH  = _e('action',{ name:'Caça Organitzada', icon:'🦬', zone_id:zForest.id, stat_key:'physical',     health_risk:18, base_risk:0.65, description:'Caça col·lectiva.' });
+
+  // Deps accions
+  _d(aHunt.id,   'action','physical','characteristic','min_stat',2);
+  _d(aCook.id,   'action', tFire.id,  'tech','requires');
+  _d(aExplore.id,'action', tStone.id, 'tech','requires');
+  _d(aExplore.id,'action','physical','characteristic','min_stat',3);
+  _d(aNeg.id,    'action', sPers.id,  'skill','requires_skill');
+  _d(aStories.id,'action', sOral.id,  'skill','requires_skill');
+  _d(aLeadH.id,  'action', sChief.id, 'skill','requires_skill');
+  _d(aLeadH.id,  'action','physical','characteristic','min_stat',2);
+
+  // Efectes d'accions
+  _f(aGather.id, 'action','output',   'food',         15);
+  _f(aGather.id, 'action','output',   'happiness',     5);
+  _f(aGather.id, 'action','output',   'health',        2);
+  _f(aGather.id, 'action','stat_gain','intelligence', 0.3);
+
+  _f(aObserve.id,'action','output',   'happiness',    18);
+  _f(aObserve.id,'action','stat_gain','intelligence', 0.6);
+
+  _f(aHunt.id,   'action','output',   'food',         22);
+  _f(aHunt.id,   'action','stat_gain','physical',     0.4);
+
+  _f(aCraft.id,  'action','output',   'happiness',     8);
+  _f(aCraft.id,  'action','output',   'familyRep',     3);
+  _f(aCraft.id,  'action','stat_gain','intelligence', 0.5);
+  _f(aCraft.id,  'action','discovers_tech', tStone.id, 0.4);
+
+  _f(aCook.id,   'action','output',   'health',       12);
+  _f(aCook.id,   'action','output',   'happiness',    15);
+  _f(aCook.id,   'action','stat_gain','intelligence', 0.2);
+
+  _f(aExplore.id,'action','output',   'food',          8);
+  _f(aExplore.id,'action','stat_gain','physical',     0.5);
+  _f(aExplore.id,'action','stat_gain','intelligence', 0.2);
+
+  _f(aNeg.id,    'action','output',   'familyRep',    18);
+  _f(aNeg.id,    'action','output',   'happiness',    12);
+  _f(aNeg.id,    'action','output',   'vigor',         3);
+
+  _f(aStories.id,'action','output',   'happiness',    20);
+  _f(aStories.id,'action','output',   'familyRep',    10);
+  _f(aStories.id,'action','output',   'saber',         2);
+
+  _f(aLeadH.id,  'action','output',   'food',         35);
+  _f(aLeadH.id,  'action','output',   'familyRep',    15);
+  _f(aLeadH.id,  'action','output',   'prestigi',      4);
+
+  saveDB();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GRAPH STATE
+// ═══════════════════════════════════════════════════════════════════════════
+
+let visTypes   = new Set(TYPES.map(t => t.id));
+let eraFilter  = null;
+let panX = 0, panY = 0, zoom = 1;
+let focusedNodeId = null;
+
+function visEntities() {
+  return DB.entities.filter(e => {
+    if (!visTypes.has(e.type)) return false;
+    if (eraFilter) {
+      if (e.type === 'era' && e.id !== eraFilter) return false;
+      if (e.type === 'zone' && e.era_id !== eraFilter) return false;
+      if (e.type === 'action') {
+        const z = getById(e.zone_id);
+        if (z && z.era_id && z.era_id !== eraFilter) return false;
+      }
+    }
+    return true;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LAYOUT ENGINE  (level-based topological sort)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function computeLayout(entities) {
+  const eid  = new Set(entities.map(e => e.id));
+  const out  = {}; // id → [ids that depend on it]
+  const inc  = {}; // id → count of dependencies within visible set
+
+  entities.forEach(e => { out[e.id] = []; inc[e.id] = 0; });
+
+  // Explicit deps
+  DB.deps.forEach(d => {
+    if (!eid.has(d.owner_id) || !eid.has(d.req_id)) return;
+    out[d.req_id].push(d.owner_id);
+    inc[d.owner_id]++;
+  });
+
+  // Implicit structural deps (zone→era, action→zone)
+  entities.forEach(e => {
+    if (e.type === 'zone' && e.era_id && eid.has(e.era_id)) {
+      out[e.era_id].push(e.id); inc[e.id]++;
+    }
+    if (e.type === 'action' && e.zone_id && eid.has(e.zone_id)) {
+      out[e.zone_id].push(e.id); inc[e.id]++;
+    }
+  });
+
+  // Kahn BFS — compute level for each node
+  const level = {};
+  const inC   = { ...inc };
+  const queue = entities.filter(e => inC[e.id] === 0).map(e => e.id);
+  let lvl = 0;
+  let batch = [...queue];
+  while (batch.length) {
+    batch.forEach(id => { level[id] = Math.max(level[id] ?? 0, lvl); });
+    const next = [];
+    batch.forEach(id => (out[id]||[]).forEach(dep => {
+      level[dep] = Math.max(level[dep] ?? 0, lvl + 1);
+      if (--inC[dep] === 0) next.push(dep);
+    }));
+    batch = next; lvl++;
+  }
+  // Orphans → max level
+  entities.forEach(e => { if (level[e.id] === undefined) level[e.id] = lvl; });
+
+  // Group by level, sort within (era < zone < tech < skill < action < destresa < event < learning)
+  const TO = { era:0, zone:1, tech:2, skill:3, action:4, destresa:5, event:6, learning:7 };
+  const byLvl = {};
+  entities.forEach(e => { const l = level[e.id]; (byLvl[l]||(byLvl[l]=[])).push(e); });
+  Object.values(byLvl).forEach(arr => arr.sort((a,b) => (TO[a.type]??9)-(TO[b.type]??9)));
+
+  // Assign positions
+  const pos = {};
+  const lvls = Object.keys(byLvl).map(Number).sort((a,b)=>a-b);
+  lvls.forEach((l, li) => {
+    const nodes = byLvl[l];
+    const totalW = nodes.length * NW + Math.max(0, nodes.length-1) * HGAP;
+    nodes.forEach((e, i) => {
+      pos[e.id] = { x: -totalW/2 + i*(NW+HGAP) + NW/2, y: li * (NH + VGAP) };
+    });
+  });
+  return pos;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GRAPH RENDERER
+// ═══════════════════════════════════════════════════════════════════════════
+
+let pos = {};
+
+function renderGraph() {
+  const gc  = document.getElementById('gc');
+  const svg = document.getElementById('csvg');
+  gc.querySelectorAll('.gnode').forEach(n => n.remove());
+  svg.innerHTML = '';
+
+  const ents = visEntities();
+  document.getElementById('empty-state').classList.toggle('on', ents.length === 0);
+  if (!ents.length) return;
+
+  pos = computeLayout(ents);
+  const eid = new Set(ents.map(e => e.id));
+
+  // Canvas bounds
+  const xs = Object.values(pos).map(p=>p.x), ys = Object.values(pos).map(p=>p.y);
+  const minX = Math.min(...xs), minY = Math.min(...ys);
+  const maxX = Math.max(...xs) + NW, maxY = Math.max(...ys) + NH;
+  const offX = -minX + 160, offY = -minY + 80;
+  const cW = Math.max(maxX - minX + 320, window.innerWidth);
+  const cH = Math.max(maxY - minY + 200, window.innerHeight - 100);
+
+  gc.style.width  = cW + 'px';
+  gc.style.height = cH + 'px';
+  svg.setAttribute('width', cW);
+  svg.setAttribute('height', cH);
+
+  // Arrow marker
+  svg.innerHTML = `<defs><marker id="arr" markerWidth="7" markerHeight="7" refX="3.5" refY="0" orient="auto">
+    <polygon points="0 7,3.5 0,7 7" fill="rgba(140,100,50,0.45)"/></marker></defs>`;
+
+  let hiSet = null;
+  if (focusedNodeId && pos[focusedNodeId]) {
+    hiSet = new Set([focusedNodeId]);
+    DB.deps.forEach(d => {
+      if (d.owner_id === focusedNodeId && eid.has(d.req_id)) hiSet.add(d.req_id);
+      if (d.req_id === focusedNodeId && eid.has(d.owner_id)) hiSet.add(d.owner_id);
+    });
+    ents.forEach(e => {
+      if (e.type==='zone'   && e.era_id  === focusedNodeId) hiSet.add(e.id);
+      if (e.type==='action' && e.zone_id === focusedNodeId) hiSet.add(e.id);
+      if (e.id === focusedNodeId) {
+        if (e.type==='zone'   && e.era_id)  hiSet.add(e.era_id);
+        if (e.type==='action' && e.zone_id) hiSet.add(e.zone_id);
+      }
+    });
+  }
+
+  // Connections
+  const drawn = new Set();
+  DB.deps.forEach(d => {
+    if (!eid.has(d.owner_id) || !eid.has(d.req_id)) return;
+    const key = d.req_id + '|' + d.owner_id;
+    if (drawn.has(key)) return; drawn.add(key);
+    const from = pos[d.req_id], to = pos[d.owner_id];
+    if (!from || !to) return;
+    const x1=from.x+offX, y1=from.y+offY+30, x2=to.x+offX, y2=to.y+offY-30;
+    const my=(y1+y2)/2;
+    const baseCls = d.cond==='gate_tech' ? 'gate' : d.cond==='requires' ? 'hard' : '';
+    const hiCls = hiSet ? (hiSet.has(d.req_id) && hiSet.has(d.owner_id) ? ' hi' : ' dim') : '';
+    const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d', `M${x1} ${y1} C${x1} ${my} ${x2} ${my} ${x2} ${y2}`);
+    p.setAttribute('class', 'cline ' + baseCls + hiCls);
+    p.setAttribute('marker-end', 'url(#arr)');
+    svg.appendChild(p);
+  });
+  // Implicit zone→era and action→zone connections
+  ents.forEach(e => {
+    let fromId = null, toId = e.id;
+    if (e.type==='zone'   && e.era_id  && eid.has(e.era_id))  fromId = e.era_id;
+    if (e.type==='action' && e.zone_id && eid.has(e.zone_id)) fromId = e.zone_id;
+    if (!fromId) return;
+    const key = fromId + '|' + toId;
+    if (drawn.has(key)) return; drawn.add(key);
+    const from = pos[fromId], to = pos[toId];
+    if (!from || !to) return;
+    const x1=from.x+offX, y1=from.y+offY+30, x2=to.x+offX, y2=to.y+offY-30;
+    const my=(y1+y2)/2;
+    const hiCls = hiSet ? (hiSet.has(fromId) && hiSet.has(toId) ? ' hi' : ' dim') : '';
+    const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d', `M${x1} ${y1} C${x1} ${my} ${x2} ${my} ${x2} ${y2}`);
+    p.setAttribute('class', 'cline' + hiCls);
+    svg.appendChild(p);
+  });
+
+  // Nodes
+  ents.forEach(e => {
+    const p = pos[e.id]; if (!p) return;
+    const td  = TMAP[e.type];
+    const col = td.color;
+    const effs = getEff(e.id).slice(0,3);
+    const deps = getDeps(e.id).filter(d => eid.has(d.req_id) || d.req_type==='characteristic').slice(0,3);
+
+    const node = document.createElement('div');
+    let nodeCls = 'gnode';
+    if (hiSet) nodeCls += hiSet.has(e.id) ? ' hi' : ' dimmed';
+    node.className = nodeCls;
+    node.dataset.id = e.id;
+    node.style.left = (p.x + offX - NW/2) + 'px';
+    node.style.top  = (p.y + offY - NH/2) + 'px';
+    node.style.width = NW + 'px';
+    node.style.setProperty('--nc', col);
+
+    const lbl = document.createElement('div');
+    lbl.className = 'nlabel'; lbl.textContent = e.name;
+
+    const nrow = document.createElement('div');
+    nrow.className = 'nrow';
+    nrow.appendChild(makeReqBadges(deps));
+    nrow.appendChild(makeShape(e, td));
+    nrow.appendChild(makeEffBadges(effs));
+    node.appendChild(nrow);
+    node.appendChild(lbl);
+
+    let pressTimer = null;
+    let pressX = 0, pressY = 0, pressMoved = false;
+
+    function startPress(cx, cy) {
+      pressMoved = false; pressX = cx; pressY = cy;
+      pressTimer = setTimeout(() => { pressTimer = null; openDetail(e.id); }, 400);
+    }
+    function endPress(cx, cy) {
+      if (!pressTimer) return;
+      clearTimeout(pressTimer); pressTimer = null;
+      if (!pressMoved) focusNode(e.id);
+    }
+    function cancelPress() { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } }
+    function checkMove(cx, cy) {
+      if (Math.abs(cx - pressX) > 5 || Math.abs(cy - pressY) > 5) { pressMoved = true; cancelPress(); }
+    }
+
+    node.addEventListener('mousedown',  ev => { if (ev.button !== 0) return; ev.stopPropagation(); startPress(ev.clientX, ev.clientY); });
+    node.addEventListener('mousemove',  ev => checkMove(ev.clientX, ev.clientY));
+    node.addEventListener('mouseup',    ev => { ev.stopPropagation(); endPress(ev.clientX, ev.clientY); });
+    node.addEventListener('mouseleave', cancelPress);
+    node.addEventListener('touchstart', ev => {
+      if (ev.touches.length >= 2) { cancelPress(); return; }
+      const t=ev.touches[0]; startPress(t.clientX, t.clientY);
+    }, { passive:true });
+    node.addEventListener('touchmove',  ev => {
+      if (ev.touches.length >= 2) { cancelPress(); return; }
+      const t=ev.touches[0]; checkMove(t.clientX, t.clientY);
+    }, { passive:true });
+    node.addEventListener('touchend',   ev => { ev.stopPropagation(); endPress(0,0); });
+
+    gc.appendChild(node);
+  });
+}
+
+function focusNode(id) {
+  focusedNodeId = (focusedNodeId === id) ? null : id;
+  renderGraph();
+}
+
+function makeShape(e, td) {
+  const wrap = document.createElement('div');
+  wrap.className = 'nshape sh-' + td.shape;
+  if (td.shape === 'diamond') {
+    const inner = document.createElement('div');
+    inner.className = 'ni';
+    inner.textContent = e.icon || td.icon;
+    wrap.appendChild(inner);
+  } else {
+    wrap.textContent = e.icon || td.icon;
+  }
+  return wrap;
+}
+
+function makeReqBadges(deps) {
+  const wrap = document.createElement('div');
+  wrap.className = 'nbadges';
+  deps.forEach(d => {
+    const b = document.createElement('div');
+    b.className = 'nbadge';
+    if (d.req_type === 'characteristic' || d.req_type === 'indicator') {
+      const f = FMAP[d.req_id];
+      b.textContent = (f ? f.icon : '?') + (d.value != null ? d.value : '');
+    } else {
+      const req = getById(d.req_id);
+      b.textContent = (req ? req.icon||TMAP[req.type]?.icon||'?' : '?');
+    }
+    wrap.appendChild(b);
+  });
+  return wrap;
+}
+
+function makeEffBadges(effs) {
+  const wrap = document.createElement('div');
+  wrap.className = 'nbadges';
+  effs.forEach(eff => {
+    const b = document.createElement('div');
+    b.className = 'nbadge';
+    const f = FMAP[eff.target_id];
+    const ent = f ? null : getById(eff.target_id);
+    const ico = f ? f.icon : (ent ? ent.icon || '?' : '?');
+    const val = eff.value !== 0 ? (eff.value > 0 ? '+':'') + eff.value : '';
+    b.textContent = ico + val;
+    wrap.appendChild(b);
+  });
+  return wrap;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PAN / ZOOM
+// ═══════════════════════════════════════════════════════════════════════════
+
+function applyXform() {
+  document.getElementById('gc').style.transform = `translate(${panX}px,${panY}px) scale(${zoom})`;
+}
+
+function initPanZoom() {
+  const vp = document.getElementById('gvp');
+  let isPan = false, sx = 0, sy = 0;
+  let rafPending = false;
+
+  function scheduleApply() {
+    if (rafPending) return;
+    rafPending = true;
+    requestAnimationFrame(() => { applyXform(); rafPending = false; });
+  }
+
+  // ── Mouse pan ──
+  vp.addEventListener('mousedown', e => {
+    if (e.button !== 0 || e.target.closest('.gnode,.dcard,#iopanel,#elpanel,#dcard')) return;
+    isPan = true; sx = e.clientX - panX; sy = e.clientY - panY;
+    vp.style.cursor = 'grabbing';
+  });
+  window.addEventListener('mousemove', e => {
+    if (!isPan) return;
+    panX = e.clientX - sx; panY = e.clientY - sy; scheduleApply();
+  });
+  window.addEventListener('mouseup', () => { isPan = false; vp.style.cursor = ''; });
+
+  // ── Wheel zoom — suau per trackpad i ratolí ──
+  vp.addEventListener('wheel', e => {
+    e.preventDefault();
+    let delta = e.deltaY;
+    if (e.deltaMode === 1) delta *= 20;   // DOM_DELTA_LINE
+    if (e.deltaMode === 2) delta *= 400;  // DOM_DELTA_PAGE
+    // Clamp per evitar salts massa grans en un sol event (ratolí amb inèrcia)
+    delta = Math.max(-150, Math.min(150, delta));
+    const f = Math.pow(0.998, delta);
+    const newZoom = Math.max(0.15, Math.min(5, zoom * f));
+    const scale = newZoom / zoom;
+    const r = vp.getBoundingClientRect();
+    const mx = e.clientX - r.left, my = e.clientY - r.top;
+    panX = mx - (mx - panX) * scale;
+    panY = my - (my - panY) * scale;
+    zoom = newZoom;
+    scheduleApply();
+  }, { passive: false });
+
+  // ── Touch pan + pinch ──
+  let pts = [];
+  let pinchDist0 = 1, pinchZoom0 = 1, pinchMx = 0, pinchMy = 0, panX0 = 0, panY0 = 0;
+
+  vp.addEventListener('touchstart', e => {
+    pts = [...e.touches];
+    if (pts.length === 1) {
+      sx = pts[0].clientX - panX; sy = pts[0].clientY - panY;
+    }
+    if (pts.length === 2) {
+      pinchDist0 = Math.hypot(pts[0].clientX - pts[1].clientX, pts[0].clientY - pts[1].clientY) || 1;
+      pinchZoom0 = zoom;
+      pinchMx = (pts[0].clientX + pts[1].clientX) / 2;
+      pinchMy = (pts[0].clientY + pts[1].clientY) / 2;
+      panX0 = panX; panY0 = panY;
+    }
+  }, { passive: true });
+
+  vp.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const t = [...e.touches];
+    if (t.length === 1 && !e.target.closest('.gnode')) {
+      panX = t[0].clientX - sx; panY = t[0].clientY - sy;
+    } else if (t.length === 2) {
+      const d = Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+      const scale = d / pinchDist0;
+      const newZoom = Math.max(0.15, Math.min(5, pinchZoom0 * scale));
+      const actualScale = newZoom / pinchZoom0;
+      panX = pinchMx - (pinchMx - panX0) * actualScale;
+      panY = pinchMy - (pinchMy - panY0) * actualScale;
+      zoom = newZoom;
+    }
+    scheduleApply();
+  }, { passive: false });
+}
+
+function centerGraph() {
+  const vp = document.getElementById('gvp');
+  panX = vp.clientWidth / 2; panY = 40;
+  applyXform();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DETAIL CARD
+// ═══════════════════════════════════════════════════════════════════════════
+
+let curDetailId = null;
+
+function openDetail(id) {
+  curDetailId = id;
+  const e = getById(id); if (!e) return;
+  const td = TMAP[e.type];
+  document.getElementById('dc-icon').textContent = e.icon || td.icon;
+  document.getElementById('dc-name').textContent = e.name;
+  const badge = document.getElementById('dc-badge');
+  badge.textContent = td.label; badge.style.color = td.color;
+  renderDetailBody(e);
+  document.getElementById('dcard').classList.add('on');
+}
+
+function closeDetail() {
+  document.getElementById('dcard').classList.remove('on');
+  curDetailId = null;
+}
+
+function renderDetailBody(e) {
+  const scroll = document.getElementById('dc-scroll');
+  scroll.innerHTML = '';
+
+  // — Propietats bàsiques —
+  const s1 = sec('Propietats');
+  s1.appendChild(field('Nom',      'text',    e.name        || '', 'name'));
+  s1.appendChild(field('Icona',    'text',    e.icon        || '', 'icon'));
+  s1.appendChild(field('Descripció','textarea',e.description|| '', 'description'));
+
+  if (e.type === 'era') {
+    s1.appendChild(field('Vida màx. base',          'number', e.life_base        ?? 30, 'life_base'));
+    s1.appendChild(field('Vida màx. màxim',         'number', e.life_max         ?? 50, 'life_max'));
+    s1.appendChild(field('Pèrdua salut per cicle',  'number', e.health_loss_cycle?? 2,  'health_loss_cycle'));
+    s1.appendChild(field('Cost alimentació/cicle',  'number', e.subsistence      ?? 5,  'subsistence'));
+  }
+  if (e.type === 'tech') {
+    s1.appendChild(field('Cicle d\'aparició', 'number', e.cycle_appears ?? '', 'cycle_appears'));
+  }
+  if (e.type === 'action') {
+    s1.appendChild(field('Stat clau',         'text',   e.stat_key    || '',   'stat_key'));
+    s1.appendChild(field('Risc salut',        'number', e.health_risk ?? 0,    'health_risk'));
+    s1.appendChild(field('Prob. èxit base',   'number', e.base_risk   ?? 1.0,  'base_risk'));
+  }
+  if (e.type === 'destresa') {
+    s1.appendChild(field('Prob. descoberta', 'number', e.disc_chance ?? 0.2, 'disc_chance'));
+  }
+  if (e.type === 'skill') {
+    s1.appendChild(field('Cost Vigor',    'number', e.cost_vigor    ?? 0, 'cost_vigor'));
+    s1.appendChild(field('Cost Saber',    'number', e.cost_saber    ?? 0, 'cost_saber'));
+    s1.appendChild(field('Cost Prestigi', 'number', e.cost_prestigi ?? 0, 'cost_prestigi'));
+  }
+  scroll.appendChild(s1);
+
+  // — Requisits —
+  const s2 = sec('Requisits (necessita...)');
+  const depChips = document.createElement('div'); depChips.className = 'chips';
+  getDeps(e.id).forEach(d => {
+    let lbl;
+    if (d.req_id === 'era_cycle' || d.req_type === 'cicle') {
+      lbl = `🕐 Cicle ≥ ${d.value}`;
+    } else if (d.req_type === 'characteristic' || d.req_type === 'indicator' || d.req_type === 'game_resource') {
+      const f = FMAP[d.req_id]; lbl = `${f?f.icon:'?'} ${d.req_id}${d.value!=null?' ≥ '+d.value:''}`;
+    } else {
+      const req = getById(d.req_id); lbl = req ? `${req.icon||''} ${req.name}${d.value!=null?' ≥ '+d.value:''}` : d.req_id;
+    }
+    depChips.appendChild(chip(lbl, 'chip-req', () => {
+      if (confirm(`Eliminar requisit "${lbl}"?`)) { removeDep(d.id); openDetail(e.id); renderGraph(); }
+    }));
+  });
+  depChips.appendChild(addChip('+ Requisit', () => openPicker('Afegir requisit', e.id, 'dep')));
+  s2.appendChild(depChips); scroll.appendChild(s2);
+
+  // — Efectes —
+  const s3 = sec('Efectes (produeix...)');
+  const effChips = document.createElement('div'); effChips.className = 'chips';
+  getEff(e.id).forEach(eff => {
+    const f = FMAP[eff.target_id]; const ent = f ? null : getById(eff.target_id);
+    const ico = f ? f.icon : (ent ? ent.icon||'?' : '?');
+    const nm  = f ? f.name : (ent ? ent.name : eff.target_id);
+    const val = eff.value !== 0 ? ` ${eff.value>0?'+':''}${eff.value}` : '';
+    const lbl = `${ico} ${nm}${val}`;
+    effChips.appendChild(chip(lbl, 'chip-eff', () => {
+      if (confirm(`Eliminar efecte "${lbl}"?`)) { removeEffect(eff.id); openDetail(e.id); renderGraph(); }
+    }));
+  });
+  effChips.appendChild(addChip('+ Efecte', () => openPicker('Afegir efecte', e.id, 'effect')));
+  s3.appendChild(effChips); scroll.appendChild(s3);
+
+  // — Mecàniques (per eres) —
+  if (e.type === 'era') {
+    const s4 = sec('Mecàniques de l\'era');
+    DB.mechanics.filter(m => m.era_id === e.id).forEach(m => {
+      const row = document.createElement('div'); row.className = 'dfield';
+      const lbl2 = document.createElement('label'); lbl2.textContent = m.key;
+      const inp = document.createElement('input'); inp.type='number'; inp.value = m.value;
+      inp.dataset.mechId = m.id;
+      inp.style.maxWidth='120px';
+      row.appendChild(lbl2); row.appendChild(inp); s4.appendChild(row);
+
+      const rmBtn = document.createElement('button');
+      rmBtn.textContent='✕ Eliminar mecànica';
+      rmBtn.style.cssText='font-size:0.72rem;background:none;border:none;color:var(--dim);cursor:pointer;margin-left:0.4rem;';
+      rmBtn.onclick=()=>{ if(confirm(`Eliminar mecànica "${m.key}"?`)){removeMechanic(m.id);openDetail(e.id);} };
+      row.appendChild(rmBtn);
+    });
+    const addM = document.createElement('button');
+    addM.textContent = '+ Nova mecànica';
+    addM.style.cssText='margin-top:0.35rem;background:var(--bg4);border:1px dashed var(--bdr);color:var(--dim);border-radius:8px;padding:0.3rem 0.7rem;font-size:0.78rem;cursor:pointer;';
+    addM.onclick = () => {
+      const k = prompt('Nom de la mecànica (ex: action_slots):'); if (!k) return;
+      const v = parseFloat(prompt('Valor:') || '0');
+      addMechanic(e.id, k, v); openDetail(e.id);
+    };
+    s4.appendChild(addM); scroll.appendChild(s4);
+  }
+}
+
+// Save detail
+document.getElementById('btn-save-detail').addEventListener('click', () => {
+  if (!curDetailId) return;
+  const updates = {};
+  document.getElementById('dc-scroll').querySelectorAll('[data-field-key]').forEach(f => {
+    updates[f.dataset.fieldKey] = f.type==='number' ? (f.value==='' ? null : parseFloat(f.value)) : f.value;
+  });
+  document.getElementById('dc-scroll').querySelectorAll('[data-mech-id]').forEach(inp => {
+    updateMechanic(inp.dataset.mechId, parseFloat(inp.value));
+  });
+  updateEntity(curDetailId, updates);
+  // Update header
+  document.getElementById('dc-icon').textContent = updates.icon || getById(curDetailId)?.icon || '';
+  document.getElementById('dc-name').textContent = updates.name || getById(curDetailId)?.name || '';
+  showToast('Guardat ✓'); renderGraph();
+});
+
+document.getElementById('btn-dcard-close').addEventListener('click', closeDetail);
+document.getElementById('gvp').addEventListener('click', e => {
+  if (!e.target.closest('.gnode') && !e.target.closest('#dcard')) {
+    closeDetail();
+    focusedNodeId = null; renderGraph();
+  }
+});
+
+// Helpers
+function sec(title) {
+  const s=document.createElement('div'); s.className='dsec';
+  const h=document.createElement('div'); h.className='dsec-title'; h.textContent=title;
+  s.appendChild(h); return s;
+}
+function field(label, type, value, key) {
+  const w=document.createElement('div'); w.className='dfield';
+  const l=document.createElement('label'); l.textContent=label; w.appendChild(l);
+  const i=document.createElement(type==='textarea'?'textarea':'input');
+  if(type!=='textarea') i.type=type; i.value=value; i.dataset.fieldKey=key;
+  w.appendChild(i); return w;
+}
+function chip(label, cls, onRemove) {
+  const c=document.createElement('div'); c.className=`chip ${cls}`; c.textContent=label;
+  if (onRemove) {
+    const r=document.createElement('span'); r.className='chip-rm'; r.textContent=' ✕';
+    r.onclick=e=>{e.stopPropagation();onRemove();}; c.appendChild(r);
+  }
+  return c;
+}
+function addChip(label, onClick) {
+  const c=document.createElement('div'); c.className='chip chip-add';
+  c.textContent=label; c.onclick=onClick; return c;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PICKER DIALOG
+// ═══════════════════════════════════════════════════════════════════════════
+
+let _pickCb = null;
+let _pickMode = null;
+let _pickOwnerId = null;
+let _pickerStep = 'cat';
+let _pickerCat = null;
+
+const _FIXED_GROUPS = [
+  { group:'indicador', label:'Indicadors',       icon:'❤️' },
+  { group:'stat',      label:'Característiques', icon:'💪' },
+  { group:'recurs',    label:'Recursos',         icon:'🍖' },
+];
+
+function openPicker(title, ownerId, mode) {
+  _pickOwnerId = ownerId; _pickMode = mode;
+  _pickerStep = 'cat'; _pickerCat = null;
+  document.getElementById('picker-hdr-title').textContent = title;
+  document.getElementById('picker-back').style.display = 'none';
+  document.getElementById('picker-search').style.display = 'none';
+  document.getElementById('picker-search').value = '';
+  _renderPickerCats();
+  document.getElementById('picker').classList.add('on');
+}
+
+document.getElementById('picker-back').addEventListener('click', () => {
+  _pickerStep = 'cat'; _pickerCat = null;
+  document.getElementById('picker-back').style.display = 'none';
+  document.getElementById('picker-search').style.display = 'none';
+  document.getElementById('picker-search').value = '';
+  _renderPickerCats();
+});
+
+document.getElementById('picker-search').addEventListener('input', e => _renderPickerList(e.target.value));
+document.getElementById('picker').addEventListener('click', e => {
+  if (e.target === document.getElementById('picker')) document.getElementById('picker').classList.remove('on');
+});
+
+function _renderPickerCats() {
+  const list = document.getElementById('picker-list');
+  list.innerHTML = '';
+  const wrap = document.createElement('div'); wrap.className = 'pcats';
+
+  if (_pickMode === 'dep') {
+    const cycleBtn = document.createElement('div'); cycleBtn.className = 'pcat';
+    cycleBtn.innerHTML = '🕐 Cicle';
+    cycleBtn.addEventListener('click', () => {
+      document.getElementById('picker').classList.remove('on');
+      const raw = prompt('Cicle mínim (número enter):');
+      if (raw === null || raw.trim() === '') return;
+      const cycleNum = parseInt(raw, 10);
+      if (isNaN(cycleNum)) return;
+      addDep(_pickOwnerId, getById(_pickOwnerId)?.type || 'unknown', 'era_cycle', 'cicle', 'min_cycle', cycleNum);
+      openDetail(_pickOwnerId); renderGraph();
+    });
+    wrap.appendChild(cycleBtn);
+  }
+
+  TYPES.forEach(t => {
+    const btn = document.createElement('div'); btn.className = 'pcat';
+    btn.style.borderColor = t.color; btn.style.color = t.color;
+    btn.innerHTML = `${t.icon} ${t.label}`;
+    btn.addEventListener('click', () => {
+      _pickerCat = { kind:'entity', typeId:t.id };
+      _pickerStep = 'item';
+      document.getElementById('picker-back').style.display = '';
+      document.getElementById('picker-search').style.display = '';
+      document.getElementById('picker-search').value = '';
+      _renderPickerList('');
+      setTimeout(() => document.getElementById('picker-search').focus(), 80);
+    });
+    wrap.appendChild(btn);
+  });
+
+  _FIXED_GROUPS.forEach(fg => {
+    const btn = document.createElement('div'); btn.className = 'pcat';
+    btn.innerHTML = `${fg.icon} ${fg.label}`;
+    btn.addEventListener('click', () => {
+      _pickerCat = { kind:'fixed', group:fg.group };
+      _pickerStep = 'item';
+      document.getElementById('picker-back').style.display = '';
+      document.getElementById('picker-search').style.display = '';
+      document.getElementById('picker-search').value = '';
+      _renderPickerList('');
+      setTimeout(() => document.getElementById('picker-search').focus(), 80);
+    });
+    wrap.appendChild(btn);
+  });
+
+  list.appendChild(wrap);
+}
+
+function _renderPickerList(filter) {
+  const list = document.getElementById('picker-list');
+  list.innerHTML = '';
+  if (!_pickerCat) return;
+
+  let items = [];
+  if (_pickerCat.kind === 'entity') {
+    items = DB.entities
+      .filter(e => e.id !== _pickOwnerId && e.type === _pickerCat.typeId)
+      .map(e => ({ id:e.id, icon:e.icon||TMAP[e.type]?.icon||'?', name:e.name, sub:TMAP[e.type]?.label||e.type, isEntity:true }));
+  } else {
+    items = FIXED
+      .filter(f => f.group === _pickerCat.group)
+      .map(f => ({ id:f.id, icon:f.icon, name:f.name, sub:f.group, isFixed:true }));
+  }
+
+  const q = filter.toLowerCase();
+  items.filter(i => !q || i.name.toLowerCase().includes(q) || i.sub.toLowerCase().includes(q)).forEach(item => {
+    const row = document.createElement('div'); row.className = 'pitem';
+    row.innerHTML = `<span class="pitem-ico">${item.icon}</span>
+      <div style="flex:1"><div class="pitem-name">${item.name}</div><div class="pitem-sub">${item.sub}</div></div>`;
+    row.addEventListener('click', () => {
+      document.getElementById('picker').classList.remove('on');
+      if (_pickMode === 'dep') {
+        const needsValue = item.isFixed && ['stat','indicador','recurs'].includes(item.sub);
+        let val = null;
+        if (needsValue) { val = prompt(`Valor mínim per a ${item.name} (o deixa buit):`); }
+        const reqType = item.isFixed ? item.sub : getById(item.id)?.type || 'entity';
+        const cond = item.isFixed ? 'min_stat' : (_pickerCat.typeId === 'tech' ? 'requires' : _pickerCat.typeId === 'skill' ? 'requires_skill' : _pickerCat.typeId === 'era' ? 'gate_tech' : 'requires');
+        addDep(_pickOwnerId, getById(_pickOwnerId)?.type || 'unknown', item.id, reqType, cond, val ? parseFloat(val) : null);
+      } else {
+        const v = parseFloat(prompt(`Valor per a ${item.name} (ex: 15, 0.3, -5):`)||'0');
+        const effectType = item.isFixed ? 'output' : 'discovers';
+        addEffect(_pickOwnerId, getById(_pickOwnerId)?.type||'unknown', effectType, item.id, v);
+      }
+      openDetail(_pickOwnerId); renderGraph();
+    });
+    list.appendChild(row);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TYPE FILTER BAR
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderFbar() {
+  const bar = document.getElementById('fbar'); bar.innerHTML = '';
+  TYPES.forEach(t => {
+    const c = document.createElement('div');
+    c.className = 'tychip ' + (visTypes.has(t.id) ? 'on' : 'off');
+    c.style.color = t.color;
+    c.textContent = `${t.icon} ${t.label}`;
+    c.addEventListener('click', () => {
+      visTypes.has(t.id) ? visTypes.delete(t.id) : visTypes.add(t.id);
+      renderFbar(); renderGraph();
+    });
+    bar.appendChild(c);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ERA FILTER
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderEraSelect() {
+  const sel = document.getElementById('era-select');
+  sel.innerHTML = '<option value="">Totes les eres</option>';
+  getAll('era').forEach(e => {
+    const o = document.createElement('option');
+    o.value = e.id; o.textContent = `${e.icon||''} ${e.name}`;
+    sel.appendChild(o);
+  });
+  sel.value = eraFilter || '';
+}
+document.getElementById('era-select').addEventListener('change', e => {
+  eraFilter = e.target.value || null; renderGraph();
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SIDE MENU
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderMenu() {
+  const ct = document.getElementById('smenu-types'); ct.innerHTML = '';
+  TYPES.forEach(t => {
+    const cnt = getAll(t.id).length;
+    const row = document.createElement('div'); row.className = 'mtype-row';
+    row.innerHTML = `<div class="mtype-dot" style="background:${t.color}"></div>
+      <span>${t.icon} ${t.label}</span><span class="mtype-ct">${cnt}</span>`;
+    row.addEventListener('click', () => openEntityList(t.id));
+    ct.appendChild(row);
+  });
+  document.getElementById('smenu-stats').innerHTML =
+    `${DB.entities.length} entitats<br>${DB.deps.length} relacions · ${DB.effects.length} efectes`;
+}
+function openMenu()  { renderMenu(); document.getElementById('smenu').classList.add('on'); document.getElementById('backdrop').classList.add('on'); }
+function closeMenu() { document.getElementById('smenu').classList.remove('on'); document.getElementById('backdrop').classList.remove('on'); }
+document.getElementById('btn-menu-open').addEventListener('click', openMenu);
+document.getElementById('btn-menu-close').addEventListener('click', closeMenu);
+document.getElementById('backdrop').addEventListener('click', closeMenu);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ENTITY LIST PANEL
+// ═══════════════════════════════════════════════════════════════════════════
+
+let curListType = null;
+
+function openEntityList(typeId) {
+  curListType = typeId;
+  const td = TMAP[typeId];
+  document.getElementById('el-title').textContent = `${td.icon} ${td.label}`;
+  renderEntityList();
+  document.getElementById('elpanel').classList.add('on');
+  closeMenu();
+}
+
+function renderEntityList() {
+  const list = document.getElementById('el-list'); list.innerHTML = '';
+  const ents = getAll(curListType);
+  if (!ents.length) {
+    list.innerHTML = '<p style="padding:1.5rem;text-align:center;color:var(--dim);font-size:0.83rem">Cap entitat. Crea-ne una amb "+ Nova".</p>';
+    return;
+  }
+  ents.forEach(e => {
+    const row = document.createElement('div'); row.className = 'eli';
+    const dct = getDeps(e.id).length, ect = getEff(e.id).length;
+    row.innerHTML = `<span class="eli-ico">${e.icon||TMAP[e.type].icon}</span>
+      <div style="flex:1">
+        <div class="eli-name">${e.name}</div>
+        <div class="eli-sub">${dct} requisits · ${ect} efectes</div>
+      </div>
+      <button class="eli-del" data-del="${e.id}">🗑</button>`;
+    row.querySelector('[data-del]').addEventListener('click', ev => {
+      ev.stopPropagation();
+      if (confirm(`Eliminar "${e.name}" i totes les seves relacions?`)) {
+        deleteEntity(e.id); renderEntityList(); renderGraph(); renderEraSelect(); renderMenu();
+      }
+    });
+    row.addEventListener('click', ev => {
+      if (ev.target.closest('[data-del]')) return;
+      document.getElementById('elpanel').classList.remove('on');
+      openDetail(e.id);
+    });
+    list.appendChild(row);
+  });
+}
+
+document.getElementById('btn-el-back').addEventListener('click', () =>
+  document.getElementById('elpanel').classList.remove('on'));
+
+document.getElementById('btn-add-e').addEventListener('click', () => {
+  const td = TMAP[curListType];
+  const name = prompt(`Nom de la nova ${td.label.toLowerCase().slice(0,-1)}:`);
+  if (!name) return;
+  const icon = prompt('Icona (emoji):') || td.icon;
+  const e = addEntity(curListType, { name, icon, description:'' });
+  renderEntityList(); renderGraph(); renderEraSelect(); renderMenu();
+  document.getElementById('elpanel').classList.remove('on');
+  openDetail(e.id);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// IMPORT / EXPORT
+// ═══════════════════════════════════════════════════════════════════════════
+
+document.getElementById('btn-io').addEventListener('click', () => {
+  document.getElementById('io-ta').value = JSON.stringify(DB, null, 2);
+  document.getElementById('iopanel').classList.add('on');
+});
+document.getElementById('btn-io-close').addEventListener('click', () =>
+  document.getElementById('iopanel').classList.remove('on'));
+
+document.getElementById('btn-export').addEventListener('click', () => {
+  const json = JSON.stringify(DB, null, 2);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([json],{type:'application/json'}));
+  a.download = `lt-gamedata-${new Date().toISOString().slice(0,10)}.json`;
+  a.click(); showToast('JSON exportat ✓');
+});
+
+document.getElementById('btn-import').addEventListener('click', () => {
+  const raw = document.getElementById('io-ta').value.trim();
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed.entities)||!Array.isArray(parsed.deps)||!Array.isArray(parsed.effects))
+      throw new Error('Format incorrecte (falten camps entities/deps/effects)');
+    DB = parsed;
+    if (!DB.mechanics) DB.mechanics = [];
+    const allIds=[...DB.entities,...DB.deps,...DB.effects,...DB.mechanics].map(x=>parseInt((x.id||'e0').slice(1))||0);
+    _nid = Math.max(0,...allIds)+1;
+    saveDB();
+    document.getElementById('iopanel').classList.remove('on');
+    renderAll(); showToast('Importat ✓');
+  } catch(err) { alert('Error: ' + err.message); }
+});
+
+// Reset
+document.getElementById('btn-reset').addEventListener('click', () => {
+  if (confirm('Reiniciar totes les dades? Es perdran els canvis no exportats.')) {
+    seedDB(); renderAll(); showToast('Dades reiniciades ✓');
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════════════════════
+
+let _toastT = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(_toastT); _toastT = setTimeout(() => t.classList.remove('on'), 2200);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MIGRACIÓ DES DE GAME_DATA (data.js carregat com a <script>)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function migrateFromGameData() {
+  if (typeof GAME_DATA === 'undefined') {
+    alert('No s\'ha pogut llegir GAME_DATA. Comprova que data.js s\'ha carregat correctament.');
+    return;
+  }
+  if (!confirm('Això substituirà totes les dades actuals per les del joc. Continuar?')) return;
+
+  DB = { entities: [], deps: [], effects: [], mechanics: [] };
+  _nid = 1;
+
+  // Maps per resoldre cross-references
+  const eraMap   = {};  // eraId → entity.id
+  const zoneMap  = {};  // 'eraId:zoneId' → entity.id
+  const techMap  = {};  // 'eraId:techId' → entity.id
+  const skillMap = {};  // 'eraId:skillId' → entity.id
+  const destMap  = {};  // 'eraId:destId' → entity.id
+
+  // Resolució diferida per crear deps quan tots els targets existeixen
+  const pending = [];
+
+  // ── Eres ──
+  (GAME_DATA.eras || []).forEach(era => {
+    const le = era.lifeExpectancy || {};
+    const m  = era.mechanics      || {};
+    const e  = addEntity('era', {
+      game_id:           era.id,
+      name:              era.name,
+      icon:              era.icon,
+      description:       era.description || '',
+      life_base:         le.base ?? 30,
+      life_max:          le.max  ?? 50,
+      health_loss_cycle: m.agingCurve ? (m.agingCurve.baseLoss ?? 2) : 2,
+      subsistence:       era.foodPerTimePoint ?? 5,
+    });
+    eraMap[era.id] = e.id;
+
+    // Mecàniques de l'era
+    if (era.timeTotal)      addMechanic(e.id, 'time_total',     era.timeTotal);
+    if (era.maxChildren)    addMechanic(e.id, 'max_children',   era.maxChildren);
+    if (m.intensityTimeCosts) addMechanic(e.id, 'intensity_time_costs', JSON.stringify(m.intensityTimeCosts));
+    if (m.statGainCaps) Object.entries(m.statGainCaps).forEach(([k,v]) => addMechanic(e.id, `stat_cap_${k}`, v));
+    if (m.happinessDrift)   addMechanic(e.id, 'happiness_drift', m.happinessDrift);
+    if (m.childrenFoodCost) addMechanic(e.id, 'children_food_cost', m.childrenFoodCost);
+
+    // ── Zones de l'era ──
+    (era.zones || []).forEach(z => {
+      const ze = addEntity('zone', {
+        game_id:     z.id,
+        name:        z.name,
+        icon:        z.icon,
+        description: z.description || '',
+        era_id:      e.id,
+      });
+      zoneMap[`${era.id}:${z.id}`] = ze.id;
+    });
+
+    // ── Tecnologies de l'era ──
+    (era.techs || []).forEach(t => {
+      const te = addEntity('tech', {
+        game_id:     t.id,
+        era_id:      e.id,
+        name:        t.name,
+        icon:        t.icon,
+        description: t.description || '',
+        quote:       t.quote || '',
+        cycle_appears: t.eraCycleAppears ?? null,
+        effect_desc: t.effectDesc || '',
+        cost_vigor:    (t.tokenCost && t.tokenCost.vigor)    || 0,
+        cost_saber:    (t.tokenCost && t.tokenCost.saber)    || 0,
+        cost_prestigi: (t.tokenCost && t.tokenCost.prestigi) || 0,
+        is_gate_tech:  t.isGateTech || false,
+        next_era:      t.nextEra || '',
+      });
+      techMap[`${era.id}:${t.id}`] = te.id;
+      // Efectes de la tech (statBonus)
+      if (t.statBonus) Object.entries(t.statBonus).forEach(([k,v]) => {
+        if (v) addEffect(te.id, 'tech', 'bonus', k, v);
+      });
+      // Dep de prerequisit tech
+      if (t.requiresTech) {
+        pending.push({ type:'dep', ownerId:te.id, ownerType:'tech',
+          reqKey:`${era.id}:${t.requiresTech}`, reqType:'tech', cond:'requires' });
+      }
+    });
+
+    // ── Habilitats (Taller) de l'era ──
+    (era.skills || []).forEach(sk => {
+      const se = addEntity('skill', {
+        game_id:     sk.id,
+        era_id:      e.id,
+        name:        sk.name,
+        icon:        sk.icon,
+        description: sk.description || '',
+        quote:       sk.quote || '',
+        disc_chance:   sk.discoveryChance ?? 0,
+        effect_desc:   sk.effectDesc || '',
+        transversal:   sk.transversal || false,
+        cost_vigor:    (sk.tokenCost && sk.tokenCost.vigor)    || 0,
+        cost_saber:    (sk.tokenCost && sk.tokenCost.saber)    || 0,
+        cost_prestigi: (sk.tokenCost && sk.tokenCost.prestigi) || 0,
+      });
+      skillMap[`${era.id}:${sk.id}`] = se.id;
+      // Efecte de la habilitat
+      if (sk.effect) Object.entries(sk.effect).forEach(([k,v]) => {
+        if (v && typeof v === 'number') addEffect(se.id,'skill','bonus',k,v);
+      });
+      // Deps de la habilitat
+      if (sk.requiresTech) {
+        pending.push({ type:'dep', ownerId:se.id, ownerType:'skill',
+          reqKey:`${era.id}:${sk.requiresTech}`, reqType:'tech', cond:'requires' });
+      }
+      if (sk.requires && sk.requires.techIds) {
+        sk.requires.techIds.forEach(tid => pending.push({ type:'dep', ownerId:se.id, ownerType:'skill',
+          reqKey:`${era.id}:${tid}`, reqType:'tech', cond:'requires' }));
+      }
+    });
+
+    // ── Destreses de l'era ──
+    (era.destreses || []).forEach(d => {
+      const de = addEntity('destresa', {
+        game_id:     d.id,
+        era_id:      e.id,
+        name:        d.name,
+        icon:        d.icon,
+        description: d.description || '',
+        quote:       d.quote || '',
+        disc_chance: d.discoveryChance ?? 0.2,
+        effect_desc: d.effectDesc || '',
+        transversal: d.transversal || false,
+      });
+      destMap[`${era.id}:${d.id}`] = de.id;
+      if (d.effect) Object.entries(d.effect).forEach(([k,v]) => {
+        if (v && typeof v === 'number') addEffect(de.id,'destresa','bonus',k,v);
+      });
+      if (d.requires && d.requires.techIds) {
+        d.requires.techIds.forEach(tid => pending.push({ type:'dep', ownerId:de.id, ownerType:'destresa',
+          reqKey:`${era.id}:${tid}`, reqType:'tech', cond:'requires' }));
+      }
+    });
+
+    // ── Accions de l'era ──
+    (era.actions || []).forEach(a => {
+      const zoneEntityId = zoneMap[`${era.id}:${a.zone}`] || null;
+      const ae = addEntity('action', {
+        game_id:          a.id,
+        name:             a.name,
+        icon:             a.icon,
+        description:      a.description || '',
+        quote:            a.quote || '',
+        zone_id:          zoneEntityId,
+        era_id:           e.id,
+        stat_key:         a.statKey || '',
+        health_risk:      a.healthRisk     ?? 0,
+        base_risk:        a.baseRiskChance ?? 1.0,
+        opens_taller:     a.opensTaller     || false,
+        discovers_skill:  a.discoversSkill  || false,
+        teaches_skill:    a.teachesSkill    || false,
+        generates_partner:a.generatesPartner|| false,
+        generates_child:  a.generatesChild  || false,
+        min_cycle_pct:    a.minCyclePct  ?? null,
+        max_cycle_pct:    a.maxCyclePct  ?? null,
+      });
+
+      // Outputs
+      if (a.outputs) Object.entries(a.outputs).forEach(([k,v]) => { if(v) addEffect(ae.id,'action','output',k,v); });
+      if (a.statGain) Object.entries(a.statGain).forEach(([k,v]) => { if(v) addEffect(ae.id,'action','stat_gain',k,v); });
+
+      // Destreses descobertes per aquesta acció
+      (a.destreseDiscovery || []).forEach(did => {
+        pending.push({ type:'eff', ownerId:ae.id, ownerType:'action',
+          effectType:'discovers_destresa', targetKey:`${era.id}:${did}`, targetMap:'destresa', value:0 });
+      });
+
+      // Deps de l'acció
+      const r = a.requirements || {};
+      if (r.physical)     addDep(ae.id,'action','physical','characteristic','min_stat',r.physical);
+      if (r.intelligence) addDep(ae.id,'action','intelligence','characteristic','min_stat',r.intelligence);
+      if (r.social)       addDep(ae.id,'action','social','characteristic','min_stat',r.social);
+      if (r.health)       addDep(ae.id,'action','health','indicator','min_value',r.health);
+      if (r.requiresPartner)      addDep(ae.id,'action','has_partner','family_state','requires');
+      if (r.requiresChild)        addDep(ae.id,'action','has_child','family_state','requires');
+      if (r.requiresLearnedSkill) addDep(ae.id,'action','has_learned_skill','family_state','requires');
+      if (a.requiresNoPartner)    addDep(ae.id,'action','no_partner','family_state','requires_not');
+      if (a.requiresMinHappiness)       addDep(ae.id,'action','happiness','indicator','min_value',a.requiresMinHappiness);
+      if (a.requiresMinFamilyReputation) addDep(ae.id,'action','familyRep','indicator','min_value',a.requiresMinFamilyReputation);
+
+      if (a.requiresTech) {
+        pending.push({ type:'dep', ownerId:ae.id, ownerType:'action',
+          reqKey:`${era.id}:${a.requiresTech}`, reqType:'tech', cond:'requires' });
+      }
+      if (a.requiresSkill) {
+        pending.push({ type:'dep', ownerId:ae.id, ownerType:'action',
+          reqKey:`${era.id}:${a.requiresSkill}`, reqType:'skill', cond:'requires_skill' });
+      }
+    });
+  });
+
+  // ── Resolució deps i efectes diferits ──
+  const allMaps = { tech: techMap, skill: skillMap, destresa: destMap, zone: zoneMap, era: eraMap };
+  pending.forEach(p => {
+    if (p.type === 'dep') {
+      const rid = allMaps[p.reqType]?.[p.reqKey] || techMap[p.reqKey] || skillMap[p.reqKey];
+      if (rid) addDep(p.ownerId, p.ownerType, rid, p.reqType, p.cond, p.value ?? null);
+    } else if (p.type === 'eff') {
+      const map = p.targetMap === 'destresa' ? destMap : allMaps[p.targetMap] || {};
+      const tid = map[p.targetKey];
+      if (tid) addEffect(p.ownerId, p.ownerType, p.effectType, tid, p.value ?? 0);
+    }
+  });
+
+  saveDB();
+  const counts = TYPES.map(t => `${t.label}: ${getAll(t.id).length}`).join(' · ');
+  showToast(`Migrat ✓ — ${DB.entities.length} entitats`);
+  console.log('Migració completa:', counts);
+  console.log(`Deps: ${DB.deps.length} · Efectes: ${DB.effects.length} · Mecàniques: ${DB.mechanics.length}`);
+  renderAll();
+}
+
+document.getElementById('btn-migrate').addEventListener('click', migrateFromGameData);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EXPORTAR PER AL JOC — reconstrueix estructura GAME_DATA des del DB pla
+// ═══════════════════════════════════════════════════════════════════════════
+
+function slugify(name) {
+  return (name || 'entity').toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+}
+function getGameId(e) { return e.game_id || slugify(e.name); }
+
+function denormalizeToGameData() {
+  const byId = {};
+  DB.entities.forEach(e => byId[e.id] = e);
+
+  const depsOf  = id => DB.deps.filter(d => d.owner_id === id);
+  const effsOf  = id => DB.effects.filter(ef => ef.owner_id === id);
+  const mechsOf = eraId => {
+    const m = {};
+    DB.mechanics.filter(mx => mx.era_id === eraId).forEach(mx => m[mx.key] = mx.value);
+    return m;
+  };
+
+  const compact = obj => {
+    Object.keys(obj).forEach(k => { if (obj[k] === undefined || obj[k] === null || obj[k] === '' || obj[k] === false) delete obj[k]; });
+    return obj;
+  };
+
+  const eras = DB.entities.filter(e => e.type === 'era').map(eraEnt => {
+    const m = mechsOf(eraEnt.id);
+
+    const zones = DB.entities.filter(e => e.type === 'zone' && e.era_id === eraEnt.id).map(z =>
+      compact({ id: getGameId(z), name: z.name, icon: z.icon, description: z.description || undefined })
+    );
+
+    const techs = DB.entities.filter(e => e.type === 'tech' && e.era_id === eraEnt.id).map(t => {
+      const reqTech = depsOf(t.id).find(d => d.req_type === 'tech' && d.cond === 'requires');
+      const cycleDep = depsOf(t.id).find(d => d.req_id === 'era_cycle' && d.cond === 'min_cycle');
+      const statBonus = {};
+      effsOf(t.id).filter(ef => ef.effect_type === 'bonus').forEach(ef => { statBonus[ef.target_id] = ef.value; });
+      return compact({
+        id: getGameId(t), name: t.name, icon: t.icon,
+        eraCycleAppears: cycleDep ? cycleDep.value : (t.cycle_appears ?? undefined),
+        description: t.description || undefined, quote: t.quote || undefined,
+        effectDesc: t.effect_desc || undefined,
+        requiresTech: (reqTech && byId[reqTech.req_id]) ? getGameId(byId[reqTech.req_id]) : undefined,
+        tokenCost: (t.cost_vigor||t.cost_saber||t.cost_prestigi) ? {vigor:t.cost_vigor||0,saber:t.cost_saber||0,prestigi:t.cost_prestigi||0} : undefined,
+        statBonus: Object.keys(statBonus).length ? statBonus : undefined,
+        isGateTech: t.is_gate_tech || undefined, nextEra: t.next_era || undefined,
+        inheritanceRate: 1.0,
+      });
+    });
+
+    const skills = DB.entities.filter(e => e.type === 'skill' && e.era_id === eraEnt.id).map(sk => {
+      const reqTechs = depsOf(sk.id).filter(d => d.req_type === 'tech').map(d => byId[d.req_id]).filter(Boolean).map(getGameId);
+      const cycleDep = depsOf(sk.id).find(d => d.req_id === 'era_cycle' && d.cond === 'min_cycle');
+      const effect = {};
+      effsOf(sk.id).filter(ef => ef.effect_type === 'bonus').forEach(ef => { if (typeof ef.value === 'number') effect[ef.target_id] = ef.value; });
+      return compact({
+        id: getGameId(sk), name: sk.name, icon: sk.icon,
+        description: sk.description || undefined, quote: sk.quote || undefined,
+        discoveryChance: sk.disc_chance || undefined, effectDesc: sk.effect_desc || undefined,
+        transversal: sk.transversal || undefined,
+        minCycle: cycleDep ? cycleDep.value : undefined,
+        requiresTech: reqTechs.length === 1 ? reqTechs[0] : undefined,
+        requires: reqTechs.length > 1 ? { techIds: reqTechs } : undefined,
+        tokenCost: (sk.cost_vigor||sk.cost_saber||sk.cost_prestigi) ? {vigor:sk.cost_vigor||0,saber:sk.cost_saber||0,prestigi:sk.cost_prestigi||0} : undefined,
+        effect: Object.keys(effect).length ? effect : undefined,
+      });
+    });
+
+    const destreses = DB.entities.filter(e => e.type === 'destresa' && e.era_id === eraEnt.id).map(d => {
+      const reqTechs = depsOf(d.id).filter(dep => dep.req_type === 'tech').map(dep => byId[dep.req_id]).filter(Boolean).map(getGameId);
+      const cycleDep = depsOf(d.id).find(dep => dep.req_id === 'era_cycle' && dep.cond === 'min_cycle');
+      const effect = {};
+      effsOf(d.id).filter(ef => ef.effect_type === 'bonus').forEach(ef => { if (typeof ef.value === 'number') effect[ef.target_id] = ef.value; });
+      return compact({
+        id: getGameId(d), name: d.name, icon: d.icon,
+        description: d.description || undefined, quote: d.quote || undefined,
+        discoveryChance: d.disc_chance || undefined, effectDesc: d.effect_desc || undefined,
+        transversal: d.transversal || undefined,
+        minCycle: cycleDep ? cycleDep.value : undefined,
+        effect: Object.keys(effect).length ? effect : undefined,
+        requires: reqTechs.length ? { techIds: reqTechs } : undefined,
+      });
+    });
+
+    const actions = DB.entities.filter(e => e.type === 'action' && e.era_id === eraEnt.id).map(a => {
+      const deps = depsOf(a.id);
+      const effs = effsOf(a.id);
+      const zoneEnt = a.zone_id ? byId[a.zone_id] : null;
+      const reqTechDep  = deps.find(d => d.req_type === 'tech'  && d.cond === 'requires');
+      const reqSkillDep = deps.find(d => d.req_type === 'skill' && d.cond === 'requires_skill');
+      const cycleDep    = deps.find(d => d.req_id === 'era_cycle' && d.cond === 'min_cycle');
+
+      const requirements = {};
+      let requiresNoPartner = false, requiresMinHappiness = null, requiresMinFamilyReputation = null;
+      deps.forEach(d => {
+        if (d.req_type === 'characteristic' && d.cond === 'min_stat') requirements[d.req_id] = d.value;
+        if (d.req_type === 'indicator' && d.cond === 'min_value') {
+          if (d.req_id === 'health')      requirements.health = d.value;
+          else if (d.req_id === 'happiness') requiresMinHappiness = d.value;
+          else if (d.req_id === 'familyRep') requiresMinFamilyReputation = d.value;
+        }
+        if (d.req_type === 'family_state' && d.cond === 'requires') {
+          if (d.req_id === 'has_partner')      requirements.requiresPartner = true;
+          if (d.req_id === 'has_child')        requirements.requiresChild = true;
+          if (d.req_id === 'has_learned_skill') requirements.requiresLearnedSkill = true;
+        }
+        if (d.req_type === 'family_state' && d.cond === 'requires_not' && d.req_id === 'no_partner')
+          requiresNoPartner = true;
+      });
+
+      const outputs = {}, statGain = {}, destreseDiscovery = [];
+      effs.forEach(ef => {
+        if (ef.effect_type === 'output') outputs[ef.target_id] = ef.value;
+        if (ef.effect_type === 'stat_gain') statGain[ef.target_id] = ef.value;
+        if (ef.effect_type === 'discovers_destresa' && byId[ef.target_id])
+          destreseDiscovery.push(getGameId(byId[ef.target_id]));
+      });
+
+      return compact({
+        id: getGameId(a), name: a.name, icon: a.icon,
+        zone: zoneEnt ? getGameId(zoneEnt) : undefined,
+        description: a.description || undefined, quote: a.quote || undefined,
+        statKey: a.stat_key || undefined,
+        healthRisk: a.health_risk || undefined,
+        baseRiskChance: (a.base_risk != null && a.base_risk !== 1.0) ? a.base_risk : undefined,
+        opensTaller: a.opens_taller || undefined,
+        discoversSkill: a.discovers_skill || undefined,
+        teachesSkill: a.teaches_skill || undefined,
+        generatesPartner: a.generates_partner || undefined,
+        generatesChild: a.generates_child || undefined,
+        minCycle: cycleDep ? cycleDep.value : undefined,
+        minCyclePct: a.min_cycle_pct ?? undefined,
+        maxCyclePct: a.max_cycle_pct ?? undefined,
+        requirements: Object.keys(requirements).length ? requirements : undefined,
+        requiresNoPartner: requiresNoPartner || undefined,
+        requiresMinHappiness: requiresMinHappiness ?? undefined,
+        requiresMinFamilyReputation: requiresMinFamilyReputation ?? undefined,
+        requiresTech:  (reqTechDep && byId[reqTechDep.req_id])  ? getGameId(byId[reqTechDep.req_id])  : undefined,
+        requiresSkill: (reqSkillDep && byId[reqSkillDep.req_id]) ? getGameId(byId[reqSkillDep.req_id]) : undefined,
+        outputs: Object.keys(outputs).length ? outputs : undefined,
+        statGain: Object.keys(statGain).length ? statGain : undefined,
+        destreseDiscovery: destreseDiscovery.length ? destreseDiscovery : undefined,
+      });
+    });
+
+    const statGainCaps = {};
+    Object.entries(m).forEach(([k,v]) => { if (k.startsWith('stat_cap_')) statGainCaps[k.replace('stat_cap_','')] = Number(v); });
+
+    const mechanics = compact({
+      intensityTimeCosts: m.intensity_time_costs ? JSON.parse(m.intensity_time_costs) : undefined,
+      happinessDrift:     m.happiness_drift     != null ? Number(m.happiness_drift)     : undefined,
+      childrenFoodCost:   m.children_food_cost  != null ? Number(m.children_food_cost)  : undefined,
+      statGainCaps:       Object.keys(statGainCaps).length ? statGainCaps : undefined,
+    });
+
+    return compact({
+      id: getGameId(eraEnt), name: eraEnt.name, icon: eraEnt.icon,
+      description: eraEnt.description || undefined,
+      lifeExpectancy: { base: eraEnt.life_base ?? 30, max: eraEnt.life_max ?? 50 },
+      maxChildren:     m.max_children    != null ? Number(m.max_children)    : undefined,
+      timeTotal:       m.time_total      != null ? Number(m.time_total)      : undefined,
+      foodPerTimePoint: eraEnt.subsistence ?? undefined,
+      mechanics:       Object.keys(mechanics).length ? mechanics : undefined,
+      zones:    zones.length    ? zones    : undefined,
+      techs:    techs.length    ? techs    : undefined,
+      skills:   skills.length   ? skills   : undefined,
+      destreses:destreses.length? destreses: undefined,
+      actions:  actions.length  ? actions  : undefined,
+    });
+  });
+
+  return { eras };
+}
+
+document.getElementById('btn-export-game').addEventListener('click', () => {
+  try {
+    const gameData = denormalizeToGameData();
+    const json = JSON.stringify(gameData, null, 2);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+    a.download = `lt-eres-export-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    showToast(`Exportat ✓ — ${gameData.eras.length} eres`);
+  } catch(err) { alert('Error en exportar: ' + err.message); console.error(err); }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════════
+
+function renderAll() {
+  renderEraSelect(); renderFbar(); renderGraph();
+}
+
+if (!loadDB()) seedDB();
+initPanZoom();
+renderAll();
+setTimeout(centerGraph, 80);
+</script>
+</body>
+</html>

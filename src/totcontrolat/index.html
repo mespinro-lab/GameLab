@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#222040">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Tot Controlat</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- ── Top bar ── -->
+    <div id="top-bar">
+      <div id="money-display">💰 <span id="money-val">450</span>€</div>
+      <div id="top-center">
+        <div id="week-display">S<span id="week-val">1</span></div>
+        <div id="ring-country"></div>
+      </div>
+      <div id="top-right">
+        <div id="token-display">🪙 <span id="token-val">0</span></div>
+        <button id="menu-ingame-btn">☰</button>
+      </div>
+    </div>
+
+    <!-- ── Week progress bar ── -->
+    <div id="tick-track"><div id="tick-bar"></div></div>
+
+    <!-- ── Happiness strip (sota la barra de progrés) ── -->
+    <div id="hap-strip">
+      <span id="happiness-face">😐</span>
+      <span id="happiness-val">60</span>
+      <span id="idle-message">Setmana tranquil·la... de moment.</span>
+    </div>
+
+    <!-- ── Game center: personatges ── -->
+    <div id="game-center">
+      <div id="chars-stage">
+        <div class="stage-char" id="char-veins">
+          <div class="stage-img-wrap">
+            <img class="char-img" id="char-img-veins" src="char_residents_01_3.png" alt="" onerror="this.style.opacity='0'">
+            <span class="char-val-badge" id="val-veins">62</span>
+            <span class="trend-arrow" id="trend-veins"></span>
+          </div>
+          <span class="char-name" id="name-veins">Residents</span>
+        </div>
+        <div class="stage-char stage-center" id="char-mercat">
+          <div class="stage-img-wrap">
+            <img class="char-img" id="char-img-mercat" src="char_hostalers_01_3.png" alt="" onerror="this.style.opacity='0'">
+            <span class="char-val-badge" id="val-mercat">60</span>
+            <span class="trend-arrow" id="trend-mercat"></span>
+          </div>
+          <span class="char-name" id="name-mercat">Hostalers</span>
+        </div>
+        <div class="stage-char" id="char-activistes">
+          <div class="stage-img-wrap">
+            <img class="char-img" id="char-img-activistes" src="char_ecologistes_01_3.png" alt="" onerror="this.style.opacity='0'">
+            <span class="char-val-badge" id="val-activistes">58</span>
+            <span class="trend-arrow" id="trend-activistes"></span>
+          </div>
+          <span class="char-name" id="name-activistes">Ecologistes</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Action panel: controls OR event (mutually exclusive) ── -->
+    <div id="action-panel">
+      <div id="controls-pane">
+        <div class="ctrl-row">
+          <span class="ctrl-label">Impostos</span>
+          <div class="ctrl-pills">
+            <button class="pill" id="tax-low"  data-tax="low">Baix<span class="pill-sub">+30€</span></button>
+            <button class="pill active" id="tax-mid" data-tax="mid">Mig<span class="pill-sub">+55€</span></button>
+            <button class="pill" id="tax-high" data-tax="high">Alt<span class="pill-sub">+85€</span></button>
+          </div>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">Polítiques</span>
+          <div class="ctrl-pills ctrl-pills-policies">
+            <button class="pill toggle" id="toggle-services">🏥<span class="pill-sub">−35€</span></button>
+            <button class="pill toggle" id="toggle-comms">📢<span class="pill-sub">−25€</span></button>
+            <button class="pill toggle" id="toggle-security">🚔<span class="pill-sub">−30€</span></button>
+            <button class="pill toggle" id="toggle-subsidies">💼<span class="pill-sub">−40€</span></button>
+          </div>
+        </div>
+        <div id="buildings-row"></div>
+      </div>
+      <div id="event-pane" class="hidden">
+        <div id="event-header">
+          <span id="event-icon"></span>
+          <span id="event-title"></span>
+        </div>
+        <p id="event-text"></p>
+        <div id="event-choices">
+          <div id="choice-left" class="choice-btn">
+            <span class="choice-name" id="opt-left-name"></span>
+            <span class="choice-preview" id="opt-left-preview"></span>
+            <span class="choice-risk" id="opt-left-risk"></span>
+          </div>
+          <div id="choice-right" class="choice-btn">
+            <span class="choice-name" id="opt-right-name"></span>
+            <span class="choice-preview" id="opt-right-preview"></span>
+            <span class="choice-risk" id="opt-right-risk"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Token bar (poders especials) ── -->
+    <div id="token-bar">
+      <div id="token-actions">
+        <button class="pill token-pill" id="spend-tokens" disabled>🪙×3 → +Moral</button>
+        <button class="pill token-pill" id="reveal-btn" disabled>🔍×1</button>
+      </div>
+    </div>
+
+    <!-- ── Speed bar (velocitats) ── -->
+    <div id="speed-bar">
+      <div id="danger-indicator" class="hidden">
+        ⚠️ <span id="danger-weeks-val">0</span>/3
+      </div>
+      <button id="btn-fi-mandat" class="fi-mandat-btn hidden">🏅 Fi de Mandat</button>
+      <div class="speed-controls">
+        <button class="speed-btn" id="speed-0">⏸</button>
+        <button class="speed-btn active" id="speed-1">×1</button>
+        <button class="speed-btn" id="speed-2">×2</button>
+        <button class="speed-btn" id="speed-3">×3</button>
+      </div>
+    </div>
+
+  </div><!-- /#app -->
+
+  <!-- ── Overlay: world intro ── -->
+  <div id="world-intro-overlay" class="overlay hidden">
+    <div class="wintro-card">
+      <div class="wintro-icon" id="wintro-icon"></div>
+      <h2 class="wintro-title" id="wintro-title"></h2>
+      <p class="wintro-subtitle" id="wintro-subtitle"></p>
+      <p class="wintro-body" id="wintro-body"></p>
+      <div class="wintro-factions" id="wintro-factions"></div>
+      <button id="btn-wintro-start">Comença el Mandat 1 →</button>
+    </div>
+  </div>
+
+  <!-- ── Overlay: tutorial ── -->
+  <div id="tutorial-overlay" class="overlay hidden">
+    <div class="tutorial-card">
+      <div class="tut-progress"><span id="tut-step">1</span> / <span id="tut-total">5</span></div>
+      <div class="tut-icon" id="tut-icon"></div>
+      <h3 class="tut-title" id="tut-title"></h3>
+      <p class="tut-body" id="tut-body"></p>
+      <button class="tut-btn-next" id="tut-next">Endavant →</button>
+      <button class="tut-btn-skip" id="tut-skip">Salta el tutorial</button>
+    </div>
+  </div>
+
+  <!-- ── Overlay: world complete ── -->
+  <div id="overlay-world-done" class="overlay hidden">
+    <div class="overlay-card">
+      <div class="overlay-icon">🌍</div>
+      <h2 id="world-done-title">Món Completat!</h2>
+      <p id="world-done-text"></p>
+      <p id="world-done-score" class="overlay-score"></p>
+      <button id="btn-world-map-done">🗺️ Torna al Mapa</button>
+      <button id="btn-menu-world-done" class="overlay-btn-sec">Menu Principal</button>
+    </div>
+  </div>
+
+  <!-- ── Overlay: win ── -->
+  <div id="overlay-won" class="overlay hidden">
+    <div class="overlay-card">
+      <div class="overlay-icon">🏆</div>
+      <h2>Mandat Completat</h2>
+      <p>Has assolit els objectius d'inversió i mantingut la pau social.<br>El poble et recordarà. En general.</p>
+      <p id="final-score" class="overlay-score"></p>
+      <button id="btn-retry">Tornar a Intentar</button>
+      <button id="btn-menu-won" class="overlay-btn-sec">Menu Principal</button>
+    </div>
+  </div>
+
+  <!-- ── Overlay: lose ── -->
+  <div id="overlay-lost" class="overlay hidden">
+    <div class="overlay-card">
+      <div class="overlay-icon">💥</div>
+      <h2>Col·lapse</h2>
+      <p>La felicitat ha caigut massa temps per sota del llindar.<br>El poble ha pres decisions pròpies.</p>
+      <p id="survive-weeks" class="overlay-score"></p>
+      <button id="btn-retry-lost">Tornar a Intentar</button>
+      <button id="btn-menu-lost" class="overlay-btn-sec">Menu Principal</button>
+    </div>
+  </div>
+
+  <!-- ── Overlay: conjuncture ── -->
+  <div id="conjuncture-screen" class="overlay hidden">
+    <div class="overlay-card conj-card">
+      <div class="conj-mandate-done">
+        <span class="conj-mandate-label">Nivell <span id="conj-mandate-done-num">1</span> Completat</span>
+        <span id="conj-score-line" class="conj-score-val"></span>
+      </div>
+      <div class="conj-sep"></div>
+      <p class="conj-next-label">A Continuació</p>
+      <div class="conj-icon" id="conj-icon">📉</div>
+      <h3 id="conj-title" class="conj-title"></h3>
+      <p id="conj-text" class="conj-text"></p>
+      <div id="conj-effects" class="conj-effects-row"></div>
+      <div class="conj-carry-row">
+        <span>💰 <span id="conj-carry-money">0</span>€</span>
+        <span id="conj-carry-happ">😐 60</span>
+        <span>🪙 <span id="conj-carry-tokens">0</span></span>
+      </div>
+      <button id="btn-start-mandate">Inicia el Nivell <span id="conj-mandate-next-num">2</span> →</button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════
+       MENU SCREENS  (z-index: 200)
+  ════════════════════════════════════════════ -->
+
+  <div id="world-map-screen" class="menu-overlay hidden">
+    <div id="wmap-scroll">
+      <div id="worlds-list"></div>
+    </div>
+    <div id="wmap-hud">
+      <div id="wmap-title">
+        <img src="logo.png" alt="President" id="wmap-logo">
+      </div>
+      <div id="wmap-left-btns">
+        <button class="wmap-fab" id="btn-wmap-badges"><img src="badges.png" alt="Historial"></button>
+        <button class="wmap-fab" id="btn-wmap-botiga"><img src="shop.png" alt="Botiga"></button>
+        <button class="wmap-fab" id="btn-wmap-config"><img src="settings.png" alt="Configuració"></button>
+      </div>
+      <div id="wmap-bottom">
+        <button id="btn-reprendre" class="hidden">▶ Reprendre partida</button>
+        <div id="wmap-token-bar">🪙 <span id="wmap-token-val">0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="botiga-screen" class="menu-overlay hidden">
+    <div class="sub-card">
+      <button class="back-btn" id="btn-back-botiga">← Enrere</button>
+      <h2>🛒 Botiga</h2>
+      <p class="sub-desc">Tokens per quan el mandat s'acaba gràcies</p>
+      <p id="pending-tokens-info" class="pending-info"></p>
+      <div class="shop-items">
+        <div class="shop-item">
+          <div class="shop-item-body">
+            <span class="shop-name">Pack Petit</span>
+            <span class="shop-detail">🪙 +10 Tokens</span>
+          </div>
+          <button class="shop-btn" id="btn-buy-10">0,99 €</button>
+        </div>
+        <div class="shop-item featured-item">
+          <div class="shop-item-body">
+            <span class="shop-name">Pack Gran</span>
+            <span class="shop-detail">🪙 +100 Tokens</span>
+          </div>
+          <button class="shop-btn featured" id="btn-buy-100">4,99 €</button>
+        </div>
+      </div>
+      <p id="shop-confirm" class="shop-confirm hidden"></p>
+      <p class="shop-disclaimer">Pagaments simulats. Cap transacció real.</p>
+    </div>
+  </div>
+
+  <div id="config-screen" class="menu-overlay hidden">
+    <div class="sub-card">
+      <button class="back-btn" id="btn-back-config">← Enrere</button>
+      <h2>⚙️ Configuració</h2>
+      <div class="config-section">
+        <p class="config-label">Idioma</p>
+        <div class="lang-pills">
+          <button class="lang-pill active" data-lang="ca">Català</button>
+          <button class="lang-pill" data-lang="va">Valencià</button>
+          <button class="lang-pill" data-lang="ba">Balear</button>
+        </div>
+        <p class="config-note">Tots els dialectes de la nostra estimada llengua funcionen exactament igual de bé.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="badges-screen" class="menu-overlay hidden">
+    <div class="sub-card badges-sub-card">
+      <button class="back-btn" id="btn-back-badges">← Enrere</button>
+      <h2>🏅 Historial</h2>
+      <p class="sub-desc">Un badge per cada conjuntura global viscuda.</p>
+      <div id="badges-grid" class="badges-grid"></div>
+    </div>
+  </div>
+
+  <script src="worlds.js"></script>
+  <script src="levels.js"></script>
+  <script src="events-global.js"></script>
+  <script src="events-vilaturisme.js"></script>
+  <script src="events-sleeptown.js"></script>
+  <script src="events-technoburg.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

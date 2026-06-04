@@ -1,0 +1,247 @@
+{
+  "pool_caca": [
+    { "id": "ev_rastre_fresc",   "text": "Rastres frescos! El grup segueix la pista i torna amb extra.", "effects": { "food": 3 } },
+    { "id": "ev_bestia_ferida",  "text": "Una bèstia ferida ataca. El caçador resulta ferit lleu.",      "effects": { "food": -1, "health": -5 } },
+    { "id": "ev_ramat_migracio", "text": "El ramat migra cap al nord. Les preses escassegen.",           "effects": { "food": -2 } },
+    { "id": "ev_caca_abundant",  "text": "Temporada de caça abundant. Reserves extra per a la família.", "effects": { "food": 5 } },
+    {
+      "id": "ev_desc_llancador", "is_discovery_event": true, "is_single_use": true,
+      "discovery_skill_id": "bt_llancador",
+      "text": "Mentre espies el ramat, veus un caçador d'un altre grup llançar una pedra amb un pal llarg. Abat la presa des d'una distància increïble.",
+      "options": [
+        { "text": "Apropar-te a observar (−2 Menjar)", "food_delta": -2, "discovers": true },
+        { "text": "Seguir el teu camí", "food_delta": 2, "discovers": false }
+      ]
+    },
+    {
+      "id": "ev_bison_ferit",
+      "text": "La sang és fresca — el rastre no té més d'una hora. El flac esquerra del bisont gota a cada pas. La llum s'esmuny entre els pins. Si m'atura la nit, el perdo.",
+      "options": [
+        { "text": "Seguir ara, en la foscor",         "food_delta": 8,  "health_delta": -4 },
+        { "text": "Acampar aquí, esperar l'alba",      "food_delta": 3,  "health_delta": 0 },
+        { "text": "Deixar-ho anar, cercar presa nova", "food_delta": -1, "health_delta": 1 }
+      ]
+    },
+    {
+      "id": "ev_grup_estrany",
+      "text": "El fum puja recte, tranquil. Un altre grup ha fet foc a la baixada del torrent, just on jo pensava anar avui. Són dos o tres, potser més. No sé si m'han vist.",
+      "options": [
+        { "text": "Apropar-me, fer gestos de pau", "food_delta": 2,  "health_delta": 1 },
+        { "text": "Retirar-me sense fer soroll",   "food_delta": -2, "health_delta": 0 },
+        { "text": "Quedar-me quiet i observar",    "food_delta": -1, "health_delta": 0 }
+      ]
+    },
+    {
+      "id": "ev_trampa_rival",
+      "text": "El rens jeu quiet, enredat al llaç. No és el meu llaç. Les marques als arbres propers no em diuen res. Qui hagi posat la trampa pot tornar en qualsevol moment.",
+      "options": [
+        { "text": "Agafar-ho tot i marxar de pressa",           "food_delta": 6,  "health_delta": -2 },
+        { "text": "No tocar-ho, allunyar-me en silenci",        "food_delta": 0,  "health_delta": 0 },
+        { "text": "Agafar la meitat, deixar senyal de retorn",  "food_delta": 3,  "health_delta": 1 }
+      ]
+    }
+  ],
+
+  "pool_recollecta": [
+    { "id": "ev_fruits_madurs",    "text": "Fruits silvestres madurs. Una troballa inesperada.", "effects": { "food": 3 } },
+    { "id": "ev_plantes_toxiques", "text": "Algunes plantes eren tòxiques. Malestars al grup.",  "effects": { "food": -2, "health": -5 } },
+    { "id": "ev_bolets_rars",      "text": "Bolets estranys però comestibles. Extra de provisions.", "effects": { "food": 2 } },
+    {
+      "id": "ev_desc_coneixement_plantes", "is_discovery_event": true, "is_single_use": true,
+      "discovery_skill_id": "bt_coneixement_plantes",
+      "text": "Un ancià del grup proper recol·lecta plantes amb una precisió inusual, triant-les una a una. Sembla que coneix cada fulla pel nom.",
+      "options": [
+        { "text": "Seguir-lo i aprendre (−2 Menjar)", "food_delta": -2, "discovers": true },
+        { "text": "Continuar recol·lectant pel teu compte", "food_delta": 1, "discovers": false }
+      ]
+    },
+    {
+      "id": "ev_pluja_tardor",
+      "text": "El cel s'ha tornat groguenc i l'aire pesa. La tempesta és propera. La meva cistella és a la meitat. Cada gota que cau ja em renta les mans.",
+      "options": [
+        { "text": "Seguir recollint fins que truoni",  "food_delta": 3, "health_delta": -1 },
+        { "text": "Arreplegar el que tinc i córrer",   "food_delta": 1, "health_delta": 1 },
+        { "text": "Agafo les baies peribles i marxo",  "food_delta": 2, "health_delta": 1, "token_delta": 1, "requires_skill": "bt_coneixement_plantes" }
+      ]
+    },
+    {
+      "id": "ev_ossa_amb_cries",
+      "text": "L'ossa és al roure que volia collir. Les cries s'enganxen al tronc i piulen. Em veu però no s'ha mogut — m'estudia.",
+      "options": [
+        { "text": "Recular a poc a poc, sense girar l'esquena", "food_delta": -1, "health_delta": 2 },
+        { "text": "Fer soroll fort i moure els braços",          "food_delta": 2,  "health_delta": -2 },
+        { "text": "Ajupir-me darrere les mates i esperar",      "food_delta": 1,  "health_delta": 1 }
+      ]
+    },
+    {
+      "id": "ev_fong_blanc",
+      "text": "El fong és gran, blanc, amb el capell pàl·lid com os sec. No el conec. El grup porta hores sense menjar i ningú diu res, però tothom me'l mira.",
+      "options": [
+        { "text": "Agafar-lo i repartir-lo",        "food_delta": 3,  "health_delta": -3 },
+        { "text": "Deixar-lo estar, seguim",         "food_delta": 0,  "health_delta": 0 },
+        { "text": "Observo el peu, l'olor, les làmines — decideixo", "food_delta": 2, "health_delta": 1, "requires_skill": "bt_coneixement_plantes" }
+      ]
+    }
+  ],
+
+  "pool_artesania": [
+    { "id": "ev_eina_trencada",    "text": "L'eina es trenca durant la feina. Cal refer-la.",           "effects": { "food": -1 } },
+    { "id": "ev_tecnica_nova",     "text": "Un descobriment accidental millora la tècnica.",             "effects": { "food": 1 } },
+    { "id": "ev_intercanvi_eines", "text": "Un grup veí demana eines a canvi de provisions.",            "effects": { "food": 2 } },
+    {
+      "id": "ev_desc_agulla", "is_discovery_event": true, "is_single_use": true,
+      "discovery_skill_id": "bt_agulla_os",
+      "text": "Mentre talles os, un fragment llarg i fi queda perfectament fi com una agulla. \"Amb un forat aquí, podríem cosir pells...\"",
+      "options": [
+        { "text": "Experimentar plegats (−2 Menjar)", "food_delta": -2, "discovers": true },
+        { "text": "Deixar-ho per a un altre moment", "food_delta": 1, "discovers": false }
+      ]
+    },
+    {
+      "id": "ev_fissura_pedra",
+      "text": "El cop de percussor ha obert una fissura que no havia vist. La pedra cruix lleugerament sota els dits. La línia corre en diagonal, cap a la part que volia conservar.",
+      "options": [
+        { "text": "Forçar l'angle: aprofitar la fissura com a guia natural.", "token_delta": -2 },
+        { "text": "Canviar el tall: deixo que la pedra decideixi la forma.",  "token_delta": 1 },
+        { "text": "Descartar. Camino fins al jaç de sílex.",                   "food_delta": -1, "token_delta": -1 }
+      ]
+    },
+    {
+      "id": "ev_aprenent_observa",
+      "text": "Un infant s'ha aturat darrere meu i mira com treballo la pedra. No fa soroll. Observa on cau el rebuig i segueix el moviment de la meva mà.",
+      "options": [
+        { "text": "Deixar-lo quedar. Parlo mentre treballo.", "token_delta": -1 },
+        { "text": "Fer-lo marxar. Li diré que torni quan acabi.", "token_delta": 1 },
+        { "text": "Donar-li el rebuig. Que aprengui sol.", "health_delta": 1, "token_delta": -1 }
+      ]
+    },
+    {
+      "id": "ev_fulla_prestada",
+      "text": "El company m'allarga la mà. La seva fulla ha quedat embotida dins la bèstia. La meva fulla és bona, però no en tinc cap altra avui.",
+      "options": [
+        { "text": "Donar-li la meva fulla. Torna amb menjar per als dos.", "food_delta": 2, "token_delta": -2 },
+        { "text": "Donar-li un fragment de rebuig. Serveix si va amb compte.", "food_delta": 1, "token_delta": -1 },
+        { "text": "Dir-li que no. Avui la necessito.", "food_delta": -1, "token_delta": 1 }
+      ]
+    }
+  ],
+
+  "pool_ritual": [
+    {
+      "id": "pe_malaltia",
+      "text": "Una febre s'escampa pel campament. Alguns membres cauen malalts i les reserves s'esgoten.",
+      "effects": { "food": -3, "health": -15 },
+      "blocked_if": [{ "type": "has_skill", "id": "bt_guariment_plantes" }]
+    },
+    { "id": "ev_visio_profunda",  "text": "Una visió durant el ritual guia el grup cap a recursos amagats.", "effects": { "food": 2 } },
+    { "id": "ev_ritual_cohesio",  "text": "El ritual reforça la cohesió del grup.",                          "effects": { "food": 1 } },
+    { "id": "ev_espiritocontent", "text": "Els esperits estan contents. El grup se sent protegit.",          "effects": { "health": 5 } },
+    {
+      "id": "ev_desc_herbes", "is_discovery_event": true, "is_single_use": true,
+      "discovery_skill_id": "bt_guariment_plantes",
+      "text": "Durant el ritual, un vell crema certes herbes que mai no has vist. Olora diferent. Algú amb mal de ventre s'ha millorat.",
+      "options": [
+        { "text": "Demanar-li que t'ho expliqui", "food_delta": -2, "discovers": true },
+        { "text": "Observar en silenci", "food_delta": 1, "discovers": false }
+      ]
+    },
+    {
+      "id": "ev_dol_enterrament",
+      "text": "Un membre del clan ha mort al matí. Hi ha ocre vermell al sac, i un cargol marí que ningú no ha volgut tocar. El cos és allà.",
+      "options": [
+        { "text": "Enterrar-lo fondo. Posar-hi l'ocre i el cargol.", "health_delta": 2, "token_delta": -2 },
+        { "text": "Cavar just el que cal. Cobrir-lo i continuar.",   "health_delta": 0, "token_delta": 0 },
+        { "text": "Deixar-lo a l'aire. El vent fa la seva feina.",   "health_delta": -1 }
+      ]
+    },
+    {
+      "id": "ev_figura_venus",
+      "text": "Tens un tros d'ivori a les mans. La forma surt sola — corbes, volum, pes. El clan s'ha aturat a mirar.",
+      "options": [
+        { "text": "Acabar-la i posar-la al centre del campament.", "health_delta": 1, "token_delta": -1 },
+        { "text": "Acabar-la i guardar-la. Aquesta és meva.",       "health_delta": 2, "token_delta": -1 },
+        { "text": "Colpejar el bloc fins que es trenqui.",          "health_delta": 0 }
+      ]
+    },
+    {
+      "id": "ev_transicio_xaman",
+      "blocked_if": [{ "type": "axis_above", "axis": "impuls", "value": 0.70 }],
+      "text": "Fa dies que veig coses. Formes a les pedres, veus que no venen de cap boca. L'ancià m'ha mirat diferent. Diu que és el senyal.",
+      "options": [
+        { "text": "Tres nits sol a la caverna. Res a menjar.", "food_delta": -2, "health_delta": -1 },
+        { "text": "Fer-ho amb l'ancià i el clan a prop.",      "food_delta": -1 }
+      ]
+    },
+    {
+      "id": "ev_planta_amarga",
+      "text": "Un infant crema de febre des de fa dos dies. Un vell s'acosta amb una rel negra que no he vist mai. Diu que funciona.",
+      "options": [
+        {
+          "text": "Provar la rel a dosi petita.",
+          "skill_modifier": {
+            "skill_id": "bt_guariment_plantes",
+            "present_health_delta": 3,
+            "absent_health_options": [1, -2]
+          }
+        },
+        { "text": "Continuar amb el que conec. Carn bullida, caliu, repòs.", "food_delta": -1, "health_delta": 1 },
+        { "text": "Deixar que ho faci el vell. Donar-li una ofrena.",        "health_delta": 2, "token_delta": -1 }
+      ]
+    }
+  ],
+
+  "pool_social": [
+    { "id": "ev_dispute_interna",  "text": "Una disputa interna distreu el grup.",             "effects": { "food": -1 } },
+    { "id": "ev_aliat_nou",        "text": "Un grup veí ofereix col·laboració temporal.",       "effects": { "food": 2 } },
+    { "id": "ev_lider_respectat",  "text": "El respecte augmenta. El grup treballa millor.",    "effects": { "food": 1 } },
+    {
+      "id": "ev_desc_ornaments", "is_discovery_event": true, "is_single_use": true,
+      "discovery_skill_id": "bt_ornaments",
+      "text": "L'estranger que ha visitat el campament porta closques foradades lligades al coll. Tothom els mira. T'ofereix una.",
+      "options": [
+        { "text": "Acceptar-la i preguntar-li (−3 Menjar)", "food_delta": -3, "discovers": true },
+        { "text": "Agrair-ho però declinar", "food_delta": 1, "discovers": false }
+      ]
+    },
+    {
+      "id": "ev_fill_orfe",
+      "blocked_if": [{ "type": "resource_below", "resource": "food", "value": 3 }],
+      "text": "Una dona del clan s'acosta amb dos infants agafats a la seva roba. El seu home no ha tornat de la darrera cacera. Em mira sense dir res, però l'enteneixo.",
+      "options": [
+        { "text": "Els acollim: dormen sota el meu sostre i mengen a la meva taula.", "food_delta": -2, "token_delta": -1 },
+        { "text": "Proposo que el clan reparteixi la càrrega entre tots.",            "food_delta": -1 },
+        { "text": "Faig veure que no he vist res i continuo amb el meu treball." }
+      ]
+    },
+    {
+      "id": "ev_rancor_ancians",
+      "text": "Dos dels homes vells del clan s'han encarat a crits davant tothom. La disputa és per la queixalada millor d'un cérvol abatut ahir.",
+      "options": [
+        { "text": "Prenc part pel que crec que té raó.", "token_delta": 1 },
+        { "text": "Proposo dividir la peça.",            "token_delta": -1 },
+        { "text": "M'allunyo. Que ho resolguin ells." }
+      ]
+    },
+    {
+      "id": "ev_estrany_a_la_vora",
+      "blocked_if": [{ "type": "resource_below", "resource": "health", "value": 3 }],
+      "text": "Un home s'acosta al campament arrossegant els peus. No és del clan. Porta una bossa de cuir amb pedres que no he vist mai. Té els llavis secs i els ulls enfonsats.",
+      "options": [
+        { "text": "L'invito a seure i li ofereixo menjar. Acabem bescanviant pedres.", "food_delta": -1, "token_delta": 2 },
+        { "text": "Li dono una mica de menjar i li indico el camí.",                    "food_delta": -1 },
+        { "text": "No el deixo apropar-se. Protegeixo els meus primer.",                "requires_children": true }
+      ]
+    },
+    {
+      "id": "ev_criatura_dificil",
+      "text": "Un infant del clan fa mesos que hauria d'haver parlat i no ho fa. La mare cada nit li posa la mà al pit i espera.",
+      "options": [
+        { "text": "Contribueixo als materials del ritual i m'assec prop de la família.", "food_delta": -1, "health_delta": 1, "token_delta": -1, "requires_children": true },
+        { "text": "Deixo una part de les meves provisions per ajudar.",                   "food_delta": -1, "token_delta": -1, "requires_no_children": true },
+        { "text": "Porto menjar a la família. L'infant trobarà la veu quan estigui llest.", "food_delta": -2, "health_delta": 1, "requires_children": true },
+        { "text": "Porto el que puc de menjar i dic que els infants de vegades triguen.",   "food_delta": -1, "health_delta": 1, "requires_no_children": true },
+        { "text": "No és assumpte meu. Cada família resol les seves coses." }
+      ]
+    }
+  ]
+}

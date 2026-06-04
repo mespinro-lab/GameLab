@@ -1,0 +1,48 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="Bloodline"
+run/main_scene="res://scenes/game/main.tscn"
+config/features=PackedStringArray("4.6", "Mobile")
+boot_splash/bg_color=Color(0.07, 0.05, 0.03, 1)
+config/icon="res://icon.svg"
+
+[autoload]
+
+GameState="*res://scripts/core/GameState.gd"
+DataLoader="*res://scripts/core/DataLoader.gd"
+BranchManager="*res://scripts/core/BranchManager.gd"
+ActionManager="*res://scripts/core/ActionManager.gd"
+EventManager="*res://scripts/core/EventManager.gd"
+EraManager="*res://scripts/core/EraManager.gd"
+LineageManager="*res://scripts/core/LineageManager.gd"
+SaveSystem="*res://scripts/core/SaveSystem.gd"
+ScoringManager="*res://scripts/core/ScoringManager.gd"
+
+[display]
+
+window/size/viewport_width=390
+window/size/viewport_height=844
+window/size/window_width_override=390
+window/size/window_height_override=844
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+window/handheld/orientation="portrait"
+
+[physics]
+
+3d/physics_engine="Jolt Physics"
+
+[rendering]
+
+rendering_device/driver.windows="d3d12"
+renderer/rendering_method="mobile"

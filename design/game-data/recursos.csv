@@ -1,0 +1,5 @@
+id,nom,icona,valor_inicial,maxim,visible_des_de,hasForecast,notes
+food,Menjar,🍖,40,100,inici,true,Global (compartit per totes les eres)
+health,Salut,❤️,80,100,inici,true,Global
+happiness,Felicitat,😊,60,100,language_basics,true,Visible des del cicle era 2 (language_basics)
+familyReputation,Reputació Familiar,🏛️,0,100,tribal_organization,false,Visible des del cicle era 8 (tribal_organization)

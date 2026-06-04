@@ -1,0 +1,14 @@
+id,era_id,nom,icona,cicle_aparicio,requereix_tecnologia,tipus_consequencia,consequencia
+language_basics,prehistoria,Llengua Bàsica,🗣️,2,base,nou_bonus_stat,Social +1
+language_basics,prehistoria,Llengua Bàsica,🗣️,2,base,nova_visibilitat,Indicador Social visible
+language_basics,prehistoria,Llengua Bàsica,🗣️,2,base,nova_visibilitat,Indicador Felicitat visible
+tribal_organization,prehistoria,Organització Tribal,👥,8,language_basics,nova_visibilitat,Indicador Reputació Familiar visible
+tribal_organization,prehistoria,Organització Tribal,👥,8,language_basics,nova_accio,buscar_parella
+tribal_organization,prehistoria,Organització Tribal,👥,8,language_basics,nova_accio,cuidar_llar
+fire,prehistoria,Domini del Foc,🔥,18,base,bonus_salut_max,+5 Salut màxima permanent
+fire,prehistoria,Domini del Foc,🔥,18,base,nova_accio,cuinar
+stone_tools,prehistoria,Eines de Pedra,🪨,28,base,nova_accio,explorar
+symbolic_thinking,prehistoria,Pensament Simbòlic,🧿,38,tribal_organization,nou_bonus_stat,Intel·ligència +1
+sedentarism,prehistoria,Sedentarisme,🏕️,47,stone_tools,nova_zona_possible,Millora accions de Llar i Camp
+agricultura,prehistoria,Agricultura,🌾,55,sedentarism,gate_tech,Transició a Era Neolític
+agricultura,prehistoria,Agricultura,🌾,55,sedentarism,nou_bonus_stat,Intel·ligència +1
