@@ -238,18 +238,37 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 #hex-enginy     { color: #a29bfe; text-shadow: 0 0 10px rgba(162,155,254,0.7); }
 #hex-vincle     { color: #5dade2; text-shadow: 0 0 10px rgba(93,173,226,0.7); }
 
-/* Knowledge row (unlocked branch techs) */
+/* Knowledge row (branches + unlocked skills) */
 #knowledge-row {
   flex: 0 0 auto;
-  padding: 0.18rem 0.6rem;
+  padding: 0.15rem 0.5rem;
   border-top: 1px solid rgba(100,65,25,0.4);
   min-height: 26px;
-  max-height: 36px;
+  max-height: 38px;
   overflow: hidden;
   display: flex;
   justify-content: center;
-  gap: 0.25rem;
   align-items: center;
+  gap: 0.25rem;
+}
+#branch-badges, #skill-badges {
+  display: flex;
+  gap: 0.2rem;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+#branch-badges:empty, #skill-badges:empty { display: none; }
+.branch-pill {
+  display: flex;
+  align-items: center;
+  background: rgba(200,120,32,0.18);
+  border: 1px solid rgba(232,168,40,0.45);
+  border-radius: 20px;
+  padding: 2px 7px;
+  font-size: 0.65rem;
+  color: var(--gold);
+  white-space: nowrap;
+  font-weight: 700;
 }
 .skill-pill {
   display: flex;
@@ -261,6 +280,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   font-size: 0.65rem;
   color: #90caf9;
   white-space: nowrap;
+}
+.know-sep {
+  width: 1px; height: 14px;
+  background: rgba(100,65,25,0.5);
+  flex-shrink: 0;
 }
 
 /* Buttons in top bar */
@@ -904,9 +928,52 @@ body.donut-active * { pointer-events: none !important; }
   border-color: var(--gold);
 }
 
-/* Game over overlay */
-.overlay-big-icon { font-size: 3rem; text-align: center; }
-#btn-go-restart { padding: 0.8rem; font-size: 0.95rem; font-weight: 700; background: var(--accent); border-color: var(--gold); }
+/* Fi de partida */
+.end-card { gap: 0.75rem; }
+#end-header { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
+#end-icon { font-size: 2.5rem; }
+#end-dynasty-name { font-size: 1.3rem; font-weight: 900; color: var(--gold); }
+#end-tagline { font-size: 0.8rem; color: var(--text-dim); }
+#end-stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.5rem;
+}
+.end-stat {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.55rem 0.4rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.end-stat-val { font-size: 1.1rem; font-weight: 800; color: var(--gold); }
+.end-stat-label { font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+#end-genealogy { display: flex; flex-direction: column; gap: 0.35rem; }
+.end-gen-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--surface2);
+  border-radius: 8px;
+  border-left: 3px solid var(--border);
+}
+.end-gen-row.gen-first { border-left-color: var(--gold); }
+.end-gen-num { font-size: 0.65rem; color: var(--text-dim); min-width: 24px; }
+.end-gen-name { font-size: 0.82rem; font-weight: 700; color: var(--text); flex: 1; }
+.end-gen-detail { font-size: 0.68rem; color: var(--text-dim); text-align: right; }
+.end-gen-branch { font-size: 0.65rem; color: var(--gold); }
+#btn-go-restart {
+  padding: 0.8rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  background: var(--accent);
+  border-color: var(--gold);
+  align-self: stretch;
+}
 
 /* Nova Partida overlay */
 .new-game-card {

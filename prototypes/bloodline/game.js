@@ -134,6 +134,7 @@ function initState(dynastyName, race) {
     discoveredUniversalTechIds: new Set(),
     discoveredZoneIds: new Set(ZONE_DEFS.filter(z => z.starts_discovered).map(z => z.id)),
     log: [],
+    genealogy: [],
     siblingPool: [],
     pendingEvent: null,
     pendingSuccession: null,
@@ -353,6 +354,16 @@ function triggerSuccession() {
     generation: state.generation,
     successors: [...childSuccessors, ...siblingSuccessors],
   };
+  state.genealogy.push({
+    label:      state.character.label || `Gen ${state.generation}`,
+    generation: state.generation,
+    age:        characterAge(),
+    cause:      state.health <= 0 ? 'Salut esgotada' : 'Vida complerta',
+    topAxis,
+    branches:   getActiveBranches().map(b => b.name),
+    skills:     state.character.unlockedSkillIds.size,
+  });
+
   state.pendingDeath = {
     label: state.character.label || `Gen ${state.generation}`,
     age: characterAge(),
@@ -880,23 +891,27 @@ function renderCharPanel() {
   el('hex-enginy').textContent = (state.character.stats['enginy'] || 0).toFixed(1);
   el('hex-vincle').textContent = (state.character.stats['vincle'] || 0).toFixed(1);
 
-  // Knowledge row: unlocked branch techs as pills
-  const kr = el('knowledge-row');
-  kr.innerHTML = '';
-  if (state.character.unlockedSkillIds.size === 0) {
-    const empty = document.createElement('span');
-    empty.style.cssText = 'font-size:0.65rem;color:var(--text-dim)';
-    empty.textContent   = 'Cap habilitat';
-    kr.appendChild(empty);
-  } else {
-    for (const skillId of state.character.unlockedSkillIds) {
-      const bt = SKILL_DEFS.find(t => t.id === skillId);
-      if (!bt) continue;
-      const pill = document.createElement('span');
-      pill.className   = 'skill-pill';
-      pill.textContent = bt.name;
-      kr.appendChild(pill);
-    }
+  // Branch badges
+  const branchEl = el('branch-badges');
+  branchEl.innerHTML = '';
+  const activeBranches = getActiveBranches();
+  for (const b of activeBranches) {
+    const pill = document.createElement('span');
+    pill.className   = 'branch-pill';
+    pill.textContent = b.name;
+    branchEl.appendChild(pill);
+  }
+
+  // Skill pills
+  const skillEl = el('skill-badges');
+  skillEl.innerHTML = '';
+  for (const skillId of state.character.unlockedSkillIds) {
+    const bt = SKILL_DEFS.find(t => t.id === skillId);
+    if (!bt) continue;
+    const pill = document.createElement('span');
+    pill.className   = 'skill-pill';
+    pill.textContent = bt.name;
+    skillEl.appendChild(pill);
   }
 }
 
@@ -1100,11 +1115,9 @@ function renderSuccessionOverlays() {
     }));
     return;
   }
-  // Game over
+  // Game over — pantalla de fi completa
   if (state.gameOver) {
-    el('go-text').textContent = state.gameOverReason === 'no_heir'
-      ? 'No hi ha hereus. El llinatge s\'ha extingit.'
-      : `L'era ha finalitzat al cicle ${state.cycle}.`;
+    renderEndScreen();
     show('overlay-gameover');
     return;
   }
@@ -1186,6 +1199,46 @@ function renderTestingPanel() {
   // Log
   const lgEl = el('test-log');
   lgEl.innerHTML = state.log.map(m => `<div class="test-log-item">${m}</div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════ END SCREEN
+function renderEndScreen() {
+  const isExtinct   = state.gameOverReason === 'no_heir';
+  const isEraEnd    = state.gameOverReason === 'era_complete';
+  const totalGens   = state.genealogy.length;
+  const totalTechs  = state.discoveredUniversalTechIds.size;
+  const totalSkills = [...new Set(state.genealogy.flatMap(g => g.skills ? [g.skills] : []))].reduce((a, b) => a + b, 0);
+
+  el('end-icon').textContent        = isExtinct ? '💀' : isEraEnd ? '🏆' : '🦴';
+  el('end-dynasty-name').textContent = `Llinatge ${state.dynastyName}`;
+  el('end-tagline').textContent      = isExtinct
+    ? 'El llinatge s\'ha extingit sense hereus.'
+    : isEraEnd
+    ? `L'era ha finalitzat. ${totalGens} generació${totalGens !== 1 ? 'ns' : ''} han passat.`
+    : `La partida ha acabat al cicle ${state.cycle}.`;
+
+  el('end-stats-row').innerHTML = `
+    <div class="end-stat"><span class="end-stat-val">${state.cycle}</span><span class="end-stat-label">Cicles</span></div>
+    <div class="end-stat"><span class="end-stat-val">${totalGens}</span><span class="end-stat-label">Generacions</span></div>
+    <div class="end-stat"><span class="end-stat-val">${totalTechs}/${UNIVERSAL_TECHS.length}</span><span class="end-stat-label">Techs</span></div>
+  `;
+
+  const genoEl = el('end-genealogy');
+  genoEl.innerHTML = '';
+  state.genealogy.forEach((g, i) => {
+    const row = document.createElement('div');
+    row.className = `end-gen-row${i === 0 ? ' gen-first' : ''}`;
+    const axisLabel = g.topAxis ? AXIS_LABELS[g.topAxis]?.right || g.topAxis : '—';
+    const branchStr = g.branches?.length ? g.branches.join(', ') : '—';
+    row.innerHTML = `
+      <span class="end-gen-num">G${g.generation}</span>
+      <span class="end-gen-name">${g.label} ${state.dynastyName}</span>
+      <span class="end-gen-detail">
+        ${g.age} cicles<br>
+        <span class="end-gen-branch">${branchStr}</span>
+      </span>`;
+    genoEl.appendChild(row);
+  });
 }
 
 // ═══════════════════════════════════════════════════════════ RENDER ALL
@@ -1353,16 +1406,6 @@ function setupEventListeners() {
   el('btn-close-test-panel').addEventListener('click', () => hide('overlay-test-panel'));
   el('test-close-area').addEventListener('click', () => hide('overlay-test-panel'));
 
-  // Pass turn button (if needed)
-  el('btn-rest-cycle').addEventListener('click', () => {
-    state.cycle++;
-    autoDiscoverUniversalTechs();
-    state.food   = Math.max(0, state.food   - FOOD_UPKEEP);
-    state.health = Math.max(0, state.health - getAgingLoss(characterAge()));
-    addLog(`[${state.cycle}] Torn passat.`);
-    if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
-    renderAll();
-  });
 }
 
 function showActionInfo(action) {
