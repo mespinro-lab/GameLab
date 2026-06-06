@@ -153,6 +153,7 @@ function loadGame() {
         inheritedDestreses:  new Set(s.inheritedDestreses  || []),
       })),
       nextGenHealthMax: d.nextGenHealthMax || null,
+      currentHealthMax: d.currentHealthMax || (d.nextGenHealthMax || HEALTH_MAX),
       pendingEvent: null, pendingSuccession: null, pendingDeath: null, pendingNewGen: null,
       pendingDiscoveries: [], pendingBirths: [],
       gameOver: d.gameOver || false, gameOverReason: d.gameOverReason || null,
@@ -229,6 +230,7 @@ function initState(dynastyName, race) {
     pendingDeath: null,
     pendingNewGen: null,
     nextGenHealthMax: null,
+    currentHealthMax: HEALTH_MAX,
     gameOver: false,
     gameOverReason: null,
   };
@@ -279,6 +281,8 @@ function getActiveBranches() {
   return BRANCHES.filter(b => evaluateConditions(b.conditions));
 }
 
+function healthMax() { return state?.currentHealthMax ?? HEALTH_MAX; }
+
 // ═══════════════════════════════════════════════════════════ TECH DISCOVERY
 function getDiscoverableTechs() {
   return UNIVERSAL_TECHS.filter(t =>
@@ -288,11 +292,12 @@ function getDiscoverableTechs() {
 function applyUniversalTechEffect(tech) {
   if (!tech.effect) return;
   if (tech.effect.healthBonus) {
-    state.health = Math.min(HEALTH_MAX, state.health + tech.effect.healthBonus);
+    state.health = Math.min(healthMax(), state.health + tech.effect.healthBonus);
   }
   if (tech.effect.healthPctBonus) {
+    if (tech.effect.nextGenHealthMax) state.currentHealthMax = tech.effect.nextGenHealthMax;
     const bonus = Math.round(state.health * tech.effect.healthPctBonus);
-    state.health = Math.min(HEALTH_MAX, state.health + bonus);
+    state.health = Math.min(healthMax(), state.health + bonus);
   }
   if (tech.effect.nextGenHealthMax) {
     state.nextGenHealthMax = tech.effect.nextGenHealthMax;
@@ -333,10 +338,17 @@ function unlockSkill(bt) {
   }
   const pe = bt.passive_effect;
   if (pe) {
-    if (pe.type === 'grant_health')   state.health    = Math.min(HEALTH_MAX, state.health + pe.amount);
+    if (pe.type === 'grant_health')   state.health    = Math.min(healthMax(), state.health + pe.amount);
     if (pe.type === 'grant_material') state.material += pe.amount;
     if (pe.type === 'unlock_zone')    state.discoveredZoneIds.add(pe.unlocks_zone);
   }
+  state.pendingDiscoveries.push({
+    _isSkill: true, icon: '🧩', name: bt.name,
+    desc: bt.unlocks_action_ids?.length
+      ? `Desbloqueja: ${bt.unlocks_action_ids.map(id => ACTIONS.find(a => a.id === id)?.name || id).join(', ')}.`
+      : 'Nova tècnica del llinatge.',
+    effect: pe?.desc ? { desc: pe.desc } : null,
+  });
 }
 
 // ═══════════════════════════════════════════════════════════ DESTRESA DISCOVERY
@@ -351,7 +363,12 @@ function checkDestresesAfterAction() {
     if (met) {
       state.character.destreses.add(def.id);
       addLog(`⭐ Destresa: ${def.name}`);
-      state.pendingDiscoveries.push({ _isDestresa: true, icon: '⭐', name: def.name, desc: `Has après la destresa "${def.name}" per la teva inclinació vital.`, effect: null });
+      const linkedAction = ACTIONS.find(a => a.destresa_id === def.id);
+      state.pendingDiscoveries.push({
+        _isDestresa: true, icon: '⭐', name: def.name,
+        desc: `Has après la destresa "${def.name}" per la teva inclinació vital.`,
+        effect: linkedAction ? { desc: `+${DESTRESA_BONUS} a "${linkedAction.name}"` } : null,
+      });
     }
   }
 }
@@ -402,7 +419,7 @@ function applyCharacterEffect(action) {
   }
   if (eff.type === 'add_child' || eff.type === 'add_child_with_risk') {
     // Health-based success probability (higher health = more likely)
-    const healthRatio = state.health / HEALTH_MAX;
+    const healthRatio = state.health / healthMax();
     const successChance = Math.max(0.25, Math.min(0.95, 0.30 + healthRatio * 0.65));
     if (Math.random() > successChance) {
       addLog('Pèrdua de l\'embaràs. La salut és massa baixa.');
@@ -446,10 +463,12 @@ function selectBalancedEvent(eligible) {
   const posDebt = Math.max(0, expPos - (stats.positive || 0));
   const negDebt = Math.max(0, expNeg - (stats.negative || 0));
 
+  const repBonus = Math.min(0.4, (state.reputacio || 0) * 0.1);
   const weighted = eligible.map(ev => {
     const type = classifyEvent(ev);
     const debt = type === 'positive' ? posDebt : type === 'negative' ? negDebt : 0;
-    return { ev, weight: 1 + debt * EVENT_BALANCE_WEIGHT };
+    const repW = type === 'positive' ? repBonus : type === 'negative' ? -repBonus * 0.5 : 0;
+    return { ev, weight: Math.max(0.1, 1 + debt * EVENT_BALANCE_WEIGHT + repW) };
   });
   const total = weighted.reduce((s, w) => s + w.weight, 0);
   let r = Math.random() * total;
@@ -556,6 +575,7 @@ function continueSuccession(successorId) {
       // Apply nextGenHealthMax if fire has been discovered
       if (res.id === 'health' && state.nextGenHealthMax) {
         state[res.id] = state.nextGenHealthMax;
+        state.currentHealthMax = state.nextGenHealthMax;
       } else {
         state[res.id] = res.startVal;
       }
@@ -657,9 +677,10 @@ function executeAction(actionId) {
     }, 0);
     // Primary resource output (food/health) — not all actions have this
     const outRes = action.output_resource;
+    let output = 0, outDef = null;
     if (outRes && action.output_min != null) {
-      const output = Math.round(randInt(action.output_min + outMinBonus, action.output_max + outMaxBonus) * getStatMultiplier(action)) + destresaBonus;
-      const outDef = RESOURCE_DEFS.find(r => r.id === outRes);
+      output = Math.round(randInt(action.output_min + outMinBonus, action.output_max + outMaxBonus) * getStatMultiplier(action)) + destresaBonus;
+      outDef = RESOURCE_DEFS.find(r => r.id === outRes);
       if (outDef) {
         const newVal = (state[outRes] || 0) + output;
         state[outRes] = outDef.max != null ? Math.min(outDef.max, newVal) : newVal;
@@ -705,6 +726,12 @@ function executeAction(actionId) {
     state.cycle++;
     autoDiscoverUniversalTechs();
     applyTurnUpkeep();
+    // Notify when age-gated base actions become available
+    for (const a of ACTIONS.filter(x => x.is_base && x.minAge)) {
+      if (characterAge() === a.minAge && !state.character.charState[a.requires?.[0]?.state]) {
+        state.pendingDiscoveries.push({ _isEvent: true, icon: getActionIcon(a), name: a.name, desc: `Ja tens edat per "${a.name}". ${a.description || ''}` });
+      }
+    }
     // Log
     if (output > 0) addLog(`[${state.cycle}] ${action.name}: +${output} ${outDef?.label || outRes}`);
     else            addLog(`[${state.cycle}] ${action.name}`);
@@ -1056,7 +1083,7 @@ function updateCarouselInfo() {
   el('zc-name').textContent     = action.name;
   el('zc-benefits').textContent = parts.join('  ');
   el('zc-desc').textContent     = tooYoung
-    ? `🔒 No tens edat per a això (mínim ${action.minAge} cicles)`
+    ? 'No tens edat per a això'
     : blocked
     ? '🔒 Inclinació insuficient'
     : (action.description || '');
@@ -1155,7 +1182,7 @@ function renderInMapOverlay() {
     const disc = state.pendingDiscoveries[0];
     el('disc-icon').textContent  = disc.icon;
     el('disc-name').textContent  = disc.name;
-    el('disc-badge').textContent = disc._isDestresa ? '⭐ Nova destresa' : disc._isZone ? '🗺️ Zona descoberta' : disc._isTech ? '✦ DESCOBRIMENT ✦' : '✨ Nou descobriment';
+    el('disc-badge').textContent = disc._isPartner ? '💑 Nova parella' : disc._isSkill ? '🧩 Nova tècnica' : disc._isDestresa ? '⭐ Nova destresa' : disc._isZone ? '🗺️ Zona descoberta' : disc._isTech ? '✦ DESCOBRIMENT ✦' : '✨ Nou descobriment';
     el('disc-desc').textContent  = disc.description || disc.desc || '';
     if (disc.effect?.desc) {
       el('disc-effects').textContent = disc.effect.desc;
@@ -1234,7 +1261,7 @@ function dismissEvent() {
   trackEventFired(ev);
   if (ev.effects) {
     if (ev.effects.food)   state.food   = Math.max(0, Math.min(FOOD_MAX, state.food + ev.effects.food));
-    if (ev.effects.health) state.health = Math.max(0, Math.min(HEALTH_MAX, state.health + ev.effects.health));
+    if (ev.effects.health) state.health = Math.max(0, Math.min(healthMax(), state.health + ev.effects.health));
   }
   state.pendingEvent = null;
   if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
@@ -1259,7 +1286,7 @@ function resolveDiscoveryOption(optionIndex) {
       healthDelta = opt.skill_modifier.present_health_delta ?? healthDelta;
     }
   }
-  if (healthDelta !== 0) state.health = Math.max(0, Math.min(HEALTH_MAX, state.health + healthDelta));
+  if (healthDelta !== 0) state.health = Math.max(0, Math.min(healthMax(), state.health + healthDelta));
   if (opt.discovers && ev.discovery_skill_id) {
     const bt = SKILL_DEFS.find(t => t.id === ev.discovery_skill_id);
     if (bt) unlockSkill(bt);
