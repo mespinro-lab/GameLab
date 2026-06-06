@@ -81,8 +81,8 @@ function hide(id) { const e = el(id); if (e) e.classList.add('hidden'); }
 let state = null;
 
 function getAgingLoss(age) {
-  const excess = Math.max(0, age - AGING_THRESHOLD);
-  return AGING_BASE + Math.floor(Math.pow(excess, AGING_POWER) * AGING_SCALE);
+  // Only age-based decay from cycle 11 onward; starvation handled separately
+  return age >= 11 ? 2 : 0;
 }
 function characterAge() { return state.cycle - (state.character.birthCycle || 0); }
 function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
@@ -110,7 +110,6 @@ function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedS
       ? { ...inheritedStats }
       : Object.fromEntries(STAT_DEFS.map(s => [s.id, STAT_STARTING_VALUE])),
     destreses: new Set(inheritedDestreses),
-    firedSingleUseEventIds: new Set(),
     charState: Object.fromEntries(CHARACTER_STATE_DEFS.map(d => [d.id, d.startVal])),
     children: [],
   };
@@ -133,6 +132,7 @@ function initState(dynastyName, race) {
     character: createCharacter(inclination, basePurchased, new Set(), null, new Set(), 0, CHILD_NAMES[0]),
     discoveredUniversalTechIds: new Set(),
     discoveredZoneIds: new Set(ZONE_DEFS.filter(z => z.starts_discovered).map(z => z.id)),
+    firedSingleUseEventIds: new Set(),
     log: [],
     genealogy: [],
     siblingPool: [],
@@ -161,6 +161,7 @@ function applyInclinationDeltas(deltas) {
 
 // ═══════════════════════════════════════════════════════════ ACTION VISIBILITY
 function getActionVisibility(action) {
+  if (action.universal_prereq && !state.discoveredUniversalTechIds.has(action.universal_prereq)) return 'HIDDEN';
   if (!action.inclination_requirements) return 'ACTIVE';
   for (const [axis, range] of Object.entries(action.inclination_requirements)) {
     const val = state.character.inclination[axis];
@@ -299,7 +300,7 @@ function applyCharacterEffect(action) {
 // ═══════════════════════════════════════════════════════════ EVENT SYSTEM
 function getEligiblePoolEvents(pool) {
   return pool.filter(ev => {
-    if (ev.is_single_use && state.character.firedSingleUseEventIds.has(ev.id)) return false;
+    if (ev.is_single_use && state.firedSingleUseEventIds.has(ev.id)) return false;
     if (ev.blocked_if && evaluateBlockedIf(ev.blocked_if)) return false;
     if (!ev.is_discovery_event) return true;
     const bt = SKILL_DEFS.find(t => t.id === ev.discovery_skill_id);
@@ -350,9 +351,11 @@ function triggerSuccession() {
     inheritedInclination, inheritedStats, inheritedPurchased, inheritedSkills, inheritedDestreses, hasEnsenyat,
   }));
   const siblingSuccessors = siblings.map(s => ({ ...s, is_sibling: true }));
+  // Siblings only offered if the character leaves no children (PT-10)
+  const successors = childSuccessors.length > 0 ? childSuccessors : siblingSuccessors;
   const successionPayload = {
     generation: state.generation,
-    successors: [...childSuccessors, ...siblingSuccessors],
+    successors,
   };
   state.genealogy.push({
     label:      state.character.label || `Gen ${state.generation}`,
@@ -418,6 +421,18 @@ function getStatMultiplier(action) {
   return 1 + (state.character.stats[action.stat_key] - STAT_STARTING_VALUE) * STAT_OUTPUT_FACTOR;
 }
 
+// ═══════════════════════════════════════════════════════════ TURN UPKEEP
+function applyTurnUpkeep() {
+  const childUpkeep = state.character.children.length;
+  const totalUpkeep = FOOD_UPKEEP + childUpkeep;
+  const prevFood = state.food;
+  state.food = Math.max(0, state.food - totalUpkeep);
+  if (prevFood < totalUpkeep) {
+    state.health = Math.max(0, state.health - 10);
+  }
+  state.health = Math.max(0, state.health - getAgingLoss(characterAge()));
+}
+
 // ═══════════════════════════════════════════════════════════ ACTION EXECUTION
 function executeAction(actionId) {
   if (state.pendingEvent || state.pendingSuccession || state.gameOver) return;
@@ -442,8 +457,7 @@ function executeAction(actionId) {
       unlockSkill(chosen);
       state.cycle++;
       autoDiscoverUniversalTechs();
-      state.food   = Math.max(0, state.food   - FOOD_UPKEEP);
-      state.health = Math.max(0, state.health - getAgingLoss(characterAge()));
+      applyTurnUpkeep();
       applyFxFloaters(snap);
       addLog(`[${state.cycle}] ${action.name}`);
       if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
@@ -510,8 +524,7 @@ function executeAction(actionId) {
     // Cycle advance + upkeep
     state.cycle++;
     autoDiscoverUniversalTechs();
-    state.food   = Math.max(0, state.food   - FOOD_UPKEEP);
-    state.health = Math.max(0, state.health - getAgingLoss(characterAge()));
+    applyTurnUpkeep();
     // Log
     if (output > 0) addLog(`[${state.cycle}] ${action.name}: +${output} ${outDef?.label || outRes}`);
     else            addLog(`[${state.cycle}] ${action.name}`);
@@ -925,9 +938,10 @@ function renderTopBar() {
 function renderBottomPanel() {
   // Cycle counter
   el('panel-turn-info').textContent = `Cicle ${state.cycle}/${ERA_CYCLES}`;
-  // Food
-  el('panel-food-val').textContent = Math.round(state.food);
-  el('panel-food-fc').textContent  = `-${FOOD_UPKEEP}/t`;
+  // Food with max and dynamic upkeep rate
+  const childUpkeep = state.character.children.length;
+  el('panel-food-val').textContent = `${Math.round(state.food)}/${FOOD_MAX}`;
+  el('panel-food-fc').textContent  = `-${FOOD_UPKEEP + childUpkeep}/t`;
   // Time pips: show 5 life-stage pips
   const pips = el('time-pips');
   pips.innerHTML = '';
@@ -990,7 +1004,12 @@ function renderInMapOverlay() {
         const opt = ev.options[i];
         const btn = document.createElement('button');
         btn.className = 'ev-choice-btn';
-        btn.innerHTML = `<span class="ev-choice-name">${opt.text}</span>`;
+        const fxParts = [];
+        if (opt.food_delta)     fxParts.push(`${opt.food_delta > 0 ? '+' : ''}${opt.food_delta}🌾`);
+        if (opt.health_delta)   fxParts.push(`${opt.health_delta > 0 ? '+' : ''}${opt.health_delta}❤️`);
+        if (opt.material_delta) fxParts.push(`${opt.material_delta > 0 ? '+' : ''}${opt.material_delta}🧠`);
+        const fxHint = fxParts.length ? `<span class="ev-choice-fx">${fxParts.join('  ')}</span>` : '';
+        btn.innerHTML = `<span class="ev-choice-name">${opt.text}</span>${fxHint}`;
         btn.dataset.idx = i;
         btn.addEventListener('click', () => resolveDiscoveryOption(i));
         choicesEl.appendChild(btn);
@@ -1022,7 +1041,7 @@ function dismissBirth() {
 function dismissEvent() {
   const ev = state.pendingEvent;
   if (!ev) return;
-  if (ev.is_single_use) state.character.firedSingleUseEventIds.add(ev.id);
+  if (ev.is_single_use) state.firedSingleUseEventIds.add(ev.id);
   if (ev.effects) {
     if (ev.effects.food)   state.food   = Math.max(0, Math.min(FOOD_MAX, state.food + ev.effects.food));
     if (ev.effects.health) state.health = Math.max(0, Math.min(HEALTH_MAX, state.health + ev.effects.health));
@@ -1054,7 +1073,7 @@ function resolveDiscoveryOption(optionIndex) {
     const bt = SKILL_DEFS.find(t => t.id === ev.discovery_skill_id);
     if (bt) unlockSkill(bt);
   }
-  if (ev.is_single_use) state.character.firedSingleUseEventIds.add(ev.id);
+  if (ev.is_single_use) state.firedSingleUseEventIds.add(ev.id);
   state.pendingEvent = null;
   if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
   renderAll();

@@ -13,8 +13,8 @@ const STARTING_FOOD = 12;
 const FOOD_MAX      = 20;
 const FOOD_UPKEEP   = 2;
 
-const STARTING_HEALTH = 100;
-const HEALTH_MAX      = 100;
+const STARTING_HEALTH = 60;
+const HEALTH_MAX      = 60;
 
 const AGING_BASE      = 3;
 const AGING_THRESHOLD = 10;
@@ -70,10 +70,11 @@ const RESOURCE_DEFS = [
     glossaryDesc: `Estat físic. A 0 el personatge mor i es produeix la successió. Decreix per envelliment: ${AGING_BASE}/torn en joventut, s'accelera a partir de l'edat ${AGING_THRESHOLD}.`,
   },
   {
-    id: 'material', emoji: '🧠', label: 'Material', section: 'resources',
+    id: 'material', emoji: '🧠', label: 'Provisions', section: 'resources',
     startVal: 0, max: null, upkeep: null, showMax: false, rateType: false,
+    persistent: true,
     color: 'var(--blue)', borderColor: 'rgba(96,165,250,0.3)',
-    glossaryDesc: "Generat per accions d'artesania. Gastat per comprar i millorar accions.",
+    glossaryDesc: "Acumulat per qualsevol acció. Gastat per comprar noves accions. Persisteix entre generacions.",
   },
   {
     id: 'reputacio', emoji: '🏛️', label: 'Reputació', section: 'resources',
@@ -96,11 +97,11 @@ const DESTRESA_DEFS = [
 ];
 
 // --- Zone Definitions ---
+// Zona Ritual eliminada (playtest 2026-06-06): accions redistribuïdes a Bosc/Campament/Planes
 const ZONE_DEFS = [
   { id: 'Bosc',      label: 'Bosc',      description: "Recol·lecta avançada i plantes. Es descobreix explorant les Planes.",  starts_discovered: false },
-  { id: 'Planes',    label: 'Planes',    description: "Caça, exploració i recol·lecta exterior. Es descobreix vigilant el campament.", starts_discovered: false },
-  { id: 'Campament', label: 'Campament', description: "Supervivència base, família i ritual. Disponible des del principi.",   starts_discovered: true  },
-  { id: 'Ritual',    label: 'Ritual',    description: "Rituals i cerimònies. Es descobreix amb Pintura Rupestre.",             starts_discovered: false },
+  { id: 'Planes',    label: 'Planes',    description: "Caça, exploració i recol·lecta exterior. Disponible des del principi.", starts_discovered: true  },
+  { id: 'Campament', label: 'Campament', description: "Supervivència base, família i artesania. Disponible des del principi.", starts_discovered: true  },
 ];
 
 // --- Axis Definitions ---
@@ -153,7 +154,7 @@ const UNIVERSAL_TECHS = [
     effect: { healthBonus: 10, desc: "+10 Salut (menjar cuit)" }
   },
   {
-    id: "ut_eines", name: "Les Eines", icon: "🪨", cycle: 22,
+    id: "ut_eines", name: "Les Eines", icon: "🪨", cycle: 16,
     description: "Fulloles de sílex de precisió: formes especialitzades per a caça, tall i gravat.",
     effect: null
   },
@@ -248,7 +249,7 @@ const SKILL_DEFS = [
     universal_prereq: "ut_art",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.30 }, { axis: "sociabilitat", min: 0.20 }] },
     unlocks_action_ids: ["act_pintar_parets", "act_narrar_llegendes"],
-    passive_effect: { type: "unlock_zone", unlocks_zone: "Ritual", desc: "Desbloqueja el Lloc Sagrat" },
+    passive_effect: { type: "grant_material", amount: 2, desc: "+2 Provisions (les pintures enforteixen la identitat del clan)" },
     is_hidden: false
   },
   {
@@ -323,7 +324,7 @@ const ACTIONS = [
     execute_cost: 1, output_resource: "food", output_min: 2, output_max: 5,
     stat_key: "forca", stat_gain: 0.10,
     destresa_id: "d_rastreig",
-    inclination_deltas: { impuls: +0.02, "intel·lecte": +0.01, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: +0.03, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_caca"
   },
   {
@@ -332,7 +333,7 @@ const ACTIONS = [
     execute_cost: 1, output_resource: "food", output_min: 2, output_max: 4,
     stat_key: "forca", stat_gain: 0.10,
     destresa_id: "d_botanica",
-    inclination_deltas: { impuls: -0.01, "intel·lecte": +0.01, espiritualitat: 0, sociabilitat: +0.01 },
+    inclination_deltas: { impuls: -0.02, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: +0.02 },
     event_pool_id: "pool_recollecta"
   },
   {
@@ -341,7 +342,7 @@ const ACTIONS = [
     execute_cost: 0, output_resource: "material", output_min: 1, output_max: 3,
     stat_key: "enginy", stat_gain: 0.10,
     destresa_id: "d_talla_silex",
-    inclination_deltas: { impuls: -0.01, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: -0.02, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
   },
   {
@@ -351,7 +352,7 @@ const ACTIONS = [
     reputation_gain: 1,
     stat_key: "vincle", stat_gain: 0.10,
     destresa_id: "d_custodi_foc",
-    inclination_deltas: { impuls: 0, "intel·lecte": -0.01, espiritualitat: +0.03, sociabilitat: +0.02 },
+    inclination_deltas: { impuls: 0, "intel·lecte": -0.02, espiritualitat: +0.05, sociabilitat: +0.03 },
     event_pool_id: "pool_ritual"
   },
   {
@@ -359,17 +360,17 @@ const ACTIONS = [
     description: "T'asseus en silenci i observes el món. La quietud obre la ment a allò invisible.",
     execute_cost: 1, output_resource: "food", output_min: 1, output_max: 1,
     stat_key: "vincle", stat_gain: 0.05,
-    inclination_deltas: { impuls: -0.01, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: 0 },
+    inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: +0.08, sociabilitat: 0 },
     event_pool_id: "pool_ritual"
   },
   {
-    id: "act_vigilar_campament", name: "Vigilar el Campament", is_base: true, zona: "Campament", unlocks_zone: "Planes",
+    id: "act_vigilar_campament", name: "Vigilar el Campament", is_base: true, zona: "Campament",
     description: "Protegeixes el campament i observes els voltants. Responsabilitat compartida.",
     execute_cost: 1, output_resource: "food", output_min: 2, output_max: 4,
     reputation_gain: 1,
     stat_key: "vincle", stat_gain: 0.10,
     destresa_id: "d_guardia",
-    inclination_deltas: { impuls: +0.01, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.01 },
+    inclination_deltas: { impuls: +0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.02 },
     event_pool_id: "pool_social"
   },
   {
@@ -378,7 +379,7 @@ const ACTIONS = [
     execute_cost: 1, output_resource: "food", output_min: 1, output_max: 3,
     unlocks_zone: "Bosc",
     stat_key: "enginy", stat_gain: 0.10,
-    inclination_deltas: { impuls: +0.01, "intel·lecte": -0.01, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: +0.02, "intel·lecte": -0.02, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_caca"
   },
 
@@ -389,9 +390,9 @@ const ACTIONS = [
     maxAge: 14,
     requires: [{ state: 'parella', max: 0 }],
     character_effect: { type: 'delta', state: 'parella', delta: 1, message: 'Has trobat parella. Ara podeu tenir fills.' },
-    execute_cost: 1, output_resource: "food", output_min: 0, output_max: 2,
+    execute_cost: 1, output_resource: "food", output_min: 1, output_max: 2,
     stat_key: "vincle", stat_gain: 0.20,
-    inclination_deltas: { impuls: -0.01, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.04 },
+    inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.06 },
     event_pool_id: "pool_social"
   },
   {
@@ -400,9 +401,9 @@ const ACTIONS = [
     maxAge: 15,
     requires: [{ state: 'parella', min: 1 }, { state: 'fills', lt_max: true }],
     character_effect: { type: 'add_child' },
-    execute_cost: 0, output_resource: "food", output_min: 0, output_max: 1,
+    execute_cost: 0, output_resource: "food", output_min: 1, output_max: 2,
     stat_key: "vincle", stat_gain: 0.10,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.02, sociabilitat: +0.03 },
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.03, sociabilitat: +0.05 },
     event_pool_id: "pool_social"
   },
   {
@@ -411,10 +412,10 @@ const ACTIONS = [
     minAge: 8,
     requires: [{ state: 'fills', min: 1 }, { state: 'ensenyat', max: 0 }, { type: 'has_any_skill' }],
     character_effect: { type: 'delta', state: 'ensenyat', delta: 1 },
-    execute_cost: 2, output_resource: "food", output_min: 0, output_max: 0,
+    execute_cost: 2, output_resource: "food", output_min: 1, output_max: 2,
     reputation_gain: 3,
     stat_key: "vincle", stat_gain: 0.15,
-    inclination_deltas: { impuls: -0.01, "intel·lecte": 0, espiritualitat: +0.02, sociabilitat: +0.03 },
+    inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: +0.03, sociabilitat: +0.05 },
     event_pool_id: null
   },
 
@@ -435,7 +436,7 @@ const ACTIONS = [
     maxAge: 15,
     purchase_cost: 4, execute_cost: 2, output_resource: "food", output_min: 5, output_max: 12, side_effects: [{ resource: 'health', delta: -10 }],
     stat_key: "forca", stat_gain: 0.20,
-    inclination_deltas: { impuls: +0.05, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: +0.08, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_caca"
   },
   {
@@ -444,7 +445,7 @@ const ACTIONS = [
     maxAge: 12,
     purchase_cost: 5, execute_cost: 3, output_resource: "food", output_min: 6, output_max: 10, side_effects: [{ resource: 'health', delta: -10 }],
     stat_key: "forca", stat_gain: 0.20,
-    inclination_deltas: { impuls: +0.07, "intel·lecte": 0, espiritualitat: 0, sociabilitat: -0.02 },
+    inclination_deltas: { impuls: +0.10, "intel·lecte": 0, espiritualitat: 0, sociabilitat: -0.03 },
     event_pool_id: "pool_caca"
   },
 
@@ -454,7 +455,7 @@ const ACTIONS = [
     description: "Senyals als arbres i roques que indiquen que aquest territori és del teu clan.",
     purchase_cost: 3, execute_cost: 1, output_resource: "food", output_min: 2, output_max: 4, side_effects: [{ resource: 'health', delta: -5 }],
     stat_key: "forca", stat_gain: 0.15,
-    inclination_deltas: { impuls: +0.03, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: +0.05, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_social"
   },
   {
@@ -462,7 +463,7 @@ const ACTIONS = [
     description: "Segueixes les pistes dels animals per aprendre els seus camins. Coneixement que es converteix en provisions.",
     purchase_cost: 3, execute_cost: 1, output_resource: "food", output_min: 3, output_max: 6,
     stat_key: "forca", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_caca"
   },
 
@@ -472,7 +473,7 @@ const ACTIONS = [
     description: "Raspes grans silvestres amb el raspador fi per obtenir farina primitiva. Estable i nutritiu.",
     purchase_cost: 3, execute_cost: 1, output_resource: "food", output_min: 3, output_max: 7,
     stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": -0.01, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: 0, "intel·lecte": -0.02, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_recollecta"
   },
 
@@ -482,7 +483,7 @@ const ACTIONS = [
     description: "Col·loques llaços i trampes en llocs de pas. La caça passiva allibera temps per a altres tasques.",
     purchase_cost: 3, execute_cost: 1, output_resource: "food", output_min: 2, output_max: 6,
     stat_key: "forca", stat_gain: 0.15,
-    inclination_deltas: { impuls: -0.01, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_caca"
   },
   {
@@ -490,7 +491,7 @@ const ACTIONS = [
     description: "Fas la ronda matinal per les trampes. Algunes han funcionat. Una t'ha agafat el dit.",
     purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 1, output_max: 4, side_effects: [{ resource: 'health', delta: -3 }],
     stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: -0.01, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_caca"
   },
 
@@ -500,7 +501,7 @@ const ACTIONS = [
     description: "Coneixes quins bolets del bosc són comestibles i quins cal evitar. Provisions i salut.",
     purchase_cost: 3, execute_cost: 1, output_resource: "food", output_min: 2, output_max: 5, side_effects: [{ resource: 'health', delta: +5 }],
     stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": -0.01, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: 0, "intel·lecte": -0.02, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_recollecta"
   },
   {
@@ -508,7 +509,7 @@ const ACTIONS = [
     description: "Asseques les plantes recol·lectades per conservar-les. Reserves que aguanten setmanes.",
     purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 2, output_max: 4,
     stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": -0.01, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: 0, "intel·lecte": -0.02, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_recollecta"
   },
 
@@ -526,7 +527,7 @@ const ACTIONS = [
     description: "Neteges una petita parcel·la de pedres i males herbes. El terra nu et sembla prometedor.",
     purchase_cost: 4, execute_cost: 1, output_resource: "food", output_min: 2, output_max: 4, side_effects: [{ resource: 'health', delta: -5 }],
     stat_key: "forca", stat_gain: 0.15,
-    inclination_deltas: { impuls: +0.01, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: +0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_recollecta"
   },
 
@@ -536,7 +537,7 @@ const ACTIONS = [
     description: "Produeixes eines de sílex de qualitat superior. El rasclador fi permet formes impossibles abans.",
     purchase_cost: 3, execute_cost: 0, output_resource: "material", output_min: 2, output_max: 5,
     stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
   },
 
@@ -546,7 +547,7 @@ const ACTIONS = [
     description: "El burí permet gravar formes en os i ivori. Art i eina, alhora.",
     purchase_cost: 4, execute_cost: 0, output_resource: "material", output_min: 2, output_max: 4,
     stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": +0.02, espiritualitat: +0.01, sociabilitat: 0 },
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: +0.02, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
   },
   {
@@ -554,7 +555,7 @@ const ACTIONS = [
     description: "Les eines gravades criden l'atenció dels grups veïns. Els intercanvis obren aliances.",
     purchase_cost: 3, execute_cost: 1, output_resource: "material", output_min: 2, output_max: 5,
     stat_key: "vincle", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.03 },
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.05 },
     event_pool_id: "pool_social"
   },
 
@@ -564,7 +565,7 @@ const ACTIONS = [
     description: "Cosius pells amb agulles d'os per fer roba que protegeix del fred. Eines i comoditat.",
     purchase_cost: 3, execute_cost: 0, output_resource: "material", output_min: 2, output_max: 4,
     stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
   },
   {
@@ -572,7 +573,7 @@ const ACTIONS = [
     description: "Construcció d'un aixopluc millor amb pells cosides i branques. Protecció per a tots.",
     purchase_cost: 4, execute_cost: 1, output_resource: "material", output_min: 3, output_max: 6,
     stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: +0.01 },
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: +0.02 },
     event_pool_id: "pool_artesania"
   },
 
@@ -582,7 +583,7 @@ const ACTIONS = [
     description: "Prepareu infusions i cataplasmes d'herbes per als membres malalts o ferits.",
     purchase_cost: 3, execute_cost: 2, output_resource: "health", output_min: 6, output_max: 8,
     stat_key: "vincle", stat_gain: 0.20,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.03, sociabilitat: 0 },
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: 0 },
     event_pool_id: "pool_ritual"
   },
   {
@@ -590,17 +591,17 @@ const ACTIONS = [
     description: "Maceres arrels i fulles fins que la pasta agafa color. Dures hores, però el resultat guareix.",
     purchase_cost: 3, execute_cost: 1, output_resource: "health", output_min: 6, output_max: 10,
     stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": +0.02, espiritualitat: +0.02, sociabilitat: 0 },
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: +0.03, sociabilitat: 0 },
     event_pool_id: "pool_ritual"
   },
 
   // MYSTIC branch — bt_pintura_rupestre
   {
-    id: "act_pintar_parets", name: "Pintar les Parets", is_base: false, zona: "Ritual",
-    description: "Fixes les visions en les parets de roca. Els animals pintats semblen moure's amb el foc.",
+    id: "act_pintar_parets", name: "Pintar les Parets", is_base: false, zona: "Bosc",
+    description: "Fixes les visions en les parets de roca del bosc. Els animals pintats semblen moure's amb el foc.",
     purchase_cost: 4, execute_cost: 1, output_resource: "food", output_min: 1, output_max: 3, side_effects: [{ resource: 'health', delta: +5 }],
     stat_key: "vincle", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.04, sociabilitat: 0 },
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: 0 },
     event_pool_id: "pool_ritual"
   },
   {
@@ -609,7 +610,7 @@ const ACTIONS = [
     reputation_gain: 2,
     purchase_cost: 3, execute_cost: 0, output_resource: "material", output_min: 1, output_max: 3,
     stat_key: "vincle", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.03, sociabilitat: +0.04 },
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: +0.05 },
     event_pool_id: "pool_social"
   },
 
@@ -624,30 +625,30 @@ const ACTIONS = [
     event_pool_id: "pool_social"
   },
   {
-    id: "act_consagrar_ornaments", name: "Consagrar Ornaments", is_base: false, zona: "Ritual",
-    description: "Passes els ornaments pel fum del ritual. Queden carregats de significat per al clan.",
+    id: "act_consagrar_ornaments", name: "Consagrar Ornaments", is_base: false, zona: "Campament",
+    description: "Passes els ornaments pel fum del foc del campament. Queden carregats de significat per al clan.",
     reputation_gain: 2,
     purchase_cost: 4, execute_cost: 1, output_resource: "food", output_min: 1, output_max: 3,
     stat_key: "vincle", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.03, sociabilitat: +0.02 },
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: +0.03 },
     event_pool_id: "pool_ritual"
   },
 
   // MYSTIC branch — bt_calendari_natural
   {
-    id: "act_observar_cel", name: "Observar el Cel Nocturn", is_base: false, zona: "Ritual",
-    description: "Segueixes els moviments de la lluna i les estrelles. Els cicles del cel anuncien els cicles de la terra.",
+    id: "act_observar_cel", name: "Observar el Cel Nocturn", is_base: false, zona: "Planes",
+    description: "Segueixes els moviments de la lluna i les estrelles des de les planes obertes. Els cicles del cel anuncien els cicles de la terra.",
     purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 1, output_max: 2,
     stat_key: "vincle", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.04, sociabilitat: 0 },
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: 0 },
     event_pool_id: "pool_ritual"
   },
   {
-    id: "act_transit_nocturn", name: "Trànsit Nocturn", is_base: false, zona: "Ritual",
-    description: "Et mous de nit seguint els senyals del cel. Perillós, però els que tornen parlen de visions.",
+    id: "act_transit_nocturn", name: "Trànsit Nocturn", is_base: false, zona: "Bosc",
+    description: "Et mous de nit pel bosc seguint els senyals del cel. Perillós, però els que tornen parlen de visions.",
     purchase_cost: 4, execute_cost: 1, output_resource: "food", output_min: 1, output_max: 3, side_effects: [{ resource: 'health', delta: -5 }],
     stat_key: "vincle", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: 0 },
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.08, sociabilitat: 0 },
     event_pool_id: "pool_ritual"
   },
 
@@ -658,7 +659,7 @@ const ACTIONS = [
     minAge: 8,
     purchase_cost: 5, execute_cost: 1, output_resource: "food", output_min: 3, output_max: 7, side_effects: [{ resource: 'health', delta: -5 }],
     stat_key: "forca", stat_gain: 0.15,
-    inclination_deltas: { impuls: +0.01, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.01 },
+    inclination_deltas: { impuls: +0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.02 },
     event_pool_id: "pool_social"
   },
   {
@@ -666,7 +667,7 @@ const ACTIONS = [
     description: "Trobes els rastres d'un altre grup a les teves zones. T'aproximes amb gestos oberts. Acabeu repartint el territori.",
     purchase_cost: 5, execute_cost: 1, output_resource: "food", output_min: 3, output_max: 6, side_effects: [{ resource: 'health', delta: +3 }],
     stat_key: "vincle", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.02 },
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.03 },
     event_pool_id: "pool_social"
   },
 
@@ -676,7 +677,7 @@ const ACTIONS = [
     description: "Senyal coordinat amb el grup. La presa no pot fugir. Rendiment molt superior.",
     purchase_cost: 5, execute_cost: 1, output_resource: "food", output_min: 3, output_max: 8,
     stat_key: "forca", stat_gain: 0.10,
-    inclination_deltas: { impuls: +0.03, "intel·lecte": +0.01, espiritualitat: 0, sociabilitat: +0.02 },
+    inclination_deltas: { impuls: +0.05, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: +0.03 },
     event_pool_id: "pool_caca"
   },
   {
@@ -684,7 +685,7 @@ const ACTIONS = [
     description: "Apliques coneixement acumulat: zones, estació, plantes. Rendiment molt superior.",
     purchase_cost: 4, execute_cost: 1, output_resource: "food", output_min: 4, output_max: 7,
     stat_key: "enginy", stat_gain: 0.10,
-    inclination_deltas: { impuls: -0.01, "intel·lecte": +0.02, espiritualitat: +0.01, sociabilitat: +0.01 },
+    inclination_deltas: { impuls: -0.02, "intel·lecte": +0.03, espiritualitat: +0.02, sociabilitat: +0.02 },
     event_pool_id: "pool_recollecta"
   },
   {
@@ -692,7 +693,7 @@ const ACTIONS = [
     description: "Eines de qualitat superior. Menys rebuig, formes més precises.",
     purchase_cost: 5, execute_cost: 0, output_resource: "material", output_min: 3, output_max: 6,
     stat_key: "enginy", stat_gain: 0.10,
-    inclination_deltas: { impuls: -0.01, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: -0.02, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
   },
   {
@@ -701,7 +702,7 @@ const ACTIONS = [
     reputation_gain: 2,
     purchase_cost: 4, execute_cost: 1, output_resource: "food", output_min: 2, output_max: 5, side_effects: [{ resource: 'health', delta: +10 }],
     stat_key: "vincle", stat_gain: 0.10,
-    inclination_deltas: { impuls: -0.01, "intel·lecte": 0, espiritualitat: +0.04, sociabilitat: +0.03 },
+    inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: +0.06, sociabilitat: +0.05 },
     event_pool_id: "pool_ritual"
   },
   {
@@ -709,7 +710,7 @@ const ACTIONS = [
     description: "Distribuïu rols i torns de guàrdia. El campament queda segur i el grup rendeix més.",
     purchase_cost: 5, execute_cost: 1, output_resource: "food", output_min: 3, output_max: 6,
     stat_key: "vincle", stat_gain: 0.10,
-    inclination_deltas: { impuls: +0.01, "intel·lecte": +0.01, espiritualitat: 0, sociabilitat: +0.02 },
+    inclination_deltas: { impuls: +0.02, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: +0.03 },
     event_pool_id: "pool_social"
   }
 ];
@@ -1069,21 +1070,22 @@ const EVENT_POOLS = {
   ]
 };
 
+// Thresholds ×0.73 (playtest 2026-06-06) — branques més assolibles
 const BRANCHES = [
   {
     id: "branch_hunter",   name: "Caçador",
-    conditions: { operator: "AND", conditions: [{ axis: "impuls", min: 0.30 }, { axis: "sociabilitat", max: 0.30 }] }
+    conditions: { operator: "AND", conditions: [{ axis: "impuls", min: 0.22 }, { axis: "sociabilitat", max: 0.30 }] }
   },
   {
     id: "branch_gatherer", name: "Recol·lector",
-    conditions: { operator: "AND", conditions: [{ axis: "impuls", max: 0.10 }, { axis: "intel·lecte", max: 0.10 }] }
+    conditions: { operator: "AND", conditions: [{ axis: "impuls", max: 0.10 }, { axis: "intel·lecte", min: 0.15 }] }
   },
   {
     id: "branch_craftsman", name: "Artesà",
-    conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.25 }, { axis: "impuls", max: 0.20 }] }
+    conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.18 }, { axis: "impuls", max: 0.20 }] }
   },
   {
     id: "branch_mystic",   name: "Místic",
-    conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.30 }, { axis: "sociabilitat", min: 0.25 }] }
+    conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.22 }, { axis: "sociabilitat", min: 0.25 }] }
   }
 ];

@@ -723,6 +723,7 @@ body.donut-active * { pointer-events: none !important; }
 .ev-choice-btn:active { border-color: var(--gold); }
 .ev-choice-name { font-weight: 700; font-size: 0.9rem; }
 .ev-choice-desc { font-size: 0.72rem; color: var(--text-dim); }
+.ev-choice-fx { display: block; font-size: 0.75rem; color: var(--text-dim); margin-top: 0.2rem; letter-spacing: 0.03em; }
 #btn-dismiss-event {
   margin-top: auto;
   padding: 0.7rem;
