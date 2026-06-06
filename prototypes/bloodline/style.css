@@ -747,6 +747,13 @@ body.donut-active * { pointer-events: none !important; }
 #disc-icon { font-size: 1.8rem; }
 #disc-name { color: var(--gold); }
 .disc-badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-dim); }
+/* Dramatic overlay for universal tech discoveries (PT-13) */
+.discovery-tech #disc-icon { font-size: 4.5rem; display: block; text-align: center; margin-bottom: 0.3rem; }
+.discovery-tech #disc-name { font-size: 1.5rem; font-weight: 900; display: block; text-align: center; margin-bottom: 0.2rem; }
+.discovery-tech .disc-badge { color: var(--gold); font-size: 0.72rem; display: block; text-align: center; }
+.discovery-tech #disc-desc { text-align: center; font-size: 0.9rem; color: var(--text); margin-top: 0.5rem; }
+.discovery-tech #disc-effects { text-align: center; font-size: 0.85rem; font-weight: 700; }
+.discovery-tech #btn-dismiss-discovery { background: var(--gold); color: #1a0d00; font-weight: 900; }
 #disc-desc { font-size: 0.88rem; line-height: 1.5; }
 #disc-effects { font-size: 0.8rem; color: #2ecc71; margin-top: 0.2rem; }
 #btn-dismiss-discovery {

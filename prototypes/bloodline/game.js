@@ -291,7 +291,7 @@ function autoDiscoverUniversalTechs() {
     state.discoveredUniversalTechIds.add(tech.id);
     addLog(`${tech.icon} Descoberta: ${tech.name}`);
     applyUniversalTechEffect(tech);
-    state.pendingDiscoveries.push(tech);
+    state.pendingDiscoveries.push({ ...tech, _isTech: true });
   }
 }
 
@@ -1093,13 +1093,15 @@ function renderInMapOverlay() {
     const disc = state.pendingDiscoveries[0];
     el('disc-icon').textContent  = disc.icon;
     el('disc-name').textContent  = disc.name;
-    el('disc-badge').textContent = disc._isDestresa ? '⭐ Nova destresa' : disc._isZone ? '🗺️ Zona descoberta' : '✨ Nou descobriment';
+    el('disc-badge').textContent = disc._isDestresa ? '⭐ Nova destresa' : disc._isZone ? '🗺️ Zona descoberta' : disc._isTech ? '✦ DESCOBRIMENT ✦' : '✨ Nou descobriment';
     el('disc-desc').textContent  = disc.description || disc.desc || '';
     if (disc.effect?.desc) {
       el('disc-effects').textContent = disc.effect.desc;
     } else {
       el('disc-effects').textContent = '';
     }
+    const pane = el('pane-discovery');
+    pane.classList.toggle('discovery-tech', !!disc._isTech);
     showPane('pane-discovery');
     return;
   }
