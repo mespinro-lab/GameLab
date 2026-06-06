@@ -16,6 +16,11 @@ enum Visibility { ACTIVE, LOCKED, HIDDEN }
 func get_action_visibility(action: Dictionary) -> Visibility:
 	var action_id: String = action.get("id", "")
 
+	# Check universal tech prerequisite
+	var universal_prereq: String = action.get("universal_prereq", "")
+	if universal_prereq != "" and universal_prereq not in GameState.discovered_universal_tech_ids:
+		return Visibility.HIDDEN
+
 	# Check requires conditions first (for base and branch actions)
 	if not _check_requires(action):
 		return Visibility.HIDDEN
@@ -143,15 +148,18 @@ func _roll_output(action: Dictionary) -> float:
 func _apply_side_effects(action: Dictionary) -> Array:
 	var applied: Array = []
 	var side_effects: Array = action.get("side_effects", [])
+	var era: Dictionary = DataLoader.eras.get(GameState.current_era_id, {})
+	var max_food: float = float(era.get("food", {}).get("max_val", 20.0))
+	var max_hp: float = float(era.get("health", {}).get("max_val", 100.0))
 	for se: Variant in side_effects:
 		var effect: Dictionary = se as Dictionary
 		var resource: String = effect.get("resource", "")
 		var delta: float = float(effect.get("delta", 0))
 		match resource:
 			"food":
-				GameState.food = clampf(GameState.food + delta, 0.0, 20.0)
+				GameState.food = clampf(GameState.food + delta, 0.0, max_food)
 			"health":
-				GameState.health = clampf(GameState.health + delta, 0.0, 100.0)
+				GameState.health = clampf(GameState.health + delta, 0.0, max_hp)
 		applied.append({"resource": resource, "delta": delta})
 	return applied
 
@@ -215,7 +223,12 @@ func _apply_special_effect(action: Dictionary) -> void:
 
 func _apply_food_upkeep() -> void:
 	var era: Dictionary = DataLoader.eras.get(GameState.current_era_id, {})
-	var upkeep: float = float(era.get("food", {}).get("upkeep_per_cycle", 2))
-	GameState.food = maxf(GameState.food - upkeep, 0.0)
+	var base_upkeep: float = float(era.get("food", {}).get("upkeep_per_cycle", 2))
+	var child_upkeep: float = float(GameState.children.size())
+	GameState.food = maxf(GameState.food - (base_upkeep + child_upkeep), 0.0)
+	# Starvation: heavy health penalty when no food
 	if GameState.food <= 0.0:
-		GameState.health = maxf(GameState.health - 5.0, 0.0)
+		GameState.health = maxf(GameState.health - 10.0, 0.0)
+	# Age decay: gradual decline in late life (from age 11 onwards)
+	if LineageManager.character_age() >= 11:
+		GameState.health = maxf(GameState.health - 2.0, 0.0)

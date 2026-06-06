@@ -46,11 +46,14 @@ func resolve_option(option_index: int) -> void:
 	var health_delta: float = float(opt.get("health_delta", 0))
 	var token_delta: float = float(opt.get("token_delta", opt.get("material_delta", 0)))
 
+	var era: Dictionary = DataLoader.eras.get(GameState.current_era_id, {})
+	var max_food: float = float(era.get("food", {}).get("max_val", 20.0))
+	var max_hp: float = float(era.get("health", {}).get("max_val", 100.0))
 	if food_delta != 0.0:
-		GameState.food = clampf(GameState.food + food_delta, 0.0, 20.0)
+		GameState.food = clampf(GameState.food + food_delta, 0.0, max_food)
 		applied.append({"resource": "food", "delta": food_delta})
 	if health_delta != 0.0:
-		GameState.health = clampf(GameState.health + health_delta, 0.0, 100.0)
+		GameState.health = clampf(GameState.health + health_delta, 0.0, max_hp)
 		applied.append({"resource": "health", "delta": health_delta})
 	if token_delta != 0.0:
 		GameState.tokens = maxf(GameState.tokens + token_delta, 0.0)
@@ -82,9 +85,8 @@ func resolve_option(option_index: int) -> void:
 			applied.append({"resource": "health", "delta": h_delta})
 
 	var event_id: String = _pending_event.get("id", "")
-	if _pending_event.get("is_single_use", false):
-		# TODO: persist to save — for now session-only
-		pass
+	if _pending_event.get("is_single_use", false) and event_id not in GameState.fired_single_use_event_ids:
+		GameState.fired_single_use_event_ids.append(event_id)
 
 	event_resolved.emit(event_id, option_index, applied)
 	_clear_event()
@@ -93,12 +95,18 @@ func resolve_option(option_index: int) -> void:
 func dismiss_simple_event() -> void:
 	if _pending_event.is_empty():
 		return
+	var era: Dictionary = DataLoader.eras.get(GameState.current_era_id, {})
+	var max_food: float = float(era.get("food", {}).get("max_val", 20.0))
+	var max_hp: float = float(era.get("health", {}).get("max_val", 100.0))
 	var effects: Dictionary = _pending_event.get("effects", {})
 	if effects.has("food"):
-		GameState.food = clampf(GameState.food + float(effects["food"]), 0.0, 20.0)
+		GameState.food = clampf(GameState.food + float(effects["food"]), 0.0, max_food)
 	if effects.has("health"):
-		GameState.health = clampf(GameState.health + float(effects["health"]), 0.0, 100.0)
-	event_resolved.emit(_pending_event.get("id", ""), -1, [])
+		GameState.health = clampf(GameState.health + float(effects["health"]), 0.0, max_hp)
+	var ev_id: String = _pending_event.get("id", "")
+	if _pending_event.get("is_single_use", false) and ev_id not in GameState.fired_single_use_event_ids:
+		GameState.fired_single_use_event_ids.append(ev_id)
+	event_resolved.emit(ev_id, -1, [])
 	_clear_event()
 
 
@@ -134,9 +142,18 @@ func _get_eligible_events(pool: Array) -> Array:
 		var event: Dictionary = ev as Dictionary
 		if _is_blocked(event):
 			continue
+		# Skip dynasty-fired single-use events
+		var ev_id: String = event.get("id", "")
+		if event.get("is_single_use", false) and ev_id in GameState.fired_single_use_event_ids:
+			continue
 		if event.get("is_discovery_event", false):
 			var skill_id: String = event.get("discovery_skill_id", "")
 			if skill_id in GameState.unlocked_skill_ids:
+				continue
+			# Check skill's universal tech prerequisite before allowing discovery
+			var skill: Dictionary = DataLoader.skills.get(skill_id, {})
+			var prereq: String = skill.get("universal_prereq", "")
+			if prereq != "" and prereq not in GameState.discovered_universal_tech_ids:
 				continue
 		eligible.append(event)
 	return eligible

@@ -80,9 +80,92 @@ function hide(id) { const e = el(id); if (e) e.classList.add('hidden'); }
 // ═══════════════════════════════════════════════════════════ GAME STATE
 let state = null;
 
+// ═══════════════════════════════════════════════════════════ SAVE / LOAD
+const SAVE_KEY = 'bloodline_save_v2';
+
+function saveGame() {
+  if (!state) return;
+  try {
+    const d = {
+      dynastyName: state.dynastyName, race: state.race, gender: state.gender,
+      cycle: state.cycle, generation: state.generation,
+      food: state.food, health: state.health, material: state.material, reputacio: state.reputacio,
+      character: {
+        birthCycle: state.character.birthCycle, label: state.character.label,
+        inclination: { ...state.character.inclination },
+        purchasedActionIds: [...state.character.purchasedActionIds],
+        unlockedSkillIds:   [...state.character.unlockedSkillIds],
+        stats:    { ...state.character.stats },
+        destreses: [...state.character.destreses],
+        charState: { ...state.character.charState },
+        children: state.character.children,
+      },
+      discoveredUniversalTechIds: [...state.discoveredUniversalTechIds],
+      discoveredZoneIds:          [...state.discoveredZoneIds],
+      firedSingleUseEventIds:     [...state.firedSingleUseEventIds],
+      eventStats: state.eventStats || { positive: 0, negative: 0, neutral: 0 },
+      log: state.log,
+      genealogy: state.genealogy,
+      siblingPool: state.siblingPool.map(s => ({
+        ...s,
+        inheritedPurchased:  [...(s.inheritedPurchased  || [])],
+        inheritedSkills:     [...(s.inheritedSkills     || [])],
+        inheritedDestreses:  [...(s.inheritedDestreses  || [])],
+      })),
+      gameOver: state.gameOver, gameOverReason: state.gameOverReason,
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(d));
+  } catch (e) { console.warn('[Save] write failed', e); }
+}
+
+function hasSave() { return !!localStorage.getItem(SAVE_KEY); }
+function clearSave() { localStorage.removeItem(SAVE_KEY); }
+
+function loadGame() {
+  const raw = localStorage.getItem(SAVE_KEY);
+  if (!raw) return false;
+  try {
+    const d = JSON.parse(raw);
+    state = {
+      dynastyName: d.dynastyName, race: d.race, gender: d.gender,
+      cycle: d.cycle, generation: d.generation,
+      food: d.food, health: d.health, material: d.material, reputacio: d.reputacio || 0,
+      character: {
+        birthCycle: d.character.birthCycle, label: d.character.label,
+        inclination: { ...d.character.inclination },
+        purchasedActionIds: new Set(d.character.purchasedActionIds),
+        unlockedSkillIds:   new Set(d.character.unlockedSkillIds),
+        stats:    { ...d.character.stats },
+        destreses: new Set(d.character.destreses),
+        charState: { ...d.character.charState },
+        children: d.character.children || [],
+      },
+      discoveredUniversalTechIds: new Set(d.discoveredUniversalTechIds),
+      discoveredZoneIds:          new Set(d.discoveredZoneIds),
+      firedSingleUseEventIds:     new Set(d.firedSingleUseEventIds || []),
+      eventStats: d.eventStats || { positive: 0, negative: 0, neutral: 0 },
+      log: d.log || [], genealogy: d.genealogy || [],
+      siblingPool: (d.siblingPool || []).map(s => ({
+        ...s,
+        inheritedPurchased:  new Set(s.inheritedPurchased  || []),
+        inheritedSkills:     new Set(s.inheritedSkills     || []),
+        inheritedDestreses:  new Set(s.inheritedDestreses  || []),
+      })),
+      pendingEvent: null, pendingSuccession: null, pendingDeath: null, pendingNewGen: null,
+      pendingDiscoveries: [], pendingBirths: [],
+      gameOver: d.gameOver || false, gameOverReason: d.gameOverReason || null,
+    };
+    return true;
+  } catch (e) {
+    console.warn('[Save] load failed', e);
+    clearSave();
+    return false;
+  }
+}
+
 function getAgingLoss(age) {
-  const excess = Math.max(0, age - AGING_THRESHOLD);
-  return AGING_BASE + Math.floor(Math.pow(excess, AGING_POWER) * AGING_SCALE);
+  // Only age-based decay from cycle 11 onward; starvation handled separately
+  return age >= 11 ? 2 : 0;
 }
 function characterAge() { return state.cycle - (state.character.birthCycle || 0); }
 function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
@@ -110,7 +193,6 @@ function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedS
       ? { ...inheritedStats }
       : Object.fromEntries(STAT_DEFS.map(s => [s.id, STAT_STARTING_VALUE])),
     destreses: new Set(inheritedDestreses),
-    firedSingleUseEventIds: new Set(),
     charState: Object.fromEntries(CHARACTER_STATE_DEFS.map(d => [d.id, d.startVal])),
     children: [],
   };
@@ -133,6 +215,8 @@ function initState(dynastyName, race) {
     character: createCharacter(inclination, basePurchased, new Set(), null, new Set(), 0, CHILD_NAMES[0]),
     discoveredUniversalTechIds: new Set(),
     discoveredZoneIds: new Set(ZONE_DEFS.filter(z => z.starts_discovered).map(z => z.id)),
+    firedSingleUseEventIds: new Set(),
+    eventStats: { positive: 0, negative: 0, neutral: 0 },
     log: [],
     genealogy: [],
     siblingPool: [],
@@ -161,6 +245,7 @@ function applyInclinationDeltas(deltas) {
 
 // ═══════════════════════════════════════════════════════════ ACTION VISIBILITY
 function getActionVisibility(action) {
+  if (action.universal_prereq && !state.discoveredUniversalTechIds.has(action.universal_prereq)) return 'HIDDEN';
   if (!action.inclination_requirements) return 'ACTIVE';
   for (const [axis, range] of Object.entries(action.inclination_requirements)) {
     const val = state.character.inclination[axis];
@@ -297,9 +382,48 @@ function applyCharacterEffect(action) {
 }
 
 // ═══════════════════════════════════════════════════════════ EVENT SYSTEM
+
+function classifyEvent(ev) {
+  if (ev.is_discovery_event) return 'positive';
+  if (ev.options) return 'neutral'; // player-choice events: neutral for balancing
+  const fx = ev.effects || {};
+  const score = (fx.food || 0) + (fx.health || 0);
+  return score > 0 ? 'positive' : score < 0 ? 'negative' : 'neutral';
+}
+
+function trackEventFired(ev) {
+  const c = classifyEvent(ev);
+  if (!state.eventStats) state.eventStats = { positive: 0, negative: 0, neutral: 0 };
+  state.eventStats[c] = (state.eventStats[c] || 0) + 1;
+}
+
+function selectBalancedEvent(eligible) {
+  if (eligible.length <= 1) return eligible[0] ?? null;
+  const age = characterAge();
+  const progress = Math.min(1, age / LIFE_EXPECTANCY);
+  const expPos = Math.round(EVENT_TARGET_POSITIVE * progress);
+  const expNeg = Math.round(EVENT_TARGET_NEGATIVE * progress);
+  const stats  = state.eventStats || { positive: 0, negative: 0 };
+  const posDebt = Math.max(0, expPos - (stats.positive || 0));
+  const negDebt = Math.max(0, expNeg - (stats.negative || 0));
+
+  const weighted = eligible.map(ev => {
+    const type = classifyEvent(ev);
+    const debt = type === 'positive' ? posDebt : type === 'negative' ? negDebt : 0;
+    return { ev, weight: 1 + debt * EVENT_BALANCE_WEIGHT };
+  });
+  const total = weighted.reduce((s, w) => s + w.weight, 0);
+  let r = Math.random() * total;
+  for (const w of weighted) {
+    r -= w.weight;
+    if (r <= 0) return w.ev;
+  }
+  return weighted[weighted.length - 1].ev;
+}
+
 function getEligiblePoolEvents(pool) {
   return pool.filter(ev => {
-    if (ev.is_single_use && state.character.firedSingleUseEventIds.has(ev.id)) return false;
+    if (ev.is_single_use && state.firedSingleUseEventIds.has(ev.id)) return false;
     if (ev.blocked_if && evaluateBlockedIf(ev.blocked_if)) return false;
     if (!ev.is_discovery_event) return true;
     const bt = SKILL_DEFS.find(t => t.id === ev.discovery_skill_id);
@@ -350,9 +474,11 @@ function triggerSuccession() {
     inheritedInclination, inheritedStats, inheritedPurchased, inheritedSkills, inheritedDestreses, hasEnsenyat,
   }));
   const siblingSuccessors = siblings.map(s => ({ ...s, is_sibling: true }));
+  // Siblings only offered if the character leaves no children (PT-10)
+  const successors = childSuccessors.length > 0 ? childSuccessors : siblingSuccessors;
   const successionPayload = {
     generation: state.generation,
-    successors: [...childSuccessors, ...siblingSuccessors],
+    successors,
   };
   state.genealogy.push({
     label:      state.character.label || `Gen ${state.generation}`,
@@ -409,6 +535,7 @@ function continueSuccession(successorId) {
   );
   addLog(`--- Generació ${state.generation} ---`);
   state.pendingNewGen = { label: chosen.label, generation: state.generation };
+  state.eventStats = { positive: 0, negative: 0, neutral: 0 };
   renderAll();
 }
 
@@ -416,6 +543,18 @@ function continueSuccession(successorId) {
 function getStatMultiplier(action) {
   if (!action.stat_key) return 1;
   return 1 + (state.character.stats[action.stat_key] - STAT_STARTING_VALUE) * STAT_OUTPUT_FACTOR;
+}
+
+// ═══════════════════════════════════════════════════════════ TURN UPKEEP
+function applyTurnUpkeep() {
+  const childUpkeep = state.character.children.length;
+  const totalUpkeep = FOOD_UPKEEP + childUpkeep;
+  const prevFood = state.food;
+  state.food = Math.max(0, state.food - totalUpkeep);
+  if (prevFood < totalUpkeep) {
+    state.health = Math.max(0, state.health - 10);
+  }
+  state.health = Math.max(0, state.health - getAgingLoss(characterAge()));
 }
 
 // ═══════════════════════════════════════════════════════════ ACTION EXECUTION
@@ -442,8 +581,7 @@ function executeAction(actionId) {
       unlockSkill(chosen);
       state.cycle++;
       autoDiscoverUniversalTechs();
-      state.food   = Math.max(0, state.food   - FOOD_UPKEEP);
-      state.health = Math.max(0, state.health - getAgingLoss(characterAge()));
+      applyTurnUpkeep();
       applyFxFloaters(snap);
       addLog(`[${state.cycle}] ${action.name}`);
       if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
@@ -510,24 +648,24 @@ function executeAction(actionId) {
     // Cycle advance + upkeep
     state.cycle++;
     autoDiscoverUniversalTechs();
-    state.food   = Math.max(0, state.food   - FOOD_UPKEEP);
-    state.health = Math.max(0, state.health - getAgingLoss(characterAge()));
+    applyTurnUpkeep();
     // Log
     if (output > 0) addLog(`[${state.cycle}] ${action.name}: +${output} ${outDef?.label || outRes}`);
     else            addLog(`[${state.cycle}] ${action.name}`);
     // Floaters + resource balls
     spawnResBalls(snap);
     applyFxFloaters(snap);
-    // Event
+    // Event (balanced selection)
     if (action.event_pool_id && EVENT_POOLS[action.event_pool_id] && Math.random() < EVENT_TRIGGER_CHANCE) {
-      const pool = getEligiblePoolEvents(EVENT_POOLS[action.event_pool_id]);
-      if (pool.length > 0) state.pendingEvent = pool[Math.floor(Math.random() * pool.length)];
+      const eligible = getEligiblePoolEvents(EVENT_POOLS[action.event_pool_id]);
+      if (eligible.length > 0) state.pendingEvent = selectBalancedEvent(eligible);
     }
     // Succession check
     if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) {
       if (!state.pendingEvent) triggerSuccession();
     }
     renderAll();
+    saveGame();
   });
 }
 
@@ -925,9 +1063,10 @@ function renderTopBar() {
 function renderBottomPanel() {
   // Cycle counter
   el('panel-turn-info').textContent = `Cicle ${state.cycle}/${ERA_CYCLES}`;
-  // Food
-  el('panel-food-val').textContent = Math.round(state.food);
-  el('panel-food-fc').textContent  = `-${FOOD_UPKEEP}/t`;
+  // Food with max and dynamic upkeep rate
+  const childUpkeep = state.character.children.length;
+  el('panel-food-val').textContent = `${Math.round(state.food)}/${FOOD_MAX}`;
+  el('panel-food-fc').textContent  = `-${FOOD_UPKEEP + childUpkeep}/t`;
   // Time pips: show 5 life-stage pips
   const pips = el('time-pips');
   pips.innerHTML = '';
@@ -990,7 +1129,12 @@ function renderInMapOverlay() {
         const opt = ev.options[i];
         const btn = document.createElement('button');
         btn.className = 'ev-choice-btn';
-        btn.innerHTML = `<span class="ev-choice-name">${opt.text}</span>`;
+        const fxParts = [];
+        if (opt.food_delta)     fxParts.push(`${opt.food_delta > 0 ? '+' : ''}${opt.food_delta}🌾`);
+        if (opt.health_delta)   fxParts.push(`${opt.health_delta > 0 ? '+' : ''}${opt.health_delta}❤️`);
+        if (opt.material_delta) fxParts.push(`${opt.material_delta > 0 ? '+' : ''}${opt.material_delta}🧠`);
+        const fxHint = fxParts.length ? `<span class="ev-choice-fx">${fxParts.join('  ')}</span>` : '';
+        btn.innerHTML = `<span class="ev-choice-name">${opt.text}</span>${fxHint}`;
         btn.dataset.idx = i;
         btn.addEventListener('click', () => resolveDiscoveryOption(i));
         choicesEl.appendChild(btn);
@@ -1022,7 +1166,8 @@ function dismissBirth() {
 function dismissEvent() {
   const ev = state.pendingEvent;
   if (!ev) return;
-  if (ev.is_single_use) state.character.firedSingleUseEventIds.add(ev.id);
+  if (ev.is_single_use) state.firedSingleUseEventIds.add(ev.id);
+  trackEventFired(ev);
   if (ev.effects) {
     if (ev.effects.food)   state.food   = Math.max(0, Math.min(FOOD_MAX, state.food + ev.effects.food));
     if (ev.effects.health) state.health = Math.max(0, Math.min(HEALTH_MAX, state.health + ev.effects.health));
@@ -1030,6 +1175,7 @@ function dismissEvent() {
   state.pendingEvent = null;
   if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
   renderAll();
+  saveGame();
 }
 function resolveDiscoveryOption(optionIndex) {
   const ev = state.pendingEvent;
@@ -1054,10 +1200,12 @@ function resolveDiscoveryOption(optionIndex) {
     const bt = SKILL_DEFS.find(t => t.id === ev.discovery_skill_id);
     if (bt) unlockSkill(bt);
   }
-  if (ev.is_single_use) state.character.firedSingleUseEventIds.add(ev.id);
+  if (ev.is_single_use) state.firedSingleUseEventIds.add(ev.id);
+  trackEventFired(ev);
   state.pendingEvent = null;
   if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
   renderAll();
+  saveGame();
 }
 
 // ═══════════════════════════════════════════════════════════ FULL-SCREEN OVERLAYS
@@ -1201,42 +1349,78 @@ function renderTestingPanel() {
   lgEl.innerHTML = state.log.map(m => `<div class="test-log-item">${m}</div>`).join('');
 }
 
+// ═══════════════════════════════════════════════════════════ SCORING
+function calculateScore() {
+  const cycles   = state.cycle;
+  const gens     = state.genealogy.length;
+  const techs    = state.discoveredUniversalTechIds.size;
+  const skills   = state.genealogy.reduce((s, g) => s + (g.skills || 0), 0);
+  const branches = new Set(state.genealogy.flatMap(g => g.branches || [])).size;
+  const reputacio = state.reputacio || 0;
+  const total = cycles * 2 + gens * 50 + techs * 100 + skills * 30 + branches * 40 + reputacio;
+  return { total, cycles, gens, techs, skills, branches, reputacio };
+}
+
+function getDynastyTitle(score) {
+  if (score >= 1500) return 'Llegenda de l\'Era';
+  if (score >= 900)  return 'Llinatge Llegendari';
+  if (score >= 550)  return 'Clan Respectat';
+  if (score >= 250)  return 'Tribu Establerta';
+  return 'Supervivents del Paleolític';
+}
+
 // ═══════════════════════════════════════════════════════════ END SCREEN
 function renderEndScreen() {
-  const isExtinct   = state.gameOverReason === 'no_heir';
-  const isEraEnd    = state.gameOverReason === 'era_complete';
-  const totalGens   = state.genealogy.length;
-  const totalTechs  = state.discoveredUniversalTechIds.size;
-  const totalSkills = [...new Set(state.genealogy.flatMap(g => g.skills ? [g.skills] : []))].reduce((a, b) => a + b, 0);
+  const isExtinct = state.gameOverReason === 'no_heir';
+  const isEraEnd  = state.gameOverReason === 'era_complete';
+  const score     = calculateScore();
+  const title     = getDynastyTitle(score.total);
 
-  el('end-icon').textContent        = isExtinct ? '💀' : isEraEnd ? '🏆' : '🦴';
-  el('end-dynasty-name').textContent = `Llinatge ${state.dynastyName}`;
-  el('end-tagline').textContent      = isExtinct
-    ? 'El llinatge s\'ha extingit sense hereus.'
-    : isEraEnd
-    ? `L'era ha finalitzat. ${totalGens} generació${totalGens !== 1 ? 'ns' : ''} han passat.`
-    : `La partida ha acabat al cicle ${state.cycle}.`;
+  el('end-icon').textContent         = isExtinct ? '💀' : isEraEnd ? '🏆' : '🦴';
+  el('end-dynasty-name').textContent  = `${state.dynastyName}`;
+  el('end-tagline').textContent       = title;
 
   el('end-stats-row').innerHTML = `
-    <div class="end-stat"><span class="end-stat-val">${state.cycle}</span><span class="end-stat-label">Cicles</span></div>
-    <div class="end-stat"><span class="end-stat-val">${totalGens}</span><span class="end-stat-label">Generacions</span></div>
-    <div class="end-stat"><span class="end-stat-val">${totalTechs}/${UNIVERSAL_TECHS.length}</span><span class="end-stat-label">Techs</span></div>
+    <div class="end-stat"><span class="end-stat-val">${score.total}</span><span class="end-stat-label">Punts</span></div>
+    <div class="end-stat"><span class="end-stat-val">${score.cycles}</span><span class="end-stat-label">Cicles</span></div>
+    <div class="end-stat"><span class="end-stat-val">${score.gens}</span><span class="end-stat-label">Gens.</span></div>
+    <div class="end-stat"><span class="end-stat-val">${score.techs}/${UNIVERSAL_TECHS.length}</span><span class="end-stat-label">Techs</span></div>
   `;
+
+  // Score breakdown
+  const breakdownEl = el('end-score-breakdown') || (() => {
+    const d = document.createElement('div');
+    d.id = 'end-score-breakdown';
+    el('end-stats-row').insertAdjacentElement('afterend', d);
+    return d;
+  })();
+  breakdownEl.innerHTML = [
+    score.gens     > 0 ? `${score.gens}G × 50 = ${score.gens * 50}` : null,
+    score.techs    > 0 ? `${score.techs}T × 100 = ${score.techs * 100}` : null,
+    score.skills   > 0 ? `${score.skills}H × 30 = ${score.skills * 30}` : null,
+    score.branches > 0 ? `${score.branches}B × 40 = ${score.branches * 40}` : null,
+    score.reputacio > 0 ? `${score.reputacio} Reputació` : null,
+    `${score.cycles}C × 2 = ${score.cycles * 2}`,
+  ].filter(Boolean).map(t => `<span class="score-line">${t}</span>`).join('');
+
+  const isGood = isEraEnd;
+  const taglineMsg = isExtinct
+    ? 'El llinatge s\'ha extingit sense hereus.'
+    : isEraEnd
+    ? `L'era de la Prehistòria ha finalitzat. ${score.gens} generació${score.gens !== 1 ? 'ns' : ''} han viscut.`
+    : `La partida ha acabat al cicle ${score.cycles}.`;
+  if (el('end-result-msg')) el('end-result-msg').textContent = taglineMsg;
 
   const genoEl = el('end-genealogy');
   genoEl.innerHTML = '';
   state.genealogy.forEach((g, i) => {
     const row = document.createElement('div');
     row.className = `end-gen-row${i === 0 ? ' gen-first' : ''}`;
-    const axisLabel = g.topAxis ? AXIS_LABELS[g.topAxis]?.right || g.topAxis : '—';
     const branchStr = g.branches?.length ? g.branches.join(', ') : '—';
     row.innerHTML = `
       <span class="end-gen-num">G${g.generation}</span>
       <span class="end-gen-name">${g.label} ${state.dynastyName}</span>
-      <span class="end-gen-detail">
-        ${g.age} cicles<br>
-        <span class="end-gen-branch">${branchStr}</span>
-      </span>`;
+      <span class="end-gen-detail">${g.age} cicles · <span class="end-gen-branch">${branchStr}</span></span>`;
     genoEl.appendChild(row);
   });
 }
@@ -1273,7 +1457,7 @@ function setupEventListeners() {
   // Menu
   el('btn-open-menu').addEventListener('click', () => show('overlay-menu'));
   el('btn-continue-game').addEventListener('click', () => { hide('overlay-menu'); renderAll(); });
-  el('btn-new-game').addEventListener('click', () => { hide('overlay-menu'); show('overlay-new-game'); });
+  el('btn-new-game').addEventListener('click', () => { clearSave(); hide('overlay-menu'); show('overlay-new-game'); });
 
   // New game form
   el('btn-start-new-game').addEventListener('click', () => {
@@ -1392,8 +1576,10 @@ function setupEventListeners() {
 
   // Game over restart
   el('btn-go-restart').addEventListener('click', () => {
+    clearSave();
     hide('overlay-gameover');
     initState();
+    el('btn-continue-game').disabled = true;
     show('overlay-menu');
     renderAll();
   });
@@ -1429,10 +1615,14 @@ function showActionInfo(action) {
 
 // ═══════════════════════════════════════════════════════════ INIT
 window.addEventListener('DOMContentLoaded', () => {
-  initState();
+  const hasSavedGame = hasSave();
+  if (hasSavedGame) {
+    loadGame();
+  } else {
+    initState();
+  }
   setupEventListeners();
-  // Show menu on first load; continue-game disabled since fresh state
-  el('btn-continue-game').disabled = false;
+  el('btn-continue-game').disabled = !hasSavedGame;
   show('overlay-menu');
   renderAll();
 });
