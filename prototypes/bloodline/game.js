@@ -103,6 +103,7 @@ function saveGame() {
       discoveredUniversalTechIds: [...state.discoveredUniversalTechIds],
       discoveredZoneIds:          [...state.discoveredZoneIds],
       firedSingleUseEventIds:     [...state.firedSingleUseEventIds],
+      eventStats: state.eventStats || { positive: 0, negative: 0, neutral: 0 },
       log: state.log,
       genealogy: state.genealogy,
       siblingPool: state.siblingPool.map(s => ({
@@ -142,6 +143,7 @@ function loadGame() {
       discoveredUniversalTechIds: new Set(d.discoveredUniversalTechIds),
       discoveredZoneIds:          new Set(d.discoveredZoneIds),
       firedSingleUseEventIds:     new Set(d.firedSingleUseEventIds || []),
+      eventStats: d.eventStats || { positive: 0, negative: 0, neutral: 0 },
       log: d.log || [], genealogy: d.genealogy || [],
       siblingPool: (d.siblingPool || []).map(s => ({
         ...s,
@@ -214,6 +216,7 @@ function initState(dynastyName, race) {
     discoveredUniversalTechIds: new Set(),
     discoveredZoneIds: new Set(ZONE_DEFS.filter(z => z.starts_discovered).map(z => z.id)),
     firedSingleUseEventIds: new Set(),
+    eventStats: { positive: 0, negative: 0, neutral: 0 },
     log: [],
     genealogy: [],
     siblingPool: [],
@@ -379,6 +382,45 @@ function applyCharacterEffect(action) {
 }
 
 // ═══════════════════════════════════════════════════════════ EVENT SYSTEM
+
+function classifyEvent(ev) {
+  if (ev.is_discovery_event) return 'positive';
+  if (ev.options) return 'neutral'; // player-choice events: neutral for balancing
+  const fx = ev.effects || {};
+  const score = (fx.food || 0) + (fx.health || 0);
+  return score > 0 ? 'positive' : score < 0 ? 'negative' : 'neutral';
+}
+
+function trackEventFired(ev) {
+  const c = classifyEvent(ev);
+  if (!state.eventStats) state.eventStats = { positive: 0, negative: 0, neutral: 0 };
+  state.eventStats[c] = (state.eventStats[c] || 0) + 1;
+}
+
+function selectBalancedEvent(eligible) {
+  if (eligible.length <= 1) return eligible[0] ?? null;
+  const age = characterAge();
+  const progress = Math.min(1, age / LIFE_EXPECTANCY);
+  const expPos = Math.round(EVENT_TARGET_POSITIVE * progress);
+  const expNeg = Math.round(EVENT_TARGET_NEGATIVE * progress);
+  const stats  = state.eventStats || { positive: 0, negative: 0 };
+  const posDebt = Math.max(0, expPos - (stats.positive || 0));
+  const negDebt = Math.max(0, expNeg - (stats.negative || 0));
+
+  const weighted = eligible.map(ev => {
+    const type = classifyEvent(ev);
+    const debt = type === 'positive' ? posDebt : type === 'negative' ? negDebt : 0;
+    return { ev, weight: 1 + debt * EVENT_BALANCE_WEIGHT };
+  });
+  const total = weighted.reduce((s, w) => s + w.weight, 0);
+  let r = Math.random() * total;
+  for (const w of weighted) {
+    r -= w.weight;
+    if (r <= 0) return w.ev;
+  }
+  return weighted[weighted.length - 1].ev;
+}
+
 function getEligiblePoolEvents(pool) {
   return pool.filter(ev => {
     if (ev.is_single_use && state.firedSingleUseEventIds.has(ev.id)) return false;
@@ -493,6 +535,7 @@ function continueSuccession(successorId) {
   );
   addLog(`--- Generació ${state.generation} ---`);
   state.pendingNewGen = { label: chosen.label, generation: state.generation };
+  state.eventStats = { positive: 0, negative: 0, neutral: 0 };
   renderAll();
 }
 
@@ -612,10 +655,10 @@ function executeAction(actionId) {
     // Floaters + resource balls
     spawnResBalls(snap);
     applyFxFloaters(snap);
-    // Event
+    // Event (balanced selection)
     if (action.event_pool_id && EVENT_POOLS[action.event_pool_id] && Math.random() < EVENT_TRIGGER_CHANCE) {
-      const pool = getEligiblePoolEvents(EVENT_POOLS[action.event_pool_id]);
-      if (pool.length > 0) state.pendingEvent = pool[Math.floor(Math.random() * pool.length)];
+      const eligible = getEligiblePoolEvents(EVENT_POOLS[action.event_pool_id]);
+      if (eligible.length > 0) state.pendingEvent = selectBalancedEvent(eligible);
     }
     // Succession check
     if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) {
@@ -1124,6 +1167,7 @@ function dismissEvent() {
   const ev = state.pendingEvent;
   if (!ev) return;
   if (ev.is_single_use) state.firedSingleUseEventIds.add(ev.id);
+  trackEventFired(ev);
   if (ev.effects) {
     if (ev.effects.food)   state.food   = Math.max(0, Math.min(FOOD_MAX, state.food + ev.effects.food));
     if (ev.effects.health) state.health = Math.max(0, Math.min(HEALTH_MAX, state.health + ev.effects.health));
@@ -1131,6 +1175,7 @@ function dismissEvent() {
   state.pendingEvent = null;
   if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
   renderAll();
+  saveGame();
 }
 function resolveDiscoveryOption(optionIndex) {
   const ev = state.pendingEvent;
@@ -1156,9 +1201,11 @@ function resolveDiscoveryOption(optionIndex) {
     if (bt) unlockSkill(bt);
   }
   if (ev.is_single_use) state.firedSingleUseEventIds.add(ev.id);
+  trackEventFired(ev);
   state.pendingEvent = null;
   if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
   renderAll();
+  saveGame();
 }
 
 // ═══════════════════════════════════════════════════════════ FULL-SCREEN OVERLAYS

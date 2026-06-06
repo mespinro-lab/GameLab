@@ -41,8 +41,13 @@ const CHARACTER_STATE_DEFS = [
 ];
 
 const INCLINATION_INHERITANCE_RATE = 0.65;  // fracció d'inclinació i stats que hereta el fill
-const EVENT_TRIGGER_CHANCE         = 0.6;   // probabilitat que una acció dispari un event
+const EVENT_TRIGGER_CHANCE         = 0.6;   // probabilitat base que una acció dispari un event
 const FADE_MARGIN                  = 0.05;  // marge d'inclinació per mostrar una acció com "difosa" en lloc d'oculta
+
+// Event balancing: objectius per personatge (LIFE_EXPECTANCY cicles)
+const EVENT_TARGET_POSITIVE = 5;   // events positius esperats per vida
+const EVENT_TARGET_NEGATIVE = 4;   // events negatius esperats per vida
+const EVENT_BALANCE_WEIGHT  = 0.6; // multiplicador de pes per deute (0 = sense balanceig, 1 = fort)
 
 // --- Resource Definitions ---
 // Afegir un recurs aquí = apareix al top bar, s'inicialitza a l'estat i apareix al glossari.
