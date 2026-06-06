@@ -328,6 +328,9 @@ function unlockSkill(bt) {
   if (state.character.unlockedSkillIds.has(bt.id)) return;
   state.character.unlockedSkillIds.add(bt.id);
   addLog(`Nova habilitat: ${bt.name}`);
+  if (bt.unlocks_action_ids) {
+    for (const aid of bt.unlocks_action_ids) state.character.purchasedActionIds.add(aid);
+  }
   const pe = bt.passive_effect;
   if (pe) {
     if (pe.type === 'grant_health')   state.health    = Math.min(HEALTH_MAX, state.health + pe.amount);

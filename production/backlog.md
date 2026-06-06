@@ -171,16 +171,11 @@
 
 ---
 
-## P3 OPEN BALANCE — B-01 — Branca Recol·lector sense payoff accessible en Gen 1
+## P3 DONE BALANCE — B-01 — Branca Recol·lector sense payoff accessible en Gen 1
 
-- **File**: `prototypes/bloodline/data.js`, `design/gdd/bloodline/content-plan-era1.md`
-- **Fix**: (pendent decisió — veure Decision)
-- **Acceptance**: Hi ha almenys 1 payoff tangible de la branca Recol·lector accessible a Gen 1.
-- **Decision**: (pendent)
-- **Options**:
-  - A) Afegir acció nova exclusiva Recol·lector amb bon rendiment d'Aliment
-  - B) Ajustar passive_effect de les branch techs existents de Recol·lector per donar +Aliment passiu
-  - C) Acceptar que Recol·lector és branca de paciència: payoff a Gen 2 per habilitats heretades
+- **File**: `prototypes/bloodline/game.js` → `unlockSkill()`
+- **Fix**: Implementat `unlocks_action_ids` a `unlockSkill()`: quan es descobreix una branch tech, les seves accions s'afegeixen a `purchasedActionIds`. Fix sistèmic: beneficia totes les branques. `bt_rasclador_fi` (accessible a Recol·lectors via `impuls < 0.10`) desbloqueja `act_molda_grans` (food 3-7).
+- **Completada**: 2026-06-06
 
 ---
 
@@ -222,6 +217,6 @@
 ---
 
 <!-- STATS: actualitzat 2026-06-06 -->
-<!-- DONE: 19 (PT-01..PT-13, D-01..D-03, SAVE, SCORE, BALANCE-EV) -->
-<!-- OPEN: P3=4 (B-01, C-01, C-02, PT-16) | DEFERRED=1 (S2-06) -->
+<!-- DONE: 20 (PT-01..PT-13, D-01..D-03, SAVE, SCORE, BALANCE-EV, B-01) -->
+<!-- OPEN: P3=3 (C-01, C-02, PT-16) | DEFERRED=1 (S2-06) -->
 <!-- APARCAT: Era 2 -->
