@@ -86,10 +86,10 @@ const RESOURCE_DEFS = [
   },
   {
     id: 'reputacio', emoji: '🏛️', label: 'Reputació', section: 'resources',
-    startVal: 0, max: null, upkeep: null, showMax: false, rateType: false,
+    startVal: 1, max: null, upkeep: null, showMax: false, rateType: false,
     persistent: true, inheritDecay: FAMILY_REP_INHERITANCE,
     color: '#a855f7', borderColor: 'rgba(168,85,247,0.3)',
-    glossaryDesc: "Persistent entre generacions — no es reinicia en successió. Acumulada per accions socials, de llegat i ensenyança. Obrirà accions d'alt estatus en eres futures.",
+    glossaryDesc: "Persistent entre generacions — no es reinicia en successió. Acumulada per accions socials. Cada punt millora la probabilitat d'esdeveniments positius (+10% de pes, màx +40%).",
   },
   // Era 2+: descomenta per afegir nous recursos al top bar, estat i glossari
   // { id: 'happiness', emoji: '✨', label: 'Benestar', section: 'resources', startVal: 50, max: 100, upkeep: null, showMax: false, rateType: false, era: 2, color: 'var(--purple)', borderColor: 'rgba(168,85,247,0.3)', glossaryDesc: "Satisfacció general. Si cau molt baix, penalitza els resultats de les accions." },
