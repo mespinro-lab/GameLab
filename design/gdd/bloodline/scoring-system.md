@@ -1,3 +1,5 @@
+> ⚠️ OBSOLET (2026-06-06) — Font de veritat: `prototypes/bloodline/data.js`. Reescriure quan el prototip passi a producció.
+
 # Life Tycoon 2 — Scoring System
 
 **Depèn de**: `_overview.md`, `era-system.md`, `branch-system.md`, `event-system.md`

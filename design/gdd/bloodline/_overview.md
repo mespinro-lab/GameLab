@@ -3,9 +3,14 @@
 **Nom comercial**: Bloodline
 **Gènere**: Tycoon de llinatge humà, gestió estratègica per sessions llargues
 **Plataforma**: iOS + Android, portrait, touch-first
-**Engine**: Godot 4 + GDScript
-**Art**: Flat il·lustrat, retrats procedurals per capes
-**Sessions**: 45–120 min; múltiples eres per partida completa
+**Engine (prototip)**: HTML/JS pur — `prototypes/bloodline/` (Godot abandonat 2026-06)
+**Art**: Reutilitza assets de Life Tycoon 1 (busts, zones, mapa)
+**Sessions**: 30–90 min; múltiples eres per partida completa
+
+> **NOTA D'ESTAT (2026-06-06)**: El prototip HTML/JS és el joc actiu.
+> Els GDDs de `design/gdd/bloodline/` contenen el disseny conceptual i poden
+> divergir del codi real. La font de veritat és `prototypes/bloodline/data.js`.
+> Veure `prototypes/bloodline/README.md` per a l'estat actual implementat.
 
 > **Principi fonamental**: Tot el contingut del joc —eres, branques, accions,
 > tecnologies, events— és completament parametritzat en fitxers de dades.

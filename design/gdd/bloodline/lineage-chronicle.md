@@ -1,3 +1,5 @@
+> ⚠️ OBSOLET (2026-06-06) — Font de veritat: `prototypes/bloodline/data.js`. Reescriure quan el prototip passi a producció.
+
 # Life Tycoon 2 — Lineage & Chronicle
 
 **Depèn de**: `_overview.md`, `branch-system.md`, `scoring-system.md`, `event-system.md`

@@ -1,4 +1,9 @@
-# Life Tycoon 2 — Action Economy
+# Bloodline — Action Economy
+
+> **ACTUALITZAT PARCIALMENT 2026-06-06** — §3.1 (schema JSON) i §3.3 (execució) reflecteixen el disseny conceptual original.
+> El sistema de material ha canviat significativament: veure §NOTA IMPLEMENTACIÓ al final.
+
+---
 
 **Depèn de**: `_overview.md`, `era-system.md`, `branch-system.md`
 **Usat per**: `event-system.md`, `scoring-system.md`
@@ -393,3 +398,46 @@ final_output[key] = modified_output[key] + Σ event_chain.effect[key]
       `discovery_condition` es compleix
 - [ ] Un modificador d'una tecnologia de branca incrementa visiblement
       l'output d'una acció quan la tecnologia de branca és activa
+
+---
+
+## NOTA D'IMPLEMENTACIÓ — Sistema Material (2026-06-06)
+
+**Canvi decisiu respecte al disseny original:**
+
+El sistema de `resources.primary` del schema JSON conceptual **no s'ha implementat tal com estava dissenyat**. La decisió de disseny ha evolucionat:
+
+### Material (🧠) és moneda universal, no output d'acció
+
+- **Totes** les accions generen material, independentment del seu output primari.
+- El rang per acció depèn de la seva intensitat física:
+  - Alt (accions físiques): `material_min: 2, material_max: 4`
+  - Mig (artesania, família): `material_min: 2, material_max: 3`
+  - Baix (ritual, contemplació): `material_min: 1, material_max: 2`
+- **Cap acció** té `output_resource: "material"` — el material no és el premi d'una acció específica.
+- Material **persisteix entre generacions** (moneda del llinatge, no del personatge).
+
+### Outputs primaris de les accions
+
+Les accions es categoritzen per output primari:
+
+| Tipus | Output primari | Exemples |
+|-------|---------------|---------|
+| Supervivència | `food` | espiar_ramat, recollectar_arrels, intercanviar_eines |
+| Recuperació | `health` | cosir_pells, construir_refugi, curar_herbes |
+| Progressió pura | cap output de recurs | tallar_pedra, faonar_eines, gravar_os, contemplació |
+
+Les accions de "progressió pura" (artesania, contemplació) donen stat growth +
+inclinació + material universal. No donen food/health.
+
+### Diferenciació accions similars
+
+Accions que satisfan la mateixa necessitat han de tenir un trade-off clar:
+- `espiar_ramat`: food 3–8 + side_effect −5 health (risc de ferides)
+- `recollectar_arrels`: food 1–3, sense risc
+
+### Zona Llar
+
+Nova zona que apareix quan el personatge troba parella. Conté:
+- `tenir_fills` (risc basat en salut)
+- `ensenyar_fill` (millora herència de skills)
