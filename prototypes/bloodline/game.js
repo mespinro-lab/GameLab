@@ -80,6 +80,87 @@ function hide(id) { const e = el(id); if (e) e.classList.add('hidden'); }
 // ═══════════════════════════════════════════════════════════ GAME STATE
 let state = null;
 
+// ═══════════════════════════════════════════════════════════ SAVE / LOAD
+const SAVE_KEY = 'bloodline_save_v2';
+
+function saveGame() {
+  if (!state) return;
+  try {
+    const d = {
+      dynastyName: state.dynastyName, race: state.race, gender: state.gender,
+      cycle: state.cycle, generation: state.generation,
+      food: state.food, health: state.health, material: state.material, reputacio: state.reputacio,
+      character: {
+        birthCycle: state.character.birthCycle, label: state.character.label,
+        inclination: { ...state.character.inclination },
+        purchasedActionIds: [...state.character.purchasedActionIds],
+        unlockedSkillIds:   [...state.character.unlockedSkillIds],
+        stats:    { ...state.character.stats },
+        destreses: [...state.character.destreses],
+        charState: { ...state.character.charState },
+        children: state.character.children,
+      },
+      discoveredUniversalTechIds: [...state.discoveredUniversalTechIds],
+      discoveredZoneIds:          [...state.discoveredZoneIds],
+      firedSingleUseEventIds:     [...state.firedSingleUseEventIds],
+      log: state.log,
+      genealogy: state.genealogy,
+      siblingPool: state.siblingPool.map(s => ({
+        ...s,
+        inheritedPurchased:  [...(s.inheritedPurchased  || [])],
+        inheritedSkills:     [...(s.inheritedSkills     || [])],
+        inheritedDestreses:  [...(s.inheritedDestreses  || [])],
+      })),
+      gameOver: state.gameOver, gameOverReason: state.gameOverReason,
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(d));
+  } catch (e) { console.warn('[Save] write failed', e); }
+}
+
+function hasSave() { return !!localStorage.getItem(SAVE_KEY); }
+function clearSave() { localStorage.removeItem(SAVE_KEY); }
+
+function loadGame() {
+  const raw = localStorage.getItem(SAVE_KEY);
+  if (!raw) return false;
+  try {
+    const d = JSON.parse(raw);
+    state = {
+      dynastyName: d.dynastyName, race: d.race, gender: d.gender,
+      cycle: d.cycle, generation: d.generation,
+      food: d.food, health: d.health, material: d.material, reputacio: d.reputacio || 0,
+      character: {
+        birthCycle: d.character.birthCycle, label: d.character.label,
+        inclination: { ...d.character.inclination },
+        purchasedActionIds: new Set(d.character.purchasedActionIds),
+        unlockedSkillIds:   new Set(d.character.unlockedSkillIds),
+        stats:    { ...d.character.stats },
+        destreses: new Set(d.character.destreses),
+        charState: { ...d.character.charState },
+        children: d.character.children || [],
+      },
+      discoveredUniversalTechIds: new Set(d.discoveredUniversalTechIds),
+      discoveredZoneIds:          new Set(d.discoveredZoneIds),
+      firedSingleUseEventIds:     new Set(d.firedSingleUseEventIds || []),
+      log: d.log || [], genealogy: d.genealogy || [],
+      siblingPool: (d.siblingPool || []).map(s => ({
+        ...s,
+        inheritedPurchased:  new Set(s.inheritedPurchased  || []),
+        inheritedSkills:     new Set(s.inheritedSkills     || []),
+        inheritedDestreses:  new Set(s.inheritedDestreses  || []),
+      })),
+      pendingEvent: null, pendingSuccession: null, pendingDeath: null, pendingNewGen: null,
+      pendingDiscoveries: [], pendingBirths: [],
+      gameOver: d.gameOver || false, gameOverReason: d.gameOverReason || null,
+    };
+    return true;
+  } catch (e) {
+    console.warn('[Save] load failed', e);
+    clearSave();
+    return false;
+  }
+}
+
 function getAgingLoss(age) {
   // Only age-based decay from cycle 11 onward; starvation handled separately
   return age >= 11 ? 2 : 0;
@@ -541,6 +622,7 @@ function executeAction(actionId) {
       if (!state.pendingEvent) triggerSuccession();
     }
     renderAll();
+    saveGame();
   });
 }
 
@@ -1220,42 +1302,78 @@ function renderTestingPanel() {
   lgEl.innerHTML = state.log.map(m => `<div class="test-log-item">${m}</div>`).join('');
 }
 
+// ═══════════════════════════════════════════════════════════ SCORING
+function calculateScore() {
+  const cycles   = state.cycle;
+  const gens     = state.genealogy.length;
+  const techs    = state.discoveredUniversalTechIds.size;
+  const skills   = state.genealogy.reduce((s, g) => s + (g.skills || 0), 0);
+  const branches = new Set(state.genealogy.flatMap(g => g.branches || [])).size;
+  const reputacio = state.reputacio || 0;
+  const total = cycles * 2 + gens * 50 + techs * 100 + skills * 30 + branches * 40 + reputacio;
+  return { total, cycles, gens, techs, skills, branches, reputacio };
+}
+
+function getDynastyTitle(score) {
+  if (score >= 1500) return 'Llegenda de l\'Era';
+  if (score >= 900)  return 'Llinatge Llegendari';
+  if (score >= 550)  return 'Clan Respectat';
+  if (score >= 250)  return 'Tribu Establerta';
+  return 'Supervivents del Paleolític';
+}
+
 // ═══════════════════════════════════════════════════════════ END SCREEN
 function renderEndScreen() {
-  const isExtinct   = state.gameOverReason === 'no_heir';
-  const isEraEnd    = state.gameOverReason === 'era_complete';
-  const totalGens   = state.genealogy.length;
-  const totalTechs  = state.discoveredUniversalTechIds.size;
-  const totalSkills = [...new Set(state.genealogy.flatMap(g => g.skills ? [g.skills] : []))].reduce((a, b) => a + b, 0);
+  const isExtinct = state.gameOverReason === 'no_heir';
+  const isEraEnd  = state.gameOverReason === 'era_complete';
+  const score     = calculateScore();
+  const title     = getDynastyTitle(score.total);
 
-  el('end-icon').textContent        = isExtinct ? '💀' : isEraEnd ? '🏆' : '🦴';
-  el('end-dynasty-name').textContent = `Llinatge ${state.dynastyName}`;
-  el('end-tagline').textContent      = isExtinct
-    ? 'El llinatge s\'ha extingit sense hereus.'
-    : isEraEnd
-    ? `L'era ha finalitzat. ${totalGens} generació${totalGens !== 1 ? 'ns' : ''} han passat.`
-    : `La partida ha acabat al cicle ${state.cycle}.`;
+  el('end-icon').textContent         = isExtinct ? '💀' : isEraEnd ? '🏆' : '🦴';
+  el('end-dynasty-name').textContent  = `${state.dynastyName}`;
+  el('end-tagline').textContent       = title;
 
   el('end-stats-row').innerHTML = `
-    <div class="end-stat"><span class="end-stat-val">${state.cycle}</span><span class="end-stat-label">Cicles</span></div>
-    <div class="end-stat"><span class="end-stat-val">${totalGens}</span><span class="end-stat-label">Generacions</span></div>
-    <div class="end-stat"><span class="end-stat-val">${totalTechs}/${UNIVERSAL_TECHS.length}</span><span class="end-stat-label">Techs</span></div>
+    <div class="end-stat"><span class="end-stat-val">${score.total}</span><span class="end-stat-label">Punts</span></div>
+    <div class="end-stat"><span class="end-stat-val">${score.cycles}</span><span class="end-stat-label">Cicles</span></div>
+    <div class="end-stat"><span class="end-stat-val">${score.gens}</span><span class="end-stat-label">Gens.</span></div>
+    <div class="end-stat"><span class="end-stat-val">${score.techs}/${UNIVERSAL_TECHS.length}</span><span class="end-stat-label">Techs</span></div>
   `;
+
+  // Score breakdown
+  const breakdownEl = el('end-score-breakdown') || (() => {
+    const d = document.createElement('div');
+    d.id = 'end-score-breakdown';
+    el('end-stats-row').insertAdjacentElement('afterend', d);
+    return d;
+  })();
+  breakdownEl.innerHTML = [
+    score.gens     > 0 ? `${score.gens}G × 50 = ${score.gens * 50}` : null,
+    score.techs    > 0 ? `${score.techs}T × 100 = ${score.techs * 100}` : null,
+    score.skills   > 0 ? `${score.skills}H × 30 = ${score.skills * 30}` : null,
+    score.branches > 0 ? `${score.branches}B × 40 = ${score.branches * 40}` : null,
+    score.reputacio > 0 ? `${score.reputacio} Reputació` : null,
+    `${score.cycles}C × 2 = ${score.cycles * 2}`,
+  ].filter(Boolean).map(t => `<span class="score-line">${t}</span>`).join('');
+
+  const isGood = isEraEnd;
+  const taglineMsg = isExtinct
+    ? 'El llinatge s\'ha extingit sense hereus.'
+    : isEraEnd
+    ? `L'era de la Prehistòria ha finalitzat. ${score.gens} generació${score.gens !== 1 ? 'ns' : ''} han viscut.`
+    : `La partida ha acabat al cicle ${score.cycles}.`;
+  if (el('end-result-msg')) el('end-result-msg').textContent = taglineMsg;
 
   const genoEl = el('end-genealogy');
   genoEl.innerHTML = '';
   state.genealogy.forEach((g, i) => {
     const row = document.createElement('div');
     row.className = `end-gen-row${i === 0 ? ' gen-first' : ''}`;
-    const axisLabel = g.topAxis ? AXIS_LABELS[g.topAxis]?.right || g.topAxis : '—';
     const branchStr = g.branches?.length ? g.branches.join(', ') : '—';
     row.innerHTML = `
       <span class="end-gen-num">G${g.generation}</span>
       <span class="end-gen-name">${g.label} ${state.dynastyName}</span>
-      <span class="end-gen-detail">
-        ${g.age} cicles<br>
-        <span class="end-gen-branch">${branchStr}</span>
-      </span>`;
+      <span class="end-gen-detail">${g.age} cicles · <span class="end-gen-branch">${branchStr}</span></span>`;
     genoEl.appendChild(row);
   });
 }
@@ -1292,7 +1410,7 @@ function setupEventListeners() {
   // Menu
   el('btn-open-menu').addEventListener('click', () => show('overlay-menu'));
   el('btn-continue-game').addEventListener('click', () => { hide('overlay-menu'); renderAll(); });
-  el('btn-new-game').addEventListener('click', () => { hide('overlay-menu'); show('overlay-new-game'); });
+  el('btn-new-game').addEventListener('click', () => { clearSave(); hide('overlay-menu'); show('overlay-new-game'); });
 
   // New game form
   el('btn-start-new-game').addEventListener('click', () => {
@@ -1411,8 +1529,10 @@ function setupEventListeners() {
 
   // Game over restart
   el('btn-go-restart').addEventListener('click', () => {
+    clearSave();
     hide('overlay-gameover');
     initState();
+    el('btn-continue-game').disabled = true;
     show('overlay-menu');
     renderAll();
   });
@@ -1448,10 +1568,14 @@ function showActionInfo(action) {
 
 // ═══════════════════════════════════════════════════════════ INIT
 window.addEventListener('DOMContentLoaded', () => {
-  initState();
+  const hasSavedGame = hasSave();
+  if (hasSavedGame) {
+    loadGame();
+  } else {
+    initState();
+  }
   setupEventListeners();
-  // Show menu on first load; continue-game disabled since fresh state
-  el('btn-continue-game').disabled = false;
+  el('btn-continue-game').disabled = !hasSavedGame;
   show('overlay-menu');
   renderAll();
 });
