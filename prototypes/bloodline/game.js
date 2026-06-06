@@ -15,19 +15,19 @@ const ZONE_POS = {
   'Campament': { left: 63, top: 74 },
   'Planes':    { left: 80, top: 32 },
   'Bosc':      { left: 20, top: 35 },
-  'Ritual':    { left: 23, top: 76 },
+  'Llar':      { left: 23, top: 76 },
 };
 const ZONE_IMG = {
   'Campament': 'HOME',
   'Planes':    'WILD',
   'Bosc':      'FOREST',
-  'Ritual':    'TOWN',
+  'Llar':      'HOME',
 };
 const ZONE_ICONS = {
   'Campament': '🏕️',
   'Planes':    '🌾',
   'Bosc':      '🌲',
-  'Ritual':    '🌀',
+  'Llar':      '🏠',
 };
 
 // ═══════════════════════════════════════════════════════════ ACTION ICONS
@@ -112,6 +112,7 @@ function saveGame() {
         inheritedSkills:     [...(s.inheritedSkills     || [])],
         inheritedDestreses:  [...(s.inheritedDestreses  || [])],
       })),
+      nextGenHealthMax: state.nextGenHealthMax,
       gameOver: state.gameOver, gameOverReason: state.gameOverReason,
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(d));
@@ -151,6 +152,7 @@ function loadGame() {
         inheritedSkills:     new Set(s.inheritedSkills     || []),
         inheritedDestreses:  new Set(s.inheritedDestreses  || []),
       })),
+      nextGenHealthMax: d.nextGenHealthMax || null,
       pendingEvent: null, pendingSuccession: null, pendingDeath: null, pendingNewGen: null,
       pendingDiscoveries: [], pendingBirths: [],
       gameOver: d.gameOver || false, gameOverReason: d.gameOverReason || null,
@@ -226,6 +228,7 @@ function initState(dynastyName, race) {
     pendingBirths: [],
     pendingDeath: null,
     pendingNewGen: null,
+    nextGenHealthMax: null,
     gameOver: false,
     gameOverReason: null,
   };
@@ -284,7 +287,16 @@ function getDiscoverableTechs() {
 }
 function applyUniversalTechEffect(tech) {
   if (!tech.effect) return;
-  if (tech.effect.healthBonus) state.health = Math.min(HEALTH_MAX, state.health + tech.effect.healthBonus);
+  if (tech.effect.healthBonus) {
+    state.health = Math.min(HEALTH_MAX, state.health + tech.effect.healthBonus);
+  }
+  if (tech.effect.healthPctBonus) {
+    const bonus = Math.round(state.health * tech.effect.healthPctBonus);
+    state.health = Math.min(HEALTH_MAX, state.health + bonus);
+  }
+  if (tech.effect.nextGenHealthMax) {
+    state.nextGenHealthMax = tech.effect.nextGenHealthMax;
+  }
 }
 function autoDiscoverUniversalTechs() {
   for (const tech of getDiscoverableTechs()) {
@@ -369,7 +381,31 @@ function applyCharacterEffect(action) {
       ? Math.min(def.max, Math.max(0, newVal))
       : newVal;
   }
-  if (eff.type === 'add_child') {
+  if (eff.type === 'find_partner') {
+    const failureChance = eff.failure_chance ?? 0.05;
+    if (Math.random() < failureChance) {
+      addLog('Recerca sense èxit. Intenteu-ho de nou.');
+      state.pendingDiscoveries.push({ _isEvent: true, icon: '💔', name: 'Sense parella', desc: 'No heu trobat la persona adequada. Podeu tornar-ho a intentar.' });
+      return;
+    }
+    state.character.charState.parella = 1;
+    const partnerNames = ['Lyra', 'Kael', 'Miran', 'Sura', 'Bran', 'Elia', 'Torn', 'Vael'];
+    const partnerName = partnerNames[Math.floor(Math.random() * partnerNames.length)];
+    if (!state.discoveredZoneIds.has('Llar')) {
+      state.discoveredZoneIds.add('Llar');
+    }
+    addLog(`💑 Parella trobada: ${partnerName}. La Llar ara és vostra.`);
+    state.pendingDiscoveries.push({ _isPartner: true, icon: '💑', name: `${state.character.label} & ${partnerName}`, desc: `Heu trobat company/a de vida. La Llar s'obre. Ara podeu tenir fills i construir el llinatge.` });
+  }
+  if (eff.type === 'add_child' || eff.type === 'add_child_with_risk') {
+    // Health-based success probability (higher health = more likely)
+    const healthRatio = state.health / HEALTH_MAX;
+    const successChance = Math.max(0.25, Math.min(0.95, 0.30 + healthRatio * 0.65));
+    if (Math.random() > successChance) {
+      addLog('Pèrdua de l\'embaràs. La salut és massa baixa.');
+      state.pendingDiscoveries.push({ _isEvent: true, icon: '🕯️', name: 'Pèrdua', desc: `La salut baixa ha complicat l'embaràs. Milloreu la salut per augmentar les probabilitats d'èxit (${Math.round(successChance*100)}% ara).` });
+      return;
+    }
     const nameIdx = (state.generation * 7 + state.character.children.length * 3) % CHILD_NAMES.length;
     const childLabel = CHILD_NAMES[nameIdx];
     const child = { id: `child_${state.generation}_${state.cycle}`, label: childLabel };
@@ -456,13 +492,15 @@ function triggerSuccession() {
   const topAxis = AXES.reduce((a, b) =>
     Math.abs(state.character.inclination[a]) > Math.abs(state.character.inclination[b]) ? a : b
   );
+  // Inclination: 100% heretada (les branques són del llinatge, no del personatge)
   const inheritedInclination = Object.fromEntries(
     AXES.map(a => [a, state.character.inclination[a] * INCLINATION_INHERITANCE_RATE])
   );
+  // Stats: 50% heretats (per evitar runaway exponencial entre generacions)
   const inheritedStats = Object.fromEntries(
     STAT_DEFS.map(s => [s.id,
-      state.character.stats[s.id] * INCLINATION_INHERITANCE_RATE +
-      STAT_STARTING_VALUE * (1 - INCLINATION_INHERITANCE_RATE)
+      state.character.stats[s.id] * STAT_INHERITANCE_RATE +
+      STAT_STARTING_VALUE * (1 - STAT_INHERITANCE_RATE)
     ])
   );
   const inheritedPurchased = new Set(state.character.purchasedActionIds);
@@ -511,8 +549,16 @@ function continueSuccession(successorId) {
   ];
   state.pendingSuccession = null;
   for (const res of RESOURCE_DEFS) {
-    if (!res.persistent)             state[res.id] = res.startVal;
-    else if (res.inheritDecay != null) state[res.id] = Math.floor((state[res.id] || 0) * res.inheritDecay);
+    if (!res.persistent) {
+      // Apply nextGenHealthMax if fire has been discovered
+      if (res.id === 'health' && state.nextGenHealthMax) {
+        state[res.id] = state.nextGenHealthMax;
+      } else {
+        state[res.id] = res.startVal;
+      }
+    } else if (res.inheritDecay != null) {
+      state[res.id] = Math.floor((state[res.id] || 0) * res.inheritDecay);
+    }
   }
   state.generation++;
   const teachingBonus = chosen.hasEnsenyat ? TEACHING_BONUS : 0;
@@ -564,7 +610,7 @@ function executeAction(actionId) {
   if (!action || !state.character.purchasedActionIds.has(actionId)) return;
   if (getActionVisibility(action) !== 'ACTIVE') return;
   const age = characterAge();
-  if (action.minAge !== undefined && age < action.minAge) return;
+  if (isActionTooYoung(action)) return; // blocked — shown but not executable
   if (action.maxAge !== undefined && age > action.maxAge) return;
   if (!evaluateCharacterRequires(action)) return;
 
@@ -606,13 +652,20 @@ function executeAction(actionId) {
       return bt?.passive_effect?.type === 'bonus_action_output' && bt.passive_effect.action_id === actionId
         ? s + (bt.passive_effect.output_max_bonus || 0) : s;
     }, 0);
-    const output = Math.round(randInt(action.output_min + outMinBonus, action.output_max + outMaxBonus) * getStatMultiplier(action)) + destresaBonus;
-    const outRes = action.output_resource || 'food';
-    const outDef = RESOURCE_DEFS.find(r => r.id === outRes);
-    if (outDef) {
-      const newVal = (state[outRes] || 0) + output;
-      state[outRes] = outDef.max != null ? Math.min(outDef.max, newVal) : newVal;
+    // Primary resource output (food/health) — not all actions have this
+    const outRes = action.output_resource;
+    if (outRes && action.output_min != null) {
+      const output = Math.round(randInt(action.output_min + outMinBonus, action.output_max + outMaxBonus) * getStatMultiplier(action)) + destresaBonus;
+      const outDef = RESOURCE_DEFS.find(r => r.id === outRes);
+      if (outDef) {
+        const newVal = (state[outRes] || 0) + output;
+        state[outRes] = outDef.max != null ? Math.min(outDef.max, newVal) : newVal;
+      }
     }
+    // Universal material generation — ALL actions generate material (currency to buy new actions)
+    const matMin = action.material_min ?? 2;
+    const matMax = action.material_max ?? 3;
+    state.material += randInt(matMin, matMax);
     // Side effects
     if (action.side_effects) {
       for (const se of action.side_effects) {
@@ -861,19 +914,22 @@ const CAROUSEL = { actions: [], idx: 0, zoneId: null, dragStartX: 0, dragDelta: 
 const CAROUSEL_STEP = 110;
 
 function getZoneActions(zoneId) {
+  const age = characterAge();
   const base = ACTIONS.filter(a => {
     if (a.zona !== zoneId) return false;
     if (!state.character.purchasedActionIds.has(a.id)) return false;
-    const age = characterAge();
-    if (a.minAge !== undefined && age < a.minAge) return false;
     if (a.maxAge !== undefined && age > a.maxAge) return false;
     if (!evaluateCharacterRequires(a)) return false;
-    return true;
+    return true; // include even if minAge not met — shown as tooYoung
   });
   // Show discovery action if eligible skills exist
   const disc = ACTIONS.find(a => a.is_discovery_action && a.zona === zoneId);
   if (disc && getEligibleSkills().length > 0) base.unshift(disc);
   return base;
+}
+
+function isActionTooYoung(action) {
+  return action.minAge !== undefined && characterAge() < action.minAge;
 }
 
 function openZoneSheet(zoneId) {
@@ -979,8 +1035,9 @@ function updateCarouselInfo() {
     el('zc-desc').textContent     = 'Desbloqueja accions aprenent habilitats.';
     return;
   }
-  const action  = actions[idx];
-  const blocked = getActionVisibility(action) !== 'ACTIVE';
+  const action   = actions[idx];
+  const tooYoung = isActionTooYoung(action);
+  const blocked  = tooYoung || getActionVisibility(action) !== 'ACTIVE';
   const outIcons = { food: '🌾', material: '🧠', health: '❤️', reputacio: '🏛️' };
   const parts = [];
   if (!blocked && action.output_resource && action.output_min != null) {
@@ -995,7 +1052,9 @@ function updateCarouselInfo() {
   }
   el('zc-name').textContent     = action.name;
   el('zc-benefits').textContent = parts.join('  ');
-  el('zc-desc').textContent     = blocked
+  el('zc-desc').textContent     = tooYoung
+    ? `🔒 No tens edat per a això (mínim ${action.minAge} cicles)`
+    : blocked
     ? '🔒 Inclinació insuficient'
     : (action.description || '');
 }

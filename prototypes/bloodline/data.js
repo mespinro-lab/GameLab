@@ -13,8 +13,10 @@ const STARTING_FOOD = 12;
 const FOOD_MAX      = 20;
 const FOOD_UPKEEP   = 2;
 
-const STARTING_HEALTH = 60;
-const HEALTH_MAX      = 60;
+const STARTING_HEALTH      = 40;
+const HEALTH_MAX           = 40;
+const HEALTH_FIRE_BONUS    = 0.25;  // +25% salut immediata en descobrir el foc
+const HEALTH_POST_FIRE     = 50;    // salut màxima i inicial de gens posteriors al foc
 
 const AGING_BASE      = 3;
 const AGING_THRESHOLD = 10;
@@ -40,7 +42,8 @@ const CHARACTER_STATE_DEFS = [
   { id: 'ensenyat', startVal: 0, max: 1            },
 ];
 
-const INCLINATION_INHERITANCE_RATE = 0.65;  // fracció d'inclinació i stats que hereta el fill
+const INCLINATION_INHERITANCE_RATE = 1.00;  // inclinació heretada al 100% (les branques són del llinatge)
+const STAT_INHERITANCE_RATE        = 0.50;  // stats heretats al 50% (per evitar runaway cross-gens)
 const EVENT_TRIGGER_CHANCE         = 0.6;   // probabilitat base que una acció dispari un event
 const FADE_MARGIN                  = 0.05;  // marge d'inclinació per mostrar una acció com "difosa" en lloc d'oculta
 
@@ -106,7 +109,8 @@ const DESTRESA_DEFS = [
 const ZONE_DEFS = [
   { id: 'Bosc',      label: 'Bosc',      description: "Recol·lecta avançada i plantes. Es descobreix explorant les Planes.",  starts_discovered: false },
   { id: 'Planes',    label: 'Planes',    description: "Caça, exploració i recol·lecta exterior. Disponible des del principi.", starts_discovered: true  },
-  { id: 'Campament', label: 'Campament', description: "Supervivència base, família i artesania. Disponible des del principi.", starts_discovered: true  },
+  { id: 'Campament', label: 'Campament', description: "Supervivència base i artesania. Disponible des del principi.",          starts_discovered: true  },
+  { id: 'Llar',      label: 'Llar',      description: "Espai familiar. Apareix quan tens parella.",                            starts_discovered: false },
 ];
 
 // --- Axis Definitions ---
@@ -156,7 +160,7 @@ const UNIVERSAL_TECHS = [
   {
     id: "ut_foc", name: "El Foc", icon: "🔥", cycle: 10,
     description: "Fabricació intencional del foc amb sílex i pirita. Cuina, calor, llum i protecció nocturna.",
-    effect: { healthBonus: 10, desc: "+10 Salut (menjar cuit)" }
+    effect: { healthPctBonus: HEALTH_FIRE_BONUS, nextGenHealthMax: HEALTH_POST_FIRE, desc: `+${Math.round(HEALTH_FIRE_BONUS*100)}% Salut immediata · Gens posteriors inicien amb ${HEALTH_POST_FIRE}❤️` }
   },
   {
     id: "ut_eines", name: "Les Eines", icon: "🪨", cycle: 16,
@@ -325,8 +329,10 @@ const ACTIONS = [
   // BASE
   {
     id: "act_espiar_ramat", name: "Espiar el Ramat", is_base: true, zona: "Planes",
-    description: "Observes els moviments d'un ramat des d'un lloc cobert. Segur i eficaç.",
-    execute_cost: 1, output_resource: "food", output_min: 2, output_max: 5,
+    description: "Segueixes el ramat de prop i tries el moment de caçar. Molt menjar, però hi ha risc de ferides.",
+    execute_cost: 1, output_resource: "food", output_min: 3, output_max: 8,
+    material_min: 2, material_max: 4,
+    side_effects: [{ resource: 'health', delta: -5 }],
     stat_key: "forca", stat_gain: 0.10,
     destresa_id: "d_rastreig",
     inclination_deltas: { impuls: +0.03, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: 0 },
@@ -334,8 +340,9 @@ const ACTIONS = [
   },
   {
     id: "act_recollectar_arrels", name: "Recol·lectar Arrels", is_base: true, zona: "Planes",
-    description: "Busques arrels i baies comestibles al voltant del campament. Tranquil.",
-    execute_cost: 1, output_resource: "food", output_min: 2, output_max: 4,
+    description: "Busques arrels i baies comestibles sense allunyar-te. Segur però rendiment moderat.",
+    execute_cost: 1, output_resource: "food", output_min: 1, output_max: 3,
+    material_min: 2, material_max: 3,
     stat_key: "forca", stat_gain: 0.10,
     destresa_id: "d_botanica",
     inclination_deltas: { impuls: -0.02, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: +0.02 },
@@ -343,9 +350,10 @@ const ACTIONS = [
   },
   {
     id: "act_tallar_pedra", name: "Tallar Pedra", is_base: true, zona: "Campament",
-    description: "Treballes el sílex amb cura per fer eines per al clan. Precís i meticulós.",
-    execute_cost: 0, output_resource: "material", output_min: 1, output_max: 3,
-    stat_key: "enginy", stat_gain: 0.10,
+    description: "Treballes el sílex per fer eines per al clan. Millora l'enginy i les tècniques artesanals.",
+    execute_cost: 0,
+    material_min: 2, material_max: 3,
+    stat_key: "enginy", stat_gain: 0.15,
     destresa_id: "d_talla_silex",
     inclination_deltas: { impuls: -0.02, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
@@ -388,36 +396,36 @@ const ACTIONS = [
     event_pool_id: "pool_caca"
   },
 
-  // FAMILY
+  // FAMILY — zona Campament (cercar parella) i Llar (tenir fills, ensenyar)
   {
     id: "act_cercar_parella", name: "Cercar Parella", is_base: true, zona: "Campament",
-    description: "Busques company/a entre els grups veïns. Sense parella no hi ha successió.",
-    maxAge: 14,
+    description: "Busques company/a entre els grups veïns. Sense parella no hi ha successió ni Llar.",
+    minAge: 5, maxAge: 14,
     requires: [{ state: 'parella', max: 0 }],
-    character_effect: { type: 'delta', state: 'parella', delta: 1, message: 'Has trobat parella. Ara podeu tenir fills.' },
-    execute_cost: 1, output_resource: "food", output_min: 1, output_max: 2,
+    character_effect: { type: 'find_partner', failure_chance: 0.05 },
+    material_min: 1, material_max: 2,
     stat_key: "vincle", stat_gain: 0.20,
     inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.06 },
     event_pool_id: "pool_social"
   },
   {
-    id: "act_tenir_fills", name: "Tenir Fills", is_base: true, zona: "Campament",
-    description: "Formeu família. Els fills hereten coneixement i inclinació del llinatge.",
+    id: "act_tenir_fills", name: "Tenir Fills", is_base: true, zona: "Llar",
+    description: "Formeu família. L'èxit depèn de la salut. Els fills hereten la inclinació del llinatge.",
     maxAge: 15,
     requires: [{ state: 'parella', min: 1 }, { state: 'fills', lt_max: true }],
-    character_effect: { type: 'add_child' },
-    execute_cost: 0, output_resource: "food", output_min: 1, output_max: 2,
+    character_effect: { type: 'add_child_with_risk' },
+    material_min: 1, material_max: 3,
     stat_key: "vincle", stat_gain: 0.10,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.03, sociabilitat: +0.05 },
     event_pool_id: "pool_social"
   },
   {
-    id: "act_ensenyar", name: "Ensenyar el Fill", is_base: true, zona: "Campament",
-    description: "Passes temps transmetent al fill les tècniques que has après. Un torn que definirà el llegat del llinatge.",
+    id: "act_ensenyar", name: "Ensenyar el Fill", is_base: true, zona: "Llar",
+    description: "Passes temps transmetent al fill les tècniques que has après. Millora la taxa d'herència.",
     minAge: 8,
     requires: [{ state: 'fills', min: 1 }, { state: 'ensenyat', max: 0 }, { type: 'has_any_skill' }],
     character_effect: { type: 'delta', state: 'ensenyat', delta: 1 },
-    execute_cost: 2, output_resource: "food", output_min: 1, output_max: 2,
+    material_min: 1, material_max: 2,
     reputation_gain: 3,
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: +0.03, sociabilitat: +0.05 },
@@ -539,9 +547,9 @@ const ACTIONS = [
   // CRAFTSMAN branch — bt_rasclador_fi
   {
     id: "act_faonar_eines", name: "Façonar Eines", is_base: false, zona: "Campament",
-    description: "Produeixes eines de sílex de qualitat superior. El rasclador fi permet formes impossibles abans.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "material", output_min: 2, output_max: 5,
-    stat_key: "enginy", stat_gain: 0.15,
+    description: "Produeixes eines de sílex de qualitat superior. Millora enginy i obre noves possibilitats artesanals.",
+    purchase_cost: 3, execute_cost: 0, material_min: 2, material_max: 4,
+    stat_key: "enginy", stat_gain: 0.20,
     inclination_deltas: { impuls: 0, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
   },
@@ -549,16 +557,17 @@ const ACTIONS = [
   // CRAFTSMAN branch — bt_buri
   {
     id: "act_gravar_os", name: "Gravar Os i Ivori", is_base: false, zona: "Campament",
-    description: "El burí permet gravar formes en os i ivori. Art i eina, alhora.",
-    purchase_cost: 4, execute_cost: 0, output_resource: "material", output_min: 2, output_max: 4,
+    description: "El burí permet gravar formes en os i ivori. Art i eina, alhora. Millora enginy i espiritualitat.",
+    purchase_cost: 4, execute_cost: 0, material_min: 2, material_max: 3,
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: +0.02, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
   },
   {
     id: "act_intercanviar_eines", name: "Intercanviar Eines", is_base: false, zona: "Planes",
-    description: "Les eines gravades criden l'atenció dels grups veïns. Els intercanvis obren aliances.",
-    purchase_cost: 3, execute_cost: 1, output_resource: "material", output_min: 2, output_max: 5,
+    description: "Intercanvies eines de qualitat per provisions i aliances. Sociabilitat i menjar a canvi de feina artesanal.",
+    purchase_cost: 3, execute_cost: 1, output_resource: "food", output_min: 2, output_max: 4,
+    material_min: 1, material_max: 2,
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.05 },
     event_pool_id: "pool_social"
@@ -567,16 +576,18 @@ const ACTIONS = [
   // CRAFTSMAN branch — bt_agulla_os
   {
     id: "act_cosir_pells", name: "Cosir Pells", is_base: false, zona: "Campament",
-    description: "Cosius pells amb agulles d'os per fer roba que protegeix del fred. Eines i comoditat.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "material", output_min: 2, output_max: 4,
+    description: "Cosius pells amb agulles d'os. La roba que protegeixes millora la salut de tot el clan.",
+    purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 6,
+    material_min: 1, material_max: 2,
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
   },
   {
     id: "act_construir_refugi", name: "Construir Refugi", is_base: false, zona: "Campament",
-    description: "Construcció d'un aixopluc millor amb pells cosides i branques. Protecció per a tots.",
-    purchase_cost: 4, execute_cost: 1, output_resource: "material", output_min: 3, output_max: 6,
+    description: "Construcció d'un aixopluc millor. El grup descansa protegit i recupera salut.",
+    purchase_cost: 4, execute_cost: 1, output_resource: "health", output_min: 4, output_max: 8,
+    material_min: 1, material_max: 3,
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: +0.02 },
     event_pool_id: "pool_artesania"
@@ -613,7 +624,7 @@ const ACTIONS = [
     id: "act_narrar_llegendes", name: "Narrar les Llegendes", is_base: false, zona: "Campament",
     description: "Expliques les gestes i llegendes del llinatge davant del foc del campament.",
     reputation_gain: 2,
-    purchase_cost: 3, execute_cost: 0, output_resource: "material", output_min: 1, output_max: 3,
+    purchase_cost: 3, execute_cost: 0, material_min: 1, material_max: 2,
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: +0.05 },
     event_pool_id: "pool_social"
@@ -706,8 +717,8 @@ const ACTIONS = [
   {
     id: "act_talla_avancada", name: "Talla Avançada", is_upgrade: true, upgrades_action_id: "act_tallar_pedra", zona: "Campament",
     description: "Eines de qualitat superior. Menys rebuig, formes més precises.",
-    purchase_cost: 5, execute_cost: 0, output_resource: "material", output_min: 3, output_max: 6,
-    stat_key: "enginy", stat_gain: 0.10,
+    purchase_cost: 5, execute_cost: 0, material_min: 2, material_max: 4,
+    stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: -0.02, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
   },
