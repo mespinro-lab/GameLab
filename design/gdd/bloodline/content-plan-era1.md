@@ -1,3 +1,5 @@
+> ⚠️ OBSOLET (2026-06-06) — Font de veritat: `prototypes/bloodline/data.js`. Reescriure quan el prototip passi a producció.
+
 # Life Tycoon 2 — Content Plan: Era 1
 
 > **ESTAT**: Proposta completa. Contingut basat en recerca del Paleolític Superior

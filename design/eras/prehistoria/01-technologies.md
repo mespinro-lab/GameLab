@@ -1,3 +1,5 @@
+> ⚠️ OBSOLET (2026-06-06) — Font de veritat: `prototypes/bloodline/data.js`. Reescriure quan el prototip passi a producció.
+
 # Paleolític — Universal Technologies
 **Estat**: IMPORTAT de data.js — 2026-06-02
 **Font**: `prototypes/bloodline/data.js` (UNIVERSAL_TECHS)

@@ -1,3 +1,5 @@
+> ⚠️ OBSOLET (2026-06-06) — Font de veritat: `prototypes/bloodline/data.js`. Reescriure quan el prototip passi a producció.
+
 # Paleolític — Events
 **Estat**: COMPLET 2026-06-02 (tots 5 pools generats)
 **Agents**: era-historian (rigor) + era-writer (veu narrativa)

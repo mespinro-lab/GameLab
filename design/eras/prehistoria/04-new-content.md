@@ -1,3 +1,5 @@
+> ⚠️ OBSOLET (2026-06-06) — Font de veritat: `prototypes/bloodline/data.js`. Reescriure quan el prototip passi a producció.
+
 # Paleolític — Contingut Nou Aprovat
 **Estat**: APROVAT 2026-06-02
 **Origen**: era-writer proposta + revisió del dissenyador

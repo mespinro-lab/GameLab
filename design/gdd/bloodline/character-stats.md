@@ -1,3 +1,5 @@
+> ⚠️ OBSOLET (2026-06-06) — Font de veritat: `prototypes/bloodline/data.js`. Reescriure quan el prototip passi a producció.
+
 # Character Stats — Life Tycoon 2
 
 **Darrera actualització**: 2026-05-30
