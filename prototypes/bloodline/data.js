@@ -279,7 +279,7 @@ const SKILL_DEFS = [
     id: "bt_coneixement_plantes", name: "Coneixement de Plantes",
     inheritanceRate: 0.45,
     universal_prereq: "ut_corda",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", max: 0.05 }, { axis: "impuls", max: 0.10 }] },
+    inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.10 }, { axis: "impuls", max: 0.20 }] },
     unlocks_action_ids: ["act_recollida_bolets", "act_assecament_plantes"],
     passive_effect: { type: "bonus_action_output", action_id: "act_recollida_bolets", output_max_bonus: 2, desc: "+2 màxim recollida de bolets (coneixes quins valen la pena)" },
     is_hidden: false
@@ -297,9 +297,9 @@ const SKILL_DEFS = [
     id: "bt_llavor_selectiva", name: "Llavor Selectiva",
     inheritanceRate: 0.35,
     universal_prereq: "ut_agricultura",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", max: 0.05 }, { axis: "impuls", max: 0.10 }] },
+    inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.10 }, { axis: "impuls", max: 0.20 }] },
     unlocks_action_ids: ["act_seleccionar_llavors", "act_preparar_terreny"],
-    passive_effect: null,
+    passive_effect: { type: "bonus_action_output", action_id: "act_seleccionar_llavors", output_min_bonus: 2, desc: "+2 mínim selecció de llavors (les millors llavors formen part de la cultura del clan)" },
     is_hidden: false
   },
   {
@@ -677,6 +677,16 @@ const ACTIONS = [
   },
 
   // UPGRADES
+  // B-01: Acció exclusiva branca Recol·lector — payoff tangible Gen 1
+  {
+    id: "act_recollecta_avancada", name: "Recol·lecta Avançada", is_base: false, zona: "Planes",
+    description: "Apliques el coneixement acumulat del territori: zones òptimes, plantes seleccionades, ritme natural. La millor collita amb el mínim esforç.",
+    purchase_cost: 3, execute_cost: 1, output_resource: "food", output_min: 4, output_max: 8,
+    inclination_requirements: { "intel·lecte": { min: 0.15 } },
+    stat_key: "enginy", stat_gain: 0.15,
+    inclination_deltas: { impuls: -0.02, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: +0.02 },
+    event_pool_id: "pool_recollecta"
+  },
   {
     id: "act_aguait_coordinat", name: "Aguait Coordinat", is_upgrade: true, upgrades_action_id: "act_espiar_ramat", zona: "Planes",
     description: "Senyal coordinat amb el grup. La presa no pot fugir. Rendiment molt superior.",
