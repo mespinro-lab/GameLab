@@ -32,8 +32,10 @@ func _init_new_game(dynasty_name: String) -> void:
 	EraManager.start_era("prehistoria")
 	GameState.dynasty_name = dynasty_name
 	GameState.character_label = _pick_starting_name()
-	if "Campament" not in GameState.discovered_zone_ids:
-		GameState.discovered_zone_ids.append("Campament")
+	# Start with Campament and Planes visible from cycle 0
+	for zone: String in ["Campament", "Planes"]:
+		if zone not in GameState.discovered_zone_ids:
+			GameState.discovered_zone_ids.append(zone)
 	for action_id: String in DataLoader.actions:
 		var action: Dictionary = DataLoader.actions[action_id]
 		if action.get("is_base", false):

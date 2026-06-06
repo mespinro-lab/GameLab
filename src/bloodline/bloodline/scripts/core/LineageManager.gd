@@ -111,10 +111,12 @@ func _build_successors() -> Array:
 		c["inherited_skill_ids"] = _inherit_skills()
 		successors.append(c)
 
-	for sibling: Variant in GameState.sibling_pool:
-		var s: Dictionary = (sibling as Dictionary).duplicate()
-		s["is_sibling"] = true
-		successors.append(s)
+	# Siblings only offered if the character leaves no children
+	if successors.is_empty():
+		for sibling: Variant in GameState.sibling_pool:
+			var s: Dictionary = (sibling as Dictionary).duplicate()
+			s["is_sibling"] = true
+			successors.append(s)
 
 	return successors
 
@@ -140,11 +142,10 @@ func _inherit_skills() -> Array[String]:
 
 
 func _apply_new_character(chosen: Dictionary) -> void:
-	# Reset resources
+	# Reset per-character resources (tokens accumulate across the dynasty)
 	var era: Dictionary = DataLoader.eras.get(GameState.current_era_id, {})
 	GameState.food = float(era.get("food", {}).get("start_val", 12))
-	GameState.health = float(era.get("health", {}).get("start_val", 100))
-	GameState.tokens = float(era.get("token", {}).get("start_val", 10))
+	GameState.health = float(era.get("health", {}).get("start_val", 60))
 
 	# Apply inheritance
 	var incl: Dictionary = chosen.get("inherited_inclination", {})

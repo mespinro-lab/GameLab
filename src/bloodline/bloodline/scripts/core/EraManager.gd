@@ -10,7 +10,7 @@ func start_era(era_id: String) -> void:
 	GameState.current_era_id = era_id
 	var era: Dictionary = DataLoader.eras.get(era_id, {})
 	GameState.food = float(era.get("food", {}).get("start_val", 12))
-	GameState.health = float(era.get("health", {}).get("start_val", 100))
+	GameState.health = float(era.get("health", {}).get("start_val", 60))
 	GameState.tokens = float(era.get("token", {}).get("start_val", 10))
 	var entry_zone: String = era.get("entry_zone", "Campament")
 	if entry_zone not in GameState.discovered_zone_ids:
@@ -45,7 +45,9 @@ func _apply_tech_effect(tech: Dictionary) -> void:
 		return
 	var health_bonus: int = int(effect.get("healthBonus", 0))
 	if health_bonus > 0:
-		GameState.health = minf(GameState.health + health_bonus, 100.0)
+		var era: Dictionary = DataLoader.eras.get(GameState.current_era_id, {})
+		var max_hp: float = float(era.get("health", {}).get("max_val", 100.0))
+		GameState.health = minf(GameState.health + float(health_bonus), max_hp)
 
 
 func get_era_progress_pct() -> float:

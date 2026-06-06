@@ -43,6 +43,9 @@ var sibling_pool: Array[Dictionary] = []
 var dynasty_name: String = ""
 var genealogy: Array[Dictionary] = []
 
+# Dynasty-persistent tracking (survive succession, reset only on new game)
+var fired_single_use_event_ids: Array[String] = []
+
 # Pending UI states
 var pending_action_result: Dictionary = {}
 var pending_event: Dictionary = {}
@@ -55,7 +58,7 @@ func reset() -> void:
 	era_cycle = 0
 	generation = 1
 	food = 12.0
-	health = 100.0
+	health = 60.0
 	tokens = 0.0
 	inclination = {"impuls": 0.0, "intel_lectus": 0.0, "espiritualitat": 0.0, "sociabilitat": 0.0}
 	character_stats = {"forca": 1.0, "enginy": 1.0, "vincle": 1.0}
@@ -63,6 +66,7 @@ func reset() -> void:
 	unlocked_skill_ids = []
 	purchased_action_ids = []
 	discovered_zone_ids = []
+	fired_single_use_event_ids = []
 	has_partner = false
 	has_taught_child = false
 	children = []

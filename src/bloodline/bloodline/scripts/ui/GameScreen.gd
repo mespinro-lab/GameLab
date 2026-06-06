@@ -36,12 +36,11 @@ const BRANCH_COLORS: Dictionary = {
 	"branch_mistic":     C_PURPLE,
 }
 const ZONE_ICONS: Dictionary = {
-	"Campament": "🏕", "Planes": "🌾", "Bosc": "🌲", "Ritual": "🔥",
+	"Campament": "🏕", "Planes": "🌾", "Bosc": "🌲",
 }
 
 # ── Node refs ─────────────────────────────────────────────────────────────────
 # Top bar
-var _pill_food: Label
 var _pill_health: Label
 var _pill_tokens: Label
 var _era_fill: Panel
@@ -51,6 +50,7 @@ var _label_meta: Label
 var _branch_bar: VBoxContainer
 var _incl_bars: Dictionary = {}
 var _family_bar: Label
+var _food_bar: Label
 var _skills_bar: VBoxContainer
 # Right panel (zones)
 var _zone_scroll: ScrollContainer
@@ -172,6 +172,11 @@ func _build_left_panel() -> Control:
 	_family_bar.add_theme_color_override("font_color", C_DIM)
 	_family_bar.add_theme_font_size_override("font_size", 10)
 	char_col.add_child(_family_bar)
+
+	_food_bar = Label.new()
+	_food_bar.add_theme_color_override("font_color", C_GOLD)
+	_food_bar.add_theme_font_size_override("font_size", 11)
+	char_col.add_child(_food_bar)
 	col.add_child(char_mc)
 
 	col.add_child(_h_sep())
@@ -313,19 +318,17 @@ func _build_top_bar() -> Control:
 	var div1 := _v_div()
 	hbox.add_child(div1)
 
-	# Vitals section
+	# Vitals section (health only — food is in left panel)
 	var vitals_col := VBoxContainer.new()
 	vitals_col.add_theme_constant_override("separation", 2)
 	var vitals_lbl := Label.new()
-	vitals_lbl.text = "VITALS"
+	vitals_lbl.text = "SALUT"
 	vitals_lbl.add_theme_color_override("font_color", C_DIM)
 	vitals_lbl.add_theme_font_size_override("font_size", 8)
 	vitals_col.add_child(vitals_lbl)
 	var vitals_pills := HBoxContainer.new()
 	vitals_pills.add_theme_constant_override("separation", 4)
-	_pill_food   = _resource_pill("🌾", "0", C_GOLD)
 	_pill_health = _resource_pill("❤️", "0", C_GREEN)
-	vitals_pills.add_child(_pill_food)
 	vitals_pills.add_child(_pill_health)
 	vitals_col.add_child(vitals_pills)
 	hbox.add_child(vitals_col)
@@ -513,11 +516,9 @@ func _refresh() -> void:
 
 
 func _refresh_top_bar() -> void:
-	_pill_food.text   = "🌾 %d" % int(GameState.food)
 	_pill_health.text = "❤️ %d" % int(GameState.health)
 	_pill_tokens.text = "🦴 %d" % int(GameState.tokens)
-	_set_pill_state(_pill_food,   GameState.food   <= 3.0,  C_GOLD)
-	_set_pill_state(_pill_health, GameState.health <= 20.0, C_GREEN)
+	_set_pill_state(_pill_health, GameState.health <= 15.0, C_GREEN)
 
 	# Left panel char info
 	var age: int = LineageManager.character_age()
@@ -527,6 +528,15 @@ func _refresh_top_bar() -> void:
 	_label_meta.text  = "Gen %d · Edat %d · %s" % [GameState.generation, age, GameState.dynasty_name]
 	var era_pct: int  = int(EraManager.get_era_progress_pct() * 100)
 	_family_bar.text  = "Era %d%%" % era_pct
+
+	# Food display with max and upkeep rate
+	var era: Dictionary = DataLoader.eras.get(GameState.current_era_id, {})
+	var food_max: int = int(era.get("food", {}).get("max_val", 20))
+	var base_upkeep: int = int(era.get("food", {}).get("upkeep_per_cycle", 2))
+	var child_upkeep: int = GameState.children.size()
+	var total_upkeep: int = base_upkeep + child_upkeep
+	_food_bar.text = "🌾 %d/%d  (−%d/torn)" % [int(GameState.food), food_max, total_upkeep]
+	_food_bar.add_theme_color_override("font_color", C_ACCENT if GameState.food <= 3.0 else C_GOLD)
 
 
 func _set_pill_state(pill: Label, critical: bool, normal_col: Color) -> void:
@@ -614,7 +624,7 @@ func _refresh_zones() -> void:
 		child.queue_free()
 
 	var era: Dictionary = DataLoader.eras.get(GameState.current_era_id, {})
-	var zone_order: Array = era.get("zone_order", ["Campament", "Planes", "Bosc", "Ritual"])
+	var zone_order: Array = era.get("zone_order", ["Campament", "Planes", "Bosc"])
 
 	for zone_id: String in zone_order:
 		_zone_container.add_child(_build_lt1_zone_card(zone_id))
@@ -625,7 +635,6 @@ const ZONE_COLORS: Dictionary = {
 	"Campament": Color(0.376, 0.647, 0.980),  # blue
 	"Planes":    Color(0.961, 0.651, 0.137),  # gold
 	"Bosc":      Color(0.306, 0.871, 0.502),  # green
-	"Ritual":    Color(0.753, 0.510, 0.988),  # purple
 }
 
 
@@ -903,8 +912,8 @@ func _on_zone_unlocked(zone_id: String) -> void:
 func _on_tech_discovered(tech: Dictionary) -> void:
 	var icon: String = tech.get("icon", "⭐")
 	var name_str: String = tech.get("name", tech.get("name_key", ""))
-	_show_overlay("NOVA TECNOLOGIA", icon, name_str, "", "Entès →",
-		func() -> void: _refresh())
+	var description: String = tech.get("description", "Un descobriment que canviarà la vida del clan per sempre.")
+	_show_discovery_overlay(icon, name_str, description, func() -> void: _refresh())
 
 
 func _on_succession_required(successors: Array) -> void:
@@ -997,6 +1006,28 @@ func _show_overlay(tag: String, icon: String, title: String, sub: String,
 	_overlay.visible = true
 
 
+func _show_discovery_overlay(icon: String, name_str: String, description: String, on_dismiss: Callable) -> void:
+	_ov_tag.text = "✦ DESCOBRIMENT ✦"
+	_ov_icon.text = icon
+	_ov_icon.add_theme_font_size_override("font_size", 64)
+	_ov_title.text = name_str
+	_ov_title.add_theme_color_override("font_color", C_GOLD)
+	_ov_title.add_theme_font_size_override("font_size", 22)
+	_ov_sub.text = description
+	_ov_sub.visible = true
+	_ov_btn.text = "El clan ho recorda →"
+	_ov_btn.visible = true
+	if _ov_btn.pressed.get_connections().size() > 0:
+		_ov_btn.pressed.disconnect(_ov_btn.pressed.get_connections()[0]["callable"])
+	_ov_btn.pressed.connect(func() -> void:
+		_ov_icon.add_theme_font_size_override("font_size", 44)
+		_ov_title.add_theme_color_override("font_color", C_TEXT)
+		_ov_title.add_theme_font_size_override("font_size", 17)
+		_overlay.visible = false
+		on_dismiss.call())
+	_overlay.visible = true
+
+
 func _show_succession_overlay(successors: Array) -> void:
 	_ov_tag.text = "SUCCESSIÓ"
 	_ov_icon.text = "👥"
@@ -1068,9 +1099,21 @@ func _show_event_overlay(event: Dictionary) -> void:
 			continue
 		if opt.get("requires_no_children", false) and not GameState.children.is_empty():
 			continue
+		# Build hint showing resource effects so player can make informed choice
+		var hint_parts: PackedStringArray = []
+		if opt.has("food_delta") and float(opt["food_delta"]) != 0.0:
+			hint_parts.append("%+d🌾" % int(opt["food_delta"]))
+		if opt.has("health_delta") and float(opt["health_delta"]) != 0.0:
+			hint_parts.append("%+d❤️" % int(opt["health_delta"]))
+		if opt.has("token_delta") and float(opt["token_delta"]) != 0.0:
+			hint_parts.append("%+d🦴" % int(opt["token_delta"]))
+		var hint_str: String = ""
+		if not hint_parts.is_empty():
+			hint_str = "\n[" + "  ".join(hint_parts) + "]"
+
 		var opt_btn := Button.new()
 		opt_btn.name = "O_%d" % i
-		opt_btn.text = opt.get("text", "Opció %d" % (i + 1))
+		opt_btn.text = opt.get("text", "Opció %d" % (i + 1)) + hint_str
 		opt_btn.add_theme_font_size_override("font_size", 12)
 		opt_btn.custom_minimum_size.y = 42
 		opt_btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

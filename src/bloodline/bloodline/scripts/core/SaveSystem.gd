@@ -78,6 +78,7 @@ func _serialize() -> Dictionary:
 		"sibling_pool": GameState.sibling_pool.duplicate(true),
 		"dynasty_name": GameState.dynasty_name,
 		"genealogy": GameState.genealogy.duplicate(true),
+		"fired_single_use_event_ids": GameState.fired_single_use_event_ids.duplicate(),
 	}
 
 
@@ -110,6 +111,7 @@ func _deserialize(data: Dictionary) -> void:
 	GameState.children = _to_dict_array(data.get("children", []))
 	GameState.sibling_pool = _to_dict_array(data.get("sibling_pool", []))
 	GameState.genealogy = _to_dict_array(data.get("genealogy", []))
+	GameState.fired_single_use_event_ids = _to_string_array(data.get("fired_single_use_event_ids", []))
 
 
 func _migrate(data: Dictionary, from_version: int) -> void:
