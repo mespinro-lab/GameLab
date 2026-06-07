@@ -118,13 +118,13 @@
 
     <!-- SHOP OVERLAY -->
     <div id="overlay-shop" class="hidden">
-      <div class="zone-actions-sheet" style="max-height:80vh;display:flex;flex-direction:column">
-        <div id="zone-sheet-header" style="display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-bottom:1px solid rgba(255,255,255,.15)">
+      <div class="shop-sheet">
+        <div class="shop-header">
           <span style="font-size:1.5rem">🏪</span>
-          <span style="font-weight:700;font-size:1.1rem;flex:1;text-align:center">Mercat d'Accions</span>
-          <button id="btn-close-shop" style="background:none;border:none;font-size:1.4rem;color:inherit;cursor:pointer;padding:.25rem .5rem">✕</button>
+          <span class="shop-title">Mercat d'Accions</span>
+          <button id="btn-close-shop" class="shop-close-btn">✕</button>
         </div>
-        <div id="shop-list" style="overflow-y:auto;flex:1;padding:.75rem"></div>
+        <div id="shop-list"></div>
       </div>
     </div>
 
