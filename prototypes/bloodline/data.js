@@ -28,8 +28,10 @@ const STAT_STARTING_VALUE = 1.0;
 const STAT_OUTPUT_FACTOR  = 0.15;
 
 const DESTRESA_THRESHOLD = 5;
-const DESTRESA_MAX       = 2;
+const DESTRESA_MAX       = 3;
 const DESTRESA_BONUS     = 1;
+
+const REPUTACIO_PER_CHAR_CAP = 20;  // Max reputació acumulable per personatge (anti-spam)
 
 const TEACHING_BONUS         = 0.5;  // S'afegeix a inheritanceRate de cada tech quan el pare ha ensenyat
 const FAMILY_REP_INHERITANCE = 0.6;  // (reservat) fracció de reputació que passa a la gen. següent
@@ -78,9 +80,9 @@ const RESOURCE_DEFS = [
     glossaryDesc: `Estat físic. A 0 el personatge mor i es produeix la successió. Decreix per envelliment: ${AGING_BASE}/torn en joventut, s'accelera a partir de l'edat ${AGING_THRESHOLD}.`,
   },
   {
-    id: 'material', emoji: '🧠', label: 'Provisions', section: 'resources',
+    id: 'material', emoji: '🪨', label: 'Material', section: 'resources',
     startVal: 0, max: null, upkeep: null, showMax: false, rateType: false,
-    persistent: true,
+    persistent: true, inheritDecay: 0.5,
     color: 'var(--blue)', borderColor: 'rgba(96,165,250,0.3)',
     glossaryDesc: "Acumulat per qualsevol acció. Gastat per comprar noves accions. Persisteix entre generacions.",
   },
@@ -292,7 +294,7 @@ const SKILL_DEFS = [
     id: "bt_calendari_natural", name: "Calendari Natural",
     inheritanceRate: 0.40,
     universal_prereq: "ut_ceramica",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.20 }, { axis: "intel·lecte", max: 0.05 }] },
+    inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.20 }, { axis: "sociabilitat", min: 0.10 }] },
     unlocks_action_ids: ["act_observar_cel", "act_transit_nocturn"],
     passive_effect: { type: "grant_material", amount: 2, desc: "+2 Provisions (previsió de cicles)" },
     is_hidden: false
@@ -300,7 +302,7 @@ const SKILL_DEFS = [
   {
     id: "bt_llavor_selectiva", name: "Llavor Selectiva",
     inheritanceRate: 0.35,
-    universal_prereq: "ut_agricultura",
+    universal_prereq: "ut_ceramica",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.10 }, { axis: "impuls", max: 0.20 }] },
     unlocks_action_ids: ["act_seleccionar_llavors", "act_preparar_terreny"],
     passive_effect: { type: "bonus_action_output", action_id: "act_seleccionar_llavors", output_min_bonus: 2, desc: "+2 mínim selecció de llavors (les millors llavors formen part de la cultura del clan)" },
@@ -309,8 +311,8 @@ const SKILL_DEFS = [
   {
     id: "bt_domini_terra", name: "Domini de la Terra",
     inheritanceRate: 0.25,
-    universal_prereq: "ut_agricultura",
-    inclination_conditions: { operator: "OR", conditions: [{ axis: "impuls", min: 0.10 }, { axis: "intel·lecte", max: 0.05 }] },
+    universal_prereq: "ut_ceramica",
+    inclination_conditions: { operator: "OR", conditions: [{ axis: "impuls", min: 0.10 }, { axis: "sociabilitat", min: 0.10 }] },
     unlocks_action_ids: ["act_control_territori", "act_negociar_pastures"],
     passive_effect: { type: "grant_health", amount: 10, desc: "+10 Salut (domini del territori)" },
     is_hidden: false
@@ -335,7 +337,7 @@ const ACTIONS = [
     side_effects: [{ resource: 'health', delta: -5 }],
     stat_key: "forca", stat_gain: 0.10,
     destresa_id: "d_rastreig",
-    inclination_deltas: { impuls: +0.03, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: +0.05, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_caca"
   },
   {
@@ -345,7 +347,7 @@ const ACTIONS = [
     material_min: 2, material_max: 3,
     stat_key: "forca", stat_gain: 0.10,
     destresa_id: "d_botanica",
-    inclination_deltas: { impuls: -0.02, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: +0.02 },
+    inclination_deltas: { impuls: -0.03, "intel·lecte": +0.04, espiritualitat: 0, sociabilitat: +0.03 },
     event_pool_id: "pool_recollecta"
   },
   {
@@ -355,7 +357,7 @@ const ACTIONS = [
     material_min: 2, material_max: 3,
     stat_key: "enginy", stat_gain: 0.15,
     destresa_id: "d_talla_silex",
-    inclination_deltas: { impuls: -0.02, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: -0.03, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
   },
   {
@@ -372,7 +374,7 @@ const ACTIONS = [
     description: "T'asseus en silenci i observes el món. La quietud obre la ment a allò invisible.",
     execute_cost: 1, output_resource: "health", output_min: 3, output_max: 6,
     stat_key: "vincle", stat_gain: 0.05,
-    inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: +0.08, sociabilitat: 0 },
+    inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: +0.08, sociabilitat: +0.04 },
     event_pool_id: "pool_ritual"
   },
   {
@@ -381,7 +383,7 @@ const ACTIONS = [
     execute_cost: 1, output_resource: "reputacio", output_min: 1, output_max: 2,
     stat_key: "vincle", stat_gain: 0.10,
     destresa_id: "d_guardia",
-    inclination_deltas: { impuls: +0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.02 },
+    inclination_deltas: { impuls: +0.03, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.04 },
     event_pool_id: "pool_social"
   },
   {
@@ -391,7 +393,7 @@ const ACTIONS = [
     unlocks_zone: "Bosc",
     material_min: 3, material_max: 5,
     stat_key: "forca", stat_gain: 0.10,
-    inclination_deltas: { impuls: +0.02, "intel·lecte": -0.02, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: +0.04, "intel·lecte": -0.02, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_caca"
   },
 

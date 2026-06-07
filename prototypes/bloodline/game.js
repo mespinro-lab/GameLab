@@ -180,8 +180,8 @@ function loadGame() {
 }
 
 function getAgingLoss(age) {
-  // Only age-based decay from cycle 11 onward; starvation handled separately
-  return age >= 11 ? 2 : 0;
+  if (age < AGING_THRESHOLD) return 0;
+  return AGING_BASE + Math.round(AGING_SCALE * Math.pow(age - AGING_THRESHOLD, AGING_POWER));
 }
 function characterAge() { return state.cycle - (state.character.birthCycle || 0); }
 function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
@@ -698,7 +698,11 @@ function executeAction(actionId) {
       outDef = RESOURCE_DEFS.find(r => r.id === outRes);
       if (outDef) {
         const newVal = (state[outRes] || 0) + output;
-        state[outRes] = outDef.max != null ? Math.min(outDef.max, newVal) : newVal;
+        if (outRes === 'reputacio') {
+          state[outRes] = Math.min(REPUTACIO_PER_CHAR_CAP, newVal);
+        } else {
+          state[outRes] = outDef.max != null ? Math.min(outDef.max, newVal) : newVal;
+        }
       }
     }
     // Universal material generation — ALL actions generate material (currency to buy new actions)
@@ -722,8 +726,8 @@ function executeAction(actionId) {
     if (action.stat_key && action.stat_gain) {
       state.character.stats[action.stat_key] = Math.min(STAT_MAX, state.character.stats[action.stat_key] + action.stat_gain);
     }
-    // Reputation
-    if (action.reputation_gain) state.reputacio = (state.reputacio || 0) + action.reputation_gain;
+    // Reputation (capped per character)
+    if (action.reputation_gain) state.reputacio = Math.min(REPUTACIO_PER_CHAR_CAP, (state.reputacio || 0) + action.reputation_gain);
     // Character state
     applyCharacterEffect(action);
     // Destresa check
@@ -1110,7 +1114,7 @@ function updateCarouselInfo() {
   const action   = actions[idx];
   const tooYoung = isActionTooYoung(action);
   const blocked  = tooYoung || getActionVisibility(action) !== 'ACTIVE';
-  const outIcons = { food: '🌾', material: '🧠', health: '❤️', reputacio: '🏛️' };
+  const outIcons = { food: '🌾', material: '🪨', health: '❤️', reputacio: '🏛️' };
   const parts = [];
   if (!blocked && action.output_resource && action.output_min != null) {
     const icon = outIcons[action.output_resource] || '📦';
@@ -1258,20 +1262,31 @@ function renderInMapOverlay() {
     const dismissBtn = el('btn-dismiss-event');
     if (ev.options && ev.options.length > 0) {
       dismissBtn.style.display = 'none';
-      for (let i = 0; i < ev.options.length; i++) {
-        const opt = ev.options[i];
+      const hasChildren = (state.character.children?.length || 0) > 0;
+      const visibleOptions = ev.options
+        .map((opt, i) => ({ opt, i }))
+        .filter(({ opt }) => {
+          if (opt.requires_children && !hasChildren) return false;
+          if (opt.requires_no_children && hasChildren) return false;
+          if (opt.requires_skill && !state.character.unlockedSkillIds.has(opt.requires_skill)) return false;
+          return true;
+        });
+      visibleOptions.forEach(({ opt, i }) => {
         const btn = document.createElement('button');
         btn.className = 'ev-choice-btn';
         const fxParts = [];
-        if (opt.food_delta)     fxParts.push(`${opt.food_delta > 0 ? '+' : ''}${opt.food_delta}🌾`);
-        if (opt.health_delta)   fxParts.push(`${opt.health_delta > 0 ? '+' : ''}${opt.health_delta}❤️`);
-        if (opt.material_delta) fxParts.push(`${opt.material_delta > 0 ? '+' : ''}${opt.material_delta}🧠`);
+        if (opt.food_delta)      fxParts.push(`${opt.food_delta > 0 ? '+' : ''}${opt.food_delta}🌾`);
+        if (opt.health_delta)    fxParts.push(`${opt.health_delta > 0 ? '+' : ''}${opt.health_delta}❤️`);
+        if (opt.material_delta)  fxParts.push(`${opt.material_delta > 0 ? '+' : ''}${opt.material_delta}🪨`);
+        if (opt.reputacio_delta) fxParts.push(`${opt.reputacio_delta > 0 ? '+' : ''}${opt.reputacio_delta}🏛️`);
         const fxHint = fxParts.length ? `<span class="ev-choice-fx">${fxParts.join('  ')}</span>` : '';
         btn.innerHTML = `<span class="ev-choice-name">${opt.text}</span>${fxHint}`;
         btn.dataset.idx = i;
         btn.addEventListener('click', () => resolveDiscoveryOption(i));
         choicesEl.appendChild(btn);
-      }
+      });
+      // Safety: if all options filtered out, show dismiss
+      if (visibleOptions.length === 0) dismissBtn.style.display = '';
     } else {
       dismissBtn.style.display = '';
     }
@@ -1301,7 +1316,7 @@ function applyEventEffects(fx) {
   if (fx.food)      state.food      = Math.max(0, Math.min(FOOD_MAX, state.food + fx.food));
   if (fx.health)    state.health    = Math.max(0, Math.min(healthMax(), state.health + fx.health));
   if (fx.material)  state.material  = Math.max(0, state.material + fx.material);
-  if (fx.reputacio) state.reputacio = Math.max(0, (state.reputacio || 0) + fx.reputacio);
+  if (fx.reputacio) state.reputacio = Math.max(0, Math.min(REPUTACIO_PER_CHAR_CAP, (state.reputacio || 0) + fx.reputacio));
 }
 
 function dismissEvent() {
@@ -1323,7 +1338,7 @@ function resolveDiscoveryOption(optionIndex) {
   // Direct resource deltas
   if (opt.food_delta)      state.food      = Math.max(0, Math.min(FOOD_MAX, state.food + opt.food_delta));
   if (opt.material_delta)  state.material  = Math.max(0, state.material + opt.material_delta);
-  if (opt.reputacio_delta) state.reputacio = Math.max(0, (state.reputacio || 0) + opt.reputacio_delta);
+  if (opt.reputacio_delta) state.reputacio = Math.max(0, Math.min(REPUTACIO_PER_CHAR_CAP, (state.reputacio || 0) + opt.reputacio_delta));
 
   // Health (may be modified by skill_modifier)
   let healthDelta = opt.health_delta ?? 0;
@@ -1502,10 +1517,14 @@ function calculateScore() {
   const skills    = state.genealogy.reduce((s, g) => s + (g.skills || 0), 0);
   const branches  = new Set(state.genealogy.flatMap(g => g.branches || [])).size;
   const reputacio = state.genealogy.reduce((s, g) => s + (g.reputacio || 0), 0);
-  // bonus per generation that left an heir (not extinct)
   const heirBonus = state.genealogy.filter(g => g.hadHeir).length * 20;
-  const total = cycles * 2 + gens * 50 + techs * 100 + skills * 30 + branches * 40 + Math.floor(reputacio * 2) + heirBonus;
-  return { total, cycles, gens, techs, skills, branches, reputacio, heirBonus };
+  // Gen score weighted by age lived — discourages deliberate early death
+  const genScore  = state.genealogy.reduce((s, g) => {
+    const lifePct = Math.min(1, (g.age || 0) / LIFE_EXPECTANCY);
+    return s + Math.round(50 * lifePct);
+  }, 0);
+  const total = cycles * 2 + genScore + techs * 100 + skills * 30 + branches * 40 + Math.floor(reputacio * 2) + heirBonus;
+  return { total, cycles, gens, genScore, techs, skills, branches, reputacio, heirBonus };
 }
 
 function getDynastyTitle(score) {
@@ -1548,7 +1567,7 @@ function renderEndScreen() {
     el('end-stats-row').insertAdjacentElement('afterend', breakdownEl);
   }
   breakdownEl.innerHTML = [
-    score.gens     > 0 ? `${score.gens} generacions × 50 = <b>${score.gens * 50}</b>` : null,
+    score.genScore > 0 ? `${score.gens} generació${score.gens !== 1 ? 'ns' : ''} (per edat) = <b>${score.genScore}</b>` : null,
     score.techs    > 0 ? `${score.techs} techs × 100 = <b>${score.techs * 100}</b>` : null,
     score.skills   > 0 ? `${score.skills} habilitats × 30 = <b>${score.skills * 30}</b>` : null,
     score.branches > 0 ? `${score.branches} branques × 40 = <b>${score.branches * 40}</b>` : null,
@@ -1627,7 +1646,7 @@ function openShop() {
 function renderShop() {
   const list = el('shop-list');
   list.innerHTML = '';
-  const mat = state.character.resources.material ?? 0;
+  const mat = state.material ?? 0;
   const buyable = getBuyableActions();
 
   if (buyable.length === 0) {
@@ -1652,7 +1671,7 @@ function renderShop() {
       row.innerHTML = `
         <span class="shop-icon">${getActionIcon(action)}</span>
         <div class="shop-info">
-          <span class="shop-name">${action.label || action.id}</span>
+          <span class="shop-name">${action.name || action.id}</span>
           <span class="shop-desc">${action.description || ''}</span>
         </div>
         <button class="shop-buy-btn" ${canAfford ? '' : 'disabled'} data-id="${action.id}">
@@ -1670,11 +1689,11 @@ function renderShop() {
 function buyAction(actionId) {
   const action = ACTIONS.find(a => a.id === actionId);
   if (!action || !action.purchase_cost) return;
-  const mat = state.character.resources.material ?? 0;
+  const mat = state.material ?? 0;
   if (mat < action.purchase_cost) return;
-  state.character.resources.material = mat - action.purchase_cost;
+  state.material = mat - action.purchase_cost;
   state.character.purchasedActionIds.add(actionId);
-  addLog(`Has comprat: ${action.label || action.id}`);
+  addLog(`Has comprat: ${action.name || action.id}`);
   renderShop();
   renderTopBar();
 }
@@ -1832,7 +1851,7 @@ function showActionInfo(action) {
   el('ai-icon').textContent = getActionIcon(action);
   el('ai-name').textContent = action.name;
   el('ai-desc').textContent = action.description || '';
-  const outIcons = { food: '🌾', material: '🧠', health: '❤️', reputacio: '🏛️' };
+  const outIcons = { food: '🌾', material: '🪨', health: '❤️', reputacio: '🏛️' };
   const parts = [];
   if (action.output_resource && action.output_min != null) {
     parts.push(`${outIcons[action.output_resource] || '📦'} ${action.output_min}–${action.output_max}`);
