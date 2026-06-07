@@ -98,12 +98,13 @@ const RESOURCE_DEFS = [
 ];
 
 // --- Destresa Definitions ---
+// action_id: which action must be used DESTRESA_THRESHOLD times to unlock (in addition to inclination condition)
 const DESTRESA_DEFS = [
-  { id: "d_rastreig",    name: "Rastreig",       conditions: [{ axis: "impuls",         min: 0.10 }] },
-  { id: "d_botanica",    name: "Botànica",        conditions: [{ axis: "intel·lecte",    min: 0.10 }] },
-  { id: "d_talla_silex", name: "Talla de Sílex",  conditions: [{ axis: "intel·lecte",    min: 0.15 }] },
-  { id: "d_custodi_foc", name: "Custodi del Foc", conditions: [{ axis: "espiritualitat", min: 0.10 }] },
-  { id: "d_guardia",     name: "Guàrdia",         conditions: [{ axis: "sociabilitat",   min: 0.10 }] },
+  { id: "d_rastreig",    name: "Rastreig",       action_id: "act_espiar_ramat",        conditions: [{ axis: "impuls",         min: 0.10 }] },
+  { id: "d_botanica",    name: "Botànica",        action_id: "act_recollectar_arrels",  conditions: [{ axis: "intel·lecte",    min: 0.10 }] },
+  { id: "d_talla_silex", name: "Talla de Sílex",  action_id: "act_tallar_pedra",        conditions: [{ axis: "intel·lecte",    min: 0.15 }] },
+  { id: "d_custodi_foc", name: "Custodi del Foc", action_id: "act_ritual_foc",          conditions: [{ axis: "espiritualitat", min: 0.10 }] },
+  { id: "d_guardia",     name: "Guàrdia",         action_id: "act_vigilar_campament",   conditions: [{ axis: "sociabilitat",   min: 0.10 }] },
 ];
 
 // --- Zone Definitions ---
@@ -1159,6 +1160,6 @@ const BRANCHES = [
   },
   {
     id: "branch_mystic",   name: "Místic",
-    conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.22 }, { axis: "sociabilitat", min: 0.25 }] }
+    conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.22 }, { axis: "sociabilitat", min: 0.19 }] }
   }
 ];

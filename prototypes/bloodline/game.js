@@ -111,8 +111,10 @@ function saveGame() {
         stats:    { ...state.character.stats },
         destreses: [...state.character.destreses],
         charState: { ...state.character.charState },
+        actionUseCounts: { ...state.character.actionUseCounts },
         children: state.character.children,
       },
+      inheritedReputacio: state.inheritedReputacio || 0,
       discoveredUniversalTechIds: [...state.discoveredUniversalTechIds],
       discoveredZoneIds:          [...state.discoveredZoneIds],
       firedSingleUseEventIds:     [...state.firedSingleUseEventIds],
@@ -152,8 +154,10 @@ function loadGame() {
         stats:    { ...d.character.stats },
         destreses: new Set(d.character.destreses),
         charState: { ...d.character.charState },
+        actionUseCounts: { ...(d.character.actionUseCounts || {}) },
         children: d.character.children || [],
       },
+      inheritedReputacio: d.inheritedReputacio || 0,
       discoveredUniversalTechIds: new Set(d.discoveredUniversalTechIds),
       discoveredZoneIds:          new Set(d.discoveredZoneIds),
       firedSingleUseEventIds:     new Set(d.firedSingleUseEventIds || []),
@@ -210,6 +214,7 @@ function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedS
       : Object.fromEntries(STAT_DEFS.map(s => [s.id, STAT_STARTING_VALUE])),
     destreses: new Set(inheritedDestreses),
     charState: Object.fromEntries(CHARACTER_STATE_DEFS.map(d => [d.id, d.startVal])),
+    actionUseCounts: {},
     children: [],
   };
 }
@@ -232,6 +237,7 @@ function initState(dynastyName, race) {
     discoveredUniversalTechIds: new Set(),
     discoveredZoneIds: new Set(ZONE_DEFS.filter(z => z.starts_discovered).map(z => z.id)),
     firedSingleUseEventIds: new Set(),
+    inheritedReputacio: 0,
     eventStats: { positive: 0, negative: 0, neutral: 0 },
     log: [],
     genealogy: [],
@@ -365,14 +371,17 @@ function unlockSkill(bt) {
 }
 
 // ═══════════════════════════════════════════════════════════ DESTRESA DISCOVERY
-function checkDestresesAfterAction() {
+function checkDestresesAfterAction(executedActionId) {
   if (state.character.destreses.size >= DESTRESA_MAX) return;
   for (const def of DESTRESA_DEFS) {
     if (state.character.destreses.has(def.id)) continue;
-    const met = def.conditions.every(c => {
+    const inclinationMet = def.conditions.every(c => {
       const val = state.character.inclination[c.axis] ?? 0;
       return (c.min === undefined || val >= c.min) && (c.max === undefined || val <= c.max);
     });
+    const usesForAction = state.character.actionUseCounts[def.action_id] || 0;
+    const usesMet = !def.action_id || usesForAction >= DESTRESA_THRESHOLD;
+    const met = inclinationMet && usesMet;
     if (met) {
       state.character.destreses.add(def.id);
       addLog(`⭐ Destresa: ${def.name}`);
@@ -553,6 +562,8 @@ function triggerSuccession() {
     generation: state.generation,
     successors,
   };
+  // Store only earned reputation (total minus what was inherited at start of this generation)
+  const reputacioEarned = Math.max(0, (state.reputacio || 0) - (state.inheritedReputacio || 0));
   state.genealogy.push({
     label:      state.character.label || `Gen ${state.generation}`,
     generation: state.generation,
@@ -562,6 +573,7 @@ function triggerSuccession() {
     branches:   getActiveBranches().map(b => b.name),
     skills:     state.character.unlockedSkillIds.size,
     reputacio:  state.reputacio || 0,
+    reputacioEarned,
     hadHeir:    children.length > 0 || siblings.length > 0,
   });
 
@@ -598,6 +610,8 @@ function continueSuccession(successorId) {
       state[res.id] = Math.floor((state[res.id] || 0) * res.inheritDecay);
     }
   }
+  // Track what the new generation inherits so score can compute earned-only reputation
+  state.inheritedReputacio = state.reputacio || 0;
   state.generation++;
   const teachingBonus = chosen.hasEnsenyat ? TEACHING_BONUS : 0;
   const inheritedSkills = new Set();
@@ -651,6 +665,13 @@ function executeAction(actionId) {
   if (isActionTooYoung(action)) return; // blocked — shown but not executable
   if (action.maxAge !== undefined && age > action.maxAge) return;
   if (!evaluateCharacterRequires(action)) return;
+  // Food cost gate (execute_cost = food spent to attempt this action)
+  const executeCost = action.execute_cost ?? 0;
+  if (executeCost > 0 && state.food < executeCost) {
+    addLog(`Necessites ${executeCost} 🌾 per a "${action.name}". Aconsegueix més menjar primer.`);
+    renderAll();
+    return;
+  }
 
   // Handle discovery action (learn a branch tech)
   if (action.is_discovery_action) {
@@ -678,6 +699,8 @@ function executeAction(actionId) {
   hide('overlay-zone-actions');
   showDonutAnimation(action, null, () => {
     const snap = snapshotNums();
+    // Deduct food cost (execute_cost)
+    if (executeCost > 0) state.food = Math.max(0, state.food - executeCost);
     // Output resource
     const destresaBonus = (action.destresa_id && state.character.destreses.has(action.destresa_id)) ? DESTRESA_BONUS : 0;
     const outMinBonus = [...state.character.unlockedSkillIds].reduce((s, sid) => {
@@ -730,8 +753,10 @@ function executeAction(actionId) {
     if (action.reputation_gain) state.reputacio = Math.min(REPUTACIO_PER_CHAR_CAP, (state.reputacio || 0) + action.reputation_gain);
     // Character state
     applyCharacterEffect(action);
+    // Track action use counts (for DESTRESA_THRESHOLD gate)
+    state.character.actionUseCounts[actionId] = (state.character.actionUseCounts[actionId] || 0) + 1;
     // Destresa check
-    checkDestresesAfterAction();
+    checkDestresesAfterAction(actionId);
     // Zone unlock
     if (action.unlocks_zone && !state.discoveredZoneIds.has(action.unlocks_zone)) {
       state.discoveredZoneIds.add(action.unlocks_zone);
@@ -996,6 +1021,8 @@ function getZoneActions(zoneId) {
     if (getActionVisibility(a) === 'HIDDEN') return false;
     if (a.maxAge !== undefined && age > a.maxAge) return false;
     if (!evaluateCharacterRequires(a)) return false;
+    // Hide base action when a purchased upgrade supersedes it
+    if (ACTIONS.some(u => u.is_upgrade && u.upgrades_action_id === a.id && state.character.purchasedActionIds.has(u.id))) return false;
     return true; // include even if minAge not met — shown as tooYoung
   });
   // Show discovery action if eligible skills exist
@@ -1360,7 +1387,8 @@ function resolveDiscoveryOption(optionIndex) {
     const bt = SKILL_DEFS.find(t => t.id === ev.discovery_skill_id);
     if (bt) unlockSkill(bt);
   }
-  if (ev.is_single_use) state.firedSingleUseEventIds.add(ev.id);
+  // Only consume single-use if the player accepted the discovery — declining lets it re-fire in future gens
+  if (ev.is_single_use && opt.discovers !== false) state.firedSingleUseEventIds.add(ev.id);
   trackEventFired(ev);
   state.pendingEvent = null;
   if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
@@ -1516,7 +1544,7 @@ function calculateScore() {
   const techs     = state.discoveredUniversalTechIds.size;
   const skills    = state.genealogy.reduce((s, g) => s + (g.skills || 0), 0);
   const branches  = new Set(state.genealogy.flatMap(g => g.branches || [])).size;
-  const reputacio = state.genealogy.reduce((s, g) => s + (g.reputacio || 0), 0);
+  const reputacio = state.genealogy.reduce((s, g) => s + (g.reputacioEarned ?? g.reputacio ?? 0), 0);
   const heirBonus = state.genealogy.filter(g => g.hadHeir).length * 20;
   // Gen score weighted by age lived — discourages deliberate early death
   const genScore  = state.genealogy.reduce((s, g) => {
