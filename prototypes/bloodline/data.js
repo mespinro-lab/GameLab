@@ -86,7 +86,7 @@ const RESOURCE_DEFS = [
   },
   {
     id: 'reputacio', emoji: '🏛️', label: 'Reputació', section: 'resources',
-    startVal: 1, max: null, upkeep: null, showMax: false, rateType: false,
+    startVal: 0, max: null, upkeep: null, showMax: false, rateType: false,
     persistent: true, inheritDecay: FAMILY_REP_INHERITANCE,
     color: '#a855f7', borderColor: 'rgba(168,85,247,0.3)',
     glossaryDesc: "Persistent entre generacions — no es reinicia en successió. Acumulada per accions socials. Cada punt millora la probabilitat d'esdeveniments positius (+10% de pes, màx +40%).",
@@ -359,10 +359,9 @@ const ACTIONS = [
     event_pool_id: "pool_artesania"
   },
   {
-    id: "act_ritual_foc", name: "Ritual del Foc", is_base: true, zona: "Campament",
+    id: "act_ritual_foc", name: "Ritual del Foc", is_base: true, universal_prereq: "ut_foc", zona: "Campament",
     description: "Celebres el ritual diari del foc sagrat. Enforteix els vincles del grup.",
-    execute_cost: 1, output_resource: "food", output_min: 1, output_max: 3, side_effects: [{ resource: 'health', delta: +5 }],
-    reputation_gain: 1,
+    execute_cost: 1, output_resource: "reputacio", output_min: 1, output_max: 2, side_effects: [{ resource: 'health', delta: +5 }],
     stat_key: "vincle", stat_gain: 0.10,
     destresa_id: "d_custodi_foc",
     inclination_deltas: { impuls: 0, "intel·lecte": -0.02, espiritualitat: +0.05, sociabilitat: +0.03 },
@@ -371,7 +370,7 @@ const ACTIONS = [
   {
     id: "act_contemplacio", name: "Contemplació", is_base: true, zona: "Campament",
     description: "T'asseus en silenci i observes el món. La quietud obre la ment a allò invisible.",
-    execute_cost: 1, output_resource: "food", output_min: 1, output_max: 1,
+    execute_cost: 1, output_resource: "health", output_min: 3, output_max: 6,
     stat_key: "vincle", stat_gain: 0.05,
     inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: +0.08, sociabilitat: 0 },
     event_pool_id: "pool_ritual"
@@ -379,8 +378,7 @@ const ACTIONS = [
   {
     id: "act_vigilar_campament", name: "Vigilar el Campament", is_base: true, zona: "Campament",
     description: "Protegeixes el campament i observes els voltants. Responsabilitat compartida.",
-    execute_cost: 1, output_resource: "food", output_min: 2, output_max: 4,
-    reputation_gain: 1,
+    execute_cost: 1, output_resource: "reputacio", output_min: 1, output_max: 2,
     stat_key: "vincle", stat_gain: 0.10,
     destresa_id: "d_guardia",
     inclination_deltas: { impuls: +0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.02 },
@@ -389,9 +387,10 @@ const ACTIONS = [
   {
     id: "act_explorar_voltants", name: "Explorar els Voltants", is_base: true, zona: "Planes",
     description: "T'aventures més lluny del campament. El que trobes pot canviar-ho tot.",
-    execute_cost: 1, output_resource: "food", output_min: 1, output_max: 3,
+    execute_cost: 1,
     unlocks_zone: "Bosc",
-    stat_key: "enginy", stat_gain: 0.10,
+    material_min: 3, material_max: 5,
+    stat_key: "forca", stat_gain: 0.10,
     inclination_deltas: { impuls: +0.02, "intel·lecte": -0.02, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_caca"
   },
@@ -456,9 +455,9 @@ const ACTIONS = [
     id: "act_emboscada_nocturna", name: "Emboscada Nocturna", is_base: false, zona: "Planes",
     description: "La foscor és el teu aliat. Atacs per sorpresa quan la presa dorm. Molt perillós però molt rendible.",
     maxAge: 12,
-    purchase_cost: 5, execute_cost: 3, output_resource: "food", output_min: 6, output_max: 10, side_effects: [{ resource: 'health', delta: -10 }],
+    purchase_cost: 5, execute_cost: 2, output_resource: "food", output_min: 8, output_max: 16, side_effects: [{ resource: 'health', delta: -20 }],
     stat_key: "forca", stat_gain: 0.20,
-    inclination_deltas: { impuls: +0.10, "intel·lecte": 0, espiritualitat: 0, sociabilitat: -0.03 },
+    inclination_deltas: { impuls: +0.10, "intel·lecte": 0, espiritualitat: 0, sociabilitat: -0.08 },
     event_pool_id: "pool_caca"
   },
 
@@ -466,7 +465,7 @@ const ACTIONS = [
   {
     id: "act_marcar_territori", name: "Marcar Territori", is_base: false, zona: "Planes",
     description: "Senyals als arbres i roques que indiquen que aquest territori és del teu clan.",
-    purchase_cost: 3, execute_cost: 1, output_resource: "food", output_min: 2, output_max: 4, side_effects: [{ resource: 'health', delta: -5 }],
+    purchase_cost: 3, execute_cost: 1, output_resource: "reputacio", output_min: 1, output_max: 3, side_effects: [{ resource: 'health', delta: -3 }],
     stat_key: "forca", stat_gain: 0.15,
     inclination_deltas: { impuls: +0.05, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_social"
@@ -597,7 +596,7 @@ const ACTIONS = [
   {
     id: "act_curar_herbes", name: "Curar amb Herbes", is_base: false, zona: "Campament",
     description: "Prepareu infusions i cataplasmes d'herbes per als membres malalts o ferits.",
-    purchase_cost: 3, execute_cost: 2, output_resource: "health", output_min: 6, output_max: 8,
+    purchase_cost: 3, execute_cost: 2, output_resource: "health", output_min: 8, output_max: 14,
     stat_key: "vincle", stat_gain: 0.20,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: 0 },
     event_pool_id: "pool_ritual"
@@ -615,7 +614,7 @@ const ACTIONS = [
   {
     id: "act_pintar_parets", name: "Pintar les Parets", is_base: false, zona: "Bosc",
     description: "Fixes les visions en les parets de roca del bosc. Els animals pintats semblen moure's amb el foc.",
-    purchase_cost: 4, execute_cost: 1, output_resource: "food", output_min: 1, output_max: 3, side_effects: [{ resource: 'health', delta: +5 }],
+    purchase_cost: 4, execute_cost: 1, output_resource: "reputacio", output_min: 1, output_max: 3, side_effects: [{ resource: 'health', delta: +5 }],
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: 0 },
     event_pool_id: "pool_ritual"
@@ -635,7 +634,7 @@ const ACTIONS = [
     id: "act_ornamentar_se", name: "Ornamentar-se", is_base: false, zona: "Campament",
     description: "Et poses les closques, dents i pedres que has recollit. El grup et mira diferent.",
     reputation_gain: 1,
-    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 1, output_max: 2, side_effects: [{ resource: 'health', delta: +5 }],
+    purchase_cost: 3, execute_cost: 0, side_effects: [{ resource: 'health', delta: +5 }],
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.02, sociabilitat: +0.02 },
     event_pool_id: "pool_social"
@@ -644,7 +643,7 @@ const ACTIONS = [
     id: "act_consagrar_ornaments", name: "Consagrar Ornaments", is_base: false, zona: "Campament",
     description: "Passes els ornaments pel fum del foc del campament. Queden carregats de significat per al clan.",
     reputation_gain: 2,
-    purchase_cost: 4, execute_cost: 1, output_resource: "food", output_min: 1, output_max: 3,
+    purchase_cost: 4, execute_cost: 1, output_resource: "reputacio", output_min: 2, output_max: 4,
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: +0.03 },
     event_pool_id: "pool_ritual"
@@ -654,7 +653,7 @@ const ACTIONS = [
   {
     id: "act_observar_cel", name: "Observar el Cel Nocturn", is_base: false, zona: "Planes",
     description: "Segueixes els moviments de la lluna i les estrelles des de les planes obertes. Els cicles del cel anuncien els cicles de la terra.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 1, output_max: 2,
+    purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 2, output_max: 4,
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: 0 },
     event_pool_id: "pool_ritual"
@@ -662,7 +661,7 @@ const ACTIONS = [
   {
     id: "act_transit_nocturn", name: "Trànsit Nocturn", is_base: false, zona: "Bosc",
     description: "Et mous de nit pel bosc seguint els senyals del cel. Perillós, però els que tornen parlen de visions.",
-    purchase_cost: 4, execute_cost: 1, output_resource: "food", output_min: 1, output_max: 3, side_effects: [{ resource: 'health', delta: -5 }],
+    purchase_cost: 4, execute_cost: 1, output_resource: "reputacio", output_min: 2, output_max: 4, side_effects: [{ resource: 'health', delta: -5 }],
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.08, sociabilitat: 0 },
     event_pool_id: "pool_ritual"
@@ -717,7 +716,7 @@ const ACTIONS = [
   {
     id: "act_talla_avancada", name: "Talla Avançada", is_upgrade: true, upgrades_action_id: "act_tallar_pedra", zona: "Campament",
     description: "Eines de qualitat superior. Menys rebuig, formes més precises.",
-    purchase_cost: 5, execute_cost: 0, material_min: 2, material_max: 4,
+    purchase_cost: 5, execute_cost: 0, material_min: 3, material_max: 5,
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: -0.02, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
@@ -725,8 +724,7 @@ const ACTIONS = [
   {
     id: "act_gran_ritual", name: "Gran Ritual", is_upgrade: true, upgrades_action_id: "act_ritual_foc", zona: "Campament",
     description: "El ritual s'extén a tota la nit. Cohesió màxima i regeneració profunda.",
-    reputation_gain: 2,
-    purchase_cost: 4, execute_cost: 1, output_resource: "food", output_min: 2, output_max: 5, side_effects: [{ resource: 'health', delta: +10 }],
+    purchase_cost: 4, execute_cost: 1, output_resource: "reputacio", output_min: 2, output_max: 4, universal_prereq: "ut_foc", side_effects: [{ resource: 'health', delta: +10 }],
     stat_key: "vincle", stat_gain: 0.10,
     inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: +0.06, sociabilitat: +0.05 },
     event_pool_id: "pool_ritual"
@@ -734,7 +732,7 @@ const ACTIONS = [
   {
     id: "act_defensa_activa", name: "Defensa Activa", is_upgrade: true, upgrades_action_id: "act_vigilar_campament", zona: "Campament",
     description: "Distribuïu rols i torns de guàrdia. El campament queda segur i el grup rendeix més.",
-    purchase_cost: 5, execute_cost: 1, output_resource: "food", output_min: 3, output_max: 6,
+    purchase_cost: 5, execute_cost: 1, output_resource: "reputacio", output_min: 2, output_max: 4,
     stat_key: "vincle", stat_gain: 0.10,
     inclination_deltas: { impuls: +0.02, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: +0.03 },
     event_pool_id: "pool_social"
