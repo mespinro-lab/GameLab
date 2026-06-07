@@ -16,6 +16,7 @@ const ZONE_POS = {
   'Planes':    { left: 80, top: 32 },
   'Bosc':      { left: 20, top: 35 },
   'Llar':      { left: 23, top: 76 },
+  'Mercat':    { left: 50, top: 52 },
 };
 const ZONE_IMG = {
   'Campament': 'HOME',
@@ -28,6 +29,7 @@ const ZONE_ICONS = {
   'Planes':    '🌾',
   'Bosc':      '🌲',
   'Llar':      '🏠',
+  'Mercat':    '🏪',
 };
 
 // ═══════════════════════════════════════════════════════════ ACTION ICONS
@@ -65,11 +67,22 @@ const ACTION_ICONS = {
   act_assecament_plantes: '🍃',
   act_seleccionar_llavors:'🌰',
   act_preparar_terreny:   '⛏️',
+  act_observar_cel:       '🌌',
+  act_transit_nocturn:    '🌃',
+  act_gran_ritual:        '🔮',
+  act_defensa_activa:     '⚔️',
+  act_aguait_coordinat:   '🎯',
+  act_recollecta_metodica:'🌿',
+  act_talla_avancada:     '💎',
+  act_recollecta_avancada:'🌾',
+  act_control_territori:  '🗺️',
+  act_negociar_pastures:  '🕊️',
 };
 function getActionIcon(action) {
   return ACTION_ICONS[action.id] ||
-    (action.output_resource === 'material' ? '🪨' :
-     action.output_resource === 'health'   ? '💊' : '🌾');
+    (action.output_resource === 'reputacio' ? '🏛️' :
+     action.output_resource === 'material'  ? '🪨' :
+     action.output_resource === 'health'    ? '💊' : '🌾');
 }
 
 // ═══════════════════════════════════════════════════════════ DOM HELPERS
@@ -937,6 +950,32 @@ function renderZoneNodes() {
     node.addEventListener('mouseleave', () => node.classList.remove('zone-node-pressed'));
     mapZone.appendChild(node);
   }
+
+  // Shop node — always visible
+  const shopPos = ZONE_POS['Mercat'] || { left: 50, top: 52 };
+  const shopNode = document.createElement('button');
+  shopNode.className  = 'zone-node zone-node-shop';
+  shopNode.style.left = shopPos.left + '%';
+  shopNode.style.top  = shopPos.top  + '%';
+  shopNode.innerHTML  = `
+    <div class="zone-node-icon" style="font-size:3rem">🏪</div>
+    <span class="zone-node-name">Mercat</span>`;
+  shopNode.addEventListener('touchstart', e => { e.preventDefault(); shopNode.classList.add('zone-node-pressed'); }, { passive: false });
+  shopNode.addEventListener('touchend', e => {
+    e.preventDefault();
+    shopNode.classList.remove('zone-node-pressed');
+    if (document.querySelector('#overlay-zone-actions:not(.hidden), #overlay-action:not(.hidden)')) return;
+    openShop();
+  });
+  shopNode.addEventListener('touchcancel', () => shopNode.classList.remove('zone-node-pressed'));
+  shopNode.addEventListener('mousedown',   () => shopNode.classList.add('zone-node-pressed'));
+  shopNode.addEventListener('mouseup', () => {
+    shopNode.classList.remove('zone-node-pressed');
+    if (document.querySelector('#overlay-zone-actions:not(.hidden), #overlay-action:not(.hidden)')) return;
+    openShop();
+  });
+  shopNode.addEventListener('mouseleave', () => shopNode.classList.remove('zone-node-pressed'));
+  mapZone.appendChild(shopNode);
 }
 
 // ═══════════════════════════════════════════════════════════ CAROUSEL
@@ -948,6 +987,7 @@ function getZoneActions(zoneId) {
   const base = ACTIONS.filter(a => {
     if (a.zona !== zoneId) return false;
     if (!state.character.purchasedActionIds.has(a.id)) return false;
+    if (getActionVisibility(a) === 'HIDDEN') return false;
     if (a.maxAge !== undefined && age > a.maxAge) return false;
     if (!evaluateCharacterRequires(a)) return false;
     return true; // include even if minAge not met — shown as tooYoung
@@ -1543,6 +1583,65 @@ function renderAll() {
   }
 }
 
+// ═══════════════════════════════════════════════════════════ SHOP
+function getBuyableActions() {
+  return ACTIONS.filter(a => {
+    if (!a.purchase_cost) return false;
+    if (a.is_base) return false;
+    if (a.is_discovery_action) return false;
+    if (state.character.purchasedActionIds.has(a.id)) return false;
+    if (a.universal_prereq && !state.discoveredUniversalTechIds.has(a.universal_prereq)) return false;
+    return true;
+  });
+}
+
+function openShop() {
+  renderShop();
+  show('overlay-shop');
+}
+
+function renderShop() {
+  const list = el('shop-list');
+  list.innerHTML = '';
+  const buyable = getBuyableActions();
+  if (buyable.length === 0) {
+    list.innerHTML = '<p style="text-align:center;opacity:.6;padding:2rem">No hi ha accions disponibles al mercat ara mateix.</p>';
+    return;
+  }
+  buyable.forEach(action => {
+    const mat = state.character.resources.material ?? 0;
+    const canAfford = mat >= action.purchase_cost;
+    const icon = getActionIcon(action);
+    const row = document.createElement('div');
+    row.className = 'shop-row' + (canAfford ? '' : ' shop-row-disabled');
+    row.innerHTML = `
+      <span class="shop-icon">${icon}</span>
+      <div class="shop-info">
+        <span class="shop-name">${action.label || action.id}</span>
+        <span class="shop-desc">${action.description || ''}</span>
+      </div>
+      <button class="shop-buy-btn" ${canAfford ? '' : 'disabled'} data-id="${action.id}">
+        🪨${action.purchase_cost}
+      </button>`;
+    list.appendChild(row);
+  });
+  list.querySelectorAll('.shop-buy-btn:not([disabled])').forEach(btn => {
+    btn.addEventListener('click', () => buyAction(btn.dataset.id));
+  });
+}
+
+function buyAction(actionId) {
+  const action = ACTIONS.find(a => a.id === actionId);
+  if (!action || !action.purchase_cost) return;
+  const mat = state.character.resources.material ?? 0;
+  if (mat < action.purchase_cost) return;
+  state.character.resources.material = mat - action.purchase_cost;
+  state.character.purchasedActionIds.add(actionId);
+  addLog(`Has comprat: ${action.label || actionId}`);
+  renderShop();
+  renderTopBar();
+}
+
 // ═══════════════════════════════════════════════════════════ EVENT LISTENERS
 function setupEventListeners() {
   // Menu
@@ -1569,6 +1668,12 @@ function setupEventListeners() {
   // Menu overlay click-outside
   el('overlay-menu').addEventListener('click', e => {
     if (e.target === el('overlay-menu')) hide('overlay-menu');
+  });
+
+  // Shop overlay
+  el('btn-close-shop').addEventListener('click', () => hide('overlay-shop'));
+  el('overlay-shop').addEventListener('click', e => {
+    if (e.target === el('overlay-shop')) hide('overlay-shop');
   });
 
   // Zone carousel
