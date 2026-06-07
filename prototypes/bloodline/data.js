@@ -428,7 +428,7 @@ const ACTIONS = [
     reputation_gain: 3,
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: +0.03, sociabilitat: +0.05 },
-    event_pool_id: null
+    event_pool_id: "pool_familia"
   },
 
   // DISCOVERY
@@ -886,9 +886,9 @@ const EVENT_POOLS = {
     }
   ],
   pool_artesania: [
-    { id: "ev_eina_trencada",    text: "L'eina es trenca durant la feina. Cal refer-la.",              effects: { food: -1 } },
-    { id: "ev_tecnica_nova",     text: "Un descobriment accidental millora la tècnica.",               effects: { food: +1 } },
-    { id: "ev_intercanvi_eines", text: "Un grup veí demana eines a canvi de provisions.",              effects: { food: +2 } },
+    { id: "ev_eina_trencada",    text: "L'eina es trenca durant la feina. Cal refer-la.",              effects: { material: -1 } },
+    { id: "ev_tecnica_nova",     text: "Un descobriment accidental millora la tècnica.",               effects: { material: +1 } },
+    { id: "ev_intercanvi_eines", text: "Un grup veí demana eines a canvi de provisions.",              effects: { food: +1, material: +1 } },
     {
       id: "ev_desc_agulla", is_discovery_event: true, is_single_use: true,
       discovery_skill_id: "bt_agulla_os",
@@ -954,8 +954,8 @@ const EVENT_POOLS = {
         { type: "has_skill", id: "bt_guariment_plantes" }
       ]
     },
-    { id: "ev_visio_profunda",   text: "Una visió durant el ritual guia el grup cap a recursos amagats.", effects: { food: +2 } },
-    { id: "ev_ritual_cohesio",   text: "El ritual reforça la cohesió del grup.",                          effects: { food: +1 } },
+    { id: "ev_visio_profunda",   text: "Una visió durant el ritual guia el grup cap a recursos amagats.", effects: { health: +2 } },
+    { id: "ev_ritual_cohesio",   text: "El ritual reforça la cohesió del grup.",                          effects: { reputacio: +1 } },
     { id: "ev_espiritocontent",  text: "Els esperits estan contents. El grup se sent protegit.",          effects: { health: +5 } },
     {
       id: "ev_desc_herbes", is_discovery_event: true, is_single_use: true,
@@ -1030,9 +1030,9 @@ const EVENT_POOLS = {
     }
   ],
   pool_social: [
-    { id: "ev_dispute_interna",  text: "Una disputa interna distreu el grup.",                       effects: { food: -1 } },
-    { id: "ev_aliat_nou",        text: "Un grup veí ofereix col·laboració temporal.",               effects: { food: +2 } },
-    { id: "ev_lider_respectat",  text: "El respecte augmenta. El grup treballa millor.",            effects: { food: +1 } },
+    { id: "ev_dispute_interna",  text: "Una disputa interna distreu el grup.",                       effects: { reputacio: -1 } },
+    { id: "ev_aliat_nou",        text: "Un grup veí ofereix col·laboració temporal.",               effects: { reputacio: +2 } },
+    { id: "ev_lider_respectat",  text: "El respecte augmenta. El grup treballa millor.",            effects: { reputacio: +1 } },
     {
       id: "ev_desc_ornaments", is_discovery_event: true, is_single_use: true,
       discovery_skill_id: "bt_ornaments",
@@ -1090,6 +1090,53 @@ const EVENT_POOLS = {
         { text: "Porto el que puc de menjar i els dic que l'infant trobarà la veu quan estigui llest.", food_delta: -1, health_delta: +1, requires_no_children: true, discovers: false },
         { text: "No és assumpte meu. Cada família resol les seves coses.", discovers: false }
       ]
+    }
+  ],
+  pool_familia: [
+    {
+      id: "ev_fill_pregunta",
+      text: "El fill s'ha assegut al teu costat mentre treballes. \"Per què fem això?\", pregunta, assenyalant les teves mans. La pregunta és senzilla però no trobes una resposta fàcil.",
+      options: [
+        { text: "Li explico pas a pas, amb paciència. Parem de fer feina una estona.", food_delta: -1, health_delta: +2, discovers: false },
+        { text: "\"Perquè cal fer-ho\". Li ensenyaré quan sigui gran.", material_delta: +1, discovers: false },
+        { text: "Li deixo que ho provi ell mateix. Superviso des de lluny.", food_delta: -1, material_delta: +1, discovers: false }
+      ]
+    },
+    {
+      id: "ev_fill_aprenentatge",
+      text: "El fill ha reproduït, sense que li ho diguessis, una tècnica que li vas ensenyar fa setmanes. No era perfecta, però la intuïció hi era. Es gira a mirar-te.",
+      options: [
+        { text: "El felicito davant del grup. Que tothom ho vegi.", food_delta: 0, health_delta: +2, discovers: false },
+        { text: "Li dic on ha fallat i com millorar-ho. Aprenentatge primer.", food_delta: 0, material_delta: +1, discovers: false },
+        { text: "Faig veure que no l'he vist. Vull que ho descobreixi sol.", food_delta: 0, health_delta: +1, discovers: false }
+      ]
+    },
+    {
+      id: "ev_fill_rebel",
+      text: "El fill ha marxat a jugar just quan l'havies posat a aprendre. Ha tornat tard, amb les mans brutes, però amb els ulls lluminosos. No sap el que s'ha perdut.",
+      options: [
+        { text: "Castigo sever. Perd el sopar i l'explico les conseqüències.", food_delta: +1, health_delta: -1, discovers: false },
+        { text: "Li pregunto on ha anat. Escolto. Potser ha après alguna cosa diferent.", food_delta: -1, health_delta: +1, discovers: false },
+        { text: "Ho deixo passar. La infància és curta.", food_delta: 0, discovers: false }
+      ]
+    },
+    {
+      id: "ev_fill_malalt",
+      text: "El fill porta dos dies amb febre. Menja poc, dorm malament, crida de nit. Cap de les coses que fas sembla que funcioni. Els membres del grup t'observen.",
+      options: [
+        {
+          text: "Cerco les herbes que he vist usar a la curandera. Ho provaré.",
+          food_delta: -1, discovers: false,
+          skill_modifier: { skill_id: "bt_guariment_plantes", present_health_delta: +4, absent_health_delta: +1 }
+        },
+        { text: "Repòs, caliu i carn bullida fins que millori.", food_delta: -2, health_delta: +2, discovers: false },
+        { text: "Crido l'ancià del ritual. Que ell s'en faci càrrec.", food_delta: 0, health_delta: +1, material_delta: -1, discovers: false }
+      ]
+    },
+    {
+      id: "ev_llegat_familiar",
+      text: "Mentre ensenyes el fill, reconeixes un gest de la teva mare. La manera de subjectar l'eina, l'angle del colze. No ho vas aprendre conscientment — hi era.",
+      effects: { health: +3, reputacio: +1 }
     }
   ]
 };

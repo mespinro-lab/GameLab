@@ -456,7 +456,7 @@ function classifyEvent(ev) {
   if (ev.is_discovery_event) return 'positive';
   if (ev.options) return 'neutral'; // player-choice events: neutral for balancing
   const fx = ev.effects || {};
-  const score = (fx.food || 0) + (fx.health || 0);
+  const score = (fx.food || 0) + (fx.health || 0) * 0.5 + (fx.reputacio || 0) * 2 + (fx.material || 0) * 0.5;
   return score > 0 ? 'positive' : score < 0 ? 'negative' : 'neutral';
 }
 
@@ -561,6 +561,8 @@ function triggerSuccession() {
     topAxis,
     branches:   getActiveBranches().map(b => b.name),
     skills:     state.character.unlockedSkillIds.size,
+    reputacio:  state.reputacio || 0,
+    hadHeir:    children.length > 0 || siblings.length > 0,
   });
 
   state.pendingDeath = {
@@ -1294,15 +1296,20 @@ function dismissBirth() {
   state.pendingBirths.shift();
   renderAll();
 }
+function applyEventEffects(fx) {
+  if (!fx) return;
+  if (fx.food)      state.food      = Math.max(0, Math.min(FOOD_MAX, state.food + fx.food));
+  if (fx.health)    state.health    = Math.max(0, Math.min(healthMax(), state.health + fx.health));
+  if (fx.material)  state.material  = Math.max(0, state.material + fx.material);
+  if (fx.reputacio) state.reputacio = Math.max(0, (state.reputacio || 0) + fx.reputacio);
+}
+
 function dismissEvent() {
   const ev = state.pendingEvent;
   if (!ev) return;
   if (ev.is_single_use) state.firedSingleUseEventIds.add(ev.id);
   trackEventFired(ev);
-  if (ev.effects) {
-    if (ev.effects.food)   state.food   = Math.max(0, Math.min(FOOD_MAX, state.food + ev.effects.food));
-    if (ev.effects.health) state.health = Math.max(0, Math.min(healthMax(), state.health + ev.effects.health));
-  }
+  applyEventEffects(ev.effects);
   state.pendingEvent = null;
   if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
   renderAll();
@@ -1312,8 +1319,13 @@ function resolveDiscoveryOption(optionIndex) {
   const ev = state.pendingEvent;
   if (!ev || !ev.options) return;
   const opt = ev.options[optionIndex];
-  if (opt.food_delta)     state.food     = Math.max(0, Math.min(FOOD_MAX, state.food + opt.food_delta));
-  if (opt.material_delta) state.material = Math.max(0, state.material + opt.material_delta);
+
+  // Direct resource deltas
+  if (opt.food_delta)      state.food      = Math.max(0, Math.min(FOOD_MAX, state.food + opt.food_delta));
+  if (opt.material_delta)  state.material  = Math.max(0, state.material + opt.material_delta);
+  if (opt.reputacio_delta) state.reputacio = Math.max(0, (state.reputacio || 0) + opt.reputacio_delta);
+
+  // Health (may be modified by skill_modifier)
   let healthDelta = opt.health_delta ?? 0;
   if (opt.skill_modifier) {
     const hasSk = state.character.unlockedSkillIds.has(opt.skill_modifier.skill_id);
@@ -1327,6 +1339,8 @@ function resolveDiscoveryOption(optionIndex) {
     }
   }
   if (healthDelta !== 0) state.health = Math.max(0, Math.min(healthMax(), state.health + healthDelta));
+
+  // Discovery
   if (opt.discovers && ev.discovery_skill_id) {
     const bt = SKILL_DEFS.find(t => t.id === ev.discovery_skill_id);
     if (bt) unlockSkill(bt);
@@ -1482,21 +1496,23 @@ function renderTestingPanel() {
 
 // ═══════════════════════════════════════════════════════════ SCORING
 function calculateScore() {
-  const cycles   = state.cycle;
-  const gens     = state.genealogy.length;
-  const techs    = state.discoveredUniversalTechIds.size;
-  const skills   = state.genealogy.reduce((s, g) => s + (g.skills || 0), 0);
-  const branches = new Set(state.genealogy.flatMap(g => g.branches || [])).size;
-  const reputacio = state.reputacio || 0;
-  const total = cycles * 2 + gens * 50 + techs * 100 + skills * 30 + branches * 40 + reputacio;
-  return { total, cycles, gens, techs, skills, branches, reputacio };
+  const cycles    = state.cycle;
+  const gens      = state.genealogy.length;
+  const techs     = state.discoveredUniversalTechIds.size;
+  const skills    = state.genealogy.reduce((s, g) => s + (g.skills || 0), 0);
+  const branches  = new Set(state.genealogy.flatMap(g => g.branches || [])).size;
+  const reputacio = state.genealogy.reduce((s, g) => s + (g.reputacio || 0), 0);
+  // bonus per generation that left an heir (not extinct)
+  const heirBonus = state.genealogy.filter(g => g.hadHeir).length * 20;
+  const total = cycles * 2 + gens * 50 + techs * 100 + skills * 30 + branches * 40 + Math.floor(reputacio * 2) + heirBonus;
+  return { total, cycles, gens, techs, skills, branches, reputacio, heirBonus };
 }
 
 function getDynastyTitle(score) {
-  if (score >= 1500) return 'Llegenda de l\'Era';
-  if (score >= 900)  return 'Llinatge Llegendari';
-  if (score >= 550)  return 'Clan Respectat';
-  if (score >= 250)  return 'Tribu Establerta';
+  if (score >= 2000) return 'Llegenda de l\'Era';
+  if (score >= 1200) return 'Llinatge Llegendari';
+  if (score >= 650)  return 'Clan Respectat';
+  if (score >= 300)  return 'Tribu Establerta';
   return 'Supervivents del Paleolític';
 }
 
@@ -1518,29 +1534,36 @@ function renderEndScreen() {
     <div class="end-stat"><span class="end-stat-val">${score.techs}/${UNIVERSAL_TECHS.length}</span><span class="end-stat-label">Techs</span></div>
   `;
 
-  // Score breakdown
-  const breakdownEl = el('end-score-breakdown') || (() => {
-    const d = document.createElement('div');
-    d.id = 'end-score-breakdown';
-    el('end-stats-row').insertAdjacentElement('afterend', d);
-    return d;
-  })();
-  breakdownEl.innerHTML = [
-    score.gens     > 0 ? `${score.gens}G × 50 = ${score.gens * 50}` : null,
-    score.techs    > 0 ? `${score.techs}T × 100 = ${score.techs * 100}` : null,
-    score.skills   > 0 ? `${score.skills}H × 30 = ${score.skills * 30}` : null,
-    score.branches > 0 ? `${score.branches}B × 40 = ${score.branches * 40}` : null,
-    score.reputacio > 0 ? `${score.reputacio} Reputació` : null,
-    `${score.cycles}C × 2 = ${score.cycles * 2}`,
-  ].filter(Boolean).map(t => `<span class="score-line">${t}</span>`).join('');
-
-  const isGood = isEraEnd;
   const taglineMsg = isExtinct
     ? 'El llinatge s\'ha extingit sense hereus.'
     : isEraEnd
     ? `L'era de la Prehistòria ha finalitzat. ${score.gens} generació${score.gens !== 1 ? 'ns' : ''} han viscut.`
     : `La partida ha acabat al cicle ${score.cycles}.`;
-  if (el('end-result-msg')) el('end-result-msg').textContent = taglineMsg;
+
+  // Score breakdown (create once, update every call)
+  let breakdownEl = el('end-score-breakdown');
+  if (!breakdownEl) {
+    breakdownEl = document.createElement('div');
+    breakdownEl.id = 'end-score-breakdown';
+    el('end-stats-row').insertAdjacentElement('afterend', breakdownEl);
+  }
+  breakdownEl.innerHTML = [
+    score.gens     > 0 ? `${score.gens} generacions × 50 = <b>${score.gens * 50}</b>` : null,
+    score.techs    > 0 ? `${score.techs} techs × 100 = <b>${score.techs * 100}</b>` : null,
+    score.skills   > 0 ? `${score.skills} habilitats × 30 = <b>${score.skills * 30}</b>` : null,
+    score.branches > 0 ? `${score.branches} branques × 40 = <b>${score.branches * 40}</b>` : null,
+    Math.floor(score.reputacio * 2) > 0 ? `${score.reputacio} reputació × 2 = <b>${Math.floor(score.reputacio * 2)}</b>` : null,
+    score.heirBonus > 0 ? `Hereus deixats: <b>+${score.heirBonus}</b>` : null,
+    `${score.cycles} cicles × 2 = <b>${score.cycles * 2}</b>`,
+  ].filter(Boolean).map(t => `<div class="score-line">${t}</div>`).join('');
+
+  let resultEl = el('end-result-msg');
+  if (!resultEl) {
+    resultEl = document.createElement('p');
+    resultEl.id = 'end-result-msg';
+    breakdownEl.insertAdjacentElement('afterend', resultEl);
+  }
+  resultEl.textContent = taglineMsg;
 
   const genoEl = el('end-genealogy');
   genoEl.innerHTML = '';
@@ -1590,6 +1613,7 @@ function getBuyableActions() {
     if (a.is_base) return false;
     if (a.is_discovery_action) return false;
     if (state.character.purchasedActionIds.has(a.id)) return false;
+    if (!state.discoveredZoneIds.has(a.zona)) return false;
     if (a.universal_prereq && !state.discoveredUniversalTechIds.has(a.universal_prereq)) return false;
     return true;
   });
@@ -1603,28 +1627,41 @@ function openShop() {
 function renderShop() {
   const list = el('shop-list');
   list.innerHTML = '';
+  const mat = state.character.resources.material ?? 0;
   const buyable = getBuyableActions();
+
   if (buyable.length === 0) {
-    list.innerHTML = '<p style="text-align:center;opacity:.6;padding:2rem">No hi ha accions disponibles al mercat ara mateix.</p>';
+    list.innerHTML = '<p style="text-align:center;opacity:.6;padding:1.5rem">No hi ha accions disponibles. Explora noves zones per ampliar l\'oferta.</p>';
     return;
   }
-  buyable.forEach(action => {
-    const mat = state.character.resources.material ?? 0;
-    const canAfford = mat >= action.purchase_cost;
-    const icon = getActionIcon(action);
-    const row = document.createElement('div');
-    row.className = 'shop-row' + (canAfford ? '' : ' shop-row-disabled');
-    row.innerHTML = `
-      <span class="shop-icon">${icon}</span>
-      <div class="shop-info">
-        <span class="shop-name">${action.label || action.id}</span>
-        <span class="shop-desc">${action.description || ''}</span>
-      </div>
-      <button class="shop-buy-btn" ${canAfford ? '' : 'disabled'} data-id="${action.id}">
-        🪨${action.purchase_cost}
-      </button>`;
-    list.appendChild(row);
+
+  const byZone = {};
+  buyable.forEach(a => { (byZone[a.zona] = byZone[a.zona] || []).push(a); });
+  const ZONE_LABEL = { Campament:'🏕️ Campament', Planes:'🌾 Planes', Bosc:'🌲 Bosc', Llar:'🏠 Llar' };
+
+  Object.entries(byZone).forEach(([zona, actions]) => {
+    const label = document.createElement('div');
+    label.className = 'shop-zone-label';
+    label.textContent = ZONE_LABEL[zona] || zona;
+    list.appendChild(label);
+
+    actions.forEach(action => {
+      const canAfford = mat >= action.purchase_cost;
+      const row = document.createElement('div');
+      row.className = 'shop-row' + (canAfford ? '' : ' shop-row-disabled');
+      row.innerHTML = `
+        <span class="shop-icon">${getActionIcon(action)}</span>
+        <div class="shop-info">
+          <span class="shop-name">${action.label || action.id}</span>
+          <span class="shop-desc">${action.description || ''}</span>
+        </div>
+        <button class="shop-buy-btn" ${canAfford ? '' : 'disabled'} data-id="${action.id}">
+          🪨${action.purchase_cost}
+        </button>`;
+      list.appendChild(row);
+    });
   });
+
   list.querySelectorAll('.shop-buy-btn:not([disabled])').forEach(btn => {
     btn.addEventListener('click', () => buyAction(btn.dataset.id));
   });
@@ -1637,7 +1674,7 @@ function buyAction(actionId) {
   if (mat < action.purchase_cost) return;
   state.character.resources.material = mat - action.purchase_cost;
   state.character.purchasedActionIds.add(actionId);
-  addLog(`Has comprat: ${action.label || actionId}`);
+  addLog(`Has comprat: ${action.label || action.id}`);
   renderShop();
   renderTopBar();
 }
