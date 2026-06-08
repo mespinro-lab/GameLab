@@ -34,7 +34,8 @@ const DESTRESA_BONUS     = 1;
 const REPUTACIO_PER_CHAR_CAP = 20;  // Max reputació acumulable per personatge (anti-spam)
 
 const TEACHING_BONUS         = 0.5;  // S'afegeix a inheritanceRate de cada tech quan el pare ha ensenyat
-const FAMILY_REP_INHERITANCE = 0.6;  // (reservat) fracció de reputació que passa a la gen. següent
+const FAMILY_REP_INHERITANCE = 0.6;  // fracció de reputació que passa a la gen. següent
+const DESTRESA_INHERIT_RATE  = 0.60; // probabilitat de retenir cada destresa en successió
 
 // Estats del personatge — inicialitzats a startVal, resetejats en successió
 // Usats com a prerequisits (requires) i efectes (character_effect) de les accions
@@ -44,7 +45,7 @@ const CHARACTER_STATE_DEFS = [
   { id: 'ensenyat', startVal: 0, max: 1            },
 ];
 
-const INCLINATION_INHERITANCE_RATE = 1.00;  // inclinació heretada al 100% (les branques són del llinatge)
+const INCLINATION_INHERITANCE_RATE = 0.85;  // 85%: identitat de llinatge sense bloqueig complet des de gen 1
 const STAT_INHERITANCE_RATE        = 0.50;  // stats heretats al 50% (per evitar runaway cross-gens)
 const EVENT_TRIGGER_CHANCE         = 0.6;   // probabilitat base que una acció dispari un event
 const FADE_MARGIN                  = 0.05;  // marge d'inclinació per mostrar una acció com "difosa" en lloc d'oculta
@@ -203,7 +204,7 @@ const UNIVERSAL_TECHS = [
 const SKILL_DEFS = [
   {
     id: "bt_punta_llanca", name: "Punta de Llança",
-    inheritanceRate: 0.20,
+    inheritanceRate: 0.45,
     universal_prereq: "ut_eines",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "impuls", min: 0.25 }, { axis: "sociabilitat", max: 0.30 }] },
     unlocks_action_ids: ["act_caca_llanca", "act_emboscada_nocturna"],
@@ -221,7 +222,7 @@ const SKILL_DEFS = [
   },
   {
     id: "bt_buri", name: "Burí i Gravat",
-    inheritanceRate: 0.30,
+    inheritanceRate: 0.40,
     universal_prereq: "ut_eines",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.25 }, { axis: "impuls", max: 0.20 }] },
     unlocks_action_ids: ["act_gravar_os", "act_intercanviar_eines"],
@@ -239,7 +240,7 @@ const SKILL_DEFS = [
   },
   {
     id: "bt_trampes", name: "Trampes i Llaços",
-    inheritanceRate: 0.25,
+    inheritanceRate: 0.45,
     universal_prereq: "ut_corda",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "impuls", min: 0.10 }] },
     unlocks_action_ids: ["act_parar_trampes", "act_revisar_trampes"],
@@ -266,7 +267,7 @@ const SKILL_DEFS = [
   },
   {
     id: "bt_marques_territori", name: "Marques de Territori",
-    inheritanceRate: 0.30,
+    inheritanceRate: 0.40,
     universal_prereq: "ut_art",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "impuls", min: 0.20 }, { axis: "intel·lecte", min: 0.05 }] },
     unlocks_action_ids: ["act_marcar_territori", "act_rastreig_rutes"],
@@ -311,7 +312,7 @@ const SKILL_DEFS = [
   },
   {
     id: "bt_domini_terra", name: "Domini de la Terra",
-    inheritanceRate: 0.25,
+    inheritanceRate: 0.40,
     universal_prereq: "ut_ceramica",
     inclination_conditions: { operator: "OR", conditions: [{ axis: "impuls", min: 0.10 }, { axis: "sociabilitat", min: 0.10 }] },
     unlocks_action_ids: ["act_control_territori", "act_negociar_pastures"],
