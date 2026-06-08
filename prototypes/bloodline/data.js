@@ -9,7 +9,7 @@ const ERA_CYCLES      = 100;  // Cicles totals de l'era; no es reinicia entre ge
 const LIFE_EXPECTANCY = 20;   // Durada esperada d'un personatge; calibra la fórmula d'envelliment
 const MAX_CHILDREN    = 3;
 
-const STARTING_FOOD = 12;
+const STARTING_FOOD = 10;
 const FOOD_MAX      = 20;
 const FOOD_UPKEEP   = 2;
 
