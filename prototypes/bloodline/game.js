@@ -1360,7 +1360,6 @@ function renderTopBar() {
   el('tok-pedra-val').textContent = pedraDef?.max ? `${state.pedra || 0}/${pedraDef.max}` : state.pedra || 0;
   const einaDef = RESOURCE_DEFS.find(r => r.id === 'eina');
   el('tok-eina-val').textContent = einaDef?.max ? `${state.eina || 0}/${einaDef.max}` : state.eina || 0;
-  el('tok-reputacio-val').textContent = Math.round(state.reputacio || 0);
 }
 
 // ═══════════════════════════════════════════════════════════ BOTTOM PANEL

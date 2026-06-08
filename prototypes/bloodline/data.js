@@ -448,7 +448,7 @@ const ACTIONS = [
     character_effect: { type: 'find_partner', failure_chance: 0.05 },
     material_min: 1, material_max: 2,
     stat_key: "vincle", stat_gain: 0.20,
-    inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.06 },
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_social"
   },
   {
@@ -459,7 +459,7 @@ const ACTIONS = [
     character_effect: { type: 'add_child_with_risk' },
     material_min: 1, material_max: 3,
     stat_key: "vincle", stat_gain: 0.10,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.03, sociabilitat: +0.05 },
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_social"
   },
   {
