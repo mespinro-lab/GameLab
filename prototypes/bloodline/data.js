@@ -345,7 +345,7 @@ const ACTIONS = [
   {
     id: "act_recollectar_arrels", name: "Recol·lectar Arrels", is_base: true, zona: "Planes",
     description: "Busques arrels i baies comestibles sense allunyar-te. Segur però rendiment moderat.",
-    execute_cost: 1, output_resource: "food", output_min: 1, output_max: 3,
+    execute_cost: 0, output_resource: "food", output_min: 1, output_max: 3,
     material_min: 2, material_max: 3,
     stat_key: "forca", stat_gain: 0.10,
     destresa_id: "d_botanica",

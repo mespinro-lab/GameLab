@@ -486,7 +486,8 @@ function selectBalancedEvent(eligible) {
   const posDebt = Math.max(0, expPos - (stats.positive || 0));
   const negDebt = Math.max(0, expNeg - (stats.negative || 0));
 
-  const repBonus = Math.min(0.4, (state.reputacio || 0) * 0.1);
+  const earnedRep = Math.max(0, (state.reputacio || 0) - (state.inheritedReputacio || 0));
+  const repBonus = Math.min(0.4, earnedRep * 0.1);
   const weighted = eligible.map(ev => {
     const type = classifyEvent(ev);
     const debt = type === 'positive' ? posDebt : type === 'negative' ? negDebt : 0;
@@ -528,10 +529,44 @@ function evaluateBlockedIf(conditions) {
 
 // ═══════════════════════════════════════════════════════════ SUCCESSION
 function triggerSuccession() {
-  if (state.cycle >= ERA_CYCLES) { state.gameOver = true; state.gameOverReason = 'era_complete'; return; }
   const children = state.character.children;
   const siblings = state.siblingPool;
+  if (state.cycle >= ERA_CYCLES) {
+    const reputacioEarned = Math.max(0, (state.reputacio || 0) - (state.inheritedReputacio || 0));
+    const topAxis = AXES.reduce((a, b) =>
+      Math.abs(state.character.inclination[a]) > Math.abs(state.character.inclination[b]) ? a : b
+    );
+    state.genealogy.push({
+      label: state.character.label || `Gen ${state.generation}`,
+      generation: state.generation,
+      age: characterAge(),
+      cause: state.health <= 0 ? 'Salut esgotada' : 'Era finalitzada',
+      topAxis,
+      branches: getActiveBranches().map(b => b.name),
+      skills: state.character.unlockedSkillIds.size,
+      reputacio: state.reputacio || 0,
+      reputacioEarned,
+      hadHeir: children.length > 0 || siblings.length > 0,
+    });
+    state.gameOver = true; state.gameOverReason = 'era_complete'; return;
+  }
   if (children.length === 0 && siblings.length === 0) {
+    const reputacioEarned = Math.max(0, (state.reputacio || 0) - (state.inheritedReputacio || 0));
+    const topAxis = AXES.reduce((a, b) =>
+      Math.abs(state.character.inclination[a]) > Math.abs(state.character.inclination[b]) ? a : b
+    );
+    state.genealogy.push({
+      label: state.character.label || `Gen ${state.generation}`,
+      generation: state.generation,
+      age: characterAge(),
+      cause: 'Extinció del llinatge',
+      topAxis,
+      branches: getActiveBranches().map(b => b.name),
+      skills: state.character.unlockedSkillIds.size,
+      reputacio: state.reputacio || 0,
+      reputacioEarned,
+      hadHeir: false,
+    });
     state.gameOver = true; state.gameOverReason = 'no_heir'; return;
   }
   const topAxis = AXES.reduce((a, b) =>
