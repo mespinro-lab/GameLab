@@ -704,13 +704,6 @@ function executeAction(actionId) {
   if (isActionTooYoung(action)) return; // blocked — shown but not executable
   if (action.maxAge !== undefined && age > action.maxAge) return;
   if (!evaluateCharacterRequires(action)) return;
-  // Food cost gate (execute_cost = food spent to attempt this action)
-  const executeCost = action.execute_cost ?? 0;
-  if (executeCost > 0 && state.food < executeCost) {
-    addLog(`Necessites ${executeCost} 🌾 per a "${action.name}". Aconsegueix més menjar primer.`);
-    renderAll();
-    return;
-  }
 
   // Handle discovery action (learn a branch tech)
   if (action.is_discovery_action) {
@@ -722,7 +715,6 @@ function executeAction(actionId) {
     hide('overlay-zone-actions');
     showDonutAnimation(action, null, () => {
       const snap = snapshotNums();
-      if (executeCost > 0) state.food = Math.max(0, state.food - executeCost);
       unlockSkill(chosen);
       state.cycle++;
       autoDiscoverUniversalTechs();
@@ -739,8 +731,6 @@ function executeAction(actionId) {
   hide('overlay-zone-actions');
   showDonutAnimation(action, null, () => {
     const snap = snapshotNums();
-    // Deduct food cost (execute_cost)
-    if (executeCost > 0) state.food = Math.max(0, state.food - executeCost);
     // Output resource
     const destresaBonus = (action.destresa_id && state.character.destreses.has(action.destresa_id)) ? DESTRESA_BONUS : 0;
     const outMinBonus = [...state.character.unlockedSkillIds].reduce((s, sid) => {
