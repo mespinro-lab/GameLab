@@ -64,6 +64,20 @@ body {
 }
 #search-box:focus { outline: none; border-color: var(--gold); }
 #search-box::placeholder { color: var(--text2); }
+
+.view-btn {
+  background: var(--surf2);
+  color: var(--text2);
+  border: 1px solid var(--border);
+  padding: 5px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.view-btn:hover { border-color: var(--gold); color: var(--gold); }
+.view-btn.active { background: var(--surf3); border-color: var(--gold); color: var(--gold); }
+
 #btn-export {
   background: var(--gold);
   color: #000;
@@ -118,6 +132,34 @@ body {
   margin-left: auto;
   font-size: 11px;
   color: var(--text2);
+  background: var(--surf3);
+  padding: 1px 5px;
+  border-radius: 10px;
+}
+
+/* Map mode: sidebar shows category filter checkboxes */
+#map-cat-filter {
+  padding: 8px 0;
+  flex: 1;
+  overflow-y: auto;
+  display: none;
+}
+#map-cat-filter.visible { display: block; }
+.map-filter-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text2);
+  user-select: none;
+}
+.map-filter-item:hover { background: var(--surf2); }
+.map-filter-item input[type=checkbox] { accent-color: var(--gold); width: 14px; height: 14px; }
+.map-filter-item label { cursor: pointer; flex: 1; }
+.map-filter-count {
+  font-size: 11px;
   background: var(--surf3);
   padding: 1px 5px;
   border-radius: 10px;
@@ -477,6 +519,89 @@ body {
 }
 #btn-copy-export:hover { background: var(--gold2); }
 
+/* ── Map view ── */
+#map-panel {
+  display: none;
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg);
+}
+#map-panel.visible { display: block; }
+
+#map-toolbar {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+#map-toolbar > * { pointer-events: auto; }
+
+.map-tool-btn {
+  background: var(--surf1);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  padding: 5px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.map-tool-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+#map-info {
+  margin-left: auto;
+  background: var(--surf1);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--text2);
+}
+
+#map-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Map legend */
+#map-legend {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background: rgba(26,26,26,0.92);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  z-index: 10;
+  pointer-events: none;
+  font-size: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend-dot {
+  width: 10px; height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.legend-line {
+  width: 20px; height: 2px;
+  flex-shrink: 0;
+  position: relative;
+}
+
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--surf1); }
@@ -503,6 +628,8 @@ body {
 <div id="header">
   <h1>BLOODLINE DESIGNER</h1>
   <input id="search-box" type="text" placeholder="Cerca..." oninput="onSearch(this.value)">
+  <button class="view-btn active" id="btn-view-list" onclick="switchView('list')">Llista</button>
+  <button class="view-btn" id="btn-view-map" onclick="switchView('map')">Mapa</button>
   <button id="btn-export" onclick="openExport()">Exportar JS</button>
 </div>
 
@@ -511,14 +638,26 @@ body {
   <!-- Sidebar -->
   <div id="sidebar">
     <div id="cat-list"></div>
+    <!-- Map filter (shown in map mode) -->
+    <div id="map-cat-filter"></div>
     <div id="item-list-wrap"></div>
     <button id="btn-new-item" onclick="createNewItem()">+ Nou item</button>
   </div>
 
-  <!-- Detail -->
+  <!-- Detail (list view) -->
   <div id="detail">
     <div id="detail-placeholder">Selecciona un item a l'esquerra</div>
     <div id="detail-content"></div>
+  </div>
+
+  <!-- Map panel -->
+  <div id="map-panel">
+    <div id="map-toolbar">
+      <button class="map-tool-btn" onclick="resetMapLayout()">Reset layout</button>
+      <div id="map-info">Doble clic per editar · Clic per destacar · Roda per zoom · Arrossega per moure</div>
+    </div>
+    <svg id="map-svg"></svg>
+    <div id="map-legend"></div>
   </div>
 </div>
 
@@ -554,19 +693,17 @@ body {
 // STATE
 // ============================================================
 
-// Deep-copy all mutable data into working state
 const state = {
   actions:     deepCopy(ACTIONS),
   skills:      deepCopy(SKILL_DEFS),
   techs:       deepCopy(UNIVERSAL_TECHS),
-  events:      flattenEvents(),      // [{...event, _pool:'pool_caca'}]
+  events:      flattenEvents(),
   resources:   deepCopy(RESOURCE_DEFS),
   zones:       deepCopy(ZONE_DEFS),
   branches:    deepCopy(BRANCHES),
   destreses:   deepCopy(DESTRESA_DEFS),
 };
 
-// Original snapshots for diff
 const original = {
   actions:     deepCopy(ACTIONS),
   skills:      deepCopy(SKILL_DEFS),
@@ -578,16 +715,14 @@ const original = {
   destreses:   deepCopy(DESTRESA_DEFS),
 };
 
-// Track which item ids have been modified
 const modified = new Set();
-// Track new items
 const newItems = new Set();
 
 let currentCat = 'actions';
 let currentItemId = null;
-let pendingFormData = null;  // form values not yet saved
 let isDirty = false;
 let exportTab = 'full';
+let currentView = 'list'; // 'list' | 'map'
 
 // ============================================================
 // HELPERS
@@ -606,6 +741,20 @@ function flattenEvents() {
 }
 
 function getList(cat) { return state[cat]; }
+
+function getSortedList(cat) {
+  const list = state[cat];
+  if (cat === 'techs') {
+    // Sort by cycle ascending (already correct in data, but enforce it)
+    return [...list].sort((a, b) => (a.cycle ?? 0) - (b.cycle ?? 0));
+  }
+  // All others: alphabetical by name
+  return [...list].sort((a, b) => {
+    const na = (a.name || a.label || a.id || '').toLowerCase();
+    const nb = (b.name || b.label || b.id || '').toLowerCase();
+    return na < nb ? -1 : na > nb ? 1 : 0;
+  });
+}
 
 function getCatLabel(cat) {
   return {
@@ -636,7 +785,6 @@ function getOriginalItem(cat, id) {
 
 function isModified(id) { return modified.has(id); }
 
-// Options for selects
 function techOptions(nullable = true) {
   const opts = nullable ? [{ value: '', label: '— cap —' }] : [];
   for (const t of state.techs) opts.push({ value: t.id, label: `${t.icon || ''} ${t.name}` });
@@ -676,7 +824,6 @@ function resourceOptions(nullable = false) {
 const AXES = ['impuls', "intel·lecte", 'espiritualitat', 'sociabilitat'];
 const STATS = ['forca', 'enginy', 'vincle'];
 
-// Build <select> HTML from options array
 function selectHtml(name, options, value, attrs = '') {
   let h = `<select name="${name}" ${attrs}>`;
   for (const o of options) {
@@ -718,6 +865,44 @@ function checkboxHtml(name, label, checked) {
 })();
 
 // ============================================================
+// VIEW SWITCHING
+// ============================================================
+
+function switchView(view) {
+  currentView = view;
+  document.getElementById('btn-view-list').classList.toggle('active', view === 'list');
+  document.getElementById('btn-view-map').classList.toggle('active', view === 'map');
+
+  const detail = document.getElementById('detail');
+  const mapPanel = document.getElementById('map-panel');
+  const catList = document.getElementById('cat-list');
+  const itemListWrap = document.getElementById('item-list-wrap');
+  const btnNew = document.getElementById('btn-new-item');
+  const mapCatFilter = document.getElementById('map-cat-filter');
+  const searchBox = document.getElementById('search-box');
+
+  if (view === 'list') {
+    detail.style.display = '';
+    mapPanel.classList.remove('visible');
+    catList.style.display = '';
+    itemListWrap.style.display = '';
+    btnNew.style.display = '';
+    mapCatFilter.classList.remove('visible');
+    searchBox.style.display = '';
+  } else {
+    detail.style.display = 'none';
+    mapPanel.classList.add('visible');
+    catList.style.display = 'none';
+    itemListWrap.style.display = 'none';
+    btnNew.style.display = 'none';
+    mapCatFilter.classList.add('visible');
+    searchBox.style.display = 'none';
+    renderMapCatFilter();
+    renderMap();
+  }
+}
+
+// ============================================================
 // CATEGORY LIST
 // ============================================================
 
@@ -743,7 +928,7 @@ function selectCat(cat) {
   currentCat = cat;
   currentItemId = null;
   document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === cat));
-  renderItemList(getList(cat), '');
+  renderItemList(getSortedList(cat), '');
   showPlaceholder();
 }
 
@@ -764,7 +949,7 @@ function renderItemList(items, filter) {
 }
 
 function onSearch(val) {
-  renderItemList(getList(currentCat), val);
+  renderItemList(getSortedList(currentCat), val);
 }
 
 // ============================================================
@@ -778,7 +963,6 @@ function selectItem(id) {
     hideSaveBar();
   }
   currentItemId = id;
-  // Highlight in list
   document.querySelectorAll('.item-entry').forEach(el => {
     el.classList.toggle('active', el.dataset.id === id);
   });
@@ -796,7 +980,7 @@ function showDetail() {
 }
 
 // ============================================================
-// DETAIL RENDER (dispatch by category)
+// DETAIL RENDER
 // ============================================================
 
 function renderDetail(cat, id) {
@@ -838,18 +1022,12 @@ function buildDetailHTML(cat, item) {
 
 function renderActionForm(item) {
   const id = item.id;
-
-  // inclination_deltas rows
   const inclHtml = AXES.map(ax => {
     const val = item.inclination_deltas ? (item.inclination_deltas[ax] ?? 0) : 0;
     return `<div class="incl-label">${ax}</div>
       <input class="incl-input" type="number" name="incl_${ax}" value="${val}" step="0.01" min="-1" max="1">`;
   }).join('');
-
-  // side_effects list
   const seList = (item.side_effects || []).map((se, i) => sideEffectRow(se, i)).join('');
-
-  // requires list
   const reqList = (item.requires || []).map((r, i) => requiresRow(r, i)).join('');
 
   return `
@@ -863,7 +1041,6 @@ function renderActionForm(item) {
         ${fieldHtml('Descripció', textareaHtml('description', item.description, 3), true)}
       </div>
     </div>
-
     <div class="section">
       <div class="section-header">Flags</div>
       <div class="section-body cols-1">
@@ -873,7 +1050,6 @@ function renderActionForm(item) {
         ${checkboxHtml('is_discovery_action', 'Acció de descoberta', !!item.is_discovery_action)}
       </div>
     </div>
-
     <div class="section">
       <div class="section-header">Costos i edats</div>
       <div class="section-body cols-4">
@@ -883,7 +1059,6 @@ function renderActionForm(item) {
         ${fieldHtml('Edat màx.', numInput('maxAge', item.maxAge ?? '', 1, 0))}
       </div>
     </div>
-
     <div class="section">
       <div class="section-header">Output</div>
       <div class="section-body cols-3">
@@ -895,7 +1070,6 @@ function renderActionForm(item) {
         ${fieldHtml('Guany reputació', numInput('reputation_gain', item.reputation_gain ?? ''))}
       </div>
     </div>
-
     <div class="section">
       <div class="section-header">Estadística</div>
       <div class="section-body">
@@ -903,7 +1077,6 @@ function renderActionForm(item) {
         ${fieldHtml('Guany stat', numInput('stat_gain', item.stat_gain ?? '', 0.01, 0))}
       </div>
     </div>
-
     <div class="section">
       <div class="section-header">Destresa i pool d'events</div>
       <div class="section-body">
@@ -911,14 +1084,10 @@ function renderActionForm(item) {
         ${fieldHtml('Pool d\'events', selectHtml('event_pool_id', poolOptions(), item.event_pool_id))}
       </div>
     </div>
-
     <div class="section">
       <div class="section-header">Deltes d'inclinació</div>
-      <div class="incl-grid">
-        ${inclHtml}
-      </div>
+      <div class="incl-grid">${inclHtml}</div>
     </div>
-
     <div class="section">
       <div class="section-header">Efectes secundaris (side_effects)</div>
       <div class="edit-list" id="se-list">
@@ -926,7 +1095,6 @@ function renderActionForm(item) {
         <button type="button" class="btn-add-row" onclick="addSideEffect()">+ Afegir efecte</button>
       </div>
     </div>
-
     <div class="section">
       <div class="section-header">Requisits (requires)</div>
       <div class="edit-list" id="req-list">
@@ -934,7 +1102,6 @@ function renderActionForm(item) {
         <button type="button" class="btn-add-row" onclick="addRequires()">+ Afegir requisit</button>
       </div>
     </div>
-
     <div class="section">
       <div class="section-header">Efecte sobre el personatge (character_effect)</div>
       <div class="section-body cols-1">
@@ -1020,7 +1187,6 @@ function renderSkillForm(item) {
         ${checkboxHtml('is_hidden', 'Habilitat oculta', !!item.is_hidden)}
       </div>
     </div>
-
     <div class="section">
       <div class="section-header">Condicions d'inclinació</div>
       <div class="section-body cols-1">
@@ -1031,7 +1197,6 @@ function renderSkillForm(item) {
         <button type="button" class="btn-add-row" onclick="addInclCond()">+ Afegir condició</button>
       </div>
     </div>
-
     <div class="section">
       <div class="section-header">Accions que desbloqueja</div>
       <div class="edit-list" id="unlock-list">
@@ -1039,7 +1204,6 @@ function renderSkillForm(item) {
         <button type="button" class="btn-add-row" onclick="addUnlockAction()">+ Afegir acció</button>
       </div>
     </div>
-
     <div class="section">
       <div class="section-header">Efecte passiu</div>
       <div class="section-body cols-1">
@@ -1138,7 +1302,6 @@ function renderEventForm(item) {
         ${fieldHtml('Text', textareaHtml('text', item.text, 4), true)}
       </div>
     </div>
-
     <div class="section">
       <div class="section-header">Flags</div>
       <div class="section-body cols-1">
@@ -1147,7 +1310,6 @@ function renderEventForm(item) {
         ${fieldHtml('Habilitat descoberta', selectHtml('discovery_skill_id', skillOptions(), item.discovery_skill_id))}
       </div>
     </div>
-
     <div class="section">
       <div class="section-header">Efectes simples (effects, per events sense opcions)</div>
       <div class="section-body cols-3">
@@ -1159,7 +1321,6 @@ function renderEventForm(item) {
         ${fieldHtml('eina', numInput('eff_eina', item.effects?.eina ?? '', 1))}
       </div>
     </div>
-
     <div class="section">
       <div class="section-header">Condicions de bloqueig (blocked_if)</div>
       <div class="edit-list" id="blocked-list">
@@ -1167,7 +1328,6 @@ function renderEventForm(item) {
         <button type="button" class="btn-add-row" onclick="addBlockedIf()">+ Afegir condició</button>
       </div>
     </div>
-
     <div class="section">
       <div class="section-header">Opcions de l'event</div>
       <div class="edit-list" id="option-list">
@@ -1361,30 +1521,24 @@ function computeDeps(cat, item) {
   const rows = [];
 
   if (cat === 'actions') {
-    // Tech prereq
     if (item.universal_prereq) {
       const t = state.techs.find(x => x.id === item.universal_prereq);
       rows.push({ label: 'Requereix tecnologia', items: t ? [{ cat:'techs', id:t.id, name:t.name }] : [] });
     }
-    // Unlocked by which skill
     const skills = state.skills.filter(s => (s.unlocks_action_ids || []).includes(item.id));
     rows.push({ label: 'Desbloquejada per habilitat', items: skills.map(s => ({ cat:'skills', id:s.id, name:s.name })) });
-    // Upgrade of
     if (item.upgrades_action_id) {
       const base = state.actions.find(a => a.id === item.upgrades_action_id);
       rows.push({ label: 'Millora de', items: base ? [{ cat:'actions', id:base.id, name:base.name }] : [] });
     }
-    // Destresa
     if (item.destresa_id) {
       const d = state.destreses.find(x => x.id === item.destresa_id);
       rows.push({ label: 'Destresa associada', items: d ? [{ cat:'destreses', id:d.id, name:d.name }] : [] });
     }
-    // Event pool
     if (item.event_pool_id) {
       const evts = state.events.filter(e => e._pool === item.event_pool_id);
       rows.push({ label: `Events del pool "${item.event_pool_id}"`, items: evts.slice(0,6).map(e => ({ cat:'events', id:e.id, name:e.id })) });
     }
-    // Upgraded by
     const upgrades = state.actions.filter(a => a.upgrades_action_id === item.id);
     if (upgrades.length) {
       rows.push({ label: 'Millorada per', items: upgrades.map(a => ({ cat:'actions', id:a.id, name:a.name })) });
@@ -1392,21 +1546,17 @@ function computeDeps(cat, item) {
   }
 
   if (cat === 'skills') {
-    // Tech prereq
     if (item.universal_prereq) {
       const t = state.techs.find(x => x.id === item.universal_prereq);
       rows.push({ label: 'Requereix tecnologia', items: t ? [{ cat:'techs', id:t.id, name:t.name }] : [] });
     }
-    // Unlocks actions
     const actions = (item.unlocks_action_ids || []).map(aid => {
       const a = state.actions.find(x => x.id === aid);
       return a ? { cat:'actions', id:a.id, name:a.name } : { cat:'actions', id:aid, name:aid };
     });
     rows.push({ label: 'Desbloqueja accions', items: actions });
-    // Discovered by event
     const evts = state.events.filter(e => e.discovery_skill_id === item.id);
     rows.push({ label: 'Descoberta per event', items: evts.map(e => ({ cat:'events', id:e.id, name:e.id })) });
-    // Passive: unlock_zone
     if (item.passive_effect?.type === 'unlock_zone') {
       const z = state.zones.find(x => x.id === item.passive_effect.unlocks_zone);
       if (z) rows.push({ label: 'Desbloqueja zona', items: [{ cat:'zones', id:z.id, name:z.label }] });
@@ -1414,10 +1564,8 @@ function computeDeps(cat, item) {
   }
 
   if (cat === 'techs') {
-    // Skills that require this tech
     const skills = state.skills.filter(s => s.universal_prereq === item.id);
     rows.push({ label: 'Prerequisit per habilitats', items: skills.map(s => ({ cat:'skills', id:s.id, name:s.name })) });
-    // Actions that require this tech
     const actions = state.actions.filter(a => a.universal_prereq === item.id);
     rows.push({ label: 'Prerequisit per accions', items: actions.map(a => ({ cat:'actions', id:a.id, name:a.name })) });
   }
@@ -1443,16 +1591,13 @@ function computeDeps(cat, item) {
   }
 
   if (cat === 'zones') {
-    // Skills that unlock this zone
     const skills = state.skills.filter(s => s.passive_effect?.type === 'unlock_zone' && s.passive_effect.unlocks_zone === item.id);
     rows.push({ label: 'Desbloquejada per habilitat', items: skills.map(s => ({ cat:'skills', id:s.id, name:s.name })) });
-    // Actions in this zone
     const actions = state.actions.filter(a => a.zona === item.id);
     rows.push({ label: `Accions en aquesta zona (${actions.length})`, items: actions.slice(0,8).map(a => ({ cat:'actions', id:a.id, name:a.name })) });
   }
 
   if (cat === 'branches') {
-    // Show which inclination axes are used
     const axes = (item.conditions?.conditions || []).map(c => c.axis).filter(Boolean);
     if (axes.length) {
       rows.push({ label: 'Eixos d\'inclinació', items: [] });
@@ -1463,8 +1608,8 @@ function computeDeps(cat, item) {
 }
 
 function selectCatItem(cat, id) {
+  if (currentView === 'map') switchView('list');
   selectCat(cat);
-  // Small delay so list renders first
   setTimeout(() => selectItem(id), 30);
 }
 
@@ -1479,12 +1624,8 @@ function markDirty() {
   }
 }
 
-function showSaveBar() {
-  document.getElementById('save-bar').classList.add('visible');
-}
-function hideSaveBar() {
-  document.getElementById('save-bar').classList.remove('visible');
-}
+function showSaveBar() { document.getElementById('save-bar').classList.add('visible'); }
+function hideSaveBar() { document.getElementById('save-bar').classList.remove('visible'); }
 
 function discardChanges() {
   isDirty = false;
@@ -1496,19 +1637,13 @@ function saveCurrentItem() {
   if (!currentItemId) return;
   const form = document.getElementById('item-form');
   if (!form) return;
-
   const item = getItem(currentCat, currentItemId);
   if (!item) return;
-
   readFormIntoItem(currentCat, form, item);
-
   modified.add(item.id);
   isDirty = false;
   hideSaveBar();
-
-  // Re-render list to show mod dot
-  renderItemList(getList(currentCat), document.getElementById('search-box').value);
-  // Re-render detail (title may have changed)
+  renderItemList(getSortedList(currentCat), document.getElementById('search-box').value);
   renderDetail(currentCat, item.id);
 }
 
@@ -1520,7 +1655,6 @@ function formData(form) {
   const fd = new FormData(form);
   const out = {};
   for (const [k, v] of fd.entries()) out[k] = v;
-  // Also capture checkboxes (unchecked ones are missing from FormData)
   form.querySelectorAll('input[type=checkbox]').forEach(cb => {
     if (!(cb.name in out)) out[cb.name] = 'off';
   });
@@ -1563,15 +1697,10 @@ function readFormIntoItem(cat, form, item) {
     item.stat_gain = getNum('stat_gain');
     item.destresa_id = getStr('destresa_id');
     item.event_pool_id = getStr('event_pool_id');
-
-    // inclination_deltas
     item.inclination_deltas = {};
     for (const ax of AXES) {
-      const v = getNum(`incl_${ax}`, 0);
-      item.inclination_deltas[ax] = v;
+      item.inclination_deltas[ax] = getNum(`incl_${ax}`, 0);
     }
-
-    // side_effects
     const seEls = form.querySelectorAll('[data-type="se"]');
     item.side_effects = [];
     seEls.forEach(el => {
@@ -1581,8 +1710,6 @@ function readFormIntoItem(cat, form, item) {
       if (res) item.side_effects.push({ resource: res, delta: isNaN(delta) ? 0 : delta });
     });
     if (!item.side_effects.length) delete item.side_effects;
-
-    // requires
     const reqEls = form.querySelectorAll('[data-type="req"]');
     item.requires = [];
     reqEls.forEach(el => {
@@ -1600,16 +1727,11 @@ function readFormIntoItem(cat, form, item) {
       item.requires.push(r);
     });
     if (!item.requires.length) delete item.requires;
-
-    // character_effect
     const cet = getStr('char_effect_type');
     if (cet) {
-      try {
-        item.character_effect = JSON.parse(get('char_effect_params') || `{"type":"${cet}"}`);
-      } catch { item.character_effect = { type: cet }; }
-    } else {
-      delete item.character_effect;
-    }
+      try { item.character_effect = JSON.parse(get('char_effect_params') || `{"type":"${cet}"}`); }
+      catch { item.character_effect = { type: cet }; }
+    } else { delete item.character_effect; }
   }
 
   if (cat === 'skills') {
@@ -1618,8 +1740,6 @@ function readFormIntoItem(cat, form, item) {
     item.universal_prereq = getStr('universal_prereq');
     item.inheritanceRate = getNum('inheritanceRate');
     item.is_hidden = getBool('is_hidden');
-
-    // inclination_conditions
     const operator = get('incl_op') || 'AND';
     const condEls = form.querySelectorAll('[data-type="incl-cond"]');
     const conditions = [];
@@ -1635,8 +1755,6 @@ function readFormIntoItem(cat, form, item) {
       conditions.push(c);
     });
     item.inclination_conditions = { operator, conditions };
-
-    // unlocks_action_ids
     const uaEls = form.querySelectorAll('[data-type="unlock-action"]');
     item.unlocks_action_ids = [];
     uaEls.forEach(el => {
@@ -1644,16 +1762,11 @@ function readFormIntoItem(cat, form, item) {
       const aid = d[`ua_${i}`];
       if (aid) item.unlocks_action_ids.push(aid);
     });
-
-    // passive_effect
     const ptype = getStr('passive_type');
     if (ptype) {
-      try {
-        item.passive_effect = JSON.parse(get('passive_params') || `{"type":"${ptype}"}`);
-      } catch { item.passive_effect = { type: ptype }; }
-    } else {
-      delete item.passive_effect;
-    }
+      try { item.passive_effect = JSON.parse(get('passive_params') || `{"type":"${ptype}"}`); }
+      catch { item.passive_effect = { type: ptype }; }
+    } else { delete item.passive_effect; }
   }
 
   if (cat === 'techs') {
@@ -1662,20 +1775,17 @@ function readFormIntoItem(cat, form, item) {
     item.icon = get('icon') || '';
     item.cycle = getNum('cycle');
     item.description = get('description') || '';
-
     const hb  = getNum('effect_healthBonus');
     const hpb = getNum('effect_healthPctBonus');
     const ngh = getNum('effect_nextGenHealthMax');
     const edesc = (get('effect_desc') || '').trim();
     if (hb !== null || hpb !== null || ngh !== null || edesc) {
       item.effect = {};
-      if (hb !== null)  item.effect.healthBonus       = hb;
-      if (hpb !== null) item.effect.healthPctBonus    = hpb;
-      if (ngh !== null) item.effect.nextGenHealthMax  = ngh;
-      if (edesc)        item.effect.desc              = edesc;
-    } else {
-      item.effect = null;
-    }
+      if (hb !== null)  item.effect.healthBonus      = hb;
+      if (hpb !== null) item.effect.healthPctBonus   = hpb;
+      if (ngh !== null) item.effect.nextGenHealthMax = ngh;
+      if (edesc)        item.effect.desc             = edesc;
+    } else { item.effect = null; }
   }
 
   if (cat === 'events') {
@@ -1685,8 +1795,6 @@ function readFormIntoItem(cat, form, item) {
     item.is_single_use = getBool('is_single_use') || undefined;
     item.is_discovery_event = getBool('is_discovery_event') || undefined;
     item.discovery_skill_id = getStr('discovery_skill_id');
-
-    // simple effects
     const effKeys = ['food','health','material','reputacio','pedra','eina'];
     const effects = {};
     for (const k of effKeys) {
@@ -1694,8 +1802,6 @@ function readFormIntoItem(cat, form, item) {
       if (v !== null) effects[k] = v;
     }
     item.effects = Object.keys(effects).length ? effects : undefined;
-
-    // blocked_if
     const blEls = form.querySelectorAll('[data-type="blocked"]');
     item.blocked_if = [];
     blEls.forEach(el => {
@@ -1714,8 +1820,6 @@ function readFormIntoItem(cat, form, item) {
       item.blocked_if.push(b);
     });
     if (!item.blocked_if.length) delete item.blocked_if;
-
-    // options
     const optEls = form.querySelectorAll('[data-type="ev-option"]');
     item.options = [];
     const effResources = ['food','health','material','reputacio','pedra','eina'];
@@ -1808,19 +1912,19 @@ function createNewItem() {
   const base = defaultItem(cat, id);
   state[cat].push(base);
   newItems.add(id);
-  renderItemList(getList(cat), '');
+  renderItemList(getSortedList(cat), '');
   selectItem(id);
 }
 
 function defaultItem(cat, id) {
   const defaults = {
-    actions: { id, name: 'Nova Acció', is_base: false, zona: 'Campament', inclination_deltas: { impuls:0, "intel·lecte":0, espiritualitat:0, sociabilitat:0 } },
-    skills: { id, name: 'Nova Habilitat', inheritanceRate: 0.40, inclination_conditions: { operator:'AND', conditions:[] }, unlocks_action_ids: [], is_hidden: false },
-    techs: { id, name: 'Nova Tecnologia', icon: '', cycle: 0, description: '', effect: null },
-    events: { id, text: 'Nou esdeveniment', _pool: 'pool_social' },
+    actions:   { id, name: 'Nova Acció', is_base: false, zona: 'Campament', inclination_deltas: { impuls:0, "intel·lecte":0, espiritualitat:0, sociabilitat:0 } },
+    skills:    { id, name: 'Nova Habilitat', inheritanceRate: 0.40, inclination_conditions: { operator:'AND', conditions:[] }, unlocks_action_ids: [], is_hidden: false },
+    techs:     { id, name: 'Nova Tecnologia', icon: '', cycle: 0, description: '', effect: null },
+    events:    { id, text: 'Nou esdeveniment', _pool: 'pool_social' },
     resources: { id, label: 'Nou Recurs', emoji: '', section: 'resources', startVal: 0, max: null, showMax: false },
-    zones: { id, label: 'Nova Zona', description: '', starts_discovered: false },
-    branches: { id, name: 'Nova Branca', conditions: { operator:'AND', conditions:[] } },
+    zones:     { id, label: 'Nova Zona', description: '', starts_discovered: false },
+    branches:  { id, name: 'Nova Branca', conditions: { operator:'AND', conditions:[] } },
     destreses: { id, name: 'Nova Destresa', action_id: '', conditions: [] },
   };
   return defaults[cat] || { id, name: 'Nou item' };
@@ -1846,12 +1950,7 @@ function switchExportTab(tab, btn) {
 }
 
 function renderExport(tab) {
-  let text = '';
-  if (tab === 'full') {
-    text = generateFullExport();
-  } else {
-    text = generateDiffExport();
-  }
+  const text = tab === 'full' ? generateFullExport() : generateDiffExport();
   document.getElementById('export-textarea').value = text;
 }
 
@@ -1864,36 +1963,22 @@ function copyExport() {
   setTimeout(() => btn.textContent = 'Copiar', 2000);
 }
 
-function jsVal(v) {
-  if (v === null) return 'null';
-  if (v === undefined) return 'undefined';
-  return JSON.stringify(v, null, 2);
-}
-
 function generateFullExport() {
   const lines = [];
   lines.push('// ── UNIVERSAL_TECHS ─────────────────────────────────────────');
   lines.push('const UNIVERSAL_TECHS = ' + JSON.stringify(state.techs, null, 2) + ';\n');
-
   lines.push('// ── SKILL_DEFS ───────────────────────────────────────────────');
   lines.push('const SKILL_DEFS = ' + JSON.stringify(state.skills, null, 2) + ';\n');
-
   lines.push('// ── DESTRESA_DEFS ────────────────────────────────────────────');
   lines.push('const DESTRESA_DEFS = ' + JSON.stringify(state.destreses, null, 2) + ';\n');
-
   lines.push('// ── ZONE_DEFS ────────────────────────────────────────────────');
   lines.push('const ZONE_DEFS = ' + JSON.stringify(state.zones, null, 2) + ';\n');
-
   lines.push('// ── RESOURCE_DEFS ────────────────────────────────────────────');
   lines.push('const RESOURCE_DEFS = ' + JSON.stringify(state.resources, null, 2) + ';\n');
-
   lines.push('// ── BRANCHES ─────────────────────────────────────────────────');
   lines.push('const BRANCHES = ' + JSON.stringify(state.branches, null, 2) + ';\n');
-
   lines.push('// ── ACTIONS ──────────────────────────────────────────────────');
   lines.push('const ACTIONS = ' + JSON.stringify(state.actions, null, 2) + ';\n');
-
-  // Reconstruct EVENT_POOLS
   const pools = {};
   for (const ev of state.events) {
     const pool = ev._pool;
@@ -1904,13 +1989,11 @@ function generateFullExport() {
   }
   lines.push('// ── EVENT_POOLS ──────────────────────────────────────────────');
   lines.push('const EVENT_POOLS = ' + JSON.stringify(pools, null, 2) + ';');
-
   return lines.join('\n');
 }
 
 function generateDiffExport() {
   const diffs = [];
-
   const cats = ['techs','skills','destreses','zones','resources','branches','actions','events'];
   for (const cat of cats) {
     for (const item of state[cat]) {
@@ -1925,7 +2008,6 @@ function generateDiffExport() {
       }
     }
   }
-
   if (!diffs.length) return '// Cap canvi registrat des de l\'obertura del designer.';
   return diffs.join('\n\n─────────────────────────────────────────\n\n');
 }
@@ -1938,6 +2020,625 @@ function diffObjects(a, b) {
     }
   }
   return diff;
+}
+
+// ============================================================
+// MAP VIEW
+// ============================================================
+
+// Node colors by category/subtype
+const NODE_COLORS = {
+  tech:          '#fb923c',
+  skill:         '#a855f7',
+  action_base:   '#60a5fa',
+  action_upgrade:'#4ade80',
+  action_gated:  '#f59e0b',
+  action_shop:   '#93c5fd',
+  destresa:      '#e879f9',
+  zone:          '#34d399',
+  branch:        '#fb7185',
+  resource:      '#94a3b8',
+  event:         '#6b7280',
+};
+
+// Edge styles
+const EDGE_STYLES = {
+  prereq:    { stroke: '#60a5fa', dash: '6,4',  label: 'Prerequisit' },
+  unlock:    { stroke: '#d4a853', dash: null,    label: 'Desbloqueja' },
+  upgrade:   { stroke: '#4ade80', dash: null,    label: 'Millora' },
+  discovery: { stroke: '#a855f7', dash: '4,4',  label: 'Descoberta' },
+  zone_unlock:{ stroke: '#34d399', dash: null,  label: 'Zona' },
+};
+
+// Band y-centers (fraction of height, top to bottom)
+const BAND_ORDER = ['techs','skills','actions','destreses','zones','branches','resources','events'];
+const BAND_FRACTIONS = { techs:0.07, skills:0.20, actions:0.38, destreses:0.53, zones:0.65, branches:0.75, resources:0.85, events:0.95 };
+
+// Map state
+let mapNodes = [];        // { id, cat, subtype, name, x, y, vx, vy, pinned }
+let mapEdges = [];        // { from, to, type }
+let mapCatVisible = {};   // cat -> bool
+let mapSelectedId = null;
+let mapSimRunning = false;
+let mapRafId = null;
+
+// Pan/zoom
+let mapTransform = { x: 0, y: 0, scale: 1 };
+let mapPanStart = null;
+let mapDragNode = null;
+let mapDragOffset = { x: 0, y: 0 };
+
+const NODE_W = 110;
+const NODE_H = 28;
+
+function getNodeSubtype(cat, item) {
+  if (cat === 'techs')     return 'tech';
+  if (cat === 'skills')    return 'skill';
+  if (cat === 'destreses') return 'destresa';
+  if (cat === 'zones')     return 'zone';
+  if (cat === 'branches')  return 'branch';
+  if (cat === 'resources') return 'resource';
+  if (cat === 'events')    return 'event';
+  if (cat === 'actions') {
+    if (item.upgrades_action_id) return 'action_upgrade';
+    // Check if gated by a skill
+    const isGated = state.skills.some(s => (s.unlocks_action_ids || []).includes(item.id));
+    if (isGated) return 'action_gated';
+    if (item.purchase_cost && item.is_base === false) return 'action_shop';
+    return 'action_base';
+  }
+  return 'action_base';
+}
+
+function buildMapGraph() {
+  // Only discovery events in map
+  const discoveryEvents = state.events.filter(e => e.is_discovery_event);
+
+  mapNodes = [];
+  mapEdges = [];
+
+  // Build node set for each visible category
+  const addNodes = (cat, items) => {
+    for (const item of items) {
+      mapNodes.push({
+        id: item.id,
+        cat,
+        subtype: getNodeSubtype(cat, item),
+        name: itemName(item),
+        x: 0, y: 0,
+        vx: 0, vy: 0,
+        pinned: false,
+      });
+    }
+  };
+
+  addNodes('techs', state.techs);
+  addNodes('skills', state.skills);
+  addNodes('actions', state.actions);
+  addNodes('destreses', state.destreses);
+  addNodes('zones', state.zones);
+  addNodes('branches', state.branches);
+  addNodes('resources', state.resources);
+  addNodes('events', discoveryEvents);
+
+  const nodeIds = new Set(mapNodes.map(n => n.id));
+
+  // Build edges
+  // Tech prereq -> Skill
+  for (const skill of state.skills) {
+    if (skill.universal_prereq && nodeIds.has(skill.universal_prereq) && nodeIds.has(skill.id)) {
+      mapEdges.push({ from: skill.universal_prereq, to: skill.id, type: 'prereq' });
+    }
+  }
+  // Tech prereq -> Action (when action has universal_prereq)
+  for (const action of state.actions) {
+    if (action.universal_prereq && nodeIds.has(action.universal_prereq) && nodeIds.has(action.id)) {
+      mapEdges.push({ from: action.universal_prereq, to: action.id, type: 'prereq' });
+    }
+  }
+  // Skill -> unlocks_action_ids
+  for (const skill of state.skills) {
+    for (const aid of (skill.unlocks_action_ids || [])) {
+      if (nodeIds.has(skill.id) && nodeIds.has(aid)) {
+        mapEdges.push({ from: skill.id, to: aid, type: 'unlock' });
+      }
+    }
+  }
+  // Action upgrades_action_id
+  for (const action of state.actions) {
+    if (action.upgrades_action_id && nodeIds.has(action.upgrades_action_id) && nodeIds.has(action.id)) {
+      mapEdges.push({ from: action.upgrades_action_id, to: action.id, type: 'upgrade' });
+    }
+  }
+  // Discovery event -> Skill
+  for (const ev of discoveryEvents) {
+    if (ev.discovery_skill_id && nodeIds.has(ev.id) && nodeIds.has(ev.discovery_skill_id)) {
+      mapEdges.push({ from: ev.id, to: ev.discovery_skill_id, type: 'discovery' });
+    }
+  }
+  // Skill passive unlock_zone -> Zone
+  for (const skill of state.skills) {
+    if (skill.passive_effect?.type === 'unlock_zone' && skill.passive_effect.unlocks_zone) {
+      const zid = skill.passive_effect.unlocks_zone;
+      if (nodeIds.has(skill.id) && nodeIds.has(zid)) {
+        mapEdges.push({ from: skill.id, to: zid, type: 'zone_unlock' });
+      }
+    }
+  }
+}
+
+function initMapPositions(svgW, svgH) {
+  // Group nodes by cat
+  const groups = {};
+  for (const cat of BAND_ORDER) groups[cat] = [];
+  for (const node of mapNodes) {
+    if (groups[node.cat]) groups[node.cat].push(node);
+    else groups['actions'] && groups['actions'].push && groups['actions'];
+  }
+
+  for (const cat of BAND_ORDER) {
+    const nodes = mapNodes.filter(n => n.cat === cat);
+    const yCenter = (BAND_FRACTIONS[cat] || 0.5) * svgH;
+    const total = nodes.length;
+    nodes.forEach((node, i) => {
+      node.y = yCenter;
+      node.x = (svgW * 0.05) + (i / Math.max(total - 1, 1)) * (svgW * 0.90);
+      node.vx = 0;
+      node.vy = 0;
+    });
+  }
+}
+
+// ── Simulation ──
+let simTick = 0;
+const SIM_TICKS = 250;
+
+function startSim() {
+  if (mapRafId) cancelAnimationFrame(mapRafId);
+  simTick = 0;
+  mapSimRunning = true;
+  simStep();
+}
+
+function simStep() {
+  if (!mapSimRunning || simTick >= SIM_TICKS) {
+    mapSimRunning = false;
+    drawMap();
+    return;
+  }
+  simTick++;
+  tickForces();
+  drawMap();
+  mapRafId = requestAnimationFrame(simStep);
+}
+
+function tickForces() {
+  const svg = document.getElementById('map-svg');
+  const svgW = svg.clientWidth || 800;
+  const svgH = svg.clientHeight || 600;
+
+  const REPULSION   = 3500;
+  const SPRING_K    = 0.06;
+  const SPRING_LEN  = 160;
+  const GRAVITY_K   = 0.10;
+  const DAMPING     = 0.85;
+
+  const visibleNodes = mapNodes.filter(n => mapCatVisible[n.cat] !== false);
+
+  // Reset forces
+  for (const n of visibleNodes) {
+    n.fx = 0; n.fy = 0;
+  }
+
+  // Repulsion
+  for (let i = 0; i < visibleNodes.length; i++) {
+    for (let j = i + 1; j < visibleNodes.length; j++) {
+      const a = visibleNodes[i];
+      const b = visibleNodes[j];
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+      const force = REPULSION / (dist * dist);
+      const fx = (dx / dist) * force;
+      const fy = (dy / dist) * force;
+      a.fx -= fx; a.fy -= fy;
+      b.fx += fx; b.fy += fy;
+    }
+  }
+
+  // Springs along edges
+  const nodeMap = {};
+  for (const n of mapNodes) nodeMap[n.id] = n;
+
+  for (const edge of mapEdges) {
+    const a = nodeMap[edge.from];
+    const b = nodeMap[edge.to];
+    if (!a || !b) continue;
+    if (mapCatVisible[a.cat] === false || mapCatVisible[b.cat] === false) continue;
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+    const stretch = dist - SPRING_LEN;
+    const fx = (dx / dist) * SPRING_K * stretch;
+    const fy = (dy / dist) * SPRING_K * stretch;
+    a.fx += fx; a.fy += fy;
+    b.fx -= fx; b.fy -= fy;
+  }
+
+  // Band gravity
+  for (const n of visibleNodes) {
+    const yTarget = (BAND_FRACTIONS[n.cat] || 0.5) * svgH;
+    n.fy += (yTarget - n.y) * GRAVITY_K;
+  }
+
+  // Integrate
+  for (const n of visibleNodes) {
+    if (n.pinned) { n.vx = 0; n.vy = 0; continue; }
+    n.vx = (n.vx + n.fx) * DAMPING;
+    n.vy = (n.vy + n.fy) * DAMPING;
+    n.x += n.vx;
+    n.y += n.vy;
+    // Clamp
+    n.x = Math.max(NODE_W/2 + 10, Math.min(svgW - NODE_W/2 - 10, n.x));
+    n.y = Math.max(NODE_H/2 + 10, Math.min(svgH - NODE_H/2 - 10, n.y));
+  }
+}
+
+// ── Drawing ──
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+function svgEl(tag, attrs) {
+  const el = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+
+function drawMap() {
+  const svg = document.getElementById('map-svg');
+  if (!svg) return;
+
+  // Clear and rebuild
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+  // Defs (arrowheads)
+  const defs = svgEl('defs', {});
+  for (const [type, style] of Object.entries(EDGE_STYLES)) {
+    const marker = svgEl('marker', {
+      id: `arrow-${type}`, markerWidth: '8', markerHeight: '8',
+      refX: '6', refY: '3', orient: 'auto',
+    });
+    const path = svgEl('path', { d: 'M0,0 L0,6 L8,3 z', fill: style.stroke });
+    marker.appendChild(path);
+    defs.appendChild(marker);
+  }
+  svg.appendChild(defs);
+
+  // Pan/zoom group
+  const g = svgEl('g', {
+    transform: `translate(${mapTransform.x},${mapTransform.y}) scale(${mapTransform.scale})`
+  });
+  svg.appendChild(g);
+
+  // Invisible drag background
+  const bg = svgEl('rect', {
+    x: -50000, y: -50000, width: 100000, height: 100000,
+    fill: 'transparent', cursor: 'grab',
+  });
+  g.appendChild(bg);
+
+  const nodeMap = {};
+  for (const n of mapNodes) nodeMap[n.id] = n;
+
+  // Determine highlight sets
+  let predecessors = new Set();
+  let successors = new Set();
+  if (mapSelectedId) {
+    for (const e of mapEdges) {
+      if (e.to === mapSelectedId && mapCatVisible[nodeMap[e.from]?.cat] !== false) predecessors.add(e.from);
+      if (e.from === mapSelectedId && mapCatVisible[nodeMap[e.to]?.cat] !== false) successors.add(e.to);
+    }
+  }
+
+  // Draw edges first
+  for (const edge of mapEdges) {
+    const a = nodeMap[edge.from];
+    const b = nodeMap[edge.to];
+    if (!a || !b) continue;
+    if (mapCatVisible[a.cat] === false || mapCatVisible[b.cat] === false) continue;
+
+    const style = EDGE_STYLES[edge.type] || EDGE_STYLES.prereq;
+
+    // Highlight logic
+    let opacity = 1;
+    let strokeW = 1.5;
+    if (mapSelectedId) {
+      const isRelated = (edge.from === mapSelectedId || edge.to === mapSelectedId);
+      opacity = isRelated ? 1 : 0.08;
+      strokeW = isRelated ? 2.5 : 1;
+    }
+
+    // Compute endpoints (from center of node rect)
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+    // Offset to node edge
+    const offX = (dx / dist) * (NODE_W / 2 + 4);
+    const offY = (dy / dist) * (NODE_H / 2 + 4);
+    const x1 = a.x + offX;
+    const y1 = a.y + offY;
+    const x2 = b.x - offX;
+    const y2 = b.y - offY;
+
+    const line = svgEl('line', {
+      x1, y1, x2, y2,
+      stroke: style.stroke,
+      'stroke-width': strokeW,
+      'stroke-opacity': opacity,
+      'marker-end': `url(#arrow-${edge.type})`,
+    });
+    if (style.dash) line.setAttribute('stroke-dasharray', style.dash);
+    g.appendChild(line);
+  }
+
+  // Draw nodes
+  for (const node of mapNodes) {
+    if (mapCatVisible[node.cat] === false) continue;
+
+    const color = NODE_COLORS[node.subtype] || '#888';
+    const isSelected = node.id === mapSelectedId;
+    const isPred = predecessors.has(node.id);
+    const isSucc = successors.has(node.id);
+    const isDimmed = mapSelectedId && !isSelected && !isPred && !isSucc;
+
+    let opacity = isDimmed ? 0.2 : 1;
+    let strokeColor = isSelected ? '#d4a853' : isPred ? '#60a5fa' : isSucc ? '#4ade80' : 'rgba(0,0,0,0.3)';
+    let strokeW = isSelected ? 2.5 : (isPred || isSucc) ? 2 : 1;
+
+    const nodeG = svgEl('g', {
+      transform: `translate(${node.x - NODE_W/2},${node.y - NODE_H/2})`,
+      opacity,
+      cursor: 'pointer',
+      'data-id': node.id,
+    });
+
+    // Rounded rect
+    const rect = svgEl('rect', {
+      x: 0, y: 0,
+      width: NODE_W, height: NODE_H,
+      rx: 5, ry: 5,
+      fill: color,
+      'fill-opacity': isSelected ? 1 : 0.85,
+      stroke: strokeColor,
+      'stroke-width': strokeW,
+    });
+    nodeG.appendChild(rect);
+
+    // Icon
+    const icon = getCatIcon(node.cat);
+    const iconText = svgEl('text', {
+      x: 7, y: NODE_H / 2 + 4,
+      'font-size': 11,
+      'font-family': 'system-ui, sans-serif',
+    });
+    iconText.textContent = icon;
+    nodeG.appendChild(iconText);
+
+    // Label (truncated)
+    const maxChars = 13;
+    const label = node.name.length > maxChars ? node.name.slice(0, maxChars) + '…' : node.name;
+    const labelText = svgEl('text', {
+      x: 22, y: NODE_H / 2 + 4,
+      'font-size': 10,
+      'font-family': 'system-ui, sans-serif',
+      fill: '#0d0d0d',
+      'font-weight': '600',
+    });
+    labelText.textContent = label;
+    nodeG.appendChild(labelText);
+
+    g.appendChild(nodeG);
+  }
+}
+
+// ── Map event listeners ──
+
+function setupMapEvents() {
+  const svg = document.getElementById('map-svg');
+
+  // Wheel zoom
+  svg.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const rect = svg.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    const newScale = Math.min(3, Math.max(0.3, mapTransform.scale * delta));
+    // Zoom toward mouse
+    mapTransform.x = mx - (mx - mapTransform.x) * (newScale / mapTransform.scale);
+    mapTransform.y = my - (my - mapTransform.y) * (newScale / mapTransform.scale);
+    mapTransform.scale = newScale;
+    drawMap();
+  }, { passive: false });
+
+  // Mousedown: start pan or node drag
+  svg.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    const target = findNodeTarget(e);
+    if (target) {
+      mapDragNode = target;
+      const svgPt = svgPoint(svg, e);
+      mapDragOffset.x = svgPt.x - target.x;
+      mapDragOffset.y = svgPt.y - target.y;
+      e.preventDefault();
+    } else {
+      mapPanStart = { x: e.clientX - mapTransform.x, y: e.clientY - mapTransform.y };
+    }
+  });
+
+  svg.addEventListener('mousemove', (e) => {
+    if (mapDragNode) {
+      const svgPt = svgPoint(svg, e);
+      mapDragNode.x = svgPt.x - mapDragOffset.x;
+      mapDragNode.y = svgPt.y - mapDragOffset.y;
+      mapDragNode.pinned = true;
+      mapDragNode.vx = 0; mapDragNode.vy = 0;
+      if (!mapSimRunning) drawMap();
+    } else if (mapPanStart) {
+      mapTransform.x = e.clientX - mapPanStart.x;
+      mapTransform.y = e.clientY - mapPanStart.y;
+      if (!mapSimRunning) drawMap();
+    }
+  });
+
+  svg.addEventListener('mouseup', (e) => {
+    mapDragNode = null;
+    mapPanStart = null;
+  });
+
+  svg.addEventListener('mouseleave', () => {
+    mapDragNode = null;
+    mapPanStart = null;
+  });
+
+  // Click and double-click on nodes
+  svg.addEventListener('click', (e) => {
+    const target = findNodeTarget(e);
+    if (target) {
+      if (mapSelectedId === target.id) {
+        mapSelectedId = null;
+      } else {
+        mapSelectedId = target.id;
+      }
+      drawMap();
+    } else {
+      mapSelectedId = null;
+      drawMap();
+    }
+  });
+
+  svg.addEventListener('dblclick', (e) => {
+    const target = findNodeTarget(e);
+    if (target) {
+      switchView('list');
+      selectCat(target.cat);
+      setTimeout(() => selectItem(target.id), 30);
+    }
+  });
+}
+
+function svgPoint(svg, e) {
+  const rect = svg.getBoundingClientRect();
+  const cx = (e.clientX - rect.left - mapTransform.x) / mapTransform.scale;
+  const cy = (e.clientY - rect.top  - mapTransform.y) / mapTransform.scale;
+  return { x: cx, y: cy };
+}
+
+function findNodeTarget(e) {
+  const svg = document.getElementById('map-svg');
+  const pt = svgPoint(svg, e);
+  // Hit-test in reverse order (last drawn = on top)
+  for (let i = mapNodes.length - 1; i >= 0; i--) {
+    const n = mapNodes[i];
+    if (mapCatVisible[n.cat] === false) continue;
+    if (pt.x >= n.x - NODE_W/2 && pt.x <= n.x + NODE_W/2 &&
+        pt.y >= n.y - NODE_H/2 && pt.y <= n.y + NODE_H/2) {
+      return n;
+    }
+  }
+  return null;
+}
+
+// ── Map cat filter sidebar ──
+
+function renderMapCatFilter() {
+  const container = document.getElementById('map-cat-filter');
+  const cats = ['techs','skills','actions','destreses','zones','branches','resources','events'];
+
+  // Count nodes per cat (events: only discovery)
+  const countMap = {
+    techs: state.techs.length,
+    skills: state.skills.length,
+    actions: state.actions.length,
+    destreses: state.destreses.length,
+    zones: state.zones.length,
+    branches: state.branches.length,
+    resources: state.resources.length,
+    events: state.events.filter(e => e.is_discovery_event).length,
+  };
+
+  container.innerHTML = `<div style="padding:8px 14px 4px;font-size:10px;font-weight:600;color:var(--text2);letter-spacing:0.08em;text-transform:uppercase;">Filtres del mapa</div>` +
+    cats.map(cat => {
+      const vis = mapCatVisible[cat] !== false;
+      return `<div class="map-filter-item">
+        <input type="checkbox" id="mf_${cat}" ${vis ? 'checked' : ''} onchange="toggleMapCat('${cat}', this.checked)">
+        <label for="mf_${cat}">${getCatIcon(cat)} ${getCatLabel(cat)}</label>
+        <span class="map-filter-count">${countMap[cat]}</span>
+      </div>`;
+    }).join('');
+}
+
+function toggleMapCat(cat, visible) {
+  mapCatVisible[cat] = visible;
+  mapSelectedId = null;
+  if (mapRafId) cancelAnimationFrame(mapRafId);
+  startSim();
+}
+
+// ── Map legend ──
+function renderMapLegend() {
+  const legend = document.getElementById('map-legend');
+  const nodeEntries = [
+    { color: NODE_COLORS.tech,           label: 'Tecnologia' },
+    { color: NODE_COLORS.skill,          label: 'Habilitat' },
+    { color: NODE_COLORS.action_base,    label: 'Acció base' },
+    { color: NODE_COLORS.action_upgrade, label: 'Acció millora' },
+    { color: NODE_COLORS.action_gated,   label: 'Acció bloq. habilitat' },
+    { color: NODE_COLORS.destresa,       label: 'Destresa' },
+    { color: NODE_COLORS.zone,           label: 'Zona' },
+    { color: NODE_COLORS.branch,         label: 'Branca' },
+    { color: NODE_COLORS.resource,       label: 'Recurs' },
+    { color: NODE_COLORS.event,          label: 'Descoberta' },
+  ];
+  const edgeEntries = Object.entries(EDGE_STYLES).map(([, s]) => ({ color: s.stroke, dash: !!s.dash, label: s.label }));
+
+  legend.innerHTML =
+    `<div style="font-size:9px;font-weight:700;color:var(--text2);letter-spacing:0.08em;margin-bottom:4px;">LLEGENDA</div>` +
+    nodeEntries.map(e => `<div class="legend-item"><div class="legend-dot" style="background:${e.color}"></div><span style="color:var(--text2)">${e.label}</span></div>`).join('') +
+    `<div style="margin:4px 0;border-top:1px solid var(--border)"></div>` +
+    edgeEntries.map(e => {
+      const style = e.dash ? `border-top:2px dashed ${e.color}` : `border-top:2px solid ${e.color}`;
+      return `<div class="legend-item"><div class="legend-line" style="${style}"></div><span style="color:var(--text2)">${e.label}</span></div>`;
+    }).join('');
+}
+
+// ── Main render ──
+function renderMap() {
+  const svg = document.getElementById('map-svg');
+  const svgW = svg.clientWidth || 1000;
+  const svgH = svg.clientHeight || 700;
+
+  // Initialize cat visibility if first time
+  for (const cat of BAND_ORDER) {
+    if (mapCatVisible[cat] === undefined) mapCatVisible[cat] = true;
+  }
+
+  buildMapGraph();
+  initMapPositions(svgW, svgH);
+  renderMapLegend();
+  setupMapEvents();
+  startSim();
+}
+
+function resetMapLayout() {
+  mapSelectedId = null;
+  // Unpin all nodes
+  for (const n of mapNodes) n.pinned = false;
+  const svg = document.getElementById('map-svg');
+  const svgW = svg.clientWidth || 1000;
+  const svgH = svg.clientHeight || 700;
+  initMapPositions(svgW, svgH);
+  if (mapRafId) cancelAnimationFrame(mapRafId);
+  startSim();
 }
 
 </script>
