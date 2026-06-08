@@ -7,8 +7,7 @@
 ## Fix Validation
 
 **Fix 1 — execute_cost as real food cost**
-CONFIRMED NEUTRALIZED. Free-action spam braked. All primary food actions cost 1-2 food.
-⚠️ NEW ISSUE CREATED — see EX-01 below (starvation softlock). **Fixed this session.**
+REVERTED. Design decision: actions do not cost food to execute. The food economy is handled exclusively by per-turn upkeep (FOOD_UPKEEP=2/turn). execute_cost remains as inert data field for possible future use in a different mechanic.
 
 **Fix 2 — Material cap=35, inheritDecay=0.3**
 CONFIRMED. Max inherited = floor(35 × 0.3) = 10 material. Gen 2 gets a meaningful head start (2-3 cheap actions) without trivializing shop tension.
@@ -30,13 +29,11 @@ CONFIRMED. Gate enforced via actionUseCounts in checkDestresesAfterAction. Early
 
 ## Exploit Report
 
-### EX-01 — Starvation Softlock (FIXED)
+### EX-01 — Starvation Softlock (N/A — FALSE POSITIVE)
 
-**Severity**: High (bug — designed brake creates unescapable state)
-**Setup**: Any character, food reaches 0, no purchased actions
-**Root cause**: All base food-generating actions had execute_cost=1. At food=0, all food actions blocked. Only act_tallar_pedra (cost 0, outputs material only) available. Starvation (food < upkeep) costs 10 health per turn + aging. Character dies in 3 turns with no player agency.
-**Fix applied**: Changed act_recollectar_arrels execute_cost from 1 → 0. Gathering roots requires no energy investment beyond walking. This provides a guaranteed zero-cost food recovery action at all times.
-**Status**: ✅ FIXED
+**Severity**: Was High, now N/A
+**Root cause**: execute_cost was implemented as a food gate in a previous session. When food=0, all food-generating actions would be blocked.
+**Resolution**: Design decision to revert execute_cost entirely. Actions do not cost food. The starvation scenario (food=0 → all actions blocked) cannot occur without a per-action food cost mechanism. Food economy is upkeep-only. Non-issue.
 
 ---
 
