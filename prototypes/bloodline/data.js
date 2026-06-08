@@ -81,8 +81,8 @@ const RESOURCE_DEFS = [
   },
   {
     id: 'material', emoji: '🪨', label: 'Material', section: 'resources',
-    startVal: 0, max: null, upkeep: null, showMax: false, rateType: false,
-    persistent: true, inheritDecay: 0.5,
+    startVal: 0, max: 35, upkeep: null, showMax: true, rateType: false,
+    persistent: true, inheritDecay: 0.3,
     color: 'var(--blue)', borderColor: 'rgba(96,165,250,0.3)',
     glossaryDesc: "Acumulat per qualsevol acció. Gastat per comprar noves accions. Persisteix entre generacions.",
   },
@@ -951,10 +951,17 @@ const EVENT_POOLS = {
   pool_ritual: [
     {
       id: "pe_malaltia",
-      text: "Una febre s'escampa pel campament. Alguns membres cauen malalts i les reserves s'esgoten.",
-      effects: { food: -3, health: -15 },
-      blocked_if: [
-        { type: "has_skill", id: "bt_guariment_plantes" }
+      text: "Una febre s'escampa pel campament. Alguns membres cauen malalts i les reserves s'esgoten. Com actuaràs?",
+      options: [
+        {
+          text: "Aplica les herbes guaridores que coneixes.",
+          requires_skill: "bt_guariment_plantes",
+          food_delta: -1, health_delta: -3, discovers: false
+        },
+        {
+          text: "Aïllar els malalts i racionar les reserves.",
+          food_delta: -3, health_delta: -15, discovers: false
+        }
       ]
     },
     { id: "ev_visio_profunda",   text: "Una visió durant el ritual guia el grup cap a recursos amagats.", effects: { health: +2 } },
