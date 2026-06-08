@@ -301,6 +301,7 @@ function getActiveBranches() {
 }
 
 function healthMax() { return state?.currentHealthMax ?? HEALTH_MAX; }
+function materialMax() { return RESOURCE_DEFS.find(r => r.id === 'material')?.max ?? Infinity; }
 
 // ═══════════════════════════════════════════════════════════ TECH DISCOVERY
 function getDiscoverableTechs() {
@@ -358,7 +359,7 @@ function unlockSkill(bt) {
   const pe = bt.passive_effect;
   if (pe) {
     if (pe.type === 'grant_health')   state.health    = Math.min(healthMax(), state.health + pe.amount);
-    if (pe.type === 'grant_material') state.material += pe.amount;
+    if (pe.type === 'grant_material') state.material = Math.min(materialMax(), state.material + pe.amount);
     if (pe.type === 'unlock_zone')    state.discoveredZoneIds.add(pe.unlocks_zone);
   }
   state.pendingDiscoveries.push({
@@ -731,7 +732,7 @@ function executeAction(actionId) {
     // Universal material generation — ALL actions generate material (currency to buy new actions)
     const matMin = action.material_min ?? 2;
     const matMax = action.material_max ?? 3;
-    state.material += randInt(matMin, matMax);
+    state.material = Math.min(materialMax(), state.material + randInt(matMin, matMax));
     // Side effects
     if (action.side_effects) {
       for (const se of action.side_effects) {
@@ -1217,7 +1218,9 @@ function renderCharPanel() {
 
 // ═══════════════════════════════════════════════════════════ TOP BAR
 function renderTopBar() {
-  el('tok-material-val').textContent  = Math.round(state.material || 0);
+  const matDef = RESOURCE_DEFS.find(r => r.id === 'material');
+  const matMax = matDef?.max;
+  el('tok-material-val').textContent  = matMax ? `${Math.round(state.material || 0)}/${matMax}` : Math.round(state.material || 0);
   el('tok-reputacio-val').textContent = Math.round(state.reputacio || 0);
 }
 
@@ -1342,7 +1345,7 @@ function applyEventEffects(fx) {
   if (!fx) return;
   if (fx.food)      state.food      = Math.max(0, Math.min(FOOD_MAX, state.food + fx.food));
   if (fx.health)    state.health    = Math.max(0, Math.min(healthMax(), state.health + fx.health));
-  if (fx.material)  state.material  = Math.max(0, state.material + fx.material);
+  if (fx.material)  state.material  = Math.max(0, Math.min(materialMax(), state.material + fx.material));
   if (fx.reputacio) state.reputacio = Math.max(0, Math.min(REPUTACIO_PER_CHAR_CAP, (state.reputacio || 0) + fx.reputacio));
 }
 
@@ -1364,7 +1367,7 @@ function resolveDiscoveryOption(optionIndex) {
 
   // Direct resource deltas
   if (opt.food_delta)      state.food      = Math.max(0, Math.min(FOOD_MAX, state.food + opt.food_delta));
-  if (opt.material_delta)  state.material  = Math.max(0, state.material + opt.material_delta);
+  if (opt.material_delta)  state.material  = Math.max(0, Math.min(materialMax(), state.material + opt.material_delta));
   if (opt.reputacio_delta) state.reputacio = Math.max(0, Math.min(REPUTACIO_PER_CHAR_CAP, (state.reputacio || 0) + opt.reputacio_delta));
 
   // Health (may be modified by skill_modifier)
