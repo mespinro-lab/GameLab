@@ -537,7 +537,7 @@ function triggerSuccession() {
   const topAxis = AXES.reduce((a, b) =>
     Math.abs(state.character.inclination[a]) > Math.abs(state.character.inclination[b]) ? a : b
   );
-  // Inclination: 100% heretada (les branques són del llinatge, no del personatge)
+  // Inclination: 85% heretada — identitat de llinatge però amb marge de variació per generació
   const inheritedInclination = Object.fromEntries(
     AXES.map(a => [a, state.character.inclination[a] * INCLINATION_INHERITANCE_RATE])
   );
@@ -550,7 +550,10 @@ function triggerSuccession() {
   );
   const inheritedPurchased = new Set(state.character.purchasedActionIds);
   const inheritedSkills    = new Set(state.character.unlockedSkillIds);
-  const inheritedDestreses = new Set(state.character.destreses);
+  // Destreses: probabilistic retention (DESTRESA_INHERIT_RATE per destresa)
+  const inheritedDestreses = new Set(
+    [...state.character.destreses].filter(() => Math.random() < DESTRESA_INHERIT_RATE)
+  );
   const hasEnsenyat        = state.character.charState.ensenyat === 1;
   const childSuccessors = children.map(c => ({
     ...c, is_sibling: false,
@@ -684,6 +687,7 @@ function executeAction(actionId) {
     hide('overlay-zone-actions');
     showDonutAnimation(action, null, () => {
       const snap = snapshotNums();
+      if (executeCost > 0) state.food = Math.max(0, state.food - executeCost);
       unlockSkill(chosen);
       state.cycle++;
       autoDiscoverUniversalTechs();
@@ -771,9 +775,11 @@ function executeAction(actionId) {
     state.cycle++;
     autoDiscoverUniversalTechs();
     applyTurnUpkeep();
-    // Notify when age-gated base actions become available
+    // Notify when age-gated base actions become available (only if not already visible/done)
     for (const a of ACTIONS.filter(x => x.is_base && x.minAge)) {
-      if (characterAge() === a.minAge && !state.character.charState[a.requires?.[0]?.state]) {
+      const alreadyNotified = state.pendingDiscoveries.some(d => d._isEvent && d.name === a.name);
+      const requiresSatisfied = !a.requires?.[0]?.state || !state.character.charState[a.requires[0].state];
+      if (characterAge() === a.minAge && requiresSatisfied && !alreadyNotified) {
         state.pendingDiscoveries.push({ _isEvent: true, icon: getActionIcon(a), name: a.name, desc: `Ja tens edat per "${a.name}". ${a.description || ''}` });
       }
     }
