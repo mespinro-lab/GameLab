@@ -1,0 +1,43 @@
+Nom,Zona,Tipus,Requeriments,Output principal,Efectes secundaris,Material generat,Inclinació afectada,Nota
+Espiar el Ramat,Planes,Base,—,🌾 3–8 aliment,-5 ❤️,2–4,+Impuls +Intel·lecte,Risc moderat de ferides
+Recol·lectar Arrels,Planes,Base,—,🌾 1–3 aliment,—,2–3,-Impuls +Intel·lecte +Sociabilitat,Estable i segur
+Tallar Pedra,Campament,Base,—,(només material),—,2–3,-Impuls +Intel·lecte,Genera material sense cost d'aliment
+Ritual del Foc,Campament,Base,El Foc,🏛️ 1–2 reputació,+5 ❤️,—,-Intel·lecte +Espiritualitat +Sociabilitat,Requereix descobriment del Foc
+Contemplació,Campament,Base,—,❤️ 3–6 salut,—,—,-Impuls +Espiritualitat +Sociabilitat,Recuperació sense cost d'acció
+Vigilar el Campament,Campament,Base,—,🏛️ 1–2 reputació,—,—,+Impuls +Sociabilitat,Construeix vincle i reputació
+Explorar els Voltants,Planes,Base,—,(material),—,3–5,+Impuls,Desbloqueja zona Bosc (primera vegada); després esdeveniments de caça
+Cercar Parella,Campament,Base,"Edat 5–14, sense parella",(obre Llar),—,1–2,-Impuls +Sociabilitat,95% d'èxit; desbloqueja la zona Llar
+Tenir Fills,Llar,Base,"Parella, fills < màxim, edat ≤ 15",(add fill),—,1–3,+Espiritualitat +Sociabilitat,Probabilitat d'èxit basada en salut (25–95%)
+Ensenyar el Fill,Llar,Base,"Edat ≥ 8, fills, habilitat apresa, no ensenyat",(millora herència),—,1–2,-Impuls +Espiritualitat +Sociabilitat,+50% taxa d'herència de habilitats per al successor
+Caça amb Llança,Planes,Habilitat (Punta de Llança),"Edat ≤ 15, cost 4🪨",🌾 5–12 aliment,-7 ❤️,—,+Impuls,Risc moderat però alt rendiment
+Emboscada Nocturna,Planes,Habilitat (Punta de Llança),"Edat ≤ 12, cost 5🪨",🌾 8–16 aliment,-20 ❤️,—,+Impuls -Sociabilitat,Molt perillós; màxim rendiment alimentari
+Marcar Territori,Planes,Habilitat (Marques de Territori),"Cost 3🪨",🏛️ 1–3 reputació,-3 ❤️,—,+Impuls,Reputació a cost de salut
+Rastreig de Rutes,Bosc,Habilitat (Marques de Territori),"Cost 3🪨, zona Bosc",🌾 3–6 aliment,—,—,+Intel·lecte,Caça eficient al bosc
+Mòlta de Grans,Campament,Habilitat (Rasclador Fi),"Cost 3🪨",🌾 3–7 aliment,—,—,-Intel·lecte,Producció estable d'aliment
+Parar Trampes,Planes,Habilitat (Trampes i Llaços),"Cost 3🪨",🌾 2–6 aliment,—,—,-Impuls,Caça passiva
+Revisar les Trampes,Bosc,Habilitat (Trampes i Llaços),"Cost 3🪨, zona Bosc",🌾 1–4 aliment,-3 ❤️,—,-Impuls,Ronda de trampes
+Façonar Eines,Campament,Habilitat (Rasclador Fi),"Cost 3🪨",(material),—,2–4,+Intel·lecte,Produeix material de qualitat
+Gravar Os i Ivori,Campament,Habilitat (Burí i Gravat),"Cost 4🪨",(material),—,2–3,+Intel·lecte +Espiritualitat,Art i eina alhora
+Intercanviar Eines,Planes,Habilitat (Burí i Gravat),"Cost 3🪨",🌾 2–4 aliment,—,1–2,+Sociabilitat,Comerç d'eines per aliment
+Cosir Pells,Campament,Habilitat (Agulla d'Os),"Cost 3🪨",❤️ 3–6 salut,—,1–2,+Intel·lecte,Roba que protegeix
+Construir Refugi,Campament,Habilitat (Agulla d'Os),"Cost 4🪨",❤️ 4–8 salut,—,1–3,+Intel·lecte +Sociabilitat,Refugi millorat
+Curar amb Herbes,Campament,Habilitat (Guariment amb Plantes),"Cost 3🪨",❤️ 8–14 salut,—,—,+Espiritualitat,Alta recuperació de salut
+Preparar un Ungüent,Campament,Habilitat (Guariment amb Plantes),"Cost 3🪨",❤️ 6–10 salut,—,—,+Intel·lecte +Espiritualitat,Guariment alternatiu
+Pintar les Parets,Bosc,Habilitat (Pintura Rupestre),"Cost 4🪨, zona Bosc",🏛️ 1–3 reputació,+5 ❤️,—,+Espiritualitat,Art ritual al bosc
+Narrar les Llegendes,Campament,Habilitat (Pintura Rupestre),"Cost 3🪨",+2 reputació directa,—,1–2,+Espiritualitat +Sociabilitat,Tradició oral del llinatge
+Ornamentar-se,Campament,Habilitat (Ornaments i Adorn),"Cost 3🪨",+1 reputació directa,+5 ❤️,—,+Espiritualitat +Sociabilitat,Prestigi personal
+Consagrar Ornaments,Campament,Habilitat (Ornaments i Adorn),"Cost 4🪨",🏛️ 2–4 reputació,—,—,+Espiritualitat +Sociabilitat,Ritual de prestigi màxim
+Recollida de Bolets,Bosc,Habilitat (Coneixement de Plantes),"Cost 3🪨, zona Bosc",🌾 2–5 aliment,+5 ❤️,—,-Intel·lecte,Aliment i salut del bosc
+Assecament de Plantes,Campament,Habilitat (Coneixement de Plantes),"Cost 3🪨",🌾 2–4 aliment,—,—,-Intel·lecte,Conservació de provisions
+Observar el Cel Nocturn,Planes,Habilitat (Calendari Natural),"Cost 3🪨",❤️ 2–4 salut,—,—,+Espiritualitat,Cicles astronòmics
+Trànsit Nocturn,Bosc,Habilitat (Calendari Natural),"Cost 4🪨, zona Bosc",🏛️ 2–4 reputació,-5 ❤️,—,+Espiritualitat,Visió nocturna perillosa
+Control del Territori,Planes,Habilitat (Domini de la Terra),"Edat ≥ 8, cost 5🪨",🌾 3–7 aliment,-5 ❤️,—,+Impuls +Sociabilitat,Coordinació del clan
+Negociar les Pastures,Planes,Habilitat (Domini de la Terra),"Cost 5🪨",🌾 3–6 aliment,+3 ❤️,—,+Sociabilitat,Diplomàcia territorial
+Seleccionar Llavors,Campament,Habilitat (Llavor Selectiva),"Cost 4🪨",🌾 3–6 aliment,—,—,—,Proto-agricultura
+Preparar el Terreny,Planes,Habilitat (Llavor Selectiva),"Cost 4🪨",🌾 2–4 aliment,-5 ❤️,—,+Impuls,Esforç físic per a futura collita
+Recol·lecta Avançada,Planes,Botiga (inclinació),"Intel·lecte ≥ 0.15, cost 3🪨",🌾 4–8 aliment,—,—,-Impuls +Intel·lecte +Espiritualitat +Sociabilitat,Recol·lecta òptima sense substituir base
+Aguait Coordinat,Planes,Upgrade (Espiar el Ramat),"Cost 5🪨",🌾 3–8 aliment,—,—,+Impuls +Intel·lecte +Sociabilitat,Substitueix Espiar el Ramat; millor col·laboració
+Recol·lecta Metòdica,Planes,Upgrade (Recol·lectar Arrels),"Cost 4🪨",🌾 4–7 aliment,—,—,-Impuls +Intel·lecte +Espiritualitat +Sociabilitat,Substitueix Recol·lectar Arrels; rendiment molt superior
+Talla Avançada,Campament,Upgrade (Tallar Pedra),"Cost 5🪨",(material),—,3–5,-Impuls +Intel·lecte,Substitueix Tallar Pedra; eines de qualitat superior
+Gran Ritual,Campament,Upgrade (Ritual del Foc),"El Foc, cost 4🪨",🏛️ 2–4 reputació,+10 ❤️,—,-Impuls +Espiritualitat +Sociabilitat,Substitueix Ritual del Foc; ritual de tota la nit
+Defensa Activa,Campament,Upgrade (Vigilar el Campament),"Cost 5🪨",🏛️ 2–4 reputació,—,—,+Impuls +Intel·lecte +Sociabilitat,Substitueix Vigilar el Campament; guàrdia organitzada

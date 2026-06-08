@@ -13,10 +13,18 @@ const STARTING_FOOD = 10;
 const FOOD_MAX      = 20;
 const FOOD_UPKEEP   = 2;
 
-const STARTING_HEALTH      = 40;
+const STARTING_HEALTH      = 30;
 const HEALTH_MAX           = 40;
 const HEALTH_FIRE_BONUS    = 0.25;  // +25% salut immediata en descobrir el foc
-const HEALTH_POST_FIRE     = 50;    // salut màxima i inicial de gens posteriors al foc
+const HEALTH_POST_FIRE     = 50;    // pic de salut de gens posteriors al foc
+
+// Corba de salut: creix de HEALTH_CAP_START fins a pic en HEALTH_GROW_TURNS,
+// estable HEALTH_STABLE_TURNS, llavors decau exponencialment.
+const HEALTH_CAP_START    = 30;
+const HEALTH_GROW_TURNS   = 4;
+const HEALTH_STABLE_TURNS = 4;
+const HEALTH_DECAY_SCALE  = 0.27;
+const HEALTH_DECAY_POWER  = 2;
 
 const AGING_BASE      = 3;
 const AGING_THRESHOLD = 10;
@@ -76,9 +84,9 @@ const RESOURCE_DEFS = [
   {
     id: 'health', emoji: '❤️', label: 'Salut', section: 'vitals',
     startVal: STARTING_HEALTH, max: HEALTH_MAX, upkeep: null,
-    showMax: false, rateType: 'aging', critAt: 20, warnAt: 40,
+    showMax: false, rateType: 'aging', critAt: 15, warnAt: 25,
     color: 'var(--green)', borderColor: 'rgba(74,222,128,0.3)',
-    glossaryDesc: `Estat físic. A 0 el personatge mor i es produeix la successió. Decreix per envelliment: ${AGING_BASE}/torn en joventut, s'accelera a partir de l'edat ${AGING_THRESHOLD}.`,
+    glossaryDesc: `Estat físic. Neix amb ${STARTING_HEALTH}, creix fins a ${HEALTH_MAX} en ${HEALTH_GROW_TURNS} torns, estable ${HEALTH_STABLE_TURNS} torns, llavors decau. A 0 el personatge mor.`,
   },
   {
     id: 'material', emoji: '🪨', label: 'Material', section: 'resources',
@@ -92,7 +100,19 @@ const RESOURCE_DEFS = [
     startVal: 0, max: null, upkeep: null, showMax: false, rateType: false,
     persistent: true, inheritDecay: FAMILY_REP_INHERITANCE,
     color: '#a855f7', borderColor: 'rgba(168,85,247,0.3)',
-    glossaryDesc: "Persistent entre generacions — no es reinicia en successió. Acumulada per accions socials. Cada punt millora la probabilitat d'esdeveniments positius (+10% de pes, màx +40%).",
+    glossaryDesc: "Persistent entre generacions. Cada punt guanyat: +10% probabilitat events positius (màx +40%). Contribueix ×2 a la puntuació final.",
+  },
+  {
+    id: 'pedra', emoji: '🪨', label: 'Pedra', section: 'resources',
+    startVal: 0, max: 10, upkeep: null, showMax: true, rateType: false,
+    color: '#9ca3af', borderColor: 'rgba(156,163,175,0.3)',
+    glossaryDesc: "Sílex i pedra calcària recollida als voltants. Necessària per fabricar eines.",
+  },
+  {
+    id: 'eina', emoji: '🔧', label: 'Eines', section: 'resources',
+    startVal: 0, max: 3, upkeep: null, showMax: true, rateType: false,
+    color: '#f59e0b', borderColor: 'rgba(245,158,11,0.3)',
+    glossaryDesc: "Eines de sílex fabricades. Necessàries per a la caça amb llança. Cap: 3.",
   },
   // Era 2+: descomenta per afegir nous recursos al top bar, estat i glossari
   // { id: 'happiness', emoji: '✨', label: 'Benestar', section: 'resources', startVal: 50, max: 100, upkeep: null, showMax: false, rateType: false, era: 2, color: 'var(--purple)', borderColor: 'rgba(168,85,247,0.3)', glossaryDesc: "Satisfacció general. Si cau molt baix, penalitza els resultats de les accions." },
@@ -390,13 +410,33 @@ const ACTIONS = [
   },
   {
     id: "act_explorar_voltants", name: "Explorar els Voltants", is_base: true, zona: "Planes",
-    description: "T'aventures més lluny del campament. El que trobes pot canviar-ho tot.",
+    description: "T'aventures més lluny del campament. Cada intent augmenta la probabilitat de descobrir zones noves.",
     execute_cost: 1,
-    unlocks_zone: "Bosc",
+    character_effect: { type: 'explore_zone' },
     material_min: 3, material_max: 5,
     stat_key: "forca", stat_gain: 0.10,
     inclination_deltas: { impuls: +0.04, "intel·lecte": -0.02, espiritualitat: 0, sociabilitat: 0 },
-    event_pool_id: "pool_caca"
+    event_pool_id: null
+  },
+  {
+    id: "act_recollectar_pedra", name: "Recollir Pedra", is_base: true, zona: "Planes",
+    description: "Recolliu sílex i pedra calcària per als vostres estris. La pedra és el fonament de tot.",
+    execute_cost: 0, output_resource: "pedra", output_min: 1, output_max: 3,
+    material_min: 1, material_max: 2,
+    stat_key: "forca", stat_gain: 0.05,
+    inclination_deltas: { impuls: +0.01, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: null
+  },
+  {
+    id: "act_preparar_eina", name: "Preparar una Eina", is_base: true, universal_prereq: "ut_eines", zona: "Campament",
+    description: "Treballes la pedra amb precisió per crear una eina útil. Si l'enginy és baix, la pedra pot trencar-se.",
+    execute_cost: 0,
+    requires: [{ resource: 'pedra', min: 1 }],
+    character_effect: { type: 'make_tool', pedra_cost: 1 },
+    material_min: 1, material_max: 2,
+    stat_key: "enginy", stat_gain: 0.15,
+    inclination_deltas: { impuls: -0.02, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania"
   },
 
   // FAMILY — zona Campament (cercar parella) i Llar (tenir fills, ensenyar)
@@ -450,7 +490,8 @@ const ACTIONS = [
     id: "act_caca_llanca", name: "Caça amb Llança", is_base: false, zona: "Planes",
     description: "Llances una pedra punxeguda des d'una distància que la presa no esperava. Alt risc, alt reward.",
     maxAge: 15,
-    purchase_cost: 4, execute_cost: 2, output_resource: "food", output_min: 5, output_max: 12, side_effects: [{ resource: 'health', delta: -10 }],
+    requires: [{ resource: 'eina', min: 1 }],
+    purchase_cost: 4, execute_cost: 2, output_resource: "food", output_min: 5, output_max: 12, side_effects: [{ resource: 'health', delta: -7 }, { resource: 'eina', delta: -1 }],
     stat_key: "forca", stat_gain: 0.20,
     inclination_deltas: { impuls: +0.08, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_caca"
@@ -695,7 +736,7 @@ const ACTIONS = [
   {
     id: "act_recollecta_avancada", name: "Recol·lecta Avançada", is_base: false, zona: "Planes",
     description: "Apliques el coneixement acumulat del territori: zones òptimes, plantes seleccionades, ritme natural. La millor collita amb el mínim esforç.",
-    purchase_cost: 3, execute_cost: 1, output_resource: "food", output_min: 4, output_max: 8,
+    purchase_cost: 5, execute_cost: 1, output_resource: "food", output_min: 4, output_max: 8,
     inclination_requirements: { "intel·lecte": { min: 0.15 } },
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: -0.02, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: +0.02 },
@@ -704,7 +745,7 @@ const ACTIONS = [
   {
     id: "act_aguait_coordinat", name: "Aguait Coordinat", is_upgrade: true, upgrades_action_id: "act_espiar_ramat", zona: "Planes",
     description: "Senyal coordinat amb el grup. La presa no pot fugir. Rendiment molt superior.",
-    purchase_cost: 5, execute_cost: 1, output_resource: "food", output_min: 3, output_max: 8,
+    purchase_cost: 8, execute_cost: 1, output_resource: "food", output_min: 3, output_max: 8,
     stat_key: "forca", stat_gain: 0.10,
     inclination_deltas: { impuls: +0.05, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: +0.03 },
     event_pool_id: "pool_caca"
@@ -712,7 +753,7 @@ const ACTIONS = [
   {
     id: "act_recollecta_metodica", name: "Recol·lecta Metòdica", is_upgrade: true, upgrades_action_id: "act_recollectar_arrels", zona: "Planes",
     description: "Apliques coneixement acumulat: zones, estació, plantes. Rendiment molt superior.",
-    purchase_cost: 4, execute_cost: 1, output_resource: "food", output_min: 4, output_max: 7,
+    purchase_cost: 6, execute_cost: 1, output_resource: "food", output_min: 4, output_max: 7,
     stat_key: "enginy", stat_gain: 0.10,
     inclination_deltas: { impuls: -0.02, "intel·lecte": +0.03, espiritualitat: +0.02, sociabilitat: +0.02 },
     event_pool_id: "pool_recollecta"
@@ -720,7 +761,7 @@ const ACTIONS = [
   {
     id: "act_talla_avancada", name: "Talla Avançada", is_upgrade: true, upgrades_action_id: "act_tallar_pedra", zona: "Campament",
     description: "Eines de qualitat superior. Menys rebuig, formes més precises.",
-    purchase_cost: 5, execute_cost: 0, material_min: 3, material_max: 5,
+    purchase_cost: 8, execute_cost: 0, material_min: 3, material_max: 5,
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: -0.02, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
@@ -728,7 +769,7 @@ const ACTIONS = [
   {
     id: "act_gran_ritual", name: "Gran Ritual", is_upgrade: true, upgrades_action_id: "act_ritual_foc", zona: "Campament",
     description: "El ritual s'extén a tota la nit. Cohesió màxima i regeneració profunda.",
-    purchase_cost: 4, execute_cost: 1, output_resource: "reputacio", output_min: 2, output_max: 4, universal_prereq: "ut_foc", side_effects: [{ resource: 'health', delta: +10 }],
+    purchase_cost: 6, execute_cost: 1, output_resource: "reputacio", output_min: 2, output_max: 4, universal_prereq: "ut_foc", side_effects: [{ resource: 'health', delta: +10 }],
     stat_key: "vincle", stat_gain: 0.10,
     inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: +0.06, sociabilitat: +0.05 },
     event_pool_id: "pool_ritual"
@@ -736,7 +777,7 @@ const ACTIONS = [
   {
     id: "act_defensa_activa", name: "Defensa Activa", is_upgrade: true, upgrades_action_id: "act_vigilar_campament", zona: "Campament",
     description: "Distribuïu rols i torns de guàrdia. El campament queda segur i el grup rendeix més.",
-    purchase_cost: 5, execute_cost: 1, output_resource: "reputacio", output_min: 2, output_max: 4,
+    purchase_cost: 8, execute_cost: 1, output_resource: "reputacio", output_min: 2, output_max: 4,
     stat_key: "vincle", stat_gain: 0.10,
     inclination_deltas: { impuls: +0.02, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: +0.03 },
     event_pool_id: "pool_social"
@@ -890,7 +931,8 @@ const EVENT_POOLS = {
     }
   ],
   pool_artesania: [
-    { id: "ev_eina_trencada",    text: "L'eina es trenca durant la feina. Cal refer-la.",              effects: { material: -1 } },
+    { id: "ev_eina_trencada", text: "L'eina es trenca durant la feina. Cal refer-la.", effects: { eina: -1 }, blocked_if: [{ type: "stat_min", stat: "enginy", min: 3.5 }] },
+    { id: "ev_eina_trencada_material", text: "L'eina es trenca i arrossega part del material. La pedra també s'ha perdut.", effects: { eina: -1, pedra: -1 }, blocked_if: [{ type: "stat_min", stat: "enginy", min: 4.0 }] },
     { id: "ev_tecnica_nova",     text: "Un descobriment accidental millora la tècnica.",               effects: { material: +1 } },
     { id: "ev_intercanvi_eines", text: "Un grup veí demana eines a canvi de provisions.",              effects: { food: +1, material: +1 } },
     {
@@ -1170,4 +1212,16 @@ const BRANCHES = [
     id: "branch_mystic",   name: "Místic",
     conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.22 }, { axis: "sociabilitat", min: 0.19 }] }
   }
+];
+
+// Events fired when exploring fails to discover a new zone (50% chance)
+// 2/3 positive, 1/3 negative
+const EXPLORATION_EVENTS = [
+  { id: "expl_rastre_animal",   text: "Trobes un rastre d'animals que porten a una font d'aigua fresca. El grup torna animat.", effects: { food: +2 }, positive: true },
+  { id: "expl_herbes_fragants", text: "La brisa porta una olor de plantes aromàtiques. El grup recull alguns feixos pel camí.",  effects: { food: +1, health: +3 }, positive: true },
+  { id: "expl_vista_panoramica",text: "Des d'un turó, divises una plana extensa. El retorn et fa veure la zona diferent.",       effects: { health: +2 }, positive: true },
+  { id: "expl_roca_estable",    text: "Trobes un aflorament de pedra bona. Valores la zona per tornar-hi.",                     effects: { pedra: +1 }, positive: true },
+  { id: "expl_sendera_desconeguda", text: "Una senda estreta puja entre les roques. Segueixes uns passos però la llum minva.", effects: { health: -3 }, positive: false },
+  { id: "expl_animal_ferotge",  text: "Un animal territorial et sorprèn a mig camí. Tornes amb un tall al braç.",               effects: { food: -1, health: -5 }, positive: false },
+  { id: "expl_tempesta_sobtada",text: "Una tempesta esclata sense avís. El grup es refugia però perd provisions mullades.",     effects: { food: -2 }, positive: false }
 ];
