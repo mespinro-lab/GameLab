@@ -445,8 +445,12 @@ function applyCharacterEffect(action) {
     const healthRatio = state.health / healthMax();
     const successChance = Math.max(0.25, Math.min(0.95, 0.30 + healthRatio * 0.65));
     if (Math.random() > successChance) {
-      addLog('Pèrdua de l\'embaràs. La salut és massa baixa.');
-      state.pendingDiscoveries.push({ _isEvent: true, icon: '🕯️', name: 'Pèrdua', desc: `La salut baixa ha complicat l'embaràs. Milloreu la salut per augmentar les probabilitats d'èxit (${Math.round(successChance*100)}% ara).` });
+      addLog('Pèrdua de l\'embaràs.');
+      const atMaxHealth = state.health >= healthMax();
+      const desc = atMaxHealth
+        ? `L'embaràs no ha seguit endavant. La salut no garanteix l'èxit (${Math.round(successChance*100)}% de probabilitat). Podeu tornar-ho a intentar.`
+        : `La salut baixa ha complicat l'embaràs. Milloreu la salut per augmentar les probabilitats d'èxit (${Math.round(successChance*100)}% ara).`;
+      state.pendingDiscoveries.push({ _isEvent: true, icon: '🕯️', name: 'Pèrdua', desc });
       return;
     }
     const nameIdx = (state.generation * 7 + state.character.children.length * 3) % CHILD_NAMES.length;
@@ -1289,7 +1293,7 @@ function renderInMapOverlay() {
     const disc = state.pendingDiscoveries[0];
     el('disc-icon').textContent  = disc.icon;
     el('disc-name').textContent  = disc.name;
-    el('disc-badge').textContent = disc._isPartner ? '💑 Nova parella' : disc._isSkill ? '🧩 Nova tècnica' : disc._isDestresa ? '⭐ Nova destresa' : disc._isZone ? '🗺️ Zona descoberta' : disc._isTech ? '✦ DESCOBRIMENT ✦' : '✨ Nou descobriment';
+    el('disc-badge').textContent = disc._isPartner ? '💑 Nova parella' : disc._isSkill ? '🧩 Nova tècnica' : disc._isDestresa ? '⭐ Nova destresa' : disc._isZone ? '🗺️ Zona descoberta' : disc._isTech ? '✦ DESCOBRIMENT ✦' : disc._isAction ? '🛒 Nova acció' : '✨ Nou descobriment';
     el('disc-desc').textContent  = disc.description || disc.desc || '';
     if (disc.effect?.desc) {
       el('disc-effects').textContent = disc.effect.desc;
@@ -1689,6 +1693,7 @@ function renderAll() {
 
 // ═══════════════════════════════════════════════════════════ SHOP
 function getBuyableActions() {
+  const skillUnlockedIds = new Set(SKILL_DEFS.flatMap(bt => bt.unlocks_action_ids || []));
   return ACTIONS.filter(a => {
     if (!a.purchase_cost) return false;
     if (a.is_base) return false;
@@ -1696,6 +1701,7 @@ function getBuyableActions() {
     if (state.character.purchasedActionIds.has(a.id)) return false;
     if (!state.discoveredZoneIds.has(a.zona)) return false;
     if (a.universal_prereq && !state.discoveredUniversalTechIds.has(a.universal_prereq)) return false;
+    if (skillUnlockedIds.has(a.id)) return false;
     return true;
   });
 }
@@ -1728,13 +1734,19 @@ function renderShop() {
 
     actions.forEach(action => {
       const canAfford = mat >= action.purchase_cost;
+      const upgradeBase = action.upgrades_action_id
+        ? ACTIONS.find(a => a.id === action.upgrades_action_id)
+        : null;
+      const upgradeNote = upgradeBase
+        ? `<span class="shop-upgrade-note">↑ Substitueix: ${upgradeBase.name}</span>`
+        : '';
       const row = document.createElement('div');
       row.className = 'shop-row' + (canAfford ? '' : ' shop-row-disabled');
       row.innerHTML = `
         <span class="shop-icon">${getActionIcon(action)}</span>
         <div class="shop-info">
           <span class="shop-name">${action.name || action.id}</span>
-          <span class="shop-desc">${action.description || ''}</span>
+          <span class="shop-desc">${action.description || ''}${upgradeNote}</span>
         </div>
         <button class="shop-buy-btn" ${canAfford ? '' : 'disabled'} data-id="${action.id}">
           🪨${action.purchase_cost}
@@ -1756,8 +1768,31 @@ function buyAction(actionId) {
   state.material = mat - action.purchase_cost;
   state.character.purchasedActionIds.add(actionId);
   addLog(`Has comprat: ${action.name || action.id}`);
-  renderShop();
-  renderTopBar();
+  const outIcons = { food: '🌾', material: '🪨', health: '❤️', reputacio: '🏛️' };
+  const parts = [];
+  if (action.output_resource && action.output_min != null) {
+    parts.push(`${outIcons[action.output_resource] || '📦'} ${action.output_min}–${action.output_max}`);
+  }
+  if (action.side_effects) {
+    for (const se of action.side_effects) {
+      parts.push(`${outIcons[se.resource] || '📦'} ${se.delta > 0 ? '+' : ''}${se.delta}`);
+    }
+  }
+  const upgradeBase = action.upgrades_action_id
+    ? ACTIONS.find(a => a.id === action.upgrades_action_id)
+    : null;
+  const effectDesc = [
+    parts.join('  '),
+    upgradeBase ? `Substitueix: "${upgradeBase.name}"` : null,
+  ].filter(Boolean).join(' · ');
+  state.pendingDiscoveries.push({
+    _isAction: true, icon: getActionIcon(action), name: action.name,
+    desc: action.description || '',
+    effect: effectDesc ? { desc: effectDesc } : null,
+  });
+  hide('overlay-shop');
+  renderAll();
+  saveGame();
 }
 
 // ═══════════════════════════════════════════════════════════ EVENT LISTENERS

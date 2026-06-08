@@ -1,0 +1,14 @@
+Nom,Descripció,Tecnologia requerida,Condicions d'inclinació,Branca,Desbloqueja accions,Benefici passiu,Taxa d'herència
+Punta de Llança,"Tècnica de caça amb llança llançada des de distància.",Les Eines,"Impuls ≥ 0.25 I Sociabilitat ≤ 0.30",Caçador,"Caça amb Llança, Emboscada Nocturna","+1 mínim Espiar el Ramat",45%
+Rasclador Fi,"Raspador de sílex fi per a tractament de grans i arrels.",Les Eines,"Impuls ≤ 0.10 O Intel·lecte ≥ 0.20","Recol·lector / Artesà","Mòlta de Grans, Façonar Eines","+1 mínim Recol·lectar Arrels",35%
+Burí i Gravat,"Eina punxeguda per gravar ossos i ivori amb precisió.",Les Eines,"Intel·lecte ≥ 0.25 I Impuls ≤ 0.20",Artesà,"Gravar Os i Ivori, Intercanviar Eines","+1 mínim Façonar Eines",40%
+Agulla d'Os,"Agulla feta d'os per cosir pells i fabricar roba.",La Vestimenta,"Intel·lecte ≥ 0.20 I Impuls ≤ 0.20",Artesà,"Cosir Pells, Construir Refugi","+15 Salut (vestimenta)",35%
+Trampes i Llaços,"Fabricació de trampes de corda vegetal per a caça passiva.",La Corda,"Impuls ≥ 0.10",Recol·lector,"Parar Trampes, Revisar les Trampes","+1 mínim Parar Trampes",45%
+Guariment amb Plantes,"Coneixement d'herbes medicinals i preparació d'infusions.",El Foc,"Espiritualitat ≥ 0.25 I Sociabilitat ≥ 0.20",Místic,"Curar amb Herbes, Preparar un Ungüent","+8 Salut (primer guariment)",45%
+Pintura Rupestre,"Art de fixar visions en parets de roca amb pigments.",L'Art,"Espiritualitat ≥ 0.30 I Sociabilitat ≥ 0.20",Místic,"Pintar les Parets, Narrar les Llegendes","+2 Provisions (identitat del clan)",40%
+Marques de Territori,"Incisions en arbres per delimitar zones del clan.",L'Art,"Impuls ≥ 0.20 I Intel·lecte ≥ 0.05",Caçador,"Marcar Territori, Rastreig de Rutes","Desbloqueja zona Bosc",40%
+Ornaments i Adorn,"Closques, dents i pedres com a identitat i prestigi.",L'Art,"Espiritualitat ≥ 0.20 O Sociabilitat ≥ 0.25",Místic,"Ornamentar-se, Consagrar Ornaments","+3 Provisions (identitat del clan)",35%
+Coneixement de Plantes,"Identificació precisa de plantes comestibles i medicinals.",La Corda,"Intel·lecte ≥ 0.10 I Impuls ≤ 0.20",Recol·lector,"Recollida de Bolets, Assecament de Plantes","+2 màxim Recollida de Bolets",45%
+Calendari Natural,"Seguiment dels cicles lunars i estacionals.",La Ceràmica,"Espiritualitat ≥ 0.20 I Sociabilitat ≥ 0.10",Místic,"Observar el Cel Nocturn, Trànsit Nocturn","+2 Provisions (previsió de cicles)",40%
+Llavor Selectiva,"Selecció de les millors llavors per a millores futures.",La Ceràmica,"Intel·lecte ≥ 0.10 I Impuls ≤ 0.20",Recol·lector,"Seleccionar Llavors, Preparar el Terreny","+2 mínim Seleccionar Llavors",35%
+Domini de la Terra,"Control i negociació de zones de caça i recol·lecció.",La Ceràmica,"Impuls ≥ 0.10 O Sociabilitat ≥ 0.10",Compartit,"Control del Territori, Negociar les Pastures","+10 Salut (domini del territori)",40%

@@ -450,7 +450,7 @@ const ACTIONS = [
     id: "act_caca_llanca", name: "Caça amb Llança", is_base: false, zona: "Planes",
     description: "Llances una pedra punxeguda des d'una distància que la presa no esperava. Alt risc, alt reward.",
     maxAge: 15,
-    purchase_cost: 4, execute_cost: 2, output_resource: "food", output_min: 5, output_max: 12, side_effects: [{ resource: 'health', delta: -10 }],
+    purchase_cost: 4, execute_cost: 2, output_resource: "food", output_min: 5, output_max: 12, side_effects: [{ resource: 'health', delta: -7 }],
     stat_key: "forca", stat_gain: 0.20,
     inclination_deltas: { impuls: +0.08, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_caca"

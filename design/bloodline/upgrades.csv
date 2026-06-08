@@ -1,0 +1,6 @@
+Nom,Descripció,Acció que substitueix,Zona,Cost de compra,Beneficis vs original,Requeriments,Condicions addicionals
+Aguait Coordinat,"Senyal coordinat amb el grup. La presa no pot fugir.",Espiar el Ramat,Planes,5🪨,"Output idèntic (3–8 🌾) però millor col·laboració; afegeix bonus d'inclinació social",Cap,"Zona Planes descoberta"
+Recol·lecta Metòdica,"Apliques coneixement acumulat: zones, estació, plantes.",Recol·lectar Arrels,Planes,4🪨,"Output 4–7 🌾 vs 1–3 🌾 original (+150–300%); inclina cap a analític i social",Cap,"Zona Planes descoberta"
+Talla Avançada,"Eines de qualitat superior. Menys rebuig, formes més precises.",Tallar Pedra,Campament,5🪨,"Material 3–5 vs 2–3 original (+50%); inclina més cap a analític",Cap,"Zona Campament descoberta"
+Gran Ritual,"El ritual s'extén a tota la nit. Cohesió màxima i regeneració profunda.",Ritual del Foc,Campament,4🪨,"Reputació 2–4 vs 1–2; +10 Salut vs +5; inclina més fort",El Foc (ut_foc),"Zona Campament descoberta"
+Defensa Activa,"Distribuïu rols i torns de guàrdia. El campament queda segur i el grup rendeix més.",Vigilar el Campament,Campament,5🪨,"Reputació 2–4 vs 1–2; afegeix bonus Intel·lecte; inclina socialment",Cap,"Zona Campament descoberta"
