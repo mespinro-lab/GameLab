@@ -564,6 +564,18 @@ body {
   color: var(--text2);
 }
 
+#map-search {
+  background: var(--surf1);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 5px 10px;
+  border-radius: 4px;
+  width: 180px;
+  font-size: 11px;
+}
+#map-search:focus { outline: none; border-color: var(--gold); }
+#map-search::placeholder { color: var(--text2); }
+
 #map-svg {
   width: 100%;
   height: 100%;
@@ -654,6 +666,7 @@ body {
   <div id="map-panel">
     <div id="map-toolbar">
       <button class="map-tool-btn" onclick="resetMapLayout()">Reset layout</button>
+      <input id="map-search" type="text" placeholder="Cerca node..." oninput="onMapSearch(this.value)">
       <div id="map-info">Doble clic per editar · Clic per destacar · Roda per zoom · Arrossega per moure</div>
     </div>
     <svg id="map-svg"></svg>
@@ -2059,6 +2072,8 @@ let mapNodes = [];        // { id, cat, subtype, name, x, y, vx, vy, pinned }
 let mapEdges = [];        // { from, to, type }
 let mapCatVisible = {};   // cat -> bool
 let mapSelectedId = null;
+let mapSearchHighlight = null; // null | Set of node ids to treat as selected+chain
+let mapSearchDebounce = null;
 let mapSimRunning = false;
 let mapRafId = null;
 
@@ -2329,13 +2344,31 @@ function drawMap() {
   const nodeMap = {};
   for (const n of mapNodes) nodeMap[n.id] = n;
 
-  // Determine highlight sets
+  // Determine highlight sets (transitive: all ancestors and all descendants)
   let predecessors = new Set();
   let successors = new Set();
   if (mapSelectedId) {
-    for (const e of mapEdges) {
-      if (e.to === mapSelectedId && mapCatVisible[nodeMap[e.from]?.cat] !== false) predecessors.add(e.from);
-      if (e.from === mapSelectedId && mapCatVisible[nodeMap[e.to]?.cat] !== false) successors.add(e.to);
+    // Walk backwards (ancestors) via BFS
+    const ancestorQueue = [mapSelectedId];
+    while (ancestorQueue.length) {
+      const cur = ancestorQueue.shift();
+      for (const e of mapEdges) {
+        if (e.to === cur && mapCatVisible[nodeMap[e.from]?.cat] !== false && !predecessors.has(e.from) && e.from !== mapSelectedId) {
+          predecessors.add(e.from);
+          ancestorQueue.push(e.from);
+        }
+      }
+    }
+    // Walk forwards (descendants) via BFS
+    const descendantQueue = [mapSelectedId];
+    while (descendantQueue.length) {
+      const cur = descendantQueue.shift();
+      for (const e of mapEdges) {
+        if (e.from === cur && mapCatVisible[nodeMap[e.to]?.cat] !== false && !successors.has(e.to) && e.to !== mapSelectedId) {
+          successors.add(e.to);
+          descendantQueue.push(e.to);
+        }
+      }
     }
   }
 
@@ -2348,11 +2381,18 @@ function drawMap() {
 
     const style = EDGE_STYLES[edge.type] || EDGE_STYLES.prereq;
 
-    // Highlight logic
+    // Highlight logic — show edge if both endpoints are in the transitive chain
     let opacity = 1;
     let strokeW = 1.5;
-    if (mapSelectedId) {
-      const isRelated = (edge.from === mapSelectedId || edge.to === mapSelectedId);
+    if (mapSearchHighlight) {
+      const inChain = (id) => mapSearchHighlight.matched.has(id) || mapSearchHighlight.ancestors.has(id) || mapSearchHighlight.descendants.has(id);
+      const isRelated = inChain(edge.from) && inChain(edge.to);
+      opacity = isRelated ? 1 : 0.08;
+      strokeW = isRelated ? 2.5 : 1;
+    } else if (mapSelectedId) {
+      const fromHighlighted = edge.from === mapSelectedId || predecessors.has(edge.from) || successors.has(edge.from);
+      const toHighlighted   = edge.to   === mapSelectedId || predecessors.has(edge.to)   || successors.has(edge.to);
+      const isRelated = fromHighlighted && toHighlighted;
       opacity = isRelated ? 1 : 0.08;
       strokeW = isRelated ? 2.5 : 1;
     }
@@ -2385,10 +2425,19 @@ function drawMap() {
     if (mapCatVisible[node.cat] === false) continue;
 
     const color = NODE_COLORS[node.subtype] || '#888';
-    const isSelected = node.id === mapSelectedId;
-    const isPred = predecessors.has(node.id);
-    const isSucc = successors.has(node.id);
-    const isDimmed = mapSelectedId && !isSelected && !isPred && !isSucc;
+
+    let isSelected, isPred, isSucc, isDimmed;
+    if (mapSearchHighlight) {
+      isSelected = mapSearchHighlight.matched.has(node.id);
+      isPred     = mapSearchHighlight.ancestors.has(node.id);
+      isSucc     = mapSearchHighlight.descendants.has(node.id);
+      isDimmed   = !isSelected && !isPred && !isSucc;
+    } else {
+      isSelected = node.id === mapSelectedId;
+      isPred     = predecessors.has(node.id);
+      isSucc     = successors.has(node.id);
+      isDimmed   = mapSelectedId && !isSelected && !isPred && !isSucc;
+    }
 
     let opacity = isDimmed ? 0.2 : 1;
     let strokeColor = isSelected ? '#d4a853' : isPred ? '#60a5fa' : isSucc ? '#4ade80' : 'rgba(0,0,0,0.3)';
@@ -2501,23 +2550,35 @@ function setupMapEvents() {
   });
 
   // Click and double-click on nodes
+  // Use a pending-click timer so dblclick can cancel the single-click handler
+  // before drawMap() rebuilds the SVG (which would make findNodeTarget fail on dblclick).
+  let clickTimer = null;
+  let lastClickTarget = null;
+
   svg.addEventListener('click', (e) => {
     const target = findNodeTarget(e);
-    if (target) {
-      if (mapSelectedId === target.id) {
-        mapSelectedId = null;
+    lastClickTarget = target;
+    clearTimeout(clickTimer);
+    clickTimer = setTimeout(() => {
+      if (target) {
+        if (mapSelectedId === target.id) {
+          mapSelectedId = null;
+        } else {
+          mapSelectedId = target.id;
+        }
       } else {
-        mapSelectedId = target.id;
+        mapSelectedId = null;
       }
+      mapSearchHighlight = null;
       drawMap();
-    } else {
-      mapSelectedId = null;
-      drawMap();
-    }
+    }, 220);
   });
 
   svg.addEventListener('dblclick', (e) => {
-    const target = findNodeTarget(e);
+    // Cancel the pending single-click so drawMap doesn't rebuild SVG mid-event
+    clearTimeout(clickTimer);
+    clickTimer = null;
+    const target = lastClickTarget || findNodeTarget(e);
     if (target) {
       switchView('list');
       selectCat(target.cat);
@@ -2611,6 +2672,61 @@ function renderMapLegend() {
     }).join('');
 }
 
+// ── Map search ──
+function onMapSearch(val) {
+  clearTimeout(mapSearchDebounce);
+  mapSearchDebounce = setTimeout(() => {
+    const q = val.trim().toLowerCase();
+    if (!q) {
+      mapSearchHighlight = null;
+      mapSelectedId = null;
+      drawMap();
+      return;
+    }
+    // Find all nodes whose name matches
+    const matched = mapNodes.filter(n =>
+      mapCatVisible[n.cat] !== false && n.name.toLowerCase().includes(q)
+    );
+    if (!matched.length) {
+      mapSearchHighlight = null;
+      mapSelectedId = null;
+      drawMap();
+      return;
+    }
+    // Build transitive ancestor+descendant sets for all matched nodes
+    const nodeMap = {};
+    for (const n of mapNodes) nodeMap[n.id] = n;
+    const highlighted = new Set(matched.map(n => n.id));
+    const ancestorsAll = new Set();
+    const descendantsAll = new Set();
+    for (const m of matched) {
+      const aQueue = [m.id];
+      while (aQueue.length) {
+        const cur = aQueue.shift();
+        for (const e of mapEdges) {
+          if (e.to === cur && mapCatVisible[nodeMap[e.from]?.cat] !== false && !ancestorsAll.has(e.from) && !highlighted.has(e.from)) {
+            ancestorsAll.add(e.from);
+            aQueue.push(e.from);
+          }
+        }
+      }
+      const dQueue = [m.id];
+      while (dQueue.length) {
+        const cur = dQueue.shift();
+        for (const e of mapEdges) {
+          if (e.from === cur && mapCatVisible[nodeMap[e.to]?.cat] !== false && !descendantsAll.has(e.to) && !highlighted.has(e.to)) {
+            descendantsAll.add(e.to);
+            dQueue.push(e.to);
+          }
+        }
+      }
+    }
+    mapSearchHighlight = { matched: highlighted, ancestors: ancestorsAll, descendants: descendantsAll };
+    mapSelectedId = null;
+    drawMap();
+  }, 200);
+}
+
 // ── Main render ──
 function renderMap() {
   const svg = document.getElementById('map-svg');
@@ -2631,6 +2747,9 @@ function renderMap() {
 
 function resetMapLayout() {
   mapSelectedId = null;
+  mapSearchHighlight = null;
+  const ms = document.getElementById('map-search');
+  if (ms) ms.value = '';
   // Unpin all nodes
   for (const n of mapNodes) n.pinned = false;
   const svg = document.getElementById('map-svg');
