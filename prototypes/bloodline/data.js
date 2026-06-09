@@ -267,13 +267,32 @@ const SKILL_DEFS = [
     passive_effect: { type: "bonus_action_output", action_id: "act_parar_trampes", output_min_bonus: 1, desc: "+1 mínim parar trampes (les trampes de corda son més eficaces)" },
     is_hidden: false
   },
+  // ── El Foc ──────────────────────────────────────────────────────────────────
   {
-    id: "bt_guariment_plantes", name: "Guariment amb Plantes",
+    id: "bt_cuina_conservacio", name: "Cuina i Conservació",
     inheritanceRate: 0.45,
     universal_prereq: "ut_foc",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.25 }, { axis: "sociabilitat", min: 0.20 }] },
+    inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.15 }, { axis: "impuls", max: 0.20 }] },
+    unlocks_action_ids: [],
+    passive_effect: { type: "grant_material", amount: 2, desc: "+2 Material (la cuina millora el rendiment dels recursos)" },
+    is_hidden: false
+  },
+  {
+    id: "bt_guardia_flama", name: "Guàrdia de la Flama",
+    inheritanceRate: 0.40,
+    universal_prereq: "ut_foc",
+    inclination_conditions: { operator: "OR", conditions: [{ axis: "impuls", min: 0.15 }, { axis: "intel·lecte", min: 0.15 }] },
+    unlocks_action_ids: [],
+    passive_effect: { type: "grant_health", amount: 5, desc: "+5 Salut (el foc protegeix el campament a la nit)" },
+    is_hidden: false
+  },
+  {
+    id: "bt_guariment_plantes", name: "Rituals de la Flama",
+    inheritanceRate: 0.45,
+    universal_prereq: "ut_foc",
+    inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.20 }, { axis: "intel·lecte", min: 0.10 }] },
     unlocks_action_ids: ["act_curar_herbes", "act_preparar_ungüent"],
-    passive_effect: { type: "grant_health", amount: 8, desc: "+8 Salut (el primer guariment és per a un mateix)" },
+    passive_effect: { type: "grant_health", amount: 8, desc: "+8 Salut (les infusions amb calor curen ferides i malalties)" },
     is_hidden: false
   },
   {
@@ -301,6 +320,44 @@ const SKILL_DEFS = [
     inclination_conditions: { operator: "OR", conditions: [{ axis: "espiritualitat", min: 0.20 }, { axis: "sociabilitat", min: 0.25 }] },
     unlocks_action_ids: ["act_ornamentar_se", "act_consagrar_ornaments"],
     passive_effect: { type: "grant_material", amount: 3, desc: "+3 Provisions (els ornaments reforcen la identitat del clan)" },
+    is_hidden: false
+  },
+  {
+    id: "bt_narracio_oral", name: "Narració Oral",
+    inheritanceRate: 0.50,
+    universal_prereq: "ut_art",
+    inclination_conditions: { operator: "AND", conditions: [{ axis: "sociabilitat", min: 0.20 }] },
+    unlocks_action_ids: [],
+    passive_effect: { type: "grant_material", amount: 2, desc: "+2 Material (la narració transmet coneixement entre generacions)" },
+    is_hidden: false
+  },
+  // ── La Vestimenta ────────────────────────────────────────────────────────────
+  {
+    id: "bt_adobament_pells", name: "Adobament de Pells",
+    inheritanceRate: 0.40,
+    universal_prereq: "ut_vestimenta",
+    inclination_conditions: { operator: "OR", conditions: [{ axis: "impuls", min: 0.15 }, { axis: "intel·lecte", min: 0.20 }] },
+    unlocks_action_ids: [],
+    passive_effect: { type: "grant_health", amount: 8, desc: "+8 Salut (la roba de cuir protegeix de les ferides i el fred)" },
+    is_hidden: false
+  },
+  {
+    id: "bt_pigments_tintures", name: "Pigments i Tintures",
+    inheritanceRate: 0.35,
+    universal_prereq: "ut_vestimenta",
+    inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.15 }, { axis: "intel·lecte", min: 0.10 }] },
+    unlocks_action_ids: [],
+    passive_effect: { type: "grant_material", amount: 2, desc: "+2 Material (els pigments reforcen la identitat del clan)" },
+    is_hidden: false
+  },
+  // ── La Corda ─────────────────────────────────────────────────────────────────
+  {
+    id: "bt_arc_fletxes", name: "Arc i Fletxes",
+    inheritanceRate: 0.45,
+    universal_prereq: "ut_corda",
+    inclination_conditions: { operator: "AND", conditions: [{ axis: "impuls", min: 0.20 }, { axis: "intel·lecte", min: 0.10 }] },
+    unlocks_action_ids: [],
+    passive_effect: { type: "bonus_action_output", action_id: "act_espiar_ramat", output_min_bonus: 2, desc: "+2 mínim caça (l'arc permet atacar des de la distància)" },
     is_hidden: false
   },
   {
@@ -337,6 +394,52 @@ const SKILL_DEFS = [
     inclination_conditions: { operator: "OR", conditions: [{ axis: "impuls", min: 0.10 }, { axis: "sociabilitat", min: 0.10 }] },
     unlocks_action_ids: ["act_control_territori", "act_negociar_pastures"],
     passive_effect: { type: "grant_health", amount: 10, desc: "+10 Salut (domini del territori)" },
+    is_hidden: false
+  },
+  {
+    id: "bt_intercanvi_troc", name: "Intercanvi i Troc",
+    inheritanceRate: 0.45,
+    universal_prereq: "ut_ceramica",
+    inclination_conditions: { operator: "AND", conditions: [{ axis: "sociabilitat", min: 0.20 }] },
+    unlocks_action_ids: [],
+    passive_effect: { type: "grant_material", amount: 3, desc: "+3 Material (la ceràmica és moneda d'intercanvi)" },
+    is_hidden: false
+  },
+  // ── L'Agricultura ────────────────────────────────────────────────────────────
+  {
+    id: "bt_sembra_collita", name: "Sembra i Collita",
+    inheritanceRate: 0.40,
+    universal_prereq: "ut_agricultura",
+    inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.20 }, { axis: "impuls", max: 0.15 }] },
+    unlocks_action_ids: [],
+    passive_effect: { type: "bonus_action_output", action_id: "act_recollectar_arrels", output_min_bonus: 2, desc: "+2 mínim recol·lecta (la sembra sistemàtica augmenta el rendiment)" },
+    is_hidden: false
+  },
+  {
+    id: "bt_domesticacio_animals", name: "Domesticació d'Animals",
+    inheritanceRate: 0.40,
+    universal_prereq: "ut_agricultura",
+    inclination_conditions: { operator: "AND", conditions: [{ axis: "impuls", min: 0.10 }, { axis: "sociabilitat", min: 0.15 }] },
+    unlocks_action_ids: [],
+    passive_effect: { type: "bonus_action_output", action_id: "act_espiar_ramat", output_min_bonus: 2, desc: "+2 mínim caça (els animals domesticats faciliten la caça)" },
+    is_hidden: false
+  },
+  {
+    id: "bt_construccio_refugis", name: "Construcció de Refugis",
+    inheritanceRate: 0.45,
+    universal_prereq: "ut_agricultura",
+    inclination_conditions: { operator: "OR", conditions: [{ axis: "intel·lecte", min: 0.20 }, { axis: "impuls", min: 0.20 }] },
+    unlocks_action_ids: [],
+    passive_effect: { type: "grant_health", amount: 12, desc: "+12 Salut (els refugis permanents protegeixen de les inclemències)" },
+    is_hidden: false
+  },
+  {
+    id: "bt_ritus_sembra", name: "Ritus de la Sembra",
+    inheritanceRate: 0.40,
+    universal_prereq: "ut_agricultura",
+    inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.25 }, { axis: "sociabilitat", min: 0.15 }] },
+    unlocks_action_ids: [],
+    passive_effect: { type: "grant_material", amount: 3, desc: "+3 Material (els ritus col·lectius enforteixen la cohesió del clan)" },
     is_hidden: false
   }
 ];
