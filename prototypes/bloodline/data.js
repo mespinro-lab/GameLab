@@ -1554,7 +1554,7 @@ const EVENT_POOLS = {
 const BRANCHES = [
   {
     id: "branch_hunter",   name: "Caçador",
-    conditions: { operator: "AND", conditions: [{ axis: "impuls", min: 0.22 }, { axis: "sociabilitat", max: 0.30 }] }
+    conditions: { operator: "AND", conditions: [{ axis: "impuls", min: 0.18 }, { axis: "sociabilitat", max: 0.40 }] }
   },
   {
     id: "branch_gatherer", name: "Recol·lector",
