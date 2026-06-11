@@ -621,7 +621,7 @@ const ACTIONS = [
     id: "act_emboscada_nocturna", name: "Emboscada Nocturna", is_base: false, zona: "Planes",
     description: "La foscor és el teu aliat. Atacs per sorpresa quan la presa dorm. Molt perillós però molt rendible.",
     maxAge: 12,
-    purchase_cost: 5, execute_cost: 2, output_resource: "food", output_min: 8, output_max: 16, side_effects: [{ resource: 'health', delta: -20 }],
+    purchase_cost: 5, execute_cost: 2, output_resource: "food", output_min: 8, output_max: 16, side_effects: [{ resource: 'health', delta: -14 }],
     stat_key: "forca", stat_gain: 0.20,
     inclination_deltas: { impuls: +0.10, "intel·lecte": 0, espiritualitat: 0, sociabilitat: -0.08 },
     event_pool_id: "pool_caca"
@@ -742,7 +742,7 @@ const ACTIONS = [
   {
     id: "act_cosir_pells", name: "Cosir Pells", is_base: false, zona: "Campament",
     description: "Cosius pells amb agulles d'os. La roba que protegeixes millora la salut de tot el clan.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 6,
+    purchase_cost: 3, execute_cost: 1, output_resource: "health", output_min: 3, output_max: 6,
     material_min: 1, material_max: 2,
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
@@ -856,7 +856,7 @@ const ACTIONS = [
   {
     id: "act_cocinar_arrels", name: "Cuinar Arrels", is_base: false, zona: "Campament",
     description: "Coues arrels i tubercles al foc fins que es tornen tous i digeribles. El foc multiplica el valor dels aliments.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 3, output_max: 6,
+    purchase_cost: 3, execute_cost: 1, output_resource: "food", output_min: 3, output_max: 6,
     stat_key: "enginy", stat_gain: 0.10,
     inclination_deltas: { impuls: -0.02, "intel·lecte": +0.04, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_recollecta"
@@ -865,6 +865,7 @@ const ACTIONS = [
     id: "act_ahumar_carn", name: "Ahumar Carn", is_base: false, zona: "Campament",
     description: "Pengeu la carn sobre el fum del foc durant hores. La carn fumada dura dies i els guanya temps.",
     purchase_cost: 4, execute_cost: 1, output_resource: "food", output_min: 4, output_max: 8,
+    requires: [{ resource: 'food', min: 2 }],
     stat_key: "enginy", stat_gain: 0.10,
     inclination_deltas: { impuls: -0.02, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
@@ -874,6 +875,7 @@ const ACTIONS = [
     id: "act_alimentar_foc", name: "Alimentar el Foc", is_base: false, zona: "Campament",
     description: "Mantens el foc viu tota la nit amb fusta seca i cendra. El campament dorm segur i sa.",
     purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 5,
+    side_effects: [{ resource: 'material', delta: -1 }],
     stat_key: "vincle", stat_gain: 0.10,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.03, sociabilitat: +0.03 },
     event_pool_id: "pool_ritual"
@@ -954,7 +956,7 @@ const ACTIONS = [
     id: "act_cants_grup", name: "Cants de Grup", is_base: false, zona: "Campament",
     description: "Organitzes cants col·lectius al voltant del foc. El ritme compartit uneix el que les paraules no acaben de dir.",
     purchase_cost: 3, execute_cost: 0, output_resource: "reputacio", output_min: 1, output_max: 2,
-    side_effects: [{ resource: "health", delta: +5 }],
+    side_effects: [{ resource: "health", delta: +3 }],
     stat_key: "vincle", stat_gain: 0.10,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.04, sociabilitat: +0.05 },
     event_pool_id: "pool_ritual"
@@ -964,7 +966,8 @@ const ACTIONS = [
     id: "act_ofrena_eines", name: "Ofrena d'Eines", is_base: false, zona: "Campament",
     description: "Ofreneu eines de sílex al foc com a ofrena als esperits de la terra. El que es dóna torna multiplicat.",
     purchase_cost: 3, execute_cost: 1, output_resource: "reputacio", output_min: 1, output_max: 3,
-    side_effects: [{ resource: "health", delta: +5 }],
+    requires: [{ resource: 'pedra', min: 1 }],
+    side_effects: [{ resource: "health", delta: +5 }, { resource: "pedra", delta: -1 }],
     stat_key: "vincle", stat_gain: 0.10,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: +0.03 },
     event_pool_id: "pool_ritual"
