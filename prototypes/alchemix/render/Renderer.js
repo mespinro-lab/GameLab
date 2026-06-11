@@ -47,8 +47,10 @@ export class Renderer {
 
   _resize() {
     const { board, canvas } = this;
-    const maxW = Math.min(canvas.parentElement?.clientWidth ?? 400, 500);
-    this.cellSize = Math.floor((maxW - 16) / board.cols);
+    const parentW = canvas.parentElement?.clientWidth ?? 0;
+    const availW  = parentW > 0 ? parentW : Math.min(window.innerWidth, 500);
+    const maxW    = Math.min(availW - 16, 500);
+    this.cellSize = Math.max(Math.floor(maxW / board.cols), 40); // min 40px/cell
     canvas.width  = this.cellSize * board.cols;
     canvas.height = this.cellSize * board.rows;
   }
