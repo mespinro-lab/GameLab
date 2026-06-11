@@ -621,7 +621,7 @@ const ACTIONS = [
     id: "act_emboscada_nocturna", name: "Emboscada Nocturna", is_base: false, zona: "Planes",
     description: "La foscor és el teu aliat. Atacs per sorpresa quan la presa dorm. Molt perillós però molt rendible.",
     maxAge: 12,
-    purchase_cost: 5, execute_cost: 2, output_resource: "food", output_min: 8, output_max: 16, side_effects: [{ resource: 'health', delta: -14 }],
+    purchase_cost: 5, execute_cost: 2, output_resource: "food", output_min: 10, output_max: 16, side_effects: [{ resource: 'health', delta: -14 }],
     stat_key: "forca", stat_gain: 0.20,
     inclination_deltas: { impuls: +0.10, "intel·lecte": 0, espiritualitat: 0, sociabilitat: -0.08 },
     event_pool_id: "pool_caca"
@@ -685,7 +685,8 @@ const ACTIONS = [
   {
     id: "act_assecament_plantes", name: "Assecament de Plantes", is_base: false, zona: "Campament",
     description: "Asseques les plantes recol·lectades per conservar-les. Reserves que aguanten setmanes.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 2, output_max: 4,
+    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 1, output_max: 3,
+    side_effects: [{ resource: 'material', delta: -1 }],
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": -0.02, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_recollecta"
@@ -800,7 +801,7 @@ const ACTIONS = [
     id: "act_ornamentar_se", name: "Ornamentar-se", is_base: false, zona: "Campament",
     description: "Et poses les closques, dents i pedres que has recollit. El grup et mira diferent.",
     reputation_gain: 1,
-    purchase_cost: 3, execute_cost: 0, side_effects: [{ resource: 'health', delta: +5 }],
+    purchase_cost: 3, execute_cost: 0, side_effects: [{ resource: 'health', delta: +3 }],
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.02, sociabilitat: +0.02 },
     event_pool_id: "pool_social"

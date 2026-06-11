@@ -823,9 +823,15 @@ function executeAction(actionId) {
   }
 
   // Normal action execution
+  if ((action.execute_cost || 0) > 0 && state.food < action.execute_cost) {
+    addLog('No tens prou provisions');
+    renderAll();
+    return;
+  }
   hide('overlay-zone-actions');
   showDonutAnimation(action, null, () => {
     const snap = snapshotNums();
+    if (action.execute_cost) state.food = Math.max(0, state.food - action.execute_cost);
     // Output resource
     const destresaBonus = (action.destresa_id && state.character.destreses.has(action.destresa_id)) ? DESTRESA_BONUS : 0;
     const outMinBonus = [...state.character.unlockedSkillIds].reduce((s, sid) => {
