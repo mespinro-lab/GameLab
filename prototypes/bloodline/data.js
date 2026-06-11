@@ -417,8 +417,8 @@ const SKILL_DEFS = [
   {
     id: "bt_calendari_natural", name: "Calendari Natural",
     inheritanceRate: 0.40,
-    universal_prereq: "ut_ceramica",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.20 }, { axis: "sociabilitat", min: 0.10 }] },
+    universal_prereq: "ut_art",
+    inclination_conditions: { operator: "OR", conditions: [{ axis: "intel·lecte", min: 0.18 }, { axis: "espiritualitat", min: 0.20 }] },
     unlocks_action_ids: ["act_observar_cel", "act_transit_nocturn"],
     passive_effect: { type: "grant_material", amount: 2, desc: "+2 Provisions (previsió de cicles)" },
     is_hidden: false
@@ -427,7 +427,7 @@ const SKILL_DEFS = [
     id: "bt_llavor_selectiva", name: "Llavor Selectiva",
     inheritanceRate: 0.35,
     universal_prereq: "ut_ceramica",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.10 }, { axis: "impuls", max: 0.20 }] },
+    inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.18 }, { axis: "impuls", max: 0.10 }] },
     unlocks_action_ids: ["act_seleccionar_llavors", "act_preparar_terreny"],
     passive_effect: { type: "bonus_action_output", action_id: "act_seleccionar_llavors", output_min_bonus: 2, desc: "+2 mínim selecció de llavors (les millors llavors formen part de la cultura del clan)" },
     is_hidden: false
@@ -436,7 +436,7 @@ const SKILL_DEFS = [
     id: "bt_domini_terra", name: "Domini de la Terra",
     inheritanceRate: 0.40,
     universal_prereq: "ut_ceramica",
-    inclination_conditions: { operator: "OR", conditions: [{ axis: "impuls", min: 0.10 }, { axis: "sociabilitat", min: 0.10 }] },
+    inclination_conditions: { operator: "AND", conditions: [{ axis: "impuls", min: 0.12 }, { axis: "sociabilitat", min: 0.12 }] },
     unlocks_action_ids: ["act_control_territori", "act_negociar_pastures"],
     passive_effect: { type: "grant_health", amount: 10, desc: "+10 Salut (domini del territori)" },
     is_hidden: false
