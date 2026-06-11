@@ -1,0 +1,158 @@
+/* Alchemix — dark alchemical aesthetic */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #0d0d1a;
+  --surface:  #1a1a2e;
+  --border:   #2e2e50;
+  --gold:     #ffd700;
+  --purple:   #a78bfa;
+  --green:    #4ade80;
+  --red:      #f87171;
+  --text:     #e2e8f0;
+  --muted:    #94a3b8;
+  --font:     'Courier New', Courier, monospace;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
+}
+
+/* ── header ── */
+header {
+  width: 100%;
+  max-width: 520px;
+  padding: .6rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+header h1 { font-size: 1.1rem; color: var(--gold); letter-spacing: .1em; }
+#difficulty { font-size: .75rem; color: var(--purple); }
+
+/* ── score bar ── */
+#score-bar {
+  width: 100%;
+  max-width: 520px;
+  padding: .4rem 1rem;
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  font-size: .8rem;
+  color: var(--muted);
+}
+#score-bar span { font-size: 1rem; color: var(--text); font-weight: bold; }
+
+/* ── board area ── */
+#board-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  padding: 0 8px;
+}
+#board-canvas {
+  display: block;
+  margin: 0 auto;
+  cursor: pointer;
+  touch-action: none;
+}
+
+/* ── objective ── */
+#objective-bar {
+  width: 100%;
+  max-width: 520px;
+  padding: .3rem 1rem;
+  font-size: .75rem;
+  color: var(--muted);
+  min-height: 1.6rem;
+}
+#objective { color: var(--green); }
+
+/* ── message toast ── */
+#msg {
+  position: fixed;
+  top: 3.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: .9rem;
+  font-weight: bold;
+  pointer-events: none;
+  transition: opacity .5s;
+  text-shadow: 0 0 8px currentColor;
+}
+
+/* ── buttons ── */
+#controls {
+  width: 100%;
+  max-width: 520px;
+  padding: .5rem 1rem;
+  display: flex;
+  gap: .6rem;
+}
+button {
+  flex: 1;
+  padding: .55rem .5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: .78rem;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+button:hover:not(:disabled) { background: #252545; }
+button:disabled { opacity: .4; cursor: default; }
+button.active {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: #1f1c00;
+}
+
+/* ── attribute legend ── */
+#legend {
+  width: 100%;
+  max-width: 520px;
+  padding: .4rem 1rem .8rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .2rem .6rem;
+  font-size: .65rem;
+  color: var(--muted);
+}
+.legend-row { display: flex; gap: .3rem; align-items: center; }
+.legend-swatch {
+  width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0;
+}
+
+/* ── game-over overlay ── */
+#game-over {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.85);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  z-index: 100;
+}
+#game-over.hidden { display: none; }
+#game-over h2 { font-size: 1.8rem; color: var(--gold); }
+#game-over p  { color: var(--muted); font-size: .9rem; }
+#final-score  { font-size: 2.4rem; color: var(--text); font-weight: bold; }
+#game-over button {
+  max-width: 180px;
+  font-size: .9rem;
+  padding: .7rem 1.5rem;
+  border-color: var(--green);
+  color: var(--green);
+}
