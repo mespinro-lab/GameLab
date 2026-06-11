@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>Alchemix</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>⚗️ Alchemix</h1>
+  <span id="difficulty">Principiant</span>
+</header>
+
+<div id="score-bar">
+  Puntuació: <span id="score">0</span>
+  &nbsp;|&nbsp;
+  Abocaments: <span id="pours">0</span>
+</div>
+
+<div id="board-wrap">
+  <canvas id="board-canvas"></canvas>
+</div>
+
+<div id="objective-bar">
+  Objectiu: <span id="objective">—</span>
+</div>
+
+<div id="controls" id="ui">
+  <button id="btn-hint">💡 Pista</button>
+  <button id="btn-transmute" disabled>⚗️ Transmuta</button>
+  <button id="btn-restart">↺ Reinicia</button>
+</div>
+
+<div id="legend">
+  <div class="legend-row"><span class="legend-swatch" style="background:#3d2b1f"></span> Natural (origen)</div>
+  <div class="legend-row"><span class="legend-swatch" style="background:#1e1b38"></span> Arcà (origen)</div>
+  <div class="legend-row"><span class="legend-swatch" style="background:#ff6b35"></span> Foc (element)</div>
+  <div class="legend-row"><span class="legend-swatch" style="background:#4fc3f7"></span> Aigua (element)</div>
+  <div class="legend-row"><span class="legend-swatch" style="background:#8bc34a"></span> Terra (element)</div>
+  <div class="legend-row"><span class="legend-swatch" style="background:#b39ddb"></span> Aire (element)</div>
+  <div class="legend-row" style="grid-column:1/-1; color:#64748b; margin-top:.2rem">
+    Vora sòlida = sòlid · vora discontinua = líquid · puntejada = gas
+  </div>
+</div>
+
+<div id="msg" style="opacity:0"></div>
+
+<div id="game-over" class="hidden">
+  <h2>Fi de partida</h2>
+  <p>Puntuació final</p>
+  <div id="final-score">0</div>
+  <button id="btn-restart">↺ Torna a jugar</button>
+</div>
+
+<script type="module">
+  import { AlchemixGame } from './game.js';
+
+  const canvas = document.getElementById('board-canvas');
+  // The UI container is the body-level div; we pass document.body as fallback
+  // because the buttons are siblings of the canvas, not inside a shared wrapper.
+  const ui = document.body;
+
+  window._game = new AlchemixGame(canvas, ui, 0);
+</script>
+
+</body>
+</html>

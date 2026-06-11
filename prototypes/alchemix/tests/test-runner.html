@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<title>Alchemix — Tests</title>
+<style>
+  body { font-family: monospace; background: #1a1a2e; color: #eee; padding: 1rem 2rem; }
+  h1 { color: #a78bfa; }
+  h2 { margin-top: 1.5rem; }
+  .test-pass { color: #4ade80; padding: 2px 0; }
+  .test-fail { color: #f87171; padding: 2px 0; font-weight: bold; }
+  #summary { margin-top: 2rem; font-size: 1.2rem; }
+</style>
+</head>
+<body>
+<h1>Alchemix — Test Suite</h1>
+<div id="results"></div>
+
+<script type="module">
+  import { renderResults, getSummary } from './test-helpers.js';
+  // Import test suites (side-effects register tests via describe/it)
+  import './combo-validator.test.js';
+  import './board.test.js';
+  import './solvability.test.js';
+
+  // Tests run synchronously during import above (except async board tests
+  // which use dynamic import — they run in the next microtask tick).
+  await new Promise(r => setTimeout(r, 100)); // wait for async tests to settle
+
+  const container = document.getElementById('results');
+  renderResults(container);
+
+  const { passed, failed, total } = getSummary();
+  document.title = `${passed}/${total} tests — Alchemix`;
+
+  if (failed === 0) console.log('%c ALL TESTS PASSED', 'color: #4ade80; font-size: 1.2em');
+  else console.error(`${failed} TEST(S) FAILED`);
+</script>
+</body>
+</html>
