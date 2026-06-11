@@ -8,62 +8,103 @@
 </head>
 <body>
 
+<!-- ── header ───────────────────────────────────── -->
 <header>
-  <h1>⚗️ Alchemix</h1>
+  <span class="logo">⚗️ Alchemix</span>
   <span id="difficulty">Principiant</span>
 </header>
 
+<!-- ── score bar ────────────────────────────────── -->
 <div id="score-bar">
-  Puntuació: <span id="score">0</span>
-  &nbsp;|&nbsp;
-  Abocaments: <span id="pours">0</span>
+  <div class="stat-block">
+    <div class="stat-label">Punts</div>
+    <div class="stat-value" id="score">0</div>
+  </div>
+  <div class="stat-block">
+    <div class="stat-label">Abocaments</div>
+    <div class="stat-value" id="pours">0</div>
+  </div>
+  <div class="stat-block" style="flex:2">
+    <div class="stat-label">Atributs actius</div>
+    <div class="stat-value" id="active-attrs" style="font-size:.75rem">Element + Potència</div>
+  </div>
 </div>
 
+<!-- ── regla (sempre visible) ───────────────────── -->
+<div id="rule-box">
+  Per cada atribut actiu: <strong>tots iguals</strong> o <strong>tots diferents</strong>.
+  Selecciona 3–5 peces.
+</div>
+
+<!-- ── board ────────────────────────────────────── -->
 <div id="board-wrap">
   <canvas id="board-canvas"></canvas>
 </div>
 
+<!-- ── feedback de selecció ─────────────────────── -->
+<div id="sel-info">Selecciona 3–5 peces</div>
+
+<!-- ── botons ───────────────────────────────────── -->
+<div id="controls">
+  <button id="btn-hint">💡 Pista</button>
+  <button id="btn-transmute" disabled>⚗️ Transmuta!</button>
+  <button id="btn-restart">↺</button>
+</div>
+
+<!-- ── objectiu ─────────────────────────────────── -->
 <div id="objective-bar">
   Objectiu: <span id="objective">—</span>
 </div>
 
-<div id="controls" id="ui">
-  <button id="btn-hint">💡 Pista</button>
-  <button id="btn-transmute" disabled>⚗️ Transmuta</button>
-  <button id="btn-restart">↺ Reinicia</button>
-</div>
-
-<div id="legend">
-  <div class="legend-row"><span class="legend-swatch" style="background:#3d2b1f"></span> Natural (origen)</div>
-  <div class="legend-row"><span class="legend-swatch" style="background:#1e1b38"></span> Arcà (origen)</div>
-  <div class="legend-row"><span class="legend-swatch" style="background:#ff6b35"></span> Foc (element)</div>
-  <div class="legend-row"><span class="legend-swatch" style="background:#4fc3f7"></span> Aigua (element)</div>
-  <div class="legend-row"><span class="legend-swatch" style="background:#8bc34a"></span> Terra (element)</div>
-  <div class="legend-row"><span class="legend-swatch" style="background:#b39ddb"></span> Aire (element)</div>
-  <div class="legend-row" style="grid-column:1/-1; color:#64748b; margin-top:.2rem">
-    Vora sòlida = sòlid · vora discontinua = líquid · puntejada = gas
+<!-- ── llegenda visual ──────────────────────────── -->
+<details id="legend">
+  <summary>Llegenda visual ▸</summary>
+  <div class="legend-grid">
+    <div><strong>Element</strong> (icona central)</div>
+    <div class="legend-items">
+      <span style="color:#ff6b35">🔥 Foc</span>
+      <span style="color:#4fc3f7">💧 Aigua</span>
+      <span style="color:#8bc34a">⬡ Terra</span>
+      <span style="color:#b39ddb">🌀 Aire</span>
+    </div>
+    <div><strong>Potència</strong> (pips ● baix dreta)</div>
+    <div class="legend-items">
+      <span>● = 1</span><span>●● = 2</span><span>●●● = 3</span>
+    </div>
+    <div><strong>Estat</strong> (vora)</div>
+    <div class="legend-items">
+      <span>─── Sòlid</span>
+      <span>╌╌╌ Líquid</span>
+      <span>··· Gas</span>
+    </div>
+    <div><strong>Origen</strong> (fons)</div>
+    <div class="legend-items">
+      <span style="background:#3d2b1f;padding:1px 5px;border-radius:3px">Natural</span>
+      <span style="background:#1e1b38;padding:1px 5px;border-radius:3px">Arcà</span>
+      <span style="background:#101010;padding:1px 5px;border-radius:3px">Buit</span>
+    </div>
   </div>
-</div>
+</details>
 
+<!-- ── toast ────────────────────────────────────── -->
 <div id="msg" style="opacity:0"></div>
 
+<!-- ── game over ────────────────────────────────── -->
 <div id="game-over" class="hidden">
-  <h2>Fi de partida</h2>
-  <p>Puntuació final</p>
-  <div id="final-score">0</div>
-  <button id="btn-restart">↺ Torna a jugar</button>
+  <div class="go-box">
+    <div class="go-title">Fi de partida</div>
+    <div id="final-score">0</div>
+    <div class="go-sub">punts</div>
+    <button id="go-restart">↺ Torna a jugar</button>
+  </div>
 </div>
 
 <script type="module">
   import { AlchemixGame } from './game.js';
-
-  const canvas = document.getElementById('board-canvas');
-  // The UI container is the body-level div; we pass document.body as fallback
-  // because the buttons are siblings of the canvas, not inside a shared wrapper.
-  const ui = document.body;
-
-  window._game = new AlchemixGame(canvas, ui, 0);
+  window._game = new AlchemixGame(
+    document.getElementById('board-canvas'),
+    0, // Principiant
+  );
 </script>
-
 </body>
 </html>
