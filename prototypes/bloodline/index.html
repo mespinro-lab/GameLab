@@ -22,9 +22,7 @@
       <div id="panel-top-bar">
         <button id="btn-test-panel">🔬 Test</button>
         <div id="panel-top-tokens">
-          <span class="shop-token" id="tok-material">🪨 <span class="shop-token-val" id="tok-material-val">0</span></span>
-          <span class="shop-token" id="tok-pedra">🗿 <span class="shop-token-val" id="tok-pedra-val">0</span></span>
-          <span class="shop-token" id="tok-eina">⚒️ <span class="shop-token-val" id="tok-eina-val">0</span></span>
+          <span class="shop-token" id="tok-material">🔵 <span class="shop-token-val" id="tok-material-val">0</span></span>
         </div>
         <button id="btn-open-menu">☰</button>
       </div>
@@ -32,15 +30,15 @@
         <div id="char-section">
           <div id="char-tricolumn">
             <div id="char-col-left">
-              <div class="col-stat">
+              <div class="col-stat" data-stat="food">
                 <img class="col-icon" src="../../design/life-tycoon/icons/ICON-MENJAR.svg" alt="">
                 <span id="hex-food">—</span>
               </div>
-              <div class="col-stat">
+              <div class="col-stat" data-stat="health">
                 <img class="col-icon" src="../../design/life-tycoon/icons/ICON-SALUT.svg" alt="">
                 <span id="hex-health">—</span>
               </div>
-              <div class="col-stat">
+              <div class="col-stat" data-stat="reputacio">
                 <img class="col-icon" src="../../design/life-tycoon/icons/ICON-REPUTACIO.svg" alt="">
                 <span id="hex-reputation">—</span>
               </div>
@@ -50,15 +48,15 @@
               <span id="char-name-inlay">—</span>
             </div>
             <div id="char-col-right">
-              <div class="col-stat">
+              <div class="col-stat" data-stat="forca">
                 <img class="col-icon" src="../../design/life-tycoon/icons/ICON-FORCA.svg" alt="">
                 <span id="hex-forca">—</span>
               </div>
-              <div class="col-stat">
+              <div class="col-stat" data-stat="enginy">
                 <img class="col-icon" src="../../design/bloodline/icons/ICON-ENGINY.svg" alt="">
                 <span id="hex-enginy">—</span>
               </div>
-              <div class="col-stat">
+              <div class="col-stat" data-stat="vincle">
                 <img class="col-icon" src="../../design/bloodline/icons/ICON-VINCLE.svg" alt="">
                 <span id="hex-vincle">—</span>
               </div>
@@ -66,6 +64,16 @@
           </div>
           <div id="char-section-bot">
             <span id="char-age-inlay">—</span>
+          </div>
+        </div>
+        <div id="char-resource-row">
+          <div class="char-res-item" data-stat="pedra">
+            <span class="char-res-icon">🪨</span>
+            <span class="char-res-val" id="char-pedra-val">0</span>
+          </div>
+          <div class="char-res-item" data-stat="eina">
+            <span class="char-res-icon">⚒️</span>
+            <span class="char-res-val" id="char-eina-val">0</span>
           </div>
         </div>
         <div id="knowledge-row">
@@ -103,11 +111,6 @@
       <div id="panel-bottom-bar">
         <span id="panel-turn-info">Cicle 0</span>
         <div id="time-pips"></div>
-        <div id="panel-food">
-          <span class="food-icon">🌾</span>
-          <span id="panel-food-val">—</span>
-          <small id="panel-food-fc"></small>
-        </div>
       </div>
       <ul id="session-log-list"></ul>
     </div>
@@ -353,6 +356,81 @@
                   stroke-width="4" stroke-dasharray="36 71" stroke-linecap="round"/>
         </svg>
         <div id="loading-title">Bloodline</div>
+      </div>
+    </div>
+
+    <!-- OVERLAY: Upgrade comparison -->
+    <div id="overlay-upgrade" class="hidden">
+      <div id="upgrade-backdrop"></div>
+      <div class="upgrade-sheet">
+        <div class="upg-header">
+          <span class="upg-title">Millora disponible</span>
+          <button id="btn-close-upgrade">✕</button>
+        </div>
+        <div class="upg-comparison">
+          <div class="upg-side">
+            <div class="upg-side-label">Actual</div>
+            <div class="upg-icon" id="upg-base-icon"></div>
+            <div class="upg-name" id="upg-base-name"></div>
+            <div class="upg-stats" id="upg-base-stats"></div>
+          </div>
+          <div class="upg-arrow">→</div>
+          <div class="upg-side upg-side-new">
+            <div class="upg-side-label">Millora</div>
+            <div class="upg-icon" id="upg-new-icon"></div>
+            <div class="upg-name" id="upg-new-name"></div>
+            <div class="upg-stats" id="upg-new-stats"></div>
+          </div>
+        </div>
+        <div class="upg-cost-row" id="upg-cost-label"></div>
+        <p class="upg-req-text" id="upg-req-text"></p>
+        <button class="upg-do-btn" id="btn-do-upgrade">Fer l'upgrade</button>
+      </div>
+    </div>
+
+    <!-- OVERLAY: Stat tooltip -->
+    <div id="overlay-stat-tooltip" class="hidden">
+      <div id="stat-tooltip-backdrop"></div>
+      <div id="stat-tooltip-card">
+        <div id="stt-emoji"></div>
+        <div id="stt-name"></div>
+        <div id="stt-value"></div>
+        <p id="stt-desc"></p>
+      </div>
+    </div>
+
+    <!-- OVERLAY: Character detail -->
+    <div id="overlay-char-detail" class="hidden">
+      <div id="char-detail-backdrop"></div>
+      <div id="char-detail-card">
+        <div class="cd-topbar">
+          <button id="btn-close-char-detail">✕</button>
+        </div>
+        <div class="cd-body">
+          <div class="cd-hero">
+            <img id="cd-bust" src="" alt="">
+            <div class="cd-identity">
+              <h2 id="cd-name"></h2>
+              <p id="cd-meta"></p>
+            </div>
+          </div>
+          <div class="cd-section">
+            <div class="cd-section-title">Característiques</div>
+            <div id="cd-stats-list"></div>
+          </div>
+          <div class="cd-section">
+            <div class="cd-section-title">Inclinacions</div>
+            <div id="cd-axes-list"></div>
+          </div>
+          <div class="cd-section">
+            <div class="cd-section-title">Habilitats</div>
+            <div id="cd-skills-list" class="cd-pills"></div>
+          </div>
+          <div class="cd-section">
+            <div class="cd-section-title">Destreses</div>
+            <div id="cd-destreses-list" class="cd-pills"></div>
+          </div>
+        </div>
       </div>
     </div>
 

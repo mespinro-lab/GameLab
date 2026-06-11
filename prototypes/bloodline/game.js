@@ -83,7 +83,7 @@ const ACTION_ICONS = {
 function getActionIcon(action) {
   return ACTION_ICONS[action.id] ||
     (action.output_resource === 'reputacio' ? '🏛️' :
-     action.output_resource === 'material'  ? '🪨' :
+     action.output_resource === 'material'  ? '🔵' :
      action.output_resource === 'health'    ? '💊' : '🌾');
 }
 
@@ -418,6 +418,7 @@ function evaluateCharacterRequires(action) {
   if (!action.requires || action.requires.length === 0) return true;
   return action.requires.every(req => {
     if (req.type === 'has_any_skill') return state.character.unlockedSkillIds.size > 0;
+    if (req.type === 'has_destresa') return state.character.destreses.has(req.id);
     if (req.resource !== undefined) {
       const val = state[req.resource] ?? 0;
       if (req.min !== undefined && val < req.min) return false;
@@ -722,13 +723,11 @@ function continueSuccession(successorId) {
   state.pendingSuccession = null;
   for (const res of RESOURCE_DEFS) {
     if (!res.persistent) {
-      // Apply nextGenHealthMax if fire has been discovered
+      // Always start health at startVal; fire tech raises the peak during play
       if (res.id === 'health' && state.nextGenHealthMax) {
-        state[res.id] = state.nextGenHealthMax;
         state.currentHealthMax = state.nextGenHealthMax;
-      } else {
-        state[res.id] = res.startVal;
       }
+      state[res.id] = res.startVal;
     } else if (res.inheritDecay != null) {
       state[res.id] = Math.floor((state[res.id] || 0) * res.inheritDecay);
     }
@@ -1184,15 +1183,30 @@ function openZoneSheet(zoneId) {
   show('overlay-zone-actions');
 }
 
+function getActionUpgrade(actionId) {
+  if (state.character.purchasedActionIds.has(actionId)) return null;
+  return ACTIONS.find(a =>
+    a.is_upgrade &&
+    a.upgrades_action_id === actionId &&
+    !state.character.purchasedActionIds.has(a.id) &&
+    evaluateCharacterRequires(a) &&
+    (a.universal_prereq ? state.discoveredUniversalTechIds.has(a.universal_prereq) : true)
+  ) || null;
+}
+
 function buildCarouselItems() {
   const vp = el('zone-carousel-viewport');
   vp.innerHTML = '';
   CAROUSEL.actions.forEach((action, i) => {
     const blocked = getActionVisibility(action) !== 'ACTIVE';
+    const upgrade = getActionUpgrade(action.id);
     const item = document.createElement('div');
     item.className = 'zc-item' + (blocked ? ' zc-blocked' : '');
     item.dataset.idx = i;
-    item.innerHTML = `<span class="zc-icon">${getActionIcon(action)}</span><button class="zc-info-btn" aria-label="Info">ⓘ</button>`;
+    const upgradeBtn = upgrade
+      ? `<button class="zc-upgrade-btn" data-action-id="${action.id}" aria-label="Upgrade disponible">↑</button>`
+      : '';
+    item.innerHTML = `<span class="zc-icon">${getActionIcon(action)}</span><button class="zc-info-btn" aria-label="Info">ⓘ</button>${upgradeBtn}`;
     vp.appendChild(item);
   });
   const dotsEl = el('zc-dots');
@@ -1274,7 +1288,7 @@ function updateCarouselInfo() {
   const action   = actions[idx];
   const tooYoung = isActionTooYoung(action);
   const blocked  = tooYoung || getActionVisibility(action) !== 'ACTIVE';
-  const outIcons = { food: '🌾', material: '🪨', health: '❤️', reputacio: '🏛️', pedra: '🗿', eina: '⚒️' };
+  const outIcons = { food: '🌾', material: '🔵', health: '❤️', reputacio: '🏛️', pedra: '🪨', eina: '⚒️' };
   const parts = [];
   if (!blocked && action.output_resource && action.output_min != null) {
     const icon = outIcons[action.output_resource] || '📦';
@@ -1333,6 +1347,12 @@ function renderCharPanel() {
   el('hex-enginy').textContent = (state.character.stats['enginy'] || 0).toFixed(1);
   el('hex-vincle').textContent = (state.character.stats['vincle'] || 0).toFixed(1);
 
+  // Resource row: Pedra / Eina
+  const pedraDef = RESOURCE_DEFS.find(r => r.id === 'pedra');
+  const einaDef  = RESOURCE_DEFS.find(r => r.id === 'eina');
+  el('char-pedra-val').textContent = pedraDef?.max ? `${state.pedra || 0}/${pedraDef.max}` : state.pedra || 0;
+  el('char-eina-val').textContent  = einaDef?.max  ? `${state.eina  || 0}/${einaDef.max}`  : state.eina  || 0;
+
   // Branch badges
   const branchEl = el('branch-badges');
   branchEl.innerHTML = '';
@@ -1361,21 +1381,13 @@ function renderCharPanel() {
 function renderTopBar() {
   const matDef = RESOURCE_DEFS.find(r => r.id === 'material');
   const matMax = matDef?.max;
-  el('tok-material-val').textContent  = matMax ? `${Math.round(state.material || 0)}/${matMax}` : Math.round(state.material || 0);
-  const pedraDef = RESOURCE_DEFS.find(r => r.id === 'pedra');
-  el('tok-pedra-val').textContent = pedraDef?.max ? `${state.pedra || 0}/${pedraDef.max}` : state.pedra || 0;
-  const einaDef = RESOURCE_DEFS.find(r => r.id === 'eina');
-  el('tok-eina-val').textContent = einaDef?.max ? `${state.eina || 0}/${einaDef.max}` : state.eina || 0;
+  el('tok-material-val').textContent = matMax ? `${Math.round(state.material || 0)}/${matMax}` : Math.round(state.material || 0);
 }
 
 // ═══════════════════════════════════════════════════════════ BOTTOM PANEL
 function renderBottomPanel() {
   // Cycle counter
   el('panel-turn-info').textContent = `Cicle ${state.cycle}/${ERA_CYCLES}`;
-  // Food with max and dynamic upkeep rate
-  const childUpkeep = state.character.children.length;
-  el('panel-food-val').textContent = `${Math.round(state.food)}/${FOOD_MAX}`;
-  el('panel-food-fc').textContent  = `-${FOOD_UPKEEP + childUpkeep}/t`;
   // Time pips: show 5 life-stage pips
   const pips = el('time-pips');
   pips.innerHTML = '';
@@ -1815,6 +1827,7 @@ function getBuyableActions() {
     if (!a.purchase_cost) return false;
     if (a.is_base) return false;
     if (a.is_discovery_action) return false;
+    if (a.is_upgrade) return false;
     if (state.character.purchasedActionIds.has(a.id)) return false;
     if (!state.discoveredZoneIds.has(a.zona)) return false;
     if (a.universal_prereq && !state.discoveredUniversalTechIds.has(a.universal_prereq)) return false;
@@ -1885,7 +1898,7 @@ function buyAction(actionId) {
   state.material = mat - action.purchase_cost;
   state.character.purchasedActionIds.add(actionId);
   addLog(`Has comprat: ${action.name || action.id}`);
-  const outIcons = { food: '🌾', material: '🪨', health: '❤️', reputacio: '🏛️' };
+  const outIcons = { food: '🌾', material: '🔵', health: '❤️', reputacio: '🏛️', pedra: '🪨', eina: '⚒️' };
   const parts = [];
   if (action.output_resource && action.output_min != null) {
     parts.push(`${outIcons[action.output_resource] || '📦'} ${action.output_min}–${action.output_max}`);
@@ -2058,6 +2071,29 @@ function setupEventListeners() {
   el('btn-close-test-panel').addEventListener('click', () => hide('overlay-test-panel'));
   el('test-close-area').addEventListener('click', () => hide('overlay-test-panel'));
 
+  // Carousel upgrade button
+  el('zone-carousel-viewport').addEventListener('click', e => {
+    const btn = e.target.closest('.zc-upgrade-btn');
+    if (btn) { e.stopPropagation(); openUpgradeOverlay(btn.dataset.actionId); }
+  });
+
+  // Upgrade overlay
+  el('btn-close-upgrade').addEventListener('click', () => hide('overlay-upgrade'));
+  el('upgrade-backdrop').addEventListener('click', () => hide('overlay-upgrade'));
+  el('btn-do-upgrade').addEventListener('click', e => doUpgrade(e.currentTarget.dataset.id));
+
+  // Stat tooltip
+  el('stat-tooltip-backdrop').addEventListener('click', () => hide('overlay-stat-tooltip'));
+  document.addEventListener('click', e => {
+    const trigger = e.target.closest('[data-stat]');
+    if (trigger) { e.stopPropagation(); showStatTooltip(trigger.dataset.stat); }
+  });
+
+  // Char detail
+  el('char-bust-img').addEventListener('click', () => openCharDetail());
+  el('btn-close-char-detail').addEventListener('click', () => hide('overlay-char-detail'));
+  el('char-detail-backdrop').addEventListener('click', () => hide('overlay-char-detail'));
+
 }
 
 function showActionInfo(action) {
@@ -2065,7 +2101,7 @@ function showActionInfo(action) {
   el('ai-icon').textContent = getActionIcon(action);
   el('ai-name').textContent = action.name;
   el('ai-desc').textContent = action.description || '';
-  const outIcons = { food: '🌾', material: '🪨', health: '❤️', reputacio: '🏛️' };
+  const outIcons = { food: '🌾', material: '🔵', health: '❤️', reputacio: '🏛️', pedra: '🪨', eina: '⚒️' };
   const parts = [];
   if (action.output_resource && action.output_min != null) {
     parts.push(`${outIcons[action.output_resource] || '📦'} ${action.output_min}–${action.output_max}`);
@@ -2077,6 +2113,146 @@ function showActionInfo(action) {
   }
   el('ai-benefits').innerHTML = parts.map(p => `<span class="impact-tag">${p}</span>`).join(' ');
   show('overlay-action-info');
+}
+
+// ═══════════════════════════════════════════════════════════ UPGRADE OVERLAY
+function actionStatSummary(action) {
+  const outIcons = { food: '🌾', material: '🔵', health: '❤️', reputacio: '🏛️', pedra: '🪨', eina: '⚒️' };
+  const parts = [];
+  if (action.output_resource && action.output_min != null) {
+    parts.push(`${outIcons[action.output_resource] || '📦'} ${action.output_min}–${action.output_max}`);
+  }
+  if (action.material_min != null && (action.material_min > 0 || action.material_max > 0)) {
+    parts.push(`🔵 +${action.material_min}–${action.material_max}`);
+  }
+  if (action.side_effects) {
+    for (const se of action.side_effects) {
+      parts.push(`${outIcons[se.resource] || '📦'} ${se.delta > 0 ? '+' : ''}${se.delta}`);
+    }
+  }
+  if (action.stat_key && action.stat_gain) parts.push(`${action.stat_key} +${action.stat_gain}`);
+  return parts.join('  ') || '—';
+}
+
+function openUpgradeOverlay(baseActionId) {
+  const base = ACTIONS.find(a => a.id === baseActionId);
+  const upgrade = getActionUpgrade(baseActionId);
+  if (!base || !upgrade) return;
+  el('upg-base-icon').textContent  = getActionIcon(base);
+  el('upg-base-name').textContent  = base.name;
+  el('upg-base-stats').textContent = actionStatSummary(base);
+  el('upg-upg-icon').textContent   = getActionIcon(upgrade);
+  el('upg-upg-name').textContent   = upgrade.name;
+  el('upg-upg-stats').textContent  = actionStatSummary(upgrade);
+  const mat = state.material ?? 0;
+  const canAfford = mat >= upgrade.purchase_cost;
+  el('upg-cost').textContent = `🔵 ${upgrade.purchase_cost}`;
+  el('btn-do-upgrade').disabled = !canAfford;
+  el('btn-do-upgrade').dataset.id = upgrade.id;
+  el('upg-req-text').textContent = canAfford ? '' : `Necessites ${upgrade.purchase_cost} 🔵 (tens ${mat})`;
+  show('overlay-upgrade');
+}
+
+function doUpgrade(upgradeId) {
+  const upgrade = ACTIONS.find(a => a.id === upgradeId);
+  if (!upgrade || !upgrade.purchase_cost) return;
+  if ((state.material ?? 0) < upgrade.purchase_cost) return;
+  state.material -= upgrade.purchase_cost;
+  state.character.purchasedActionIds.add(upgradeId);
+  addLog(`Upgrade: ${upgrade.name}`);
+  const outIcons = { food: '🌾', material: '🔵', health: '❤️', reputacio: '🏛️', pedra: '🪨', eina: '⚒️' };
+  const parts = [];
+  if (upgrade.output_resource && upgrade.output_min != null) {
+    parts.push(`${outIcons[upgrade.output_resource] || '📦'} ${upgrade.output_min}–${upgrade.output_max}`);
+  }
+  const base = ACTIONS.find(a => a.id === upgrade.upgrades_action_id);
+  state.pendingDiscoveries.push({
+    _isAction: true, icon: getActionIcon(upgrade), name: upgrade.name,
+    desc: upgrade.description || '',
+    effect: base ? { desc: `Substitueix: "${base.name}"` } : null,
+  });
+  hide('overlay-upgrade');
+  renderAll();
+  saveGame();
+}
+
+// ═══════════════════════════════════════════════════════════ STAT TOOLTIP
+function showStatTooltip(statId) {
+  const resDef = RESOURCE_DEFS.find(r => r.id === statId);
+  const statDef = STAT_DEFS ? STAT_DEFS.find(s => s.id === statId) : null;
+  let emoji, name, value, desc;
+  if (resDef) {
+    emoji = resDef.emoji;
+    name  = resDef.label;
+    value = resDef.max != null ? `${Math.round(state[statId] || 0)}/${resDef.max}` : Math.round(state[statId] || 0);
+    desc  = resDef.glossaryDesc || '';
+  } else if (statDef) {
+    emoji = statDef.emoji || '📊';
+    name  = statDef.label || statId;
+    value = (state.character.stats[statId] || 0).toFixed(1);
+    desc  = statDef.description || statDef.desc || '';
+  } else return;
+  el('stt-emoji').textContent = emoji;
+  el('stt-name').textContent  = name;
+  el('stt-value').textContent = value;
+  el('stt-desc').textContent  = desc;
+  show('overlay-stat-tooltip');
+}
+
+// ═══════════════════════════════════════════════════════════ CHAR DETAIL
+function openCharDetail() {
+  const c = state.character;
+  el('cd-name').textContent       = `${c.label || state.dynastyName} ${state.dynastyName}`;
+  el('cd-meta').textContent       = `Generació ${state.generation} · ${characterAge()} cicles`;
+  el('cd-bust').src               = bustImgSrc();
+  // Vitals
+  const hp = state.health || 0; const hpMax = healthMax();
+  el('cd-food-val').textContent   = `${Math.round(state.food)}/${FOOD_MAX}`;
+  el('cd-health-val').textContent = `${Math.round(hp)}/${hpMax}`;
+  el('cd-rep-val').textContent    = Math.round(state.reputacio || 0);
+  el('cd-food-fill').style.width  = `${Math.min(100, (state.food / FOOD_MAX) * 100)}%`;
+  el('cd-health-fill').style.width = `${Math.min(100, (hp / Math.max(1, hpMax)) * 100)}%`;
+  // Stats
+  ['forca', 'enginy', 'vincle'].forEach(stat => {
+    el(`cd-${stat}-val`).textContent  = (c.stats[stat] || 0).toFixed(1);
+    el(`cd-${stat}-fill`).style.width = `${Math.min(100, ((c.stats[stat] || 0) / STAT_MAX) * 100)}%`;
+  });
+  // Inclination axes
+  const axesEl = el('cd-axes');
+  axesEl.innerHTML = '';
+  AXIS_DEFS.forEach(ax => {
+    const v = c.inclination[ax.id] ?? 0;
+    const pct = ((v + 1) / 2) * 100;
+    axesEl.innerHTML += `<div class="incl-row">
+      <span class="incl-label">${ax.leftLabel}</span>
+      <div class="incl-track"><div class="incl-fill-neg" style="width:${v < 0 ? Math.abs(v)*50 : 0}%"></div><div class="incl-fill-pos" style="width:${v > 0 ? v*50 : 0}%"></div></div>
+      <span class="incl-label">${ax.rightLabel}</span>
+    </div>`;
+  });
+  // Skills
+  const skillsEl = el('cd-skills');
+  skillsEl.innerHTML = '';
+  if (c.unlockedSkillIds.size === 0) {
+    skillsEl.innerHTML = '<span class="cd-empty">Cap habilitat encara</span>';
+  } else {
+    for (const sid of c.unlockedSkillIds) {
+      const bt = SKILL_DEFS.find(t => t.id === sid);
+      if (!bt) continue;
+      skillsEl.innerHTML += `<span class="cd-pill cd-pill-skill">${bt.name}</span>`;
+    }
+  }
+  // Destreses
+  const destresaEl = el('cd-destreses');
+  destresaEl.innerHTML = '';
+  if (c.destreses.size === 0) {
+    destresaEl.innerHTML = '<span class="cd-empty">Cap destresa encara</span>';
+  } else {
+    for (const did of c.destreses) {
+      const d = DESTRESA_DEFS.find(x => x.id === did);
+      destresaEl.innerHTML += `<span class="cd-pill cd-pill-destresa">⭐ ${d ? d.name : did}</span>`;
+    }
+  }
+  show('overlay-char-detail');
 }
 
 // ═══════════════════════════════════════════════════════════ INIT
