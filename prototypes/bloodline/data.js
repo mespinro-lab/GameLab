@@ -183,7 +183,7 @@ const SUCCESSION_PHRASES = {
 const UNIVERSAL_TECHS = [
   {
     id: "ut_foc", name: "El Foc", icon: "🔥", cycle: 10,
-    description: "Fabricació intencional del foc amb sílex i pirita. Cuina, calor, llum i protecció nocturna.",
+    description: "El clan sempre ha conegut el foc; ara sap fer-lo néixer. Sílex i pirita arrenquen espurnes a voluntat: cuina, calor, llum i protecció ja no depenen de cap brasa heretada.",
     effect: { healthPctBonus: HEALTH_FIRE_BONUS, nextGenHealthMax: HEALTH_POST_FIRE, desc: `+${Math.round(HEALTH_FIRE_BONUS*100)}% Salut immediata · Gens posteriors inicien amb ${HEALTH_POST_FIRE}❤️` }
   },
   {
@@ -208,12 +208,12 @@ const UNIVERSAL_TECHS = [
   },
   {
     id: "ut_ceramica", name: "La Ceràmica", icon: "🏺", cycle: 80,
-    description: "Argila cuita al foc. Emmagatzematge, cocció avançada i conservació de provisions.",
+    description: "L'argila passada pel foc es torna pedra. Primer figures que expliquen el món; després, els primers vasos que guarden el que abans es perdia.",
     effect: null
   },
   {
-    id: "ut_agricultura", name: "L'Agricultura", icon: "🌾", cycle: 92,
-    description: "Primera sembra intencional i selecció de llavors. L'era prehistòrica arriba al seu límit.",
+    id: "ut_agricultura", name: "El Primer Conreu", icon: "🌾", cycle: 92,
+    description: "Llavors triades i sembrades a posta. Encara no hi ha camps — hi ha un gest nou que canviarà totes les eres que vindran.",
     effect: null
   }
 ];
