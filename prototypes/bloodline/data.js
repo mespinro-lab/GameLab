@@ -259,6 +259,15 @@ const SKILL_DEFS = [
     is_hidden: false
   },
   {
+    id: "bt_musica_os", name: "Flautes d'Os",
+    inheritanceRate: 0.40,
+    universal_prereq: "ut_eines",
+    inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.15 }, { axis: "espiritualitat", min: 0.15 }] },
+    unlocks_action_ids: ["act_tallar_flauta", "act_musica_vetlla"],
+    passive_effect: { type: "grant_health", amount: 5, desc: "+5 Salut (la música calma el clan a les nits llargues)" },
+    is_hidden: false
+  },
+  {
     id: "bt_agulla_os", name: "Agulla d'Os",
     inheritanceRate: 0.35,
     universal_prereq: "ut_vestimenta",
@@ -302,6 +311,15 @@ const SKILL_DEFS = [
     inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.20 }, { axis: "intel·lecte", min: 0.10 }] },
     unlocks_action_ids: ["act_curar_herbes", "act_preparar_ungüent"],
     passive_effect: { type: "grant_health", amount: 8, desc: "+8 Salut (les infusions amb calor curen ferides i malalties)" },
+    is_hidden: false
+  },
+  {
+    id: "bt_adhesius", name: "Adhesius i Emmanegament",
+    inheritanceRate: 0.35,
+    universal_prereq: "ut_foc",
+    inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.20 }, { axis: "impuls", max: 0.20 }] },
+    unlocks_action_ids: ["act_destillar_quitra", "act_emmanegar_eines"],
+    passive_effect: { type: "grant_material", amount: 2, desc: "+2 Material (les eines compostes duren més)" },
     is_hidden: false
   },
   {
@@ -388,6 +406,15 @@ const SKILL_DEFS = [
     is_hidden: false
   },
   {
+    id: "bt_pesca", name: "Pesca amb Arpó i Xarxa",
+    inheritanceRate: 0.45,
+    universal_prereq: "ut_corda",
+    inclination_conditions: { operator: "OR", conditions: [{ axis: "impuls", min: 0.12 }, { axis: "intel·lecte", min: 0.15 }] },
+    unlocks_action_ids: ["act_pescar_riu", "act_xarxa_pesca"],
+    passive_effect: { type: "bonus_action_output", action_id: "act_pescar_riu", output_min_bonus: 1, desc: "+1 mínim pesca (coneixes els passos del riu)" },
+    is_hidden: false
+  },
+  {
     id: "bt_calendari_natural", name: "Calendari Natural",
     inheritanceRate: 0.40,
     universal_prereq: "ut_ceramica",
@@ -421,6 +448,15 @@ const SKILL_DEFS = [
     inclination_conditions: { operator: "AND", conditions: [{ axis: "sociabilitat", min: 0.20 }] },
     unlocks_action_ids: ["act_fira_intercanvi", "act_ceramica_regalada"],
     passive_effect: { type: "grant_material", amount: 3, desc: "+3 Material (la ceràmica és moneda d'intercanvi)" },
+    is_hidden: false
+  },
+  {
+    id: "bt_terrissa", name: "Terrissa",
+    inheritanceRate: 0.35,
+    universal_prereq: "ut_ceramica",
+    inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.22 }, { axis: "impuls", max: 0.20 }] },
+    unlocks_action_ids: ["act_modelar_argila", "act_coure_ceramica"],
+    passive_effect: { type: "grant_material", amount: 3, desc: "+3 Material (els vasos conserven el que abans es perdia)" },
     is_hidden: false
   },
   // ── L'Agricultura ────────────────────────────────────────────────────────────
@@ -871,6 +907,27 @@ const ACTIONS = [
     inclination_deltas: { impuls: -0.02, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
   },
+  // ── bt_adhesius (El Foc — Artesà) ────────────────────────────────────────────
+  {
+    id: "act_destillar_quitra", name: "Destil·lar Quitrà", is_base: false, zona: "Campament",
+    description: "Cous escorça de bedoll sota brases tapades fins que en regalima una pasta negra i enganxosa. El que s'enganxa, no es perd.",
+    purchase_cost: 4, execute_cost: 0, material_min: 2, material_max: 4,
+    side_effects: [{ resource: 'health', delta: -2 }],
+    stat_key: "enginy", stat_gain: 0.20,
+    inclination_deltas: { impuls: -0.02, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania"
+  },
+  {
+    id: "act_emmanegar_eines", name: "Emmanegar Eines", is_base: false, zona: "Campament",
+    description: "Fixes una fulla de sílex a un mànec de fusta amb quitrà i tendons. L'eina composta multiplica la força de la mà.",
+    purchase_cost: 4, execute_cost: 0,
+    requires: [{ resource: 'pedra', min: 1 }],
+    character_effect: { type: 'make_tool', pedra_cost: 1 },
+    material_min: 2, material_max: 3,
+    stat_key: "enginy", stat_gain: 0.20,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania"
+  },
   // ── bt_guardia_flama (El Foc — Caçador/Artesà/Recol·lector/Místic) ──────────
   {
     id: "act_alimentar_foc", name: "Alimentar el Foc", is_base: false, zona: "Campament",
@@ -982,6 +1039,25 @@ const ACTIONS = [
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.04, sociabilitat: +0.05 },
     event_pool_id: "pool_ritual"
   },
+  // ── bt_musica_os (Les Eines — pont Artesà/Místic) ────────────────────────────
+  {
+    id: "act_tallar_flauta", name: "Tallar una Flauta d'Os", is_base: false, zona: "Campament",
+    description: "Forades un os d'ala de voltor amb el burí, forat a forat. Quan hi bufes, en surt una veu que no és de ningú.",
+    purchase_cost: 4, execute_cost: 0, material_min: 1, material_max: 2,
+    reputation_gain: 1,
+    stat_key: "enginy", stat_gain: 0.15,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: +0.03, sociabilitat: 0 },
+    event_pool_id: "pool_artesania"
+  },
+  {
+    id: "act_musica_vetlla", name: "Música a la Vetlla", is_base: false, zona: "Campament",
+    description: "Toques la flauta quan el campament es recull. Els infants s'adormen abans i els vells parlen més fluix.",
+    purchase_cost: 3, execute_cost: 1, output_resource: "health", output_min: 3, output_max: 6,
+    reputation_gain: 1,
+    stat_key: "vincle", stat_gain: 0.15,
+    inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: +0.03, sociabilitat: +0.04 },
+    event_pool_id: "pool_ritual"
+  },
   // ── bt_nusos_sagrats (La Corda — Místic) ─────────────────────────────────────
   {
     id: "act_ritual_nusos", name: "Ritual dels Nusos", is_base: false, zona: "Campament",
@@ -1000,6 +1076,24 @@ const ACTIONS = [
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.04, sociabilitat: +0.03 },
     event_pool_id: "pool_ritual"
   },
+  // ── bt_pesca (La Corda — pont Caçador/Recol·lector) ──────────────────────────
+  {
+    id: "act_pescar_riu", name: "Pescar al Riu", is_base: false, zona: "Bosc",
+    description: "T'esperes immòbil al gual amb l'arpó alçat. El riu dona menjar sense exigir sang a canvi.",
+    purchase_cost: 3, execute_cost: 1, output_resource: "food", output_min: 3, output_max: 6,
+    stat_key: "forca", stat_gain: 0.10,
+    inclination_deltas: { impuls: +0.02, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_caca"
+  },
+  {
+    id: "act_xarxa_pesca", name: "Calar la Xarxa", is_base: false, zona: "Bosc",
+    description: "Cales la xarxa de fibra entre dues roques del riu i tornes l'endemà. La corda treballa mentre dorms.",
+    purchase_cost: 5, execute_cost: 1, output_resource: "food", output_min: 4, output_max: 9,
+    side_effects: [{ resource: 'health', delta: -2 }],
+    stat_key: "enginy", stat_gain: 0.15,
+    inclination_deltas: { impuls: +0.02, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_caca"
+  },
   // ── bt_intercanvi_troc (La Ceràmica — Místic/social) ─────────────────────────
   {
     id: "act_fira_intercanvi", name: "Fira d'Intercanvi", is_base: false, zona: "Planes",
@@ -1017,6 +1111,24 @@ const ACTIONS = [
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.02, sociabilitat: +0.05 },
     event_pool_id: "pool_social"
+  },
+  // ── bt_terrissa (La Ceràmica — Artesà) ───────────────────────────────────────
+  {
+    id: "act_modelar_argila", name: "Modelar Argila", is_base: false, zona: "Campament",
+    description: "Pastes argila humida i en surten formes: una dona, un bisó, un ós. Quan passen pel foc, es tornen pedra.",
+    purchase_cost: 4, execute_cost: 1, material_min: 2, material_max: 4,
+    stat_key: "enginy", stat_gain: 0.15,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.04, espiritualitat: +0.02, sociabilitat: 0 },
+    event_pool_id: "pool_artesania"
+  },
+  {
+    id: "act_coure_ceramica", name: "Coure Vasos d'Argila", is_base: false, zona: "Campament",
+    description: "Cous els vasos a la fossa del foc tota la nit. El que abans es feia malbé ara espera, tranquil, dins l'argila.",
+    purchase_cost: 5, execute_cost: 1, output_resource: "food", output_min: 2, output_max: 5,
+    material_min: 1, material_max: 2,
+    stat_key: "enginy", stat_gain: 0.15,
+    inclination_deltas: { impuls: -0.02, "intel·lecte": +0.04, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania"
   },
   // ── bt_sembra_collita (L'Agricultura — Artesà/Recol·lector) ──────────────────
   {
