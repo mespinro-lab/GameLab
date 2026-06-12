@@ -34,10 +34,11 @@ const ZONE_ICONS = {
 
 // ═══════════════════════════════════════════════════════════ ACTION ICONS
 const ACTION_ICONS = {
-  act_espiar_ramat:       '👁️',
-  act_recollectar_arrels: '🌿',
-  act_tallar_pedra:       '🪨',
-  act_ritual_foc:         '🔥',
+  act_espiar_ramat:         '👁️',
+  act_recollectar_arrels:   '🌿',
+  act_tallar_pedra:         '🪨',
+  act_ritual_foc:           '🔥',
+  act_assecar_provisions:   '🥩',
   act_contemplacio:       '🌙',
   act_vigilar_campament:  '🛡️',
   act_explorar_voltants:  '🧭',
@@ -114,6 +115,7 @@ function saveGame() {
         destreses: [...state.character.destreses],
         charState: { ...state.character.charState },
         actionUseCounts: { ...state.character.actionUseCounts },
+        partnerName: state.character.partnerName || null,
         children: state.character.children,
       },
       inheritedReputacio: state.inheritedReputacio || 0,
@@ -132,6 +134,7 @@ function saveGame() {
       nextGenHealthMax: state.nextGenHealthMax,
       currentHealthMax: state.currentHealthMax,
       explorationAttempts: state.explorationAttempts || 0,
+      foodUpkeepReduction: state.foodUpkeepReduction || 0,
       gameOver: state.gameOver, gameOverReason: state.gameOverReason,
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(d));
@@ -159,6 +162,7 @@ function loadGame() {
         destreses: new Set(d.character.destreses),
         charState: { ...d.character.charState },
         actionUseCounts: { ...(d.character.actionUseCounts || {}) },
+        partnerName: d.character.partnerName || null,
         children: d.character.children || [],
       },
       inheritedReputacio: d.inheritedReputacio || 0,
@@ -176,6 +180,7 @@ function loadGame() {
       nextGenHealthMax: d.nextGenHealthMax || null,
       currentHealthMax: d.currentHealthMax || (d.nextGenHealthMax || HEALTH_MAX),
       explorationAttempts: d.explorationAttempts || 0,
+      foodUpkeepReduction: d.foodUpkeepReduction || 0,
       pendingEvent: null, pendingSuccession: null, pendingDeath: null, pendingNewGen: null,
       pendingDiscoveries: [], pendingBirths: [],
       gameOver: d.gameOver || false, gameOverReason: d.gameOverReason || null,
@@ -256,6 +261,7 @@ function initState(dynastyName, race) {
     nextGenHealthMax: null,
     currentHealthMax: HEALTH_MAX,
     explorationAttempts: 0,
+    foodUpkeepReduction: 0,
     gameOver: false,
     gameOverReason: null,
   };
@@ -454,8 +460,9 @@ function applyCharacterEffect(action) {
       return;
     }
     state.character.charState.parella = 1;
-    const partnerNames = ['Lyra', 'Kael', 'Miran', 'Sura', 'Bran', 'Elia', 'Torn', 'Vael'];
+    const partnerNames = ['Lyra', 'Kael', 'Miran', 'Sura', 'Bran', 'Elia', 'Torn', 'Vael', 'Deva', 'Rand'];
     const partnerName = partnerNames[Math.floor(Math.random() * partnerNames.length)];
+    state.character.partnerName = partnerName;
     if (!state.discoveredZoneIds.has('Llar')) {
       state.discoveredZoneIds.add('Llar');
     }
@@ -777,7 +784,7 @@ function applyTurnUpkeep() {
   }
   // Food upkeep
   const childUpkeep = state.character.children.length;
-  const totalUpkeep = FOOD_UPKEEP + childUpkeep;
+  const totalUpkeep = Math.max(0.5, FOOD_UPKEEP - (state.foodUpkeepReduction || 0)) + childUpkeep;
   const prevFood = state.food;
   state.food = Math.max(0, state.food - totalUpkeep);
   if (prevFood < totalUpkeep) {
@@ -847,7 +854,8 @@ function executeAction(actionId) {
     const outRes = action.output_resource;
     let output = 0, outDef = null;
     if (outRes && action.output_min != null) {
-      output = Math.round(randInt(action.output_min + outMinBonus, action.output_max + outMaxBonus) * getStatMultiplier(action)) + destresaBonus;
+      const _qualBonus = (state.character.purchasedActionIds.has('act_talla_avancada') && action.requires?.some(r => r.resource === 'eina')) ? 1.3 : 1.0;
+      output = Math.round(randInt(action.output_min + outMinBonus, Math.round((action.output_max + outMaxBonus) * _qualBonus)) * getStatMultiplier(action)) + destresaBonus;
       outDef = RESOURCE_DEFS.find(r => r.id === outRes);
       if (outDef) {
         const newVal = (state[outRes] || 0) + output;
@@ -871,6 +879,14 @@ function executeAction(actionId) {
         state[se.resource] = resDef.max != null
           ? Math.max(0, Math.min(resDef.max, newVal))
           : Math.max(0, newVal);
+      }
+    }
+    // Food upkeep reduction (assecar_provisions and similar)
+    if (action.food_upkeep_delta) {
+      const prevCount = state.character.actionUseCounts[actionId] || 0;
+      if (prevCount < (action.max_executions || 99)) {
+        state.foodUpkeepReduction = Math.min(FOOD_UPKEEP - 0.5, (state.foodUpkeepReduction || 0) + Math.abs(action.food_upkeep_delta));
+        addLog(`Conservació millorada: upkeep −${(state.foodUpkeepReduction).toFixed(1)}/torn`);
       }
     }
     // Inclination
@@ -1199,9 +1215,10 @@ function buildCarouselItems() {
   vp.innerHTML = '';
   CAROUSEL.actions.forEach((action, i) => {
     const blocked = getActionVisibility(action) !== 'ACTIVE';
+    const unavail = !blocked && !evaluateCharacterRequires(action);
     const upgrade = getActionUpgrade(action.id);
     const item = document.createElement('div');
-    item.className = 'zc-item' + (blocked ? ' zc-blocked' : '');
+    item.className = 'zc-item' + (blocked ? ' zc-blocked' : unavail ? ' zc-unavailable' : '');
     item.dataset.idx = i;
     const upgradeBtn = upgrade
       ? `<button class="zc-upgrade-btn" data-action-id="${action.id}" aria-label="Upgrade disponible">↑</button>`
@@ -1300,6 +1317,13 @@ function updateCarouselInfo() {
       parts.push(`${icon} ${se.delta > 0 ? '+' : ''}${se.delta}`);
     }
   }
+  if (action.stat_key && action.stat_gain) {
+    const statEmoji = { forca: '💪', enginy: '🧠', vincle: '🔗' };
+    parts.push(`${statEmoji[action.stat_key] || '⬆️'} ${action.stat_key}`);
+  }
+  if (state.character.purchasedActionIds.has('act_talla_avancada') && action.requires?.some(r => r.resource === 'eina')) {
+    parts.push('⭐ eines qualitat');
+  }
   // Show resource requirements
   const resourceReqMet = evaluateCharacterRequires(action);
   el('zc-name').textContent     = action.name;
@@ -1336,16 +1360,23 @@ function renderCharPanel() {
   el('char-age-inlay').textContent  = `${characterAge()} cicles · Gen ${state.generation}`;
 
   // Left column: Aliment / Salut / Reputació
-  el('hex-food').textContent       = Math.round(state.food);
-  const cap = healthMax();
-  const peakCap = state.currentHealthMax ?? HEALTH_MAX;
-  el('hex-health').textContent = cap < peakCap ? `${Math.round(state.health)}/${cap}` : Math.round(state.health);
+  el('hex-food').textContent       = `${Math.round(state.food)}/${FOOD_MAX}`;
+  el('hex-health').textContent     = Math.round(state.health);
   el('hex-reputation').textContent = Math.round(state.reputacio || 0);
 
   // Right column: Força / Enginy / Vincle
   el('hex-forca').textContent  = (state.character.stats['forca']  || 0).toFixed(1);
   el('hex-enginy').textContent = (state.character.stats['enginy'] || 0).toFixed(1);
   el('hex-vincle').textContent = (state.character.stats['vincle'] || 0).toFixed(1);
+
+  // Family indicator
+  const hasPartner = !!state.character.charState.parella;
+  const nChildren  = state.character.children.length;
+  const famParts   = [];
+  if (hasPartner) famParts.push(`💑 ${state.character.partnerName || '?'}`);
+  if (nChildren)  famParts.push(`👶×${nChildren}`);
+  const famEl = el('char-family-inlay');
+  if (famEl) famEl.textContent = famParts.join('  ');
 
   // Resource row: Pedra / Eina
   const pedraDef = RESOURCE_DEFS.find(r => r.id === 'pedra');
@@ -2091,6 +2122,7 @@ function setupEventListeners() {
 
   // Char detail
   el('char-bust-img').addEventListener('click', () => openCharDetail());
+  el('char-family-inlay').addEventListener('click', () => openCharDetail());
   el('btn-close-char-detail').addEventListener('click', () => hide('overlay-char-detail'));
   el('char-detail-backdrop').addEventListener('click', () => hide('overlay-char-detail'));
 
@@ -2202,56 +2234,75 @@ function showStatTooltip(statId) {
 // ═══════════════════════════════════════════════════════════ CHAR DETAIL
 function openCharDetail() {
   const c = state.character;
-  el('cd-name').textContent       = `${c.label || state.dynastyName} ${state.dynastyName}`;
-  el('cd-meta').textContent       = `Generació ${state.generation} · ${characterAge()} cicles`;
-  el('cd-bust').src               = bustImgSrc();
-  // Vitals
-  const hp = state.health || 0; const hpMax = healthMax();
-  el('cd-food-val').textContent   = `${Math.round(state.food)}/${FOOD_MAX}`;
-  el('cd-health-val').textContent = `${Math.round(hp)}/${hpMax}`;
-  el('cd-rep-val').textContent    = Math.round(state.reputacio || 0);
-  el('cd-food-fill').style.width  = `${Math.min(100, (state.food / FOOD_MAX) * 100)}%`;
-  el('cd-health-fill').style.width = `${Math.min(100, (hp / Math.max(1, hpMax)) * 100)}%`;
-  // Stats
-  ['forca', 'enginy', 'vincle'].forEach(stat => {
-    el(`cd-${stat}-val`).textContent  = (c.stats[stat] || 0).toFixed(1);
-    el(`cd-${stat}-fill`).style.width = `${Math.min(100, ((c.stats[stat] || 0) / STAT_MAX) * 100)}%`;
-  });
+  el('cd-name').textContent = c.label || state.dynastyName;
+  el('cd-meta').textContent = `Generació ${state.generation} · ${characterAge()} cicles`;
+  el('cd-bust').src = bustImgSrc();
+
+  // Stats list (food, health, rep, forca, enginy, vincle)
+  const statsEl = el('cd-stats-list');
+  const hp = Math.round(state.health || 0);
+  const food = Math.round(state.food || 0);
+  const statRows = [
+    { label: '🌾 Menjar',     val: `${food}/${FOOD_MAX}`,               pct: food / FOOD_MAX * 100,               color: '#f39c12' },
+    { label: '❤️ Salut',      val: hp,                                   pct: hp / HEALTH_MAX * 100,               color: '#e74c3c' },
+    { label: '🏛️ Reputació',  val: Math.round(state.reputacio || 0),     pct: (state.reputacio || 0) / 100 * 100,  color: '#e8a828' },
+    { label: '💪 Força',      val: (c.stats.forca  || 0).toFixed(1),     pct: (c.stats.forca  || 0) / STAT_MAX * 100, color: '#e67e22' },
+    { label: '🧠 Enginy',     val: (c.stats.enginy || 0).toFixed(1),     pct: (c.stats.enginy || 0) / STAT_MAX * 100, color: '#a29bfe' },
+    { label: '🔗 Vincle',     val: (c.stats.vincle || 0).toFixed(1),     pct: (c.stats.vincle || 0) / STAT_MAX * 100, color: '#5dade2' },
+  ];
+  statsEl.innerHTML = statRows.map(r => `
+    <div class="cd-stat-row">
+      <span class="cd-stat-label">${r.label}</span>
+      <span class="cd-stat-val">${r.val}</span>
+      <div class="cd-stat-bar"><div class="cd-stat-fill" style="width:${Math.min(100,r.pct).toFixed(1)}%;background:${r.color}"></div></div>
+    </div>`).join('');
+
   // Inclination axes
-  const axesEl = el('cd-axes');
-  axesEl.innerHTML = '';
-  AXIS_DEFS.forEach(ax => {
+  const axesEl = el('cd-axes-list');
+  axesEl.innerHTML = AXIS_DEFS.map(ax => {
     const v = c.inclination[ax.id] ?? 0;
-    const pct = ((v + 1) / 2) * 100;
-    axesEl.innerHTML += `<div class="incl-row">
-      <span class="incl-label">${ax.leftLabel}</span>
-      <div class="incl-track"><div class="incl-fill-neg" style="width:${v < 0 ? Math.abs(v)*50 : 0}%"></div><div class="incl-fill-pos" style="width:${v > 0 ? v*50 : 0}%"></div></div>
-      <span class="incl-label">${ax.rightLabel}</span>
+    return `<div class="incl-row">
+      <span class="incl-pole">${ax.left}</span>
+      <div class="incl-track">
+        <div class="incl-fill-neg" style="width:${v < 0 ? Math.abs(v)*50 : 0}%"></div>
+        <div class="incl-fill-pos" style="width:${v > 0 ? v*50 : 0}%"></div>
+        <div class="incl-center-tick"></div>
+      </div>
+      <span class="incl-pole right">${ax.right}</span>
     </div>`;
-  });
+  }).join('');
+
+  // Family
+  const famEl = el('cd-family-list');
+  if (famEl) {
+    const parts = [];
+    if (c.charState.parella) parts.push(`<span class="cd-pill-skill">💑 ${c.partnerName || 'Parella'}</span>`);
+    for (const ch of c.children) parts.push(`<span class="cd-pill-skill">👶 ${ch.label}</span>`);
+    famEl.innerHTML = parts.length ? parts.join('') : '<span class="cd-empty">Sense família</span>';
+  }
+
   // Skills
-  const skillsEl = el('cd-skills');
-  skillsEl.innerHTML = '';
+  const skillsEl = el('cd-skills-list');
   if (c.unlockedSkillIds.size === 0) {
     skillsEl.innerHTML = '<span class="cd-empty">Cap habilitat encara</span>';
   } else {
-    for (const sid of c.unlockedSkillIds) {
+    skillsEl.innerHTML = [...c.unlockedSkillIds].map(sid => {
       const bt = SKILL_DEFS.find(t => t.id === sid);
-      if (!bt) continue;
-      skillsEl.innerHTML += `<span class="cd-pill cd-pill-skill">${bt.name}</span>`;
-    }
+      return bt ? `<span class="cd-pill-skill">${bt.name}</span>` : '';
+    }).join('');
   }
+
   // Destreses
-  const destresaEl = el('cd-destreses');
-  destresaEl.innerHTML = '';
+  const destresaEl = el('cd-destreses-list');
   if (c.destreses.size === 0) {
     destresaEl.innerHTML = '<span class="cd-empty">Cap destresa encara</span>';
   } else {
-    for (const did of c.destreses) {
+    destresaEl.innerHTML = [...c.destreses].map(did => {
       const d = DESTRESA_DEFS.find(x => x.id === did);
-      destresaEl.innerHTML += `<span class="cd-pill cd-pill-destresa">⭐ ${d ? d.name : did}</span>`;
-    }
+      return `<span class="cd-pill-destresa">⭐ ${d ? d.name : did}</span>`;
+    }).join('');
   }
+
   show('overlay-char-detail');
 }
 
