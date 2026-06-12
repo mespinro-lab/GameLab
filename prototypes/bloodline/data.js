@@ -105,12 +105,14 @@ const RESOURCE_DEFS = [
   {
     id: 'pedra', emoji: '🪨', label: 'Pedra', section: 'resources',
     startVal: 0, max: 10, upkeep: null, showMax: true, rateType: false,
+    persistent: true, inheritDecay: 0.0,
     color: '#9ca3af', borderColor: 'rgba(156,163,175,0.3)',
     glossaryDesc: "Sílex i pedra calcària recollida als voltants. Necessària per fabricar eines.",
   },
   {
     id: 'eina', emoji: '🔧', label: 'Eines', section: 'resources',
     startVal: 0, max: 3, upkeep: null, showMax: true, rateType: false,
+    persistent: true, inheritDecay: 0.3,
     color: '#f59e0b', borderColor: 'rgba(245,158,11,0.3)',
     glossaryDesc: "Eines de sílex fabricades. Necessàries per a la caça amb llança. Cap: 3.",
   },
@@ -531,21 +533,23 @@ const ACTIONS = [
   },
   {
     id: "act_tallar_pedra", name: "Tallar Pedra", is_base: true, zona: "Campament",
-    description: "Treballes el sílex per fer eines per al clan. Millora l'enginy i les tècniques artesanals.",
+    description: "Talles sílex per fabricar eines bàsiques. Gasta pedra, produeix eines.",
     execute_cost: 0,
-    material_min: 2, material_max: 3,
-    stat_key: "enginy", stat_gain: 0.15,
+    requires: [{ resource: 'pedra', min: 1 }],
+    side_effects: [{ resource: 'pedra', delta: -1 }, { resource: 'eina', delta: 1 }],
+    material_min: 1, material_max: 2,
+    stat_key: "enginy", stat_gain: 0.10,
     destresa_id: "d_talla_silex",
     inclination_deltas: { impuls: -0.03, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
   },
   {
-    id: "act_ritual_foc", name: "Ritual del Foc", is_base: true, universal_prereq: "ut_foc", zona: "Campament",
-    description: "Celebres el ritual diari del foc sagrat. Enforteix els vincles del grup.",
-    execute_cost: 0, output_resource: "reputacio", output_min: 1, output_max: 2, side_effects: [{ resource: 'health', delta: +5 }],
-    stat_key: "vincle", stat_gain: 0.10,
+    id: "act_ritual_foc", name: "Vetlla al Foc", is_base: false, universal_prereq: "ut_foc", zona: "Campament",
+    description: "El clan es reuneix al voltant del foc. El caliu compartit enforteix els llaços i els cants travessen la nit.",
+    purchase_cost: 4, execute_cost: 0, output_resource: "reputacio", output_min: 1, output_max: 3, side_effects: [{ resource: 'health', delta: +5 }],
+    stat_key: "vincle", stat_gain: 0.12,
     destresa_id: "d_custodi_foc",
-    inclination_deltas: { impuls: 0, "intel·lecte": -0.02, espiritualitat: +0.05, sociabilitat: +0.03 },
+    inclination_deltas: { impuls: 0, "intel·lecte": -0.01, espiritualitat: +0.02, sociabilitat: +0.06 },
     event_pool_id: "pool_ritual"
   },
   {
@@ -749,11 +753,13 @@ const ACTIONS = [
 
   // CRAFTSMAN branch — bt_rasclador_fi
   {
-    id: "act_faonar_eines", name: "Façonar Eines", is_base: false, zona: "Campament",
-    description: "Produeixes eines de sílex de qualitat superior. Millora enginy i obre noves possibilitats artesanals.",
-    purchase_cost: 3, execute_cost: 0, material_min: 2, material_max: 4,
-    side_effects: [{ resource: 'eina', delta: 1 }],
-    stat_key: "enginy", stat_gain: 0.20,
+    id: "act_faonar_eines", name: "Artesania de Pedra", is_base: false, zona: "Campament",
+    description: "Treballes la pedra bruta fins a crear objectes polits d'intercanvi. L'excedent de pedra es converteix en oportunitats.",
+    purchase_cost: 3, execute_cost: 0,
+    requires: [{ resource: 'pedra', min: 2 }],
+    side_effects: [{ resource: 'pedra', delta: -2 }],
+    material_min: 4, material_max: 7,
+    stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
   },
@@ -908,6 +914,18 @@ const ACTIONS = [
     requires: [{ resource: 'food', min: 2 }],
     stat_key: "enginy", stat_gain: 0.10,
     inclination_deltas: { impuls: -0.02, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania"
+  },
+  {
+    id: "act_assecar_provisions", name: "Assecar Provisions", is_base: false, zona: "Campament",
+    description: "Poses a assecar carn i arrels sobre la calor del foc. Les provisions aguanten molt més temps.",
+    universal_prereq: "ut_foc",
+    purchase_cost: 5, execute_cost: 0,
+    output_resource: "food", output_min: 1, output_max: 3,
+    food_upkeep_delta: -0.3, max_executions: 3,
+    material_min: 1, material_max: 2,
+    stat_key: "enginy", stat_gain: 0.08,
+    inclination_deltas: { impuls: -0.01, "intel·lecte": +0.02, espiritualitat: +0.01, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
   },
   // ── bt_adhesius (El Foc — Artesà) ────────────────────────────────────────────
@@ -1232,9 +1250,12 @@ const ACTIONS = [
   },
   {
     id: "act_talla_avancada", name: "Talla Avançada", is_upgrade: true, upgrades_action_id: "act_tallar_pedra", zona: "Campament",
-    description: "Eines de qualitat superior. Menys rebuig, formes més precises.",
-    requires: [{ type: 'has_destresa', id: 'd_talla_silex' }],
-    purchase_cost: 8, execute_cost: 0, material_min: 3, material_max: 5,
+    description: "Eines de sílex de qualitat superior. Millora totes les accions que usen eines.",
+    quality_tools: true,
+    requires: [{ type: 'has_destresa', id: 'd_talla_silex' }, { resource: 'pedra', min: 1 }],
+    purchase_cost: 8, execute_cost: 0,
+    side_effects: [{ resource: 'pedra', delta: -1 }, { resource: 'eina', delta: 2 }],
+    material_min: 1, material_max: 2,
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: -0.02, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
