@@ -135,6 +135,7 @@ function saveGame() {
       currentHealthMax: state.currentHealthMax,
       explorationAttempts: state.explorationAttempts || 0,
       foodUpkeepReduction: state.foodUpkeepReduction || 0,
+      foodMax: state.foodMax ?? FOOD_MAX_START,
       gameOver: state.gameOver, gameOverReason: state.gameOverReason,
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(d));
@@ -181,6 +182,7 @@ function loadGame() {
       currentHealthMax: d.currentHealthMax || (d.nextGenHealthMax || HEALTH_MAX),
       explorationAttempts: d.explorationAttempts || 0,
       foodUpkeepReduction: d.foodUpkeepReduction || 0,
+      foodMax: d.foodMax ?? FOOD_MAX_START,
       pendingEvent: null, pendingSuccession: null, pendingDeath: null, pendingNewGen: null,
       pendingDiscoveries: [], pendingBirths: [],
       gameOver: d.gameOver || false, gameOverReason: d.gameOverReason || null,
@@ -262,6 +264,7 @@ function initState(dynastyName, race) {
     currentHealthMax: HEALTH_MAX,
     explorationAttempts: 0,
     foodUpkeepReduction: 0,
+    foodMax: FOOD_MAX_START,
     gameOver: false,
     gameOverReason: null,
   };
@@ -325,6 +328,7 @@ function getHealthCap(age) {
 }
 function healthMax() { return state ? getHealthCap(characterAge()) : HEALTH_MAX; }
 function materialMax() { return RESOURCE_DEFS.find(r => r.id === 'material')?.max ?? Infinity; }
+function foodMax()     { return state ? Math.min(FOOD_MAX, state.foodMax ?? FOOD_MAX_START) : FOOD_MAX_START; }
 
 // ═══════════════════════════════════════════════════════════ TECH DISCOVERY
 function getDiscoverableTechs() {
@@ -510,9 +514,8 @@ function applyCharacterEffect(action) {
       });
     } else {
       state.explorationAttempts = attempts + 1;
-      // 50% chance of exploration event
-      if (Math.random() < 0.5 && EXPLORATION_EVENTS && EXPLORATION_EVENTS.length > 0) {
-        // 2/3 positive, 1/3 negative
+      // Always fire an exploration event (2:1 positive/negative ratio)
+      if (EXPLORATION_EVENTS && EXPLORATION_EVENTS.length > 0) {
         const positive = EXPLORATION_EVENTS.filter(e => e.positive);
         const negative = EXPLORATION_EVENTS.filter(e => !e.positive);
         const usePositive = Math.random() < 2 / 3;
@@ -524,7 +527,7 @@ function applyCharacterEffect(action) {
           state.pendingDiscoveries.push({ _isEvent: true, icon: '🧭', name: 'Exploració', desc: ev.text });
         }
       } else {
-        addLog(`🧭 Res trobat (intent ${state.explorationAttempts}/${Math.round(0.95 / 0.15)}). La probabilitat augmenta.`);
+        addLog(`🧭 Explorant... (intent ${state.explorationAttempts})`);
       }
     }
   }
@@ -861,6 +864,8 @@ function executeAction(actionId) {
         const newVal = (state[outRes] || 0) + output;
         if (outRes === 'reputacio') {
           state[outRes] = Math.min(REPUTACIO_PER_CHAR_CAP, newVal);
+        } else if (outRes === 'food') {
+          state[outRes] = Math.min(foodMax(), newVal);
         } else {
           state[outRes] = outDef.max != null ? Math.min(outDef.max, newVal) : newVal;
         }
@@ -887,6 +892,14 @@ function executeAction(actionId) {
       if (prevCount < (action.max_executions || 99)) {
         state.foodUpkeepReduction = Math.min(FOOD_UPKEEP - 0.5, (state.foodUpkeepReduction || 0) + Math.abs(action.food_upkeep_delta));
         addLog(`Conservació millorada: upkeep −${(state.foodUpkeepReduction).toFixed(1)}/torn`);
+      }
+    }
+    // Food capacity expansion
+    if (action.food_cap_delta) {
+      const prevCount = state.character.actionUseCounts[actionId] || 0;
+      if (prevCount < (action.max_executions || 99)) {
+        state.foodMax = Math.min(FOOD_MAX, (state.foodMax ?? FOOD_MAX_START) + action.food_cap_delta);
+        addLog(`Emmagatzematge ampliat: cap. → ${state.foodMax}`);
       }
     }
     // Inclination
@@ -1026,7 +1039,6 @@ function spawnResBalls(before) {
           ball.style.opacity = '0';
           setTimeout(() => {
             ball.remove();
-            valEl.textContent = parseInt(valEl.textContent || '0') + amount;
             targetEl.classList.remove('tok-bump');
             void targetEl.offsetWidth;
             targetEl.classList.add('tok-bump');
@@ -1319,7 +1331,7 @@ function updateCarouselInfo() {
   }
   if (action.stat_key && action.stat_gain) {
     const statEmoji = { forca: '💪', enginy: '🧠', vincle: '🔗' };
-    parts.push(`${statEmoji[action.stat_key] || '⬆️'} ${action.stat_key}`);
+    parts.push(`${statEmoji[action.stat_key] || '⬆️'} +${action.stat_gain.toFixed(2)}`);
   }
   if (state.character.purchasedActionIds.has('act_talla_avancada') && action.requires?.some(r => r.resource === 'eina')) {
     parts.push('⭐ eines qualitat');
@@ -1360,7 +1372,7 @@ function renderCharPanel() {
   el('char-age-inlay').textContent  = `${characterAge()} cicles · Gen ${state.generation}`;
 
   // Left column: Aliment / Salut / Reputació
-  el('hex-food').textContent       = `${Math.round(state.food)}/${FOOD_MAX}`;
+  el('hex-food').textContent       = `${Math.round(state.food)}/${foodMax()}`;
   el('hex-health').textContent     = Math.round(state.health);
   el('hex-reputation').textContent = Math.round(state.reputacio || 0);
 
@@ -1530,7 +1542,7 @@ function dismissBirth() {
 }
 function applyEventEffects(fx) {
   if (!fx) return;
-  if (fx.food)      state.food      = Math.max(0, Math.min(FOOD_MAX, state.food + fx.food));
+  if (fx.food)      state.food      = Math.max(0, Math.min(foodMax(), state.food + fx.food));
   if (fx.health)    state.health    = Math.max(0, Math.min(healthMax(), state.health + fx.health));
   if (fx.material)  state.material  = Math.max(0, Math.min(materialMax(), state.material + fx.material));
   if (fx.reputacio) state.reputacio = Math.max(0, Math.min(REPUTACIO_PER_CHAR_CAP, (state.reputacio || 0) + fx.reputacio));
@@ -1561,7 +1573,7 @@ function resolveDiscoveryOption(optionIndex) {
   const opt = ev.options[optionIndex];
 
   // Direct resource deltas
-  if (opt.food_delta)      state.food      = Math.max(0, Math.min(FOOD_MAX, state.food + opt.food_delta));
+  if (opt.food_delta)      state.food      = Math.max(0, Math.min(foodMax(), state.food + opt.food_delta));
   if (opt.material_delta)  state.material  = Math.max(0, Math.min(materialMax(), state.material + opt.material_delta));
   if (opt.reputacio_delta) state.reputacio = Math.max(0, Math.min(REPUTACIO_PER_CHAR_CAP, (state.reputacio || 0) + opt.reputacio_delta));
 
@@ -2243,7 +2255,7 @@ function openCharDetail() {
   const hp = Math.round(state.health || 0);
   const food = Math.round(state.food || 0);
   const statRows = [
-    { label: '🌾 Menjar',     val: `${food}/${FOOD_MAX}`,               pct: food / FOOD_MAX * 100,               color: '#f39c12' },
+    { label: '🌾 Menjar',     val: `${food}/${foodMax()}`,               pct: food / foodMax() * 100,               color: '#f39c12' },
     { label: '❤️ Salut',      val: hp,                                   pct: hp / HEALTH_MAX * 100,               color: '#e74c3c' },
     { label: '🏛️ Reputació',  val: Math.round(state.reputacio || 0),     pct: (state.reputacio || 0) / 100 * 100,  color: '#e8a828' },
     { label: '💪 Força',      val: (c.stats.forca  || 0).toFixed(1),     pct: (c.stats.forca  || 0) / STAT_MAX * 100, color: '#e67e22' },

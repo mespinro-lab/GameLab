@@ -9,8 +9,9 @@ const ERA_CYCLES      = 100;  // Cicles totals de l'era; no es reinicia entre ge
 const LIFE_EXPECTANCY = 20;   // Durada esperada d'un personatge; calibra la fórmula d'envelliment
 const MAX_CHILDREN    = 3;
 
-const STARTING_FOOD = 10;
+const STARTING_FOOD = 4;
 const FOOD_MAX      = 20;
+const FOOD_MAX_START = 8;   // Capacitat inicial; creix amb assecar_provisions
 const FOOD_UPKEEP   = 2;
 
 const STARTING_HEALTH      = 30;
@@ -79,7 +80,7 @@ const RESOURCE_DEFS = [
     startVal: STARTING_FOOD, max: FOOD_MAX, upkeep: FOOD_UPKEEP,
     showMax: true, rateType: 'fixed', critAt: 4, warnAt: 8,
     color: 'var(--gold)', borderColor: 'rgba(245,166,35,0.3)',
-    glossaryDesc: `Es consumeix -${FOOD_UPKEEP}/torn. Si s'esgota, Salut decreix. Cap: ${FOOD_MAX} (el menjar es fa malbé).`,
+    glossaryDesc: `Es consumeix -${FOOD_UPKEEP}/torn. Si s'esgota, Salut decreix. Cap inicial: ${FOOD_MAX_START} (creix fins a ${FOOD_MAX} amb Assecar Provisions).`,
   },
   {
     id: 'health', emoji: '❤️', label: 'Salut', section: 'vitals',
@@ -105,7 +106,7 @@ const RESOURCE_DEFS = [
   {
     id: 'pedra', emoji: '🪨', label: 'Pedra', section: 'resources',
     startVal: 0, max: 10, upkeep: null, showMax: true, rateType: false,
-    persistent: true, inheritDecay: 0.0,
+    persistent: true, inheritDecay: 1.0,
     color: '#9ca3af', borderColor: 'rgba(156,163,175,0.3)',
     glossaryDesc: "Sílex i pedra calcària recollida als voltants. Necessària per fabricar eines.",
   },
@@ -574,8 +575,7 @@ const ACTIONS = [
     description: "T'aventures més lluny del campament. Cada intent augmenta la probabilitat de descobrir zones noves.",
     execute_cost: 1,
     character_effect: { type: 'explore_zone' },
-    material_min: 3, material_max: 5,
-    stat_key: "forca", stat_gain: 0.10,
+    material_min: 2, material_max: 4,
     inclination_deltas: { impuls: +0.04, "intel·lecte": -0.02, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: null
   },
@@ -918,11 +918,11 @@ const ACTIONS = [
   },
   {
     id: "act_assecar_provisions", name: "Assecar Provisions", is_base: false, zona: "Campament",
-    description: "Poses a assecar carn i arrels sobre la calor del foc. Les provisions aguanten molt més temps.",
+    description: "Poses a assecar carn i arrels sobre la calor del foc. Les provisions aguanten molt més temps i pots guardar-ne més (+4 capacitat).",
     universal_prereq: "ut_foc",
     purchase_cost: 5, execute_cost: 0,
     output_resource: "food", output_min: 1, output_max: 3,
-    food_upkeep_delta: -0.3, max_executions: 3,
+    food_upkeep_delta: -0.3, food_cap_delta: 4, max_executions: 3,
     material_min: 1, material_max: 2,
     stat_key: "enginy", stat_gain: 0.08,
     inclination_deltas: { impuls: -0.01, "intel·lecte": +0.02, espiritualitat: +0.01, sociabilitat: 0 },
