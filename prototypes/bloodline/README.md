@@ -14,34 +14,73 @@ Obre `index.html` directament al navegador (no cal servidor).
 
 ## Estat actual
 
-**En actiu** (2026-06-06). Versió jugable completa de l'Era 1 (Prehistòria).
+**En actiu** (2026-06-13). Versió jugable completa de l'Era 1 (Paleolític Superior).
+
+### Contingut implementat
+
+| Element | Nombre |
+|---|---|
+| Accions totals | 79 (11 base auto-desbloq. + 68 comprables) |
+| Tecnologies de branca (branch techs) | 30 |
+| Tecnologies universals | 7 |
+| Zones del mapa | 4 (Campament, Planes, Bosc, Llar) |
+| Destreses | 5 |
+| Recursos actius | 6 (menjar, salut, material, reputació, pedra, eines) |
 
 ### Sistemes implementats
-- Core loop: accions → inclinació → branques → habilitats → noves accions
-- 4 branques: Caçador, Recol·lector, Artesà, Místic
-- 13 habilitats (branch techs) amb passive_effects
-- ~40 accions en 4 zones (Campament, Planes, Bosc, Llar)
-- 7 tecnologies universals (foc, eines, art, vestimenta, corda, ceràmica, agricultura)
-- Sistema de successió: fills hereten inclinació (100%) i stats (50%)
-- Save/load via localStorage (auto-save cada acció)
-- Sistema d'events balancejat dinàmicament (positius/negatius)
-- Zona Llar: apareix en trobar parella
-- Scoring final amb 5 títols de dinastia
 
-### Mecàniques clau (decisions de disseny confirmades)
-- **Material (🧠)**: moneda universal generada per TOTES les accions (1-4 per intensitat). No és output d'accions específiques.
-- **Inclinació de llinatge**: herència 100% — les branques no s'escullen, s'acumulen generació rere generació.
-- **Salut**: base 40 (prehistòria dura). Descoberta del foc: +25% immediat, gens posteriors inicien a 50.
-- **Fills**: probabilitat d'èxit basada en salut. Pèrdua d'embaràs possible.
-- **Parella**: age gate cicle 5; 5% de fracàs; obre zona Llar.
+- **Core loop**: accions → inclinació → branques → habilitats → noves accions
+- **4 branques actives**: Caçador, Recol·lector, Artesà, Místic
+- **30 branch techs** amb passive_effects i herència probabilística
+- **79 accions** en 4 zones; visibilitat condicionada per inclinació (fade/ocultes)
+- **7 tecnologies universals** (foc cicle 10, eines 16, art 36, vestimenta 50, corda 65, ceràmica 80, agricultura 92)
+- **5 destreses**: aptituds desbloq. per repetició (llindar configurable)
+- **Cadena d'eines**: Recollir Pedra → Tallar Pedra (🪨→⚒️) → Talla Avançada (+30% output eines)
+- **Menjar dinàmic**: cap inicial 8, creix fins a 20 amb Assecar Provisions (×3); consum reduïble
+- **Recursos persistents**: material (30%), reputació (60%), pedra (100%), eines (30%) hereten entre generacions
+- **Successió generacional**: fills hereten inclinació (85%) i stats (50%)
+- **Sistema d'events** balancejat dinàmicament (positius/negatius per historial)
+- **Zona Llar**: apareix en trobar parella; indicador família visible al panell
+- **Detall del personatge**: panell complet (stats, inclinació, família, habilitats, destreses)
+- **Save/load** via localStorage (auto-save cada acció, sobreviu background-kill mòbil)
+- **Scoring final** amb 5 títols de dinastia basats en la inclinació dominant
+
+### Paràmetres clau
+
+| Paràmetre | Valor |
+|---|---|
+| `ERA_CYCLES` | 100 cicles per era (~5 generacions) |
+| `LIFE_EXPECTANCY` | 20 cicles per personatge |
+| `STARTING_FOOD` | 4 |
+| `FOOD_MAX_START` | 8 (cap. inicial d'emmagatzematge) |
+| `FOOD_MAX` | 20 (sostre absolut) |
+| `FOOD_UPKEEP` | 2/torn (reduïble fins a 1.1 amb Assecar Provisions) |
+| `STARTING_HEALTH` | 30 (pic a 40; +25% immediat en descobrir foc) |
+| `HEALTH_POST_FIRE` | 50 (gens posteriors al foc) |
+| `INCLINATION_INHERITANCE_RATE` | 85% |
+| `STAT_INHERITANCE_RATE` | 50% |
+| `DESTRESA_INHERIT_RATE` | 60% |
+| `EVENT_TRIGGER_CHANCE` | 60% |
+| `INERTIA_FACTOR` | 2.0 |
+
+### Token de compra
+
+El **material (🔵)** és la moneda universal generada per TOTES les accions (quantitat variable per intensitat). No és el menjar — és el token per comprar noves accions (estil Game Dev Tycoon). Persists entre generacions (30% de retenció).
+
+### Explorar els Voltants
+
+Acció generadora d'events, no de stats directes. Quan hi ha zones per descobrir: probabilitat creixent per intents acumulats (20% base +15% per intent). Quan no descobreix: dispara sempre un event aleatori (rati 2:1 positiu/negatiu). `act_escoltar_estrangers` és acció de descoberta de branch techs (pendent fusió).
 
 ## Backlog obert
 
-Veure `production/backlog.md`. Items oberts actuals: C-02 (títols), PT-16 (vides llargues).
+Veure `production/backlog.md`.
 
 ## Findings (en curs)
 
-- El core loop d'inclinació → branca funciona però els thresholds inicials eren massa alts (ajustats −25%)
-- Material universal millora molt la sensació de progrés en cada acció
-- Save/load necessari per a testing en mòbil (GitHub Pages)
-- Llar zone clarifica la progressió familiar
+- El core loop inclinació → branca funciona; thresholds ajustats −25% en sessions anteriors
+- Material universal millora molt la sensació de progrés per acció
+- Cadena pedra→eines aporta decisió real (quant gasto vs acumulo)
+- Menjar escàs des del principi (4 inicial) crea tensió autèntica als primers torns
+- Assecar Provisions és l'acció que transforma la supervivència → viabilitat
+- Llar zone i família al panell clarifiquen la narrativa intergeneracional
+- Save/load necessari per testing en mòbil (GitHub Pages)
