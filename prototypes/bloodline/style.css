@@ -1589,3 +1589,55 @@ body.donut-active * { pointer-events: none !important; }
   letter-spacing: -0.05em;
 }
 .zc-stat-ind.neg { color: #f87171; }
+
+/* ── Benefit stat badge (carousel): stat icon + triangle overlay ─── */
+.benefit-stat-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.bsb-tri {
+  position: absolute;
+  top: -3px;
+  right: -5px;
+  font-size: 0.36rem;
+  color: #4ade80;
+  line-height: 1;
+  pointer-events: none;
+}
+.bsb-tri.neg { color: #f87171; }
+
+/* ── Destresa pills ─── */
+.destresa-pill {
+  display: inline-block;
+  font-size: 0.55rem;
+  padding: 0.08rem 0.35rem;
+  border-radius: 0.6rem;
+  background: rgba(250,204,21,0.15);
+  border: 1px solid rgba(250,204,21,0.35);
+  color: #fbbf24;
+  margin: 0.1rem 0.12rem;
+}
+
+/* ── Col-stat upkeep arrow (replaces /t notation) ─── */
+.hex-rate { font-size: 0.52rem; color: var(--text-dim); display: block; margin-top: 0.05rem; line-height: 1; }
+.hex-rate-neg  { color: #f87171; }
+.hex-rate-pos  { color: #4ade80; }
+
+/* ── Col-stat tooltip ─── */
+#col-stat-tooltip {
+  position: fixed;
+  background: rgba(20,12,4,0.95);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.65rem;
+  color: var(--text-main);
+  max-width: 200px;
+  z-index: 9999;
+  pointer-events: none;
+  line-height: 1.5;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+}
+#col-stat-tooltip.hidden { display: none; }
