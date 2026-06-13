@@ -1322,8 +1322,8 @@ function carouselNavigate(newIdx) {
 function updateCarouselInfo() {
   const { actions, idx } = CAROUSEL;
   if (!actions.length) {
-    el('zc-name').textContent     = 'Cap acció disponible';
-    el('zc-benefits').textContent = '';
+    el('zc-name').textContent  = 'Cap acció disponible';
+    el('zc-benefits').innerHTML = '';
     el('zc-desc').textContent     = 'Desbloqueja accions aprenent habilitats.';
     return;
   }
@@ -1349,10 +1349,16 @@ function updateCarouselInfo() {
   if (state.character.purchasedActionIds.has('act_talla_avancada') && action.requires?.some(r => r.resource === 'eina')) {
     parts.push('⭐ eines qualitat');
   }
+  // Stat influence badge
+  if (action.stat_key && action.stat_gain) {
+    const statEmoji = { forca: '💪', enginy: '🧠', vincle: '🔗' };
+    const tri = statGainTriangles(action.stat_gain);
+    parts.push(`<span class="benefit-stat-badge">${statEmoji[action.stat_key] || '⬆️'}<span class="bsb-tri${tri.neg ? ' neg' : ''}">${tri.text}</span></span>`);
+  }
   // Show resource requirements
   const resourceReqMet = evaluateCharacterRequires(action);
-  el('zc-name').textContent     = action.name;
-  el('zc-benefits').textContent = parts.join('  ');
+  el('zc-name').textContent = action.name;
+  el('zc-benefits').innerHTML = parts.join('  ');
   el('zc-desc').textContent     = tooYoung
     ? 'No tens edat per a això'
     : blocked
@@ -1409,7 +1415,8 @@ function renderCharPanel() {
   const _foodRateEl    = el('hex-food-rate');
   if (_foodRateEl) {
     const foodDanger = state.food < _foodUpkeep;
-    _foodRateEl.textContent  = '−' + (_foodUpkeep % 1 === 0 ? _foodUpkeep : _foodUpkeep.toFixed(1)) + '/t';
+    const _fVal = _foodUpkeep % 1 === 0 ? _foodUpkeep : _foodUpkeep.toFixed(1);
+    _foodRateEl.textContent  = '↓' + _fVal;
     _foodRateEl.className    = 'hex-rate hex-rate-neg' + (foodDanger ? ' hex-rate-danger' : '');
     const _foodCol = document.querySelector('[data-stat="food"]');
     if (_foodCol) _foodCol.classList.toggle('col-stat-pulse', foodDanger);
@@ -1422,7 +1429,7 @@ function renderCharPanel() {
     else if (_age > HEALTH_GROW_TURNS + HEALTH_STABLE_TURNS) { _hDelta = -getAgingLoss(_age); }
     if (_hDelta !== 0) {
       const hDanger = _hDelta < 0 && state.health <= Math.abs(_hDelta);
-      _healthRateEl.textContent = (_hDelta > 0 ? '+' : '−') + Math.abs(_hDelta) + '/t';
+      _healthRateEl.textContent = (_hDelta > 0 ? '↑' : '↓') + Math.abs(_hDelta);
       _healthRateEl.className   = 'hex-rate ' + (_hDelta > 0 ? 'hex-rate-pos' : 'hex-rate-neg') + (hDanger ? ' hex-rate-danger' : '');
       const _hCol = document.querySelector('[data-stat="health"]');
       if (_hCol) _hCol.classList.toggle('col-stat-pulse', hDanger);
@@ -1431,6 +1438,17 @@ function renderCharPanel() {
       _healthRateEl.className   = 'hex-rate';
     }
   }
+
+  // Col-stat click: show upkeep tooltip
+  document.querySelectorAll('.col-stat').forEach(colEl => {
+    colEl.onclick = null; // reset before reassigning
+    const stat = colEl.dataset.stat;
+    colEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showColStatTooltip(stat, colEl);
+    }, { once: true });
+    colEl.onclick = (e) => { e.stopPropagation(); showColStatTooltip(stat, colEl); };
+  });
 
   // Resource row: Pedra / Eina
   const pedraDef = RESOURCE_DEFS.find(r => r.id === 'pedra');
@@ -1459,6 +1477,20 @@ function renderCharPanel() {
     pill.className   = 'skill-pill';
     pill.textContent = bt.name;
     skillEl.appendChild(pill);
+  }
+
+  // Destresa pills
+  const destreseEl = el('destresa-badges');
+  if (destreseEl) {
+    destreseEl.innerHTML = '';
+    for (const dId of state.character.destreses) {
+      const def = DESTRESA_DEFS.find(d => d.id === dId);
+      if (!def) continue;
+      const pill = document.createElement('span');
+      pill.className   = 'destresa-pill';
+      pill.textContent = '⭐ ' + def.name;
+      destreseEl.appendChild(pill);
+    }
   }
 }
 
@@ -2008,6 +2040,59 @@ function buyAction(actionId) {
   hide('overlay-shop');
   renderAll();
   saveGame();
+}
+
+
+// ═══════════════════════════════════════════════════════════ COL-STAT TOOLTIP
+function showColStatTooltip(stat, anchorEl) {
+  let tip = el('col-stat-tooltip');
+  if (!tip) {
+    tip = document.createElement('div');
+    tip.id = 'col-stat-tooltip';
+    document.body.appendChild(tip);
+  }
+  const lines = [];
+  if (stat === 'food') {
+    const childUp = state.character.children.length;
+    const base    = Math.max(0.5, FOOD_UPKEEP - (state.foodUpkeepReduction || 0));
+    const total   = base + childUp;
+    lines.push('Consum de menjar per torn:');
+    lines.push('  Base: −' + FOOD_UPKEEP);
+    if (state.foodUpkeepReduction > 0) lines.push('  Conservació: +' + state.foodUpkeepReduction.toFixed(1));
+    if (childUp > 0) lines.push('  Fills (' + childUp + '): −' + childUp);
+    lines.push('  Total: −' + (total % 1 === 0 ? total : total.toFixed(1)));
+    lines.push('Quedarà: ' + Math.max(0, state.food - total).toFixed(1) + '/' + foodMax());
+  } else if (stat === 'health') {
+    const age = characterAge();
+    if (age <= HEALTH_GROW_TURNS) {
+      lines.push('Fase de creixement: +1/torn');
+    } else if (age > HEALTH_GROW_TURNS + HEALTH_STABLE_TURNS) {
+      const loss = getAgingLoss(age);
+      lines.push('Envelliment (edat ' + age + '): −' + loss + '/torn');
+      lines.push('Quedarà: ' + Math.max(0, state.health - loss).toFixed(0));
+    } else {
+      lines.push('Salut estable aquest torn.');
+    }
+    if (state.food < Math.max(0.5, FOOD_UPKEEP - (state.foodUpkeepReduction||0)) + state.character.children.length) {
+      lines.push('⚠️ Menjar insuficient: −10 salut');
+    }
+  } else if (stat === 'reputacio') {
+    lines.push('Reputació acumulada.');
+    lines.push('Hereta ' + Math.round(FAMILY_REP_INHERITANCE * 100) + '% a la pròxima generació.');
+  } else if (stat === 'forca' || stat === 'enginy' || stat === 'vincle') {
+    const statLabel = { forca: 'Força', enginy: 'Enginy', vincle: 'Vincle' };
+    const val = (state.character.stats[stat] || 0).toFixed(2);
+    lines.push(statLabel[stat] + ': ' + val);
+    lines.push('Creix executant accions relacionades.');
+    lines.push('Hereta al ' + Math.round(STAT_INHERITANCE_RATE * 100) + '%.');
+  }
+  tip.innerHTML = lines.join('<br>');
+  tip.classList.remove('hidden');
+  const rect = anchorEl.getBoundingClientRect();
+  tip.style.left = Math.min(rect.left, window.innerWidth - 220) + 'px';
+  tip.style.top  = (rect.bottom + 6) + 'px';
+  const dismiss = () => { tip.classList.add('hidden'); document.removeEventListener('click', dismiss); };
+  setTimeout(() => document.addEventListener('click', dismiss), 50);
 }
 
 // ═══════════════════════════════════════════════════════════ EVENT LISTENERS
