@@ -81,6 +81,12 @@ const ACTION_ICONS = {
   act_control_territori:  '🗺️',
   act_negociar_pastures:  '🕊️',
 };
+function statGainTriangles(gain) {
+  if (!gain) return { text: '', neg: false };
+  const abs = Math.abs(gain);
+  const n = abs >= 0.15 ? 3 : abs >= 0.10 ? 2 : 1;
+  return { text: (gain < 0 ? '▼' : '▲').repeat(n), neg: gain < 0 };
+}
 function getActionIcon(action) {
   return ACTION_ICONS[action.id] ||
     (action.output_resource === 'reputacio' ? '🏛️' :
@@ -992,7 +998,12 @@ function applyFxFloaters(before) {
     const rect = anchor.getBoundingClientRect();
     const div = document.createElement('div');
     div.className = `float-num ${delta > 0 ? 'pos' : 'neg'}`;
-    div.textContent = (delta > 0 ? '+' : '') + (Number.isInteger(delta) ? delta : delta.toFixed(1));
+    const isStatKey = ['forca', 'enginy', 'vincle'].includes(k);
+    if (isStatKey) {
+      div.textContent = delta > 0 ? '+' : '−';
+    } else {
+      div.textContent = (delta > 0 ? '+' : '') + (Number.isInteger(delta) ? delta : delta.toFixed(1));
+    }
     div.style.left = (rect.left + rect.width / 2 - 14) + 'px';
     div.style.top  = rect.top + 'px';
     document.body.appendChild(div);
@@ -1235,7 +1246,9 @@ function buildCarouselItems() {
     const upgradeBtn = upgrade
       ? `<button class="zc-upgrade-btn" data-action-id="${action.id}" aria-label="Upgrade disponible">↑</button>`
       : '';
-    item.innerHTML = `<span class="zc-icon">${getActionIcon(action)}</span><button class="zc-info-btn" aria-label="Info">ⓘ</button>${upgradeBtn}`;
+    const tri = statGainTriangles(action.stat_gain);
+    const statOverlay = tri.text ? `<span class="zc-stat-ind${tri.neg ? ' neg' : ''}">${tri.text}</span>` : '';
+    item.innerHTML = `<span class="zc-icon-wrap"><span class="zc-icon">${getActionIcon(action)}</span>${statOverlay}</span><button class="zc-info-btn" aria-label="Info">ⓘ</button>${upgradeBtn}`;
     vp.appendChild(item);
   });
   const dotsEl = el('zc-dots');
@@ -1319,6 +1332,9 @@ function updateCarouselInfo() {
   const blocked  = tooYoung || getActionVisibility(action) !== 'ACTIVE';
   const outIcons = { food: '🌾', material: '🔵', health: '❤️', reputacio: '🏛️', pedra: '🪨', eina: '⚒️' };
   const parts = [];
+  if ((action.execute_cost || 0) > 0) {
+    parts.push(`🌾 −${action.execute_cost}`);
+  }
   if (!blocked && action.output_resource && action.output_min != null) {
     const icon = outIcons[action.output_resource] || '📦';
     parts.push(`${icon} ${action.output_min}–${action.output_max}`);
@@ -1329,10 +1345,7 @@ function updateCarouselInfo() {
       parts.push(`${icon} ${se.delta > 0 ? '+' : ''}${se.delta}`);
     }
   }
-  if (action.stat_key && action.stat_gain) {
-    const statEmoji = { forca: '💪', enginy: '🧠', vincle: '🔗' };
-    parts.push(`${statEmoji[action.stat_key] || '⬆️'} +${action.stat_gain.toFixed(2)}`);
-  }
+
   if (state.character.purchasedActionIds.has('act_talla_avancada') && action.requires?.some(r => r.resource === 'eina')) {
     parts.push('⭐ eines qualitat');
   }
@@ -1389,6 +1402,35 @@ function renderCharPanel() {
   if (nChildren)  famParts.push(`👶×${nChildren}`);
   const famEl = el('char-family-inlay');
   if (famEl) famEl.textContent = famParts.join('  ');
+
+  // Upkeep rate indicators
+  const _childUpkeep   = state.character.children.length;
+  const _foodUpkeep    = Math.max(0.5, FOOD_UPKEEP - (state.foodUpkeepReduction || 0)) + _childUpkeep;
+  const _foodRateEl    = el('hex-food-rate');
+  if (_foodRateEl) {
+    const foodDanger = state.food < _foodUpkeep;
+    _foodRateEl.textContent  = '−' + (_foodUpkeep % 1 === 0 ? _foodUpkeep : _foodUpkeep.toFixed(1)) + '/t';
+    _foodRateEl.className    = 'hex-rate hex-rate-neg' + (foodDanger ? ' hex-rate-danger' : '');
+    const _foodCol = document.querySelector('[data-stat="food"]');
+    if (_foodCol) _foodCol.classList.toggle('col-stat-pulse', foodDanger);
+  }
+  const _age           = characterAge();
+  const _healthRateEl  = el('hex-health-rate');
+  if (_healthRateEl) {
+    let _hDelta = 0;
+    if (_age <= HEALTH_GROW_TURNS) { _hDelta = 1; }
+    else if (_age > HEALTH_GROW_TURNS + HEALTH_STABLE_TURNS) { _hDelta = -getAgingLoss(_age); }
+    if (_hDelta !== 0) {
+      const hDanger = _hDelta < 0 && state.health <= Math.abs(_hDelta);
+      _healthRateEl.textContent = (_hDelta > 0 ? '+' : '−') + Math.abs(_hDelta) + '/t';
+      _healthRateEl.className   = 'hex-rate ' + (_hDelta > 0 ? 'hex-rate-pos' : 'hex-rate-neg') + (hDanger ? ' hex-rate-danger' : '');
+      const _hCol = document.querySelector('[data-stat="health"]');
+      if (_hCol) _hCol.classList.toggle('col-stat-pulse', hDanger);
+    } else {
+      _healthRateEl.textContent = '';
+      _healthRateEl.className   = 'hex-rate';
+    }
+  }
 
   // Resource row: Pedra / Eina
   const pedraDef = RESOURCE_DEFS.find(r => r.id === 'pedra');
