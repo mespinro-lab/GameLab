@@ -1546,3 +1546,46 @@ body.donut-active * { pointer-events: none !important; }
   color: #c084fc;
 }
 .cd-empty { font-size: 0.72rem; color: var(--text-dim); font-style: italic; }
+
+/* ── Turn-rate indicators on col-stat cells ─── */
+.hex-rate {
+  display: block;
+  font-size: 0.52rem;
+  color: var(--text-dim);
+  line-height: 1;
+  margin-top: 0.05rem;
+  letter-spacing: -0.01em;
+}
+.hex-rate-neg  { color: #f87171; }
+.hex-rate-pos  { color: #4ade80; }
+.hex-rate-danger {
+  color: #ef4444;
+  font-weight: 700;
+  animation: pulse-rate 0.9s ease-in-out infinite;
+}
+@keyframes pulse-rate {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.25; }
+}
+.col-stat-pulse > .col-icon-emoji {
+  animation: pulse-rate 0.9s ease-in-out infinite;
+}
+
+/* ── Stat triangle overlay on carousel icon ─── */
+.zc-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.zc-stat-ind {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  font-size: 0.38rem;
+  line-height: 1;
+  color: #4ade80;
+  pointer-events: none;
+  letter-spacing: -0.05em;
+}
+.zc-stat-ind.neg { color: #f87171; }
