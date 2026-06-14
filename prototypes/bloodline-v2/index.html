@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<!-- PROTOTYPE v2 - NOT FOR PRODUCTION -->
+<!-- Bloodline: full-screen world layers + sky-as-life + no reputation -->
+<html lang="ca">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#1c1208">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Bloodline v2</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- ═══════════════════ WORLD LAYERS ═══════════════════ -->
+
+    <!-- L0: World background image — swap --world-bg to change art -->
+    <!-- NOTE: To swap the world asset, change `--world-bg` in style.css :root -->
+    <div id="layer-world">
+      <div id="scenery-mtn"></div>
+      <div id="scenery-ground"></div>
+      <div id="scenery-river"></div>
+    </div>
+
+    <!-- L1: Sky overlay (life stage color, semi-transparent) -->
+    <div id="layer-sky" class="sky-albada"></div>
+
+    <!-- L2: Sun at horizon + projected sunset -->
+    <div id="layer-sun">
+      <svg id="sun-svg" viewBox="0 0 100 32" preserveAspectRatio="none">
+        <!-- Full arc (dashed) — shows the full life arc -->
+        <path d="M 5 27 Q 50 8 95 27" fill="none"
+              stroke="rgba(255,235,200,.18)" stroke-width="0.7" stroke-dasharray="2 5"/>
+        <!-- Traveled arc (solid, from start to current) -->
+        <path id="sun-traveled" d="M 5 27 Q 5 27 5 27" fill="none"
+              stroke="rgba(255,240,210,.75)" stroke-width="1.2"/>
+        <!-- Projected sunset vertical marker -->
+        <line id="sun-death-line" x1="50" y1="20" x2="50" y2="29"
+              stroke="#c8401a" stroke-width="1.4" opacity="0"/>
+        <!-- Sun glow -->
+        <circle id="sun-glow" cx="5" cy="27" r="7" fill="#ffdd9e" opacity=".25"/>
+        <!-- Sun core -->
+        <circle id="sun-core" cx="5" cy="27" r="4.5" fill="#ffe9b8"/>
+      </svg>
+      <!-- Sunset caption — tap to see projected cycles -->
+      <button id="sun-cap" aria-label="Posta prevista">⚑ —</button>
+    </div>
+
+    <!-- L3: Zone nodes (rendered dynamically by JS) -->
+    <div id="layer-nodes"></div>
+
+    <!-- ═══════════════════ HUD LAYERS ════════════════════ -->
+
+    <!-- Meta bar (top) -->
+    <div id="bar-meta">
+      <div id="meta-left">
+        <span id="panel-turn-info">Cicle 0</span>
+      </div>
+      <div id="meta-right">
+        <span class="meta-chip" id="tok-material">🔵 <span id="tok-material-val">0</span></span>
+        <button id="btn-open-menu" aria-label="Menú">☰</button>
+      </div>
+    </div>
+
+    <!-- Identity block 50/50 -->
+    <div id="ident">
+      <!-- Left: attrs + portrait -->
+      <div class="ident-half ident-left">
+        <div id="attrs-row">
+          <span class="attr-chip" data-stat="forca">💪 <span id="hex-forca">—</span></span>
+          <span class="attr-chip" data-stat="enginy">🧠 <span id="hex-enginy">—</span></span>
+          <span class="attr-chip" data-stat="vincle">🔗 <span id="hex-vincle">—</span></span>
+        </div>
+        <div id="portrait-wrap">
+          <img id="char-bust-img"
+               src="../../design/life-tycoon/characters/PRE-MED-M-BUST.png"
+               alt="" aria-label="Retrat del personatge">
+          <div id="portrait-overlay">
+            <span id="char-name-inlay">—</span>
+            <span id="char-gen-inlay">Gen 1</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: vitals (menjar + salut, prominent) -->
+      <div class="ident-half ident-right">
+        <div class="vital-cell vital-food" id="vital-food" data-stat="food">
+          <span class="vital-label">🌾 menjar</span>
+          <span class="vital-num" id="hex-food">—</span>
+          <span class="vital-rate" id="hex-food-rate"></span>
+        </div>
+        <div class="vital-cell vital-health" id="vital-health" data-stat="health">
+          <span class="vital-label">❤️ salut</span>
+          <span class="vital-num" id="hex-health">—</span>
+          <span class="vital-rate" id="hex-health-rate"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating knowledge tags (over the world, just below ident) -->
+    <div id="layer-know">
+      <div id="branch-badges"></div>
+      <div id="skill-badges"></div>
+      <div id="destresa-badges"></div>
+    </div>
+
+    <!-- Log bar (bottom, 1 line) -->
+    <div id="logbar">
+      <ul id="session-log-list"></ul>
+    </div>
+
+    <!-- Debug button (floating) -->
+    <button id="btn-test-panel" aria-label="Debug">🔬</button>
+
+    <!-- ═══════════════════ ZONE ACTIONS ══════════════════ -->
+    <div id="overlay-zone-actions" class="hidden">
+      <div class="zone-actions-sheet">
+        <div id="zone-sheet-header">
+          <span id="zone-sheet-icon"></span>
+          <span id="zone-sheet-name"></span>
+          <button id="btn-close-zone-sheet">×</button>
+        </div>
+        <div id="zone-carousel-viewport"></div>
+        <div id="zc-dots"></div>
+        <div id="zone-carousel-info">
+          <div id="zc-name"></div>
+          <div id="zc-benefits"></div>
+          <div id="zc-desc"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DONUT execution timer -->
+    <div id="exec-donut-overlay" class="hidden">
+      <div id="exec-donut-wrap">
+        <svg id="exec-donut-svg" viewBox="0 0 42 42">
+          <circle cx="21" cy="21" r="17" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="3.5"/>
+          <circle id="exec-donut-ring" cx="21" cy="21" r="17" fill="none" stroke-width="3.5"
+            stroke-linecap="round" stroke-dasharray="0 106.8"
+            style="transform:rotate(-90deg);transform-origin:50% 50%"/>
+        </svg>
+        <span id="exec-donut-icon"></span>
+      </div>
+      <div id="exec-donut-label"></div>
+    </div>
+
+    <!-- ═══════════════════ EVENT / DISCOVERY OVERLAYS ═══ -->
+    <div id="overlay-action" class="hidden">
+      <div id="action-panel">
+
+        <div id="pane-event" class="pane hidden">
+          <div id="ev-header">
+            <span id="ev-icon"></span>
+            <span id="ev-name"></span>
+          </div>
+          <p id="ev-text"></p>
+          <div id="ev-choices"></div>
+          <button id="btn-dismiss-event" style="display:none">Continua →</button>
+        </div>
+
+        <div id="pane-discovery" class="pane hidden">
+          <div id="disc-header">
+            <span id="disc-icon"></span>
+            <span id="disc-name"></span>
+          </div>
+          <p class="disc-badge" id="disc-badge">✨ Nou descobriment</p>
+          <p id="disc-desc"></p>
+          <div id="disc-effects"></div>
+          <button id="btn-dismiss-discovery">Entès →</button>
+        </div>
+
+        <div id="pane-birth" class="pane hidden">
+          <div class="birth-card">
+            <p class="birth-label">✨ Un nou membre del llinatge</p>
+            <div class="birth-avatar-wrap"><span id="birth-avatar">👶</span></div>
+            <h2 id="birth-name"></h2>
+            <p class="birth-virtue" id="birth-virtue"></p>
+            <button id="btn-dismiss-birth">Benvingut al món →</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ACTION INFO overlay -->
+    <div id="overlay-action-info" class="hidden">
+      <div class="zone-actions-sheet action-info-sheet">
+        <div id="ai-header">
+          <span id="ai-icon"></span>
+          <span id="ai-name"></span>
+          <button id="btn-close-action-info">✕</button>
+        </div>
+        <p id="ai-desc"></p>
+        <div id="ai-benefits"></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ MAIN MENU ═══════════════════ -->
+    <div id="overlay-menu" class="overlay">
+      <div class="menu-screen">
+        <div class="menu-hero">
+          <div class="game-logo">🦴</div>
+          <h1 class="game-title">Bloodline</h1>
+          <p class="game-sub">Forja el llinatge que marcarà la història</p>
+        </div>
+        <nav class="menu-nav">
+          <button id="btn-continue-game" class="menu-btn menu-btn-primary" disabled>
+            <span class="menu-btn-icon">▶</span><span>Continuar partida</span>
+          </button>
+          <button id="btn-new-game" class="menu-btn">
+            <span class="menu-btn-icon">✦</span><span>Nova partida</span>
+          </button>
+        </nav>
+      </div>
+    </div>
+
+    <!-- NOVA PARTIDA -->
+    <div id="overlay-new-game" class="overlay hidden">
+      <div class="overlay-card new-game-card">
+        <div class="new-game-hero">✦</div>
+        <h3 class="new-game-title">Nova Partida</h3>
+        <p class="new-game-hint">Tria el nom del teu llinatge. El seu destí dependrà de les decisions que prendràs.</p>
+        <div class="new-game-field">
+          <label class="new-game-label" for="input-dynasty-name">Nom del llinatge</label>
+          <input id="input-dynasty-name" class="new-game-input" type="text" maxlength="30"
+                 placeholder="Ex: Braven, Oscura, Llum..." autocomplete="off">
+          <p class="new-game-sublabel">Si el deixes en blanc, el joc en generarà un d'aleatori.</p>
+        </div>
+        <div class="new-game-field">
+          <label class="new-game-label">Origen ètnic</label>
+          <div id="race-selector" class="race-selector">
+            <button class="race-btn active" data-race="MED">🌊 Mediterrani</button>
+            <button class="race-btn" data-race="AFR">🌍 Africà</button>
+            <button class="race-btn" data-race="IND">❄️ Indoeuropeu</button>
+            <button class="race-btn" data-race="ORI">🏜️ Orient Pròx.</button>
+            <button class="race-btn" data-race="ASI">🌸 Est Asiàtic</button>
+            <button class="race-btn" data-race="AME">🌿 Amèrica</button>
+          </div>
+        </div>
+        <button id="btn-start-new-game" class="new-game-btn-primary">Comença →</button>
+        <button id="btn-cancel-new-game" class="new-game-btn-back">← Tornar</button>
+      </div>
+    </div>
+
+    <!-- SUCCESSIÓ -->
+    <div id="overlay-succession" class="overlay hidden">
+      <div class="overlay-card succ-card">
+        <div id="succ-death-msg"></div>
+        <div class="succ-divider"></div>
+        <h3 id="succ-title">El Llinatge Continua</h3>
+        <div id="succ-children-list"></div>
+        <p class="succ-note">Tria el successor per continuar.</p>
+      </div>
+    </div>
+
+    <!-- DEATH SUMMARY -->
+    <div id="overlay-death-summary" class="overlay hidden">
+      <div id="ds-card">
+        <img id="ds-bust" src="" alt="">
+        <div id="ds-name"></div>
+        <div id="ds-subtitle"></div>
+        <div id="ds-cause"></div>
+        <button id="ds-btn-continue">Continuar →</button>
+      </div>
+    </div>
+
+    <!-- NEW GENERATION -->
+    <div id="overlay-new-gen" class="overlay hidden">
+      <div id="new-gen-card">
+        <div id="new-gen-hero">
+          <img id="new-gen-bust" src="" alt="">
+          <svg id="new-gen-ring-svg" viewBox="0 0 42 42">
+            <circle cx="21" cy="21" r="17" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="3"/>
+            <circle id="new-gen-ring" cx="21" cy="21" r="17" fill="none" stroke-width="3"
+              stroke-linecap="round" stroke-dasharray="0 106.8"
+              style="transform:rotate(-90deg);transform-origin:50% 50%"/>
+          </svg>
+        </div>
+        <div id="new-gen-name"></div>
+        <div id="new-gen-subtitle"></div>
+        <button id="btn-new-gen-continue">Comença →</button>
+      </div>
+    </div>
+
+    <!-- FI DE PARTIDA -->
+    <div id="overlay-gameover" class="overlay hidden">
+      <div class="overlay-card end-card">
+        <div id="end-header">
+          <div id="end-icon">🦴</div>
+          <h2 id="end-dynasty-name"></h2>
+          <p id="end-tagline"></p>
+        </div>
+        <div id="end-stats-row"></div>
+        <div id="end-genealogy"></div>
+        <button id="btn-go-restart">Jugar de nou →</button>
+      </div>
+    </div>
+
+    <!-- TESTING PANEL -->
+    <div id="overlay-test-panel" class="hidden">
+      <div id="test-panel-sheet">
+        <div id="test-panel-title">
+          🔬 Debug
+          <button id="btn-close-test-panel">✕</button>
+        </div>
+        <div class="test-section">
+          <div class="test-section-label">Inclinació</div>
+          <div id="test-incl-rows"></div>
+        </div>
+        <div class="test-section">
+          <div class="test-section-label">Branques actives</div>
+          <div id="test-branches" class="test-badges"></div>
+        </div>
+        <div class="test-section">
+          <div class="test-section-label">Habilitats (branch techs)</div>
+          <div id="test-skills" class="test-badges"></div>
+        </div>
+        <div class="test-section">
+          <div class="test-section-label">Destreses</div>
+          <div id="test-destreses" class="test-badges"></div>
+        </div>
+        <div class="test-section">
+          <div class="test-section-label">Zones</div>
+          <div id="test-zones" class="test-badges"></div>
+        </div>
+        <div class="test-section">
+          <div class="test-section-label">Techs universals</div>
+          <div id="test-utechs" class="test-badges"></div>
+        </div>
+        <div class="test-section">
+          <div class="test-section-label">Estat del personatge</div>
+          <div id="test-charstate"></div>
+        </div>
+        <div class="test-section">
+          <div class="test-section-label">Registre</div>
+          <div id="test-log"></div>
+        </div>
+      </div>
+      <div class="test-close-area" id="test-close-area"></div>
+    </div>
+
+    <!-- LOADING SPLASH -->
+    <div id="overlay-loading" class="hidden">
+      <div id="loading-card">
+        <svg viewBox="0 0 40 40" width="72" height="72">
+          <circle cx="20" cy="20" r="17" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="4"/>
+          <circle id="loading-ring" cx="20" cy="20" r="17" fill="none" stroke="var(--gold)"
+                  stroke-width="4" stroke-dasharray="36 71" stroke-linecap="round"/>
+        </svg>
+        <div id="loading-title">Bloodline</div>
+      </div>
+    </div>
+
+    <!-- UPGRADE COMPARISON -->
+    <div id="overlay-upgrade" class="hidden">
+      <div id="upgrade-backdrop"></div>
+      <div class="upgrade-sheet">
+        <div class="upg-header">
+          <span class="upg-title">Millora disponible</span>
+          <button id="btn-close-upgrade">✕</button>
+        </div>
+        <div class="upg-comparison">
+          <div class="upg-side">
+            <div class="upg-side-label">Actual</div>
+            <div class="upg-icon" id="upg-base-icon"></div>
+            <div class="upg-name" id="upg-base-name"></div>
+            <div class="upg-stats" id="upg-base-stats"></div>
+          </div>
+          <div class="upg-arrow">→</div>
+          <div class="upg-side upg-side-new">
+            <div class="upg-side-label">Millora</div>
+            <div class="upg-icon" id="upg-upg-icon"></div>
+            <div class="upg-name" id="upg-upg-name"></div>
+            <div class="upg-stats" id="upg-upg-stats"></div>
+          </div>
+        </div>
+        <div class="upg-cost-row" id="upg-cost"></div>
+        <p class="upg-req-text" id="upg-req-text"></p>
+        <button class="upg-do-btn" id="btn-do-upgrade">Fer l'upgrade</button>
+      </div>
+    </div>
+
+    <!-- STAT TOOLTIP -->
+    <div id="overlay-stat-tooltip" class="hidden">
+      <div id="stat-tooltip-backdrop"></div>
+      <div id="stat-tooltip-card">
+        <div id="stt-emoji"></div>
+        <div id="stt-name"></div>
+        <div id="stt-value"></div>
+        <p id="stt-desc"></p>
+      </div>
+    </div>
+
+    <!-- CHARACTER DETAIL (fitxa: radar inclinació + stats + família) -->
+    <div id="overlay-char-detail" class="hidden">
+      <div id="char-detail-backdrop"></div>
+      <div id="char-detail-card">
+        <div class="cd-topbar">
+          <button id="btn-close-char-detail">✕</button>
+        </div>
+        <div class="cd-body">
+          <div class="cd-hero">
+            <img id="cd-bust" src="" alt="">
+            <div class="cd-identity">
+              <h2 id="cd-name"></h2>
+              <p id="cd-meta"></p>
+            </div>
+          </div>
+          <div class="cd-section">
+            <div class="cd-section-title">Característiques</div>
+            <div id="cd-stats-list"></div>
+          </div>
+          <div class="cd-section">
+            <div class="cd-section-title">Inclinació (4 eixos)</div>
+            <div id="cd-axes-list"></div>
+          </div>
+          <div class="cd-section">
+            <div class="cd-section-title">Família</div>
+            <div id="cd-family-list" class="cd-pills"></div>
+          </div>
+          <div class="cd-section">
+            <div class="cd-section-title">Habilitats</div>
+            <div id="cd-skills-list" class="cd-pills"></div>
+          </div>
+          <div class="cd-section">
+            <div class="cd-section-title">Destreses</div>
+            <div id="cd-destreses-list" class="cd-pills"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHOP -->
+    <div id="overlay-shop" class="hidden">
+      <div class="shop-sheet">
+        <div class="shop-header">
+          <span style="font-size:1.5rem">🏪</span>
+          <span class="shop-title">Mercat d'Accions</span>
+          <button id="btn-close-shop" class="shop-close-btn">✕</button>
+        </div>
+        <div id="shop-list"></div>
+      </div>
+    </div>
+
+  </div><!-- /#app -->
+
+  <!-- col-stat tooltip (fixed, outside #app) -->
+  <div id="col-stat-tooltip" class="hidden"></div>
+
+  <script src="data.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
