@@ -162,18 +162,21 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 #sun-cap {
   position: absolute;
   bottom: 0; right: 10px;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 700;
   color: #5a1e0e;
   background: rgba(255,225,180,.82);
   border: none;
   border-radius: 8px;
-  padding: 2px 7px;
+  padding: 6px 12px;
+  min-height: 36px;
   white-space: nowrap;
   cursor: pointer;
   pointer-events: all;
   backdrop-filter: blur(4px);
   transition: background 0.2s;
+  display: flex;
+  align-items: center;
 }
 #sun-cap:active { background: rgba(255,210,150,.95); transform: scale(0.96); }
 
@@ -364,8 +367,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 }
 .vital-health { border: 1px solid rgba(255,255,255,.1); }
 .vital-label {
-  font-size: 8.5px;
-  color: rgba(240,220,190,.65);
+  font-size: 11px;
+  color: rgba(240,220,190,.75);
   text-transform: uppercase;
   letter-spacing: .04em;
   font-weight: 700;

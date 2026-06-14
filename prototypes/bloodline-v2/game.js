@@ -1133,6 +1133,8 @@ function renderSky() {
   if (deathLine) {
     deathLine.setAttribute('x1', sunPos.x.toFixed(2));
     deathLine.setAttribute('y1', sunPos.y.toFixed(2));
+    deathLine.setAttribute('x2', '95');
+    deathLine.setAttribute('y2', '27');
   }
 
   const remaining = Math.max(0, LIFE_EXPECTANCY - characterAge());
@@ -1487,8 +1489,8 @@ function renderCharPanel() {
     pill.textContent = b.name;
     branchEl.appendChild(pill);
   }
-  // Forming branch pill (ghost)
-  if (activeBranches.length === 0) {
+  // Forming branch pill (ghost) — mostra sempre, fins i tot si ja hi ha branques actives
+  {
     const forming = getFormingBranch();
     if (forming) {
       const pct = Math.min(1, forming.pct);
@@ -2020,7 +2022,7 @@ function renderShop() {
           <span class="shop-desc">${action.description || ''}${upgradeNote}</span>
         </div>
         <button class="shop-buy-btn" ${canAfford ? '' : 'disabled'} data-id="${action.id}">
-          🪨${action.purchase_cost}
+          🔵${action.purchase_cost}
         </button>`;
       list.appendChild(row);
     });
@@ -2412,7 +2414,7 @@ function openCharDetail() {
   const food = Math.round(state.food || 0);
   const statRows = [
     { label: '🌾 Menjar',  val: `${food}/${foodMax()}`,          pct: food / foodMax() * 100,              color: '#f39c12' },
-    { label: '❤️ Salut',   val: hp,                              pct: hp / HEALTH_MAX * 100,               color: '#e74c3c' },
+    { label: '❤️ Salut',   val: hp,                              pct: hp / healthMax() * 100,              color: '#e74c3c' },
     { label: '💪 Força',   val: (c.stats.forca  || 0).toFixed(1), pct: (c.stats.forca  || 0) / STAT_MAX * 100, color: '#e67e22' },
     { label: '🧠 Enginy',  val: (c.stats.enginy || 0).toFixed(1), pct: (c.stats.enginy || 0) / STAT_MAX * 100, color: '#a29bfe' },
     { label: '🔗 Vincle',  val: (c.stats.vincle || 0).toFixed(1), pct: (c.stats.vincle || 0) / STAT_MAX * 100, color: '#5dade2' },
