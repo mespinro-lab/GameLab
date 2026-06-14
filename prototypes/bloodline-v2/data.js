@@ -37,7 +37,7 @@ const STAT_STARTING_VALUE = 1.0;
 const STAT_OUTPUT_FACTOR  = 0.15;
 
 const DESTRESA_THRESHOLD = 5;
-const DESTRESA_MAX       = 3;
+const DESTRESA_MAX       = 4;
 const DESTRESA_BONUS     = 1;
 
 const TEACHING_BONUS         = 0.5;  // S'afegeix a inheritanceRate de cada tech quan el pare ha ensenyat
