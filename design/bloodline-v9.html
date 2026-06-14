@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bloodline · v9</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#16181c;color:#e7e2d8;
+    font-family:"SF Pro Display",-apple-system,"Segoe UI",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;padding:26px 14px 64px;display:flex;flex-direction:column;align-items:center}
+  h1{font-size:18px;font-weight:700;letter-spacing:-.01em;margin-bottom:3px;text-align:center}
+  .sub{color:#9aa0a8;font-size:12.5px;text-align:center;max-width:440px;margin-bottom:20px}
+
+  .phone{width:min(355px,93vw);aspect-ratio:9/19.3;border-radius:33px;overflow:hidden;position:relative;
+    box-shadow:0 24px 60px rgba(0,0,0,.55),0 0 0 8px #0c0d0f,0 0 0 9px #2c2e33;background:#b88a5a}
+
+  /* ===== CEL = etapa de vida (OCÀS) ===== */
+  .sky{position:absolute;inset:0 0 44% 0;
+    background:linear-gradient(180deg,#3b3b66 0%,#6a4a72 30%,#b5624a 64%,#e0935a 86%,#f0b86e 100%)}
+  /* sol baix a l'horitzó, franja lliure */
+  .sunwrap{position:absolute;top:188px;left:0;right:0;height:138px;z-index:2}
+  .sunwrap svg{width:100%;height:100%}
+  .suncap{position:absolute;top:300px;right:10px;z-index:3;font-size:9px;font-weight:700;color:#5a1e0e;
+    background:rgba(255,225,180,.82);border-radius:8px;padding:2px 7px;white-space:nowrap}
+
+  .mtn{position:absolute;left:0;right:0;top:40%;height:14%;background:linear-gradient(180deg,#5b4a64,#4a3c54);
+    clip-path:polygon(0 100%,0 55%,16% 20%,30% 60%,44% 12%,60% 58%,74% 24%,88% 60%,100% 28%,100% 100%);opacity:.85}
+  .ground{position:absolute;left:0;right:0;bottom:0;top:52%;
+    background:radial-gradient(120% 90% at 50% 0%,#cdaa66,#bb9356 45%,#a87e44);
+    border-radius:46% 46% 0 0/12% 12% 0 0;box-shadow:inset 0 6px 14px rgba(255,220,170,.22)}
+  .river{position:absolute;left:-6%;right:-6%;top:54%;height:5%;background:linear-gradient(180deg,#7badbe,#5891a4);
+    border-radius:50%;transform:rotate(-4deg);opacity:.9}
+
+  .meta{position:absolute;top:11px;left:12px;right:12px;z-index:6;display:flex;justify-content:space-between;align-items:center}
+  .mleft{font-size:9.5px;color:#5a4a30;font-weight:700;background:rgba(255,235,205,.62);border-radius:8px;padding:2px 7px}
+  .mright{display:flex;gap:7px}
+  .chip{background:rgba(28,22,14,.5);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.16);
+    border-radius:11px;padding:5px 9px;font-size:11.5px;font-weight:800;color:#fdf8ee}
+
+  .ident{position:absolute;top:40px;left:10px;right:10px;z-index:5;
+    background:rgba(24,19,12,.52);backdrop-filter:blur(11px);-webkit-backdrop-filter:blur(11px);
+    border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:9px;display:flex;gap:8px}
+  .half{flex:1 1 0;display:flex;flex-direction:column;gap:7px}
+
+  /* característiques: NOMÉS icona + número */
+  .attrs{display:flex;gap:5px;justify-content:space-around;background:rgba(0,0,0,.2);border-radius:9px;padding:6px 4px}
+  .at{font-size:12px;font-weight:800;color:#e3d9c4;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:3px}
+  .at .ic{font-size:13px}
+  .at.hot{color:#8fd5a6}
+  .pid{display:flex;gap:9px;align-items:center;position:relative}
+  .portrait{width:60px;height:60px;border-radius:15px;flex:none;
+    background:linear-gradient(160deg,#9a86a8 0%,#b6a6bf 50%,#c9b79e 100%);
+    box-shadow:inset 0 2px 5px rgba(255,255,255,.45),0 3px 7px rgba(0,0,0,.3),0 0 14px rgba(124,92,210,.45);
+    display:flex;align-items:center;justify-content:center;font-size:34px;border:1.5px solid rgba(150,120,210,.55)}
+  .who .nm{font-size:15px;font-weight:800;color:#fdf8ee;line-height:1.1}
+  .who .gn{font-size:10px;font-weight:600;color:#bcae97;margin-top:2px}
+  .pdelta{position:absolute;left:30px;top:-2px;font-size:11px;font-weight:800;color:#fff;
+    background:rgba(40,120,60,.95);border-radius:14px;padding:2px 8px;box-shadow:0 3px 9px rgba(0,0,0,.35);
+    animation:floatup 2.6s ease-out infinite;z-index:3}
+  @keyframes floatup{0%{opacity:0;transform:translateY(10px) scale(.85)}20%{opacity:1;transform:translateY(0) scale(1.05)}
+    70%{opacity:1;transform:translateY(-5px)}100%{opacity:0;transform:translateY(-18px) scale(.95)}}
+
+  .vcard{justify-content:center}
+  .cell{border-radius:11px;padding:6px 10px;background:rgba(255,255,255,.07);display:flex;align-items:baseline;justify-content:space-between}
+  .cell.food{background:linear-gradient(180deg,rgba(239,123,70,.34),rgba(221,74,44,.3));border:1px solid rgba(255,150,90,.55)}
+  .cell .lab{font-size:9px;color:#cdb89a;text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+  .cell .num{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+  .cell .num .d{font-size:11px;font-weight:600}
+  .cell.food .num{color:#ffd9c4}.cell.food .num .d{color:#ffcaa8}.cell .num .d.n{color:#9aa0a8}
+
+  .know{position:absolute;top:160px;left:16px;right:16px;z-index:4;display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+  .pill{font-size:9.5px;font-weight:800;padding:4px 9px;border-radius:20px;color:#fff;
+    box-shadow:0 4px 9px rgba(40,25,10,.45),inset 0 1px 0 rgba(255,255,255,.3)}
+  .pill.br{background:linear-gradient(180deg,#5384c7,#3a66a8)}
+  .pill.sk{background:linear-gradient(180deg,#52ab7c,#388a62)}
+  .pill.de{background:linear-gradient(180deg,#e0bb4a,#c39d2c);color:#3a2e07}
+  .pill.mr{background:rgba(40,30,18,.6);color:#fdf8ee;backdrop-filter:blur(6px)}
+  .forming{position:relative;font-size:9.5px;font-weight:800;padding:4px 9px;border-radius:20px;color:#eaf2ff;
+    border:1.5px dashed rgba(150,185,245,.95);background:rgba(40,60,100,.65);overflow:hidden;backdrop-filter:blur(4px);
+    display:flex;align-items:center;gap:4px;box-shadow:0 4px 11px rgba(40,60,120,.5)}
+  .forming .fill{position:absolute;left:0;top:0;bottom:0;width:80%;
+    background:linear-gradient(180deg,rgba(83,132,199,.75),rgba(58,102,168,.75));z-index:0}
+  .forming>span{position:relative;z-index:1}
+
+  .node{position:absolute;display:flex;flex-direction:column;align-items:center;gap:2px;z-index:3}
+  .disc{border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(70% 70% at 38% 30%,#e7dcc2,#c2ac80 70%,#a6905f);
+    box-shadow:0 7px 12px rgba(50,30,10,.35),inset 0 3px 6px rgba(255,245,220,.5),inset 0 -5px 8px rgba(80,50,15,.28)}
+  .nm{font-size:10px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(40,20,5,.9)}
+  .nm.fam{font-size:8.5px;font-weight:600;color:#fdf3e2}
+  .stash{margin-top:2px;display:flex;gap:6px;background:rgba(28,22,14,.36);border:1px solid rgba(255,255,255,.1);
+    border-radius:9px;padding:2px 7px}
+  .stash span{font-size:9px;font-weight:700;color:#e8dcc4;opacity:.9}
+
+  .logbar{position:absolute;left:0;right:0;bottom:0;padding:11px 13px 14px;z-index:4;
+    background:linear-gradient(180deg,rgba(90,60,30,0),rgba(60,40,18,.6) 60%)}
+  .log{font-size:9.5px;color:#f5ead5;text-shadow:0 1px 2px rgba(40,20,5,.8)}
+
+  .legend{width:min(540px,94vw);margin-top:24px;font-size:12px;color:#b8bdc4;line-height:1.7}
+  .legend b{color:#e7e2d8}.legend .k{display:inline-block;width:16px;text-align:center;margin-right:4px}
+  .stages{display:flex;gap:8px;margin:8px 0 4px;flex-wrap:wrap}
+  .stage{font-size:10px;color:#cfd4da;display:flex;align-items:center;gap:5px}
+  .sw{width:26px;height:13px;border-radius:4px;border:1px solid rgba(255,255,255,.15)}
+</style>
+</head>
+<body>
+
+<h1>Bloodline — v9</h1>
+<p class="sub">Característiques només amb icona · vida = color del cel (ara <b>ocàs</b>, Karn és vell) + sol baix sense oclusió.</p>
+
+<div class="phone">
+  <div class="sky"></div>
+
+  <!-- sol baix a l'horitzó, franja lliure -->
+  <div class="sunwrap">
+    <svg viewBox="0 0 355 138" preserveAspectRatio="none">
+      <path d="M 18 118 Q 177 70 337 118" fill="none" stroke="rgba(255,235,200,.35)" stroke-width="2" stroke-dasharray="2 7"/>
+      <path d="M 18 118 Q 150 76 250 92" fill="none" stroke="rgba(255,240,210,.85)" stroke-width="2.5"/>
+      <path d="M 250 92 Q 295 100 312 112" fill="none" stroke="rgba(255,150,90,.95)" stroke-width="2.5"/>
+      <line x1="312" y1="100" x2="312" y2="124" stroke="#d8431f" stroke-width="2.4"/>
+      <circle cx="250" cy="92" r="20" fill="#ffdd9e" opacity=".35"/>
+      <circle cx="250" cy="92" r="13" fill="#ffe9b8"/>
+    </svg>
+  </div>
+  <div class="suncap">⚑ posta ~7 cicles</div>
+
+  <div class="mtn"></div><div class="ground"></div><div class="river"></div>
+
+  <div class="meta">
+    <div class="mleft">Partida 78/100</div>
+    <div class="mright"><div class="chip">🔵 28/35</div><div class="chip">☰</div></div>
+  </div>
+
+  <div class="ident">
+    <div class="half">
+      <div class="attrs">
+        <div class="at"><span class="ic">💪</span>3.8</div>
+        <div class="at hot"><span class="ic">🧠</span>2.5</div>
+        <div class="at"><span class="ic">🔗</span>4.1</div>
+      </div>
+      <div class="pid">
+        <div class="portrait">🧙</div>
+        <div class="who"><div class="nm">Karn</div><div class="gn">Gen 5</div></div>
+        <div class="pdelta">+0.1 🧠</div>
+      </div>
+    </div>
+    <div class="half vcard">
+      <div class="cell food"><span class="lab">🌾 menjar</span><span class="num">9/14 <span class="d">↓3</span></span></div>
+      <div class="cell"><span class="lab">❤️ salut</span><span class="num">42 <span class="d n">↓2</span></span></div>
+    </div>
+  </div>
+
+  <div class="know">
+    <span class="pill br">Caçador</span>
+    <span class="forming"><span class="fill"></span><span>◔ Místic 80%</span></span>
+    <span class="pill sk">Punta Llança</span><span class="pill sk">Trampa</span>
+    <span class="pill de">⭐ Botànica</span><span class="pill mr">+2</span>
+  </div>
+
+  <div class="node" style="top:69%;left:27%">
+    <div class="disc" style="width:58px;height:58px;font-size:23px">🏕️</div>
+    <div class="nm">Campament</div>
+    <div class="stash"><span>🪨 7</span><span>⚒️ 2</span></div>
+  </div>
+  <div class="node" style="top:66%;left:77%"><div class="disc" style="width:52px;height:52px;font-size:20px">🌾</div><div class="nm">Planes</div></div>
+  <div class="node" style="top:89%;left:34%"><div class="disc" style="width:46px;height:46px;font-size:17px">🌲</div><div class="nm">Bosc</div></div>
+  <div class="node" style="top:86%;left:76%"><div class="disc" style="width:48px;height:48px;font-size:17px">🏠</div><div class="nm">Llar</div><div class="nm fam">💑 👶×3</div></div>
+
+  <div class="logbar"><div class="log">› Recol·lectar Arrels: +3🌾 · 🧠▲ · ⭐Botànica · 🌆 el cel s'enfosqueix</div></div>
+</div>
+
+<div class="legend">
+  <div><span class="k">🎨</span><b>El cel és la vida</b>, i com que és el fons no es pot tapar mai:</div>
+  <div class="stages">
+    <span class="stage"><span class="sw" style="background:linear-gradient(180deg,#f6c6d0,#f4d9a8)"></span>Albada · jove</span>
+    <span class="stage"><span class="sw" style="background:linear-gradient(180deg,#7fb8cf,#cfe0d6)"></span>Dia · plenitud</span>
+    <span class="stage"><span class="sw" style="background:linear-gradient(180deg,#6a4a72,#e0935a)"></span>Ocàs · envellint</span>
+    <span class="stage"><span class="sw" style="background:linear-gradient(180deg,#1d2240,#3a3560)"></span>Nit · mort a prop</span>
+  </div>
+  <div><span class="k">☀️</span>El <b>sol baix</b> a la franja lliure dona la precisió (posta ~7). Si el vols treure, el color del cel sol n'hi ha prou i la xifra exacta va al tap.</div>
+  <div><span class="k">💪</span>Característiques només amb icona · <span class="k">🏷️</span>etiquetes surant · <span class="k">🪨</span>recursos al camp.</div>
+</div>
+
+</body>
+</html>

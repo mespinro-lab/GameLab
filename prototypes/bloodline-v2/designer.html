@@ -1,0 +1,2765 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bloodline Designer</title>
+<script src="data.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #0d0d0d;
+  --surf1:   #1a1a1a;
+  --surf2:   #242424;
+  --surf3:   #2e2e2e;
+  --border:  #333;
+  --gold:    #d4a853;
+  --gold2:   #b8903f;
+  --text:    #e8e0d0;
+  --text2:   #9a9080;
+  --green:   #4ade80;
+  --red:     #f87171;
+  --blue:    #60a5fa;
+  --purple:  #a855f7;
+  --sidebar-w: 280px;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 13px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Header ── */
+#header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--surf1);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+#header h1 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 0.05em;
+  margin-right: auto;
+}
+#search-box {
+  background: var(--surf2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 5px 10px;
+  border-radius: 4px;
+  width: 200px;
+  font-size: 12px;
+}
+#search-box:focus { outline: none; border-color: var(--gold); }
+#search-box::placeholder { color: var(--text2); }
+
+.view-btn {
+  background: var(--surf2);
+  color: var(--text2);
+  border: 1px solid var(--border);
+  padding: 5px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.view-btn:hover { border-color: var(--gold); color: var(--gold); }
+.view-btn.active { background: var(--surf3); border-color: var(--gold); color: var(--gold); }
+
+#btn-export {
+  background: var(--gold);
+  color: #000;
+  border: none;
+  padding: 5px 12px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+}
+#btn-export:hover { background: var(--gold2); }
+
+/* ── Main layout ── */
+#main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── Sidebar ── */
+#sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: var(--surf1);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#cat-list {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.cat-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 14px;
+  background: none;
+  border: none;
+  color: var(--text2);
+  cursor: pointer;
+  text-align: left;
+  font-size: 12px;
+}
+.cat-btn:hover { background: var(--surf2); color: var(--text); }
+.cat-btn.active { background: var(--surf2); color: var(--gold); }
+.cat-btn .count {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text2);
+  background: var(--surf3);
+  padding: 1px 5px;
+  border-radius: 10px;
+}
+
+/* Map mode: sidebar shows category filter checkboxes */
+#map-cat-filter {
+  padding: 8px 0;
+  flex: 1;
+  overflow-y: auto;
+  display: none;
+}
+#map-cat-filter.visible { display: block; }
+.map-filter-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text2);
+  user-select: none;
+}
+.map-filter-item:hover { background: var(--surf2); }
+.map-filter-item input[type=checkbox] { accent-color: var(--gold); width: 14px; height: 14px; }
+.map-filter-item label { cursor: pointer; flex: 1; }
+.map-filter-count {
+  font-size: 11px;
+  background: var(--surf3);
+  padding: 1px 5px;
+  border-radius: 10px;
+}
+
+#item-list-wrap {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+.item-entry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  cursor: pointer;
+  border-radius: 0;
+  color: var(--text2);
+  font-size: 12px;
+  user-select: none;
+}
+.item-entry:hover { background: var(--surf2); color: var(--text); }
+.item-entry.active { background: var(--surf3); color: var(--gold); }
+.item-entry .item-badge {
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--surf3);
+  color: var(--text2);
+  flex-shrink: 0;
+}
+.item-entry .mod-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  flex-shrink: 0;
+  display: none;
+}
+.item-entry.modified .mod-dot { display: block; }
+
+#btn-new-item {
+  margin: 8px;
+  padding: 6px;
+  background: var(--surf2);
+  border: 1px dashed var(--border);
+  color: var(--text2);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+#btn-new-item:hover { border-color: var(--gold); color: var(--gold); }
+
+/* ── Detail panel ── */
+#detail {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  background: var(--bg);
+}
+
+#detail-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text2);
+  font-size: 14px;
+}
+
+#detail-content { display: none; }
+#detail-content.visible { display: block; }
+
+.detail-header {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.detail-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+.type-badge {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: var(--surf2);
+  color: var(--gold);
+  border: 1px solid var(--gold2);
+}
+
+/* ── Sections ── */
+.section {
+  background: var(--surf1);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.section-header {
+  padding: 8px 12px;
+  background: var(--surf2);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.section-body {
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.section-body.cols-1 { grid-template-columns: 1fr; }
+.section-body.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.section-body.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+/* ── Form fields ── */
+.field { display: flex; flex-direction: column; gap: 3px; }
+.field.full { grid-column: 1 / -1; }
+.field label {
+  font-size: 10px;
+  color: var(--text2);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.field input[type=text],
+.field input[type=number],
+.field textarea,
+.field select {
+  background: var(--surf2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: inherit;
+}
+.field textarea { resize: vertical; min-height: 60px; }
+.field input:focus, .field textarea:focus, .field select:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+.field select option { background: var(--surf2); }
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+}
+.checkbox-row input[type=checkbox] { accent-color: var(--gold); width: 14px; height: 14px; }
+.checkbox-row label { font-size: 12px; color: var(--text); cursor: pointer; }
+
+/* ── Inclination grid ── */
+.incl-grid {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 6px;
+  align-items: center;
+  padding: 10px 12px;
+}
+.incl-label { font-size: 12px; color: var(--text2); }
+.incl-input {
+  background: var(--surf2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  width: 90px;
+}
+.incl-input:focus { outline: none; border-color: var(--gold); }
+
+/* ── Editable list ── */
+.edit-list { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.edit-list-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surf2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+.edit-list-item select,
+.edit-list-item input {
+  background: var(--surf3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 3px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+.edit-list-item select:focus,
+.edit-list-item input:focus { outline: none; border-color: var(--gold); }
+.edit-list-item label { font-size: 11px; color: var(--text2); }
+.btn-rm {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--red);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+}
+.btn-rm:hover { color: #ff4444; }
+.btn-add-row {
+  background: none;
+  border: 1px dashed var(--border);
+  color: var(--text2);
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  align-self: flex-start;
+}
+.btn-add-row:hover { border-color: var(--gold); color: var(--gold); }
+
+/* ── Dependencies panel ── */
+.dep-section { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.dep-row { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.dep-label { font-size: 11px; color: var(--text2); font-weight: 600; min-width: 140px; flex-shrink: 0; }
+.dep-link {
+  font-size: 11px;
+  color: var(--blue);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: rgba(96,165,250,0.4);
+}
+.dep-link:hover { color: #93c5fd; }
+.dep-none { font-size: 11px; color: var(--text2); font-style: italic; }
+
+/* ── Save bar ── */
+#save-bar {
+  display: none;
+  padding: 8px 20px;
+  background: var(--surf1);
+  border-top: 1px solid var(--border);
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+#save-bar.visible { display: flex; }
+.btn-save {
+  background: var(--gold);
+  color: #000;
+  border: none;
+  padding: 5px 14px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+}
+.btn-save:hover { background: var(--gold2); }
+.btn-discard {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  padding: 5px 14px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.btn-discard:hover { border-color: var(--red); color: var(--red); }
+#save-bar span { font-size: 12px; color: var(--text2); margin-right: auto; }
+
+/* ── Export modal ── */
+#modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+#modal-overlay.visible { display: flex; }
+#modal {
+  background: var(--surf1);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 760px;
+  max-width: 95vw;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#modal-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+#modal-header h2 { font-size: 14px; color: var(--gold); flex: 1; }
+#modal-tabs { display: flex; gap: 4px; }
+.modal-tab {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  background: none;
+}
+.modal-tab.active { background: var(--gold); color: #000; border-color: var(--gold); }
+#btn-close-modal {
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-size: 18px;
+  cursor: pointer;
+  line-height: 1;
+}
+#btn-close-modal:hover { color: var(--text); }
+#modal-body {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  gap: 8px;
+}
+#export-textarea {
+  flex: 1;
+  background: var(--surf2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  padding: 10px;
+  border-radius: 4px;
+  resize: none;
+  min-height: 400px;
+}
+#btn-copy-export {
+  align-self: flex-end;
+  background: var(--gold);
+  color: #000;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+}
+#btn-copy-export:hover { background: var(--gold2); }
+
+/* ── Map view ── */
+#map-panel {
+  display: none;
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg);
+}
+#map-panel.visible { display: block; }
+
+#map-toolbar {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+#map-toolbar > * { pointer-events: auto; }
+
+.map-tool-btn {
+  background: var(--surf1);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  padding: 5px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.map-tool-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+#map-info {
+  margin-left: auto;
+  background: var(--surf1);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--text2);
+}
+
+#map-search {
+  background: var(--surf1);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 5px 10px;
+  border-radius: 4px;
+  width: 180px;
+  font-size: 11px;
+}
+#map-search:focus { outline: none; border-color: var(--gold); }
+#map-search::placeholder { color: var(--text2); }
+
+#map-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Map legend */
+#map-legend {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background: rgba(26,26,26,0.92);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  z-index: 10;
+  pointer-events: none;
+  font-size: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend-dot {
+  width: 10px; height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.legend-line {
+  width: 20px; height: 2px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--surf1); }
+::-webkit-scrollbar-thumb { background: var(--surf3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #444; }
+
+/* small helpers */
+.tag {
+  display: inline-block;
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--surf3);
+  color: var(--text2);
+}
+.val-green { color: var(--green); }
+.val-red   { color: var(--red); }
+.val-gold  { color: var(--gold); }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div id="header">
+  <h1>BLOODLINE DESIGNER</h1>
+  <input id="search-box" type="text" placeholder="Cerca..." oninput="onSearch(this.value)">
+  <button class="view-btn active" id="btn-view-list" onclick="switchView('list')">Llista</button>
+  <button class="view-btn" id="btn-view-map" onclick="switchView('map')">Mapa</button>
+  <button id="btn-export" onclick="openExport()">Exportar JS</button>
+</div>
+
+<!-- Main -->
+<div id="main">
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <div id="cat-list"></div>
+    <!-- Map filter (shown in map mode) -->
+    <div id="map-cat-filter"></div>
+    <div id="item-list-wrap"></div>
+    <button id="btn-new-item" onclick="createNewItem()">+ Nou item</button>
+  </div>
+
+  <!-- Detail (list view) -->
+  <div id="detail">
+    <div id="detail-placeholder">Selecciona un item a l'esquerra</div>
+    <div id="detail-content"></div>
+  </div>
+
+  <!-- Map panel -->
+  <div id="map-panel">
+    <div id="map-toolbar">
+      <button class="map-tool-btn" onclick="resetMapLayout()">Reset layout</button>
+      <input id="map-search" type="text" placeholder="Cerca node..." oninput="onMapSearch(this.value)">
+      <div id="map-info">Doble clic per editar · Clic per destacar · Roda per zoom · Arrossega per moure</div>
+    </div>
+    <svg id="map-svg"></svg>
+    <div id="map-legend"></div>
+  </div>
+</div>
+
+<!-- Save bar -->
+<div id="save-bar">
+  <span id="save-bar-msg">Canvis no desats</span>
+  <button class="btn-discard" onclick="discardChanges()">Descartar</button>
+  <button class="btn-save" onclick="saveCurrentItem()">Desar</button>
+</div>
+
+<!-- Export modal -->
+<div id="modal-overlay" onclick="if(event.target===this)closeExport()">
+  <div id="modal">
+    <div id="modal-header">
+      <h2>Exportar dades</h2>
+      <div id="modal-tabs">
+        <button class="modal-tab active" onclick="switchExportTab('full',this)">Tot</button>
+        <button class="modal-tab" onclick="switchExportTab('diff',this)">Canvis</button>
+      </div>
+      <button id="btn-close-modal" onclick="closeExport()">&#x2715;</button>
+    </div>
+    <div id="modal-body">
+      <textarea id="export-textarea" readonly spellcheck="false"></textarea>
+      <button id="btn-copy-export" onclick="copyExport()">Copiar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ============================================================
+// STATE
+// ============================================================
+
+const state = {
+  actions:     deepCopy(ACTIONS),
+  skills:      deepCopy(SKILL_DEFS),
+  techs:       deepCopy(UNIVERSAL_TECHS),
+  events:      flattenEvents(),
+  resources:   deepCopy(RESOURCE_DEFS),
+  zones:       deepCopy(ZONE_DEFS),
+  branches:    deepCopy(BRANCHES),
+  destreses:   deepCopy(DESTRESA_DEFS),
+};
+
+const original = {
+  actions:     deepCopy(ACTIONS),
+  skills:      deepCopy(SKILL_DEFS),
+  techs:       deepCopy(UNIVERSAL_TECHS),
+  events:      flattenEvents(),
+  resources:   deepCopy(RESOURCE_DEFS),
+  zones:       deepCopy(ZONE_DEFS),
+  branches:    deepCopy(BRANCHES),
+  destreses:   deepCopy(DESTRESA_DEFS),
+};
+
+const modified = new Set();
+const newItems = new Set();
+
+let currentCat = 'actions';
+let currentItemId = null;
+let isDirty = false;
+let exportTab = 'full';
+let currentView = 'list'; // 'list' | 'map'
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+function deepCopy(o) { return JSON.parse(JSON.stringify(o)); }
+
+function flattenEvents() {
+  const out = [];
+  for (const [pool, evts] of Object.entries(EVENT_POOLS)) {
+    for (const ev of evts) {
+      out.push({ ...ev, _pool: pool });
+    }
+  }
+  return out;
+}
+
+function getList(cat) { return state[cat]; }
+
+function getSortedList(cat) {
+  const list = state[cat];
+  if (cat === 'techs') {
+    // Sort by cycle ascending (already correct in data, but enforce it)
+    return [...list].sort((a, b) => (a.cycle ?? 0) - (b.cycle ?? 0));
+  }
+  // All others: alphabetical by name
+  return [...list].sort((a, b) => {
+    const na = (a.name || a.label || a.id || '').toLowerCase();
+    const nb = (b.name || b.label || b.id || '').toLowerCase();
+    return na < nb ? -1 : na > nb ? 1 : 0;
+  });
+}
+
+function getCatLabel(cat) {
+  return {
+    actions: 'Accions', skills: 'Habilitats', techs: 'Tecnologies',
+    events: 'Esdeveniments', resources: 'Recursos', zones: 'Zones',
+    branches: 'Branques', destreses: 'Destreses'
+  }[cat];
+}
+function getCatIcon(cat) {
+  return {
+    actions: '⚡', skills: '🧩', techs: '🔬',
+    events: '📅', resources: '💎', zones: '🗺️',
+    branches: '🌿', destreses: '⭐'
+  }[cat];
+}
+
+function itemName(item) {
+  return item.name || item.label || item.id || '(sense nom)';
+}
+
+function getItem(cat, id) {
+  return state[cat].find(x => x.id === id);
+}
+
+function getOriginalItem(cat, id) {
+  return original[cat].find(x => x.id === id);
+}
+
+function isModified(id) { return modified.has(id); }
+
+function techOptions(nullable = true) {
+  const opts = nullable ? [{ value: '', label: '— cap —' }] : [];
+  for (const t of state.techs) opts.push({ value: t.id, label: `${t.icon || ''} ${t.name}` });
+  return opts;
+}
+function zoneOptions(nullable = true) {
+  const opts = nullable ? [{ value: '', label: '— cap —' }] : [];
+  for (const z of state.zones) opts.push({ value: z.id, label: z.label });
+  return opts;
+}
+function actionOptions(nullable = true) {
+  const opts = nullable ? [{ value: '', label: '— cap —' }] : [];
+  for (const a of state.actions) opts.push({ value: a.id, label: a.name });
+  return opts;
+}
+function skillOptions(nullable = true) {
+  const opts = nullable ? [{ value: '', label: '— cap —' }] : [];
+  for (const s of state.skills) opts.push({ value: s.id, label: s.name });
+  return opts;
+}
+function destreseOptions(nullable = true) {
+  const opts = nullable ? [{ value: '', label: '— cap —' }] : [];
+  for (const d of state.destreses) opts.push({ value: d.id, label: d.name });
+  return opts;
+}
+function poolOptions(nullable = true) {
+  const opts = nullable ? [{ value: '', label: '— cap —' }] : [];
+  for (const k of Object.keys(EVENT_POOLS)) opts.push({ value: k, label: k });
+  return opts;
+}
+function resourceOptions(nullable = false) {
+  const opts = nullable ? [{ value: '', label: '— cap —' }] : [];
+  for (const r of state.resources) opts.push({ value: r.id, label: `${r.emoji || ''} ${r.label}` });
+  return opts;
+}
+
+const AXES = ['impuls', "intel·lecte", 'espiritualitat', 'sociabilitat'];
+const STATS = ['forca', 'enginy', 'vincle'];
+
+function selectHtml(name, options, value, attrs = '') {
+  let h = `<select name="${name}" ${attrs}>`;
+  for (const o of options) {
+    const sel = String(o.value) === String(value ?? '') ? ' selected' : '';
+    h += `<option value="${escH(String(o.value))}"${sel}>${escH(o.label)}</option>`;
+  }
+  h += '</select>';
+  return h;
+}
+
+function escH(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fieldHtml(label, inputHtml, full = false) {
+  return `<div class="field${full ? ' full' : ''}"><label>${label}</label>${inputHtml}</div>`;
+}
+
+function numInput(name, val, step = 1, min = '', max = '') {
+  return `<input type="number" name="${name}" value="${val ?? ''}" step="${step}" ${min !== '' ? `min="${min}"` : ''} ${max !== '' ? `max="${max}"` : ''}>`;
+}
+function textInput(name, val, placeholder = '') {
+  return `<input type="text" name="${name}" value="${escH(val ?? '')}" placeholder="${escH(placeholder)}">`;
+}
+function textareaHtml(name, val, rows = 3) {
+  return `<textarea name="${name}" rows="${rows}">${escH(val ?? '')}</textarea>`;
+}
+function checkboxHtml(name, label, checked) {
+  return `<div class="checkbox-row"><input type="checkbox" name="${name}" id="cb_${name}" ${checked ? 'checked' : ''}><label for="cb_${name}">${label}</label></div>`;
+}
+
+// ============================================================
+// INIT
+// ============================================================
+
+(function init() {
+  renderCatList();
+  selectCat('actions');
+})();
+
+// ============================================================
+// VIEW SWITCHING
+// ============================================================
+
+function switchView(view) {
+  currentView = view;
+  document.getElementById('btn-view-list').classList.toggle('active', view === 'list');
+  document.getElementById('btn-view-map').classList.toggle('active', view === 'map');
+
+  const detail = document.getElementById('detail');
+  const mapPanel = document.getElementById('map-panel');
+  const catList = document.getElementById('cat-list');
+  const itemListWrap = document.getElementById('item-list-wrap');
+  const btnNew = document.getElementById('btn-new-item');
+  const mapCatFilter = document.getElementById('map-cat-filter');
+  const searchBox = document.getElementById('search-box');
+
+  if (view === 'list') {
+    detail.style.display = '';
+    mapPanel.classList.remove('visible');
+    catList.style.display = '';
+    itemListWrap.style.display = '';
+    btnNew.style.display = '';
+    mapCatFilter.classList.remove('visible');
+    searchBox.style.display = '';
+  } else {
+    detail.style.display = 'none';
+    mapPanel.classList.add('visible');
+    catList.style.display = 'none';
+    itemListWrap.style.display = 'none';
+    btnNew.style.display = 'none';
+    mapCatFilter.classList.add('visible');
+    searchBox.style.display = 'none';
+    renderMapCatFilter();
+    renderMap();
+  }
+}
+
+// ============================================================
+// CATEGORY LIST
+// ============================================================
+
+function renderCatList() {
+  const cats = ['techs','skills','actions','events','resources','zones','branches','destreses'];
+  const el = document.getElementById('cat-list');
+  el.innerHTML = cats.map(c => {
+    const n = state[c].length;
+    return `<button class="cat-btn" data-cat="${c}" onclick="selectCat('${c}')">
+      <span>${getCatIcon(c)}</span>
+      <span>${getCatLabel(c)}</span>
+      <span class="count">${n}</span>
+    </button>`;
+  }).join('');
+}
+
+function selectCat(cat) {
+  if (isDirty) {
+    if (!confirm('Tens canvis no desats. Continuar?')) return;
+    isDirty = false;
+    hideSaveBar();
+  }
+  currentCat = cat;
+  currentItemId = null;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === cat));
+  renderItemList(getSortedList(cat), '');
+  showPlaceholder();
+}
+
+function renderItemList(items, filter) {
+  const wrap = document.getElementById('item-list-wrap');
+  const q = filter.toLowerCase();
+  const filtered = q ? items.filter(x => itemName(x).toLowerCase().includes(q) || (x.id||'').toLowerCase().includes(q)) : items;
+  wrap.innerHTML = filtered.map(item => {
+    const id = item.id;
+    const mod = isModified(id) ? ' modified' : '';
+    const isNew = newItems.has(id) ? '<span class="item-badge" style="color:var(--green)">nou</span>' : '';
+    return `<div class="item-entry${mod}${currentItemId === id ? ' active' : ''}" data-id="${escH(id)}" onclick="selectItem('${escH(id)}')">
+      <span class="mod-dot"></span>
+      <span>${escH(itemName(item))}</span>
+      ${isNew}
+    </div>`;
+  }).join('') || `<div style="padding:10px 14px;color:var(--text2);font-size:11px;">Cap resultat</div>`;
+}
+
+function onSearch(val) {
+  renderItemList(getSortedList(currentCat), val);
+}
+
+// ============================================================
+// ITEM SELECTION
+// ============================================================
+
+function selectItem(id) {
+  if (isDirty) {
+    if (!confirm('Tens canvis no desats. Continuar?')) return;
+    isDirty = false;
+    hideSaveBar();
+  }
+  currentItemId = id;
+  document.querySelectorAll('.item-entry').forEach(el => {
+    el.classList.toggle('active', el.dataset.id === id);
+  });
+  renderDetail(currentCat, id);
+}
+
+function showPlaceholder() {
+  document.getElementById('detail-placeholder').style.display = 'flex';
+  document.getElementById('detail-content').classList.remove('visible');
+}
+
+function showDetail() {
+  document.getElementById('detail-placeholder').style.display = 'none';
+  document.getElementById('detail-content').classList.add('visible');
+}
+
+// ============================================================
+// DETAIL RENDER
+// ============================================================
+
+function renderDetail(cat, id) {
+  const item = getItem(cat, id);
+  if (!item) return;
+  const el = document.getElementById('detail-content');
+  el.innerHTML = buildDetailHTML(cat, item);
+  showDetail();
+}
+
+function buildDetailHTML(cat, item) {
+  const renderers = {
+    actions:   renderActionForm,
+    skills:    renderSkillForm,
+    techs:     renderTechForm,
+    events:    renderEventForm,
+    resources: renderResourceForm,
+    zones:     renderZoneForm,
+    branches:  renderBranchForm,
+    destreses: renderDestreseForm,
+  };
+  const formHtml = renderers[cat](item);
+  const depsHtml = renderDeps(cat, item);
+  return `
+    <div class="detail-header">
+      <div class="detail-title">${escH(itemName(item))}</div>
+      <div class="type-badge">${getCatIcon(cat)} ${getCatLabel(cat)}</div>
+    </div>
+    <form id="item-form" oninput="markDirty()" onchange="markDirty()">
+      ${formHtml}
+    </form>
+    ${depsHtml}
+  `;
+}
+
+// ============================================================
+// ACTION FORM
+// ============================================================
+
+function renderActionForm(item) {
+  const id = item.id;
+  const inclHtml = AXES.map(ax => {
+    const val = item.inclination_deltas ? (item.inclination_deltas[ax] ?? 0) : 0;
+    return `<div class="incl-label">${ax}</div>
+      <input class="incl-input" type="number" name="incl_${ax}" value="${val}" step="0.01" min="-1" max="1">`;
+  }).join('');
+  const seList = (item.side_effects || []).map((se, i) => sideEffectRow(se, i)).join('');
+  const reqList = (item.requires || []).map((r, i) => requiresRow(r, i)).join('');
+
+  return `
+    <div class="section">
+      <div class="section-header">Identificació</div>
+      <div class="section-body">
+        ${fieldHtml('ID', textInput('id', id))}
+        ${fieldHtml('Nom', textInput('name', item.name))}
+        ${fieldHtml('Zona', selectHtml('zona', zoneOptions(), item.zona))}
+        ${fieldHtml('Tech prerequisit', selectHtml('universal_prereq', techOptions(), item.universal_prereq))}
+        ${fieldHtml('Descripció', textareaHtml('description', item.description, 3), true)}
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Flags</div>
+      <div class="section-body cols-1">
+        ${checkboxHtml('is_base', 'Acció base (disponible sense habilitat)', !!item.is_base)}
+        ${checkboxHtml('is_upgrade', 'Millora d\'una altra acció', !!item.is_upgrade)}
+        ${fieldHtml('Millora de (acció)', selectHtml('upgrades_action_id', actionOptions(), item.upgrades_action_id))}
+        ${checkboxHtml('is_discovery_action', 'Acció de descoberta', !!item.is_discovery_action)}
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Costos i edats</div>
+      <div class="section-body cols-4">
+        ${fieldHtml('Cost compra', numInput('purchase_cost', item.purchase_cost ?? '', 1, 0))}
+        ${fieldHtml('Cost execució', numInput('execute_cost', item.execute_cost ?? '', 1, 0))}
+        ${fieldHtml('Edat mín.', numInput('minAge', item.minAge ?? '', 1, 0))}
+        ${fieldHtml('Edat màx.', numInput('maxAge', item.maxAge ?? '', 1, 0))}
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Output</div>
+      <div class="section-body cols-3">
+        ${fieldHtml('Recurs output', selectHtml('output_resource', resourceOptions(true), item.output_resource))}
+        ${fieldHtml('Output mínim', numInput('output_min', item.output_min ?? ''))}
+        ${fieldHtml('Output màxim', numInput('output_max', item.output_max ?? ''))}
+        ${fieldHtml('Material mínim', numInput('material_min', item.material_min ?? ''))}
+        ${fieldHtml('Material màxim', numInput('material_max', item.material_max ?? ''))}
+        ${fieldHtml('Guany reputació', numInput('reputation_gain', item.reputation_gain ?? ''))}
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Estadística</div>
+      <div class="section-body">
+        ${fieldHtml('Stat clau', selectHtml('stat_key', [{value:'',label:'— cap —'},...STATS.map(s=>({value:s,label:s}))], item.stat_key))}
+        ${fieldHtml('Guany stat', numInput('stat_gain', item.stat_gain ?? '', 0.01, 0))}
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Destresa i pool d'events</div>
+      <div class="section-body">
+        ${fieldHtml('Destresa', selectHtml('destresa_id', destreseOptions(), item.destresa_id))}
+        ${fieldHtml('Pool d\'events', selectHtml('event_pool_id', poolOptions(), item.event_pool_id))}
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Deltes d'inclinació</div>
+      <div class="incl-grid">${inclHtml}</div>
+    </div>
+    <div class="section">
+      <div class="section-header">Efectes secundaris (side_effects)</div>
+      <div class="edit-list" id="se-list">
+        ${seList}
+        <button type="button" class="btn-add-row" onclick="addSideEffect()">+ Afegir efecte</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Requisits (requires)</div>
+      <div class="edit-list" id="req-list">
+        ${reqList}
+        <button type="button" class="btn-add-row" onclick="addRequires()">+ Afegir requisit</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Efecte sobre el personatge (character_effect)</div>
+      <div class="section-body cols-1">
+        ${fieldHtml('Tipus', textInput('char_effect_type', item.character_effect?.type ?? ''))}
+        ${fieldHtml('Paràmetres (JSON)', textareaHtml('char_effect_params', item.character_effect ? JSON.stringify(item.character_effect) : '', 2))}
+      </div>
+    </div>
+  `;
+}
+
+function sideEffectRow(se, i) {
+  return `<div class="edit-list-item" data-type="se" data-idx="${i}">
+    <label>Recurs</label>
+    ${selectHtml(`se_resource_${i}`, resourceOptions(), se.resource)}
+    <label>Delta</label>
+    <input type="number" name="se_delta_${i}" value="${se.delta ?? 0}" step="1" style="width:70px">
+    <button type="button" class="btn-rm" onclick="removeListRow(this,'se-list')">&#x2715;</button>
+  </div>`;
+}
+
+function requiresRow(r, i) {
+  const isState = !!r.state;
+  const key = isState ? r.state : (r.resource || '');
+  const min = r.min ?? '';
+  const max = r.max ?? '';
+  return `<div class="edit-list-item" data-type="req" data-idx="${i}">
+    <label>Tipus</label>
+    <select name="req_type_${i}" onchange="markDirty()">
+      <option value="resource" ${!isState ? 'selected' : ''}>Resource</option>
+      <option value="state" ${isState ? 'selected' : ''}>State</option>
+    </select>
+    <label>Clau</label>
+    <input type="text" name="req_key_${i}" value="${escH(key)}" style="width:90px">
+    <label>Mín</label>
+    <input type="number" name="req_min_${i}" value="${min}" step="1" style="width:55px">
+    <label>Màx</label>
+    <input type="number" name="req_max_${i}" value="${max}" step="1" style="width:55px">
+    <button type="button" class="btn-rm" onclick="removeListRow(this,'req-list')">&#x2715;</button>
+  </div>`;
+}
+
+function addSideEffect() {
+  const list = document.getElementById('se-list');
+  const items = list.querySelectorAll('[data-type="se"]');
+  const i = items.length;
+  const div = document.createElement('div');
+  div.innerHTML = sideEffectRow({ resource: 'food', delta: 0 }, i);
+  list.insertBefore(div.firstElementChild, list.lastElementChild);
+  markDirty();
+}
+
+function addRequires() {
+  const list = document.getElementById('req-list');
+  const items = list.querySelectorAll('[data-type="req"]');
+  const i = items.length;
+  const div = document.createElement('div');
+  div.innerHTML = requiresRow({}, i);
+  list.insertBefore(div.firstElementChild, list.lastElementChild);
+  markDirty();
+}
+
+function removeListRow(btn, listId) {
+  btn.closest('.edit-list-item').remove();
+  markDirty();
+}
+
+// ============================================================
+// SKILL FORM
+// ============================================================
+
+function renderSkillForm(item) {
+  const condRows = (item.inclination_conditions?.conditions || []).map((c, i) => inclCondRow(c, i)).join('');
+  const unlockRows = (item.unlocks_action_ids || []).map((aid, i) => unlockActionRow(aid, i)).join('');
+
+  return `
+    <div class="section">
+      <div class="section-header">Identificació</div>
+      <div class="section-body">
+        ${fieldHtml('ID', textInput('id', item.id))}
+        ${fieldHtml('Nom', textInput('name', item.name))}
+        ${fieldHtml('Tech prerequisit', selectHtml('universal_prereq', techOptions(), item.universal_prereq))}
+        ${fieldHtml('Taxa herència (0-1)', numInput('inheritanceRate', item.inheritanceRate, 0.01, 0, 1))}
+        ${checkboxHtml('is_hidden', 'Habilitat oculta', !!item.is_hidden)}
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Condicions d'inclinació</div>
+      <div class="section-body cols-1">
+        ${fieldHtml('Operador', selectHtml('incl_op', [{value:'AND',label:'AND'},{value:'OR',label:'OR'}], item.inclination_conditions?.operator ?? 'AND'))}
+      </div>
+      <div class="edit-list" id="incl-cond-list">
+        ${condRows}
+        <button type="button" class="btn-add-row" onclick="addInclCond()">+ Afegir condició</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Accions que desbloqueja</div>
+      <div class="edit-list" id="unlock-list">
+        ${unlockRows}
+        <button type="button" class="btn-add-row" onclick="addUnlockAction()">+ Afegir acció</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Efecte passiu</div>
+      <div class="section-body cols-1">
+        ${fieldHtml('Tipus', selectHtml('passive_type',
+          [{value:'',label:'— cap —'},
+           {value:'bonus_action_output',label:'bonus_action_output'},
+           {value:'grant_health',label:'grant_health'},
+           {value:'grant_material',label:'grant_material'},
+           {value:'unlock_zone',label:'unlock_zone'}],
+          item.passive_effect?.type ?? ''))}
+        ${fieldHtml('Paràmetres (JSON)', textareaHtml('passive_params', item.passive_effect ? JSON.stringify(item.passive_effect) : '', 3))}
+      </div>
+    </div>
+  `;
+}
+
+function inclCondRow(c, i) {
+  return `<div class="edit-list-item" data-type="incl-cond" data-idx="${i}">
+    <label>Eix</label>
+    ${selectHtml(`ic_axis_${i}`, AXES.map(a=>({value:a,label:a})), c.axis)}
+    <label>Mín</label>
+    <input type="number" name="ic_min_${i}" value="${c.min ?? ''}" step="0.01" min="0" max="1" style="width:70px">
+    <label>Màx</label>
+    <input type="number" name="ic_max_${i}" value="${c.max ?? ''}" step="0.01" min="0" max="1" style="width:70px">
+    <button type="button" class="btn-rm" onclick="removeListRow(this,'incl-cond-list')">&#x2715;</button>
+  </div>`;
+}
+
+function unlockActionRow(aid, i) {
+  return `<div class="edit-list-item" data-type="unlock-action" data-idx="${i}">
+    ${selectHtml(`ua_${i}`, actionOptions(false), aid)}
+    <button type="button" class="btn-rm" onclick="removeListRow(this,'unlock-list')">&#x2715;</button>
+  </div>`;
+}
+
+function addInclCond() {
+  const list = document.getElementById('incl-cond-list');
+  const i = list.querySelectorAll('[data-type="incl-cond"]').length;
+  const div = document.createElement('div');
+  div.innerHTML = inclCondRow({ axis: 'impuls' }, i);
+  list.insertBefore(div.firstElementChild, list.lastElementChild);
+  markDirty();
+}
+
+function addUnlockAction() {
+  const list = document.getElementById('unlock-list');
+  const i = list.querySelectorAll('[data-type="unlock-action"]').length;
+  const div = document.createElement('div');
+  div.innerHTML = unlockActionRow('', i);
+  list.insertBefore(div.firstElementChild, list.lastElementChild);
+  markDirty();
+}
+
+// ============================================================
+// TECH FORM
+// ============================================================
+
+function renderTechForm(item) {
+  return `
+    <div class="section">
+      <div class="section-header">Identificació</div>
+      <div class="section-body">
+        ${fieldHtml('ID', textInput('id', item.id))}
+        ${fieldHtml('Nom', textInput('name', item.name))}
+        ${fieldHtml('Icona', textInput('icon', item.icon))}
+        ${fieldHtml('Cicle descoberta', numInput('cycle', item.cycle, 1, 0))}
+        ${fieldHtml('Descripció', textareaHtml('description', item.description, 3), true)}
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Efecte (deixa buit si cap)</div>
+      <div class="section-body">
+        ${fieldHtml('Bonus salut (fix)', numInput('effect_healthBonus', item.effect?.healthBonus ?? ''))}
+        ${fieldHtml('Bonus salut (%)', numInput('effect_healthPctBonus', item.effect?.healthPctBonus ?? '', 0.01))}
+        ${fieldHtml('Salut màx gen. seg.', numInput('effect_nextGenHealthMax', item.effect?.nextGenHealthMax ?? ''))}
+        ${fieldHtml('Descripció efecte', textareaHtml('effect_desc', item.effect?.desc ?? '', 2), true)}
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+// EVENT FORM
+// ============================================================
+
+function renderEventForm(item) {
+  const optRows = (item.options || []).map((o, i) => eventOptionRow(o, i)).join('');
+  const blockedRows = (item.blocked_if || []).map((b, i) => blockedIfRow(b, i)).join('');
+
+  return `
+    <div class="section">
+      <div class="section-header">Identificació</div>
+      <div class="section-body">
+        ${fieldHtml('ID', textInput('id', item.id))}
+        ${fieldHtml('Pool', selectHtml('pool', poolOptions(false), item._pool))}
+        ${fieldHtml('Text', textareaHtml('text', item.text, 4), true)}
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Flags</div>
+      <div class="section-body cols-1">
+        ${checkboxHtml('is_single_use', 'Un sol ús', !!item.is_single_use)}
+        ${checkboxHtml('is_discovery_event', 'Esdeveniment de descoberta', !!item.is_discovery_event)}
+        ${fieldHtml('Habilitat descoberta', selectHtml('discovery_skill_id', skillOptions(), item.discovery_skill_id))}
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Efectes simples (effects, per events sense opcions)</div>
+      <div class="section-body cols-3">
+        ${fieldHtml('food', numInput('eff_food', item.effects?.food ?? '', 1))}
+        ${fieldHtml('health', numInput('eff_health', item.effects?.health ?? '', 1))}
+        ${fieldHtml('material', numInput('eff_material', item.effects?.material ?? '', 1))}
+        ${fieldHtml('reputacio', numInput('eff_reputacio', item.effects?.reputacio ?? '', 1))}
+        ${fieldHtml('pedra', numInput('eff_pedra', item.effects?.pedra ?? '', 1))}
+        ${fieldHtml('eina', numInput('eff_eina', item.effects?.eina ?? '', 1))}
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Condicions de bloqueig (blocked_if)</div>
+      <div class="edit-list" id="blocked-list">
+        ${blockedRows}
+        <button type="button" class="btn-add-row" onclick="addBlockedIf()">+ Afegir condició</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Opcions de l'event</div>
+      <div class="edit-list" id="option-list">
+        ${optRows}
+        <button type="button" class="btn-add-row" onclick="addEventOption()">+ Afegir opció</button>
+      </div>
+    </div>
+  `;
+}
+
+function blockedIfRow(b, i) {
+  return `<div class="edit-list-item" data-type="blocked" data-idx="${i}" style="flex-wrap:wrap;gap:6px;">
+    <label>Tipus</label>
+    <select name="bl_type_${i}" onchange="markDirty()" style="flex:1">
+      ${['has_skill','not_has_skill','has_destresa','stat_min','axis_above','resource_below'].map(t =>
+        `<option value="${t}" ${b.type===t?'selected':''}>${t}</option>`).join('')}
+    </select>
+    <label>id/stat/axis/resource</label>
+    <input type="text" name="bl_key_${i}" value="${escH(b.id||b.stat||b.axis||b.resource||'')}" style="width:120px">
+    <label>val/min</label>
+    <input type="number" name="bl_val_${i}" value="${b.min??b.value??''}" step="0.1" style="width:70px">
+    <button type="button" class="btn-rm" onclick="removeListRow(this,'blocked-list')">&#x2715;</button>
+  </div>`;
+}
+
+function eventOptionRow(o, i) {
+  return `<div class="edit-list-item" data-type="ev-option" data-idx="${i}" style="flex-direction:column;align-items:stretch;gap:6px;">
+    <div style="display:flex;align-items:center;gap:6px;">
+      <label style="font-size:11px;color:var(--text2);">Text</label>
+      <input type="text" name="eo_text_${i}" value="${escH(o.text||'')}" style="flex:1">
+      <button type="button" class="btn-rm" onclick="removeListRow(this,'option-list')">&#x2715;</button>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      ${['food','health','material','reputacio','pedra','eina'].map(r =>
+        `<label style="font-size:10px;color:var(--text2)">${r}</label>
+         <input type="number" name="eo_${r}_${i}" value="${o[r+'_delta']??''}" step="1" style="width:55px">`
+      ).join('')}
+    </div>
+  </div>`;
+}
+
+function addBlockedIf() {
+  const list = document.getElementById('blocked-list');
+  const i = list.querySelectorAll('[data-type="blocked"]').length;
+  const div = document.createElement('div');
+  div.innerHTML = blockedIfRow({ type: 'has_skill' }, i);
+  list.insertBefore(div.firstElementChild, list.lastElementChild);
+  markDirty();
+}
+
+function addEventOption() {
+  const list = document.getElementById('option-list');
+  const i = list.querySelectorAll('[data-type="ev-option"]').length;
+  const div = document.createElement('div');
+  div.innerHTML = eventOptionRow({ text: '' }, i);
+  list.insertBefore(div.firstElementChild, list.lastElementChild);
+  markDirty();
+}
+
+// ============================================================
+// RESOURCE FORM
+// ============================================================
+
+function renderResourceForm(item) {
+  return `
+    <div class="section">
+      <div class="section-header">Identificació</div>
+      <div class="section-body">
+        ${fieldHtml('ID', textInput('id', item.id))}
+        ${fieldHtml('Label', textInput('label', item.label))}
+        ${fieldHtml('Emoji', textInput('emoji', item.emoji))}
+        ${fieldHtml('Secció', selectHtml('section', [{value:'vitals',label:'vitals'},{value:'resources',label:'resources'}], item.section))}
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Valors</div>
+      <div class="section-body cols-3">
+        ${fieldHtml('Valor inicial', numInput('startVal', item.startVal ?? 0, 1))}
+        ${fieldHtml('Màxim', numInput('max', item.max ?? '', 1))}
+        ${fieldHtml('Upkeep', numInput('upkeep', item.upkeep ?? '', 1))}
+        ${fieldHtml('critAt', numInput('critAt', item.critAt ?? ''))}
+        ${fieldHtml('warnAt', numInput('warnAt', item.warnAt ?? ''))}
+        ${fieldHtml('inheritDecay', numInput('inheritDecay', item.inheritDecay ?? '', 0.01, 0, 1))}
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Flags i estètica</div>
+      <div class="section-body cols-1">
+        ${checkboxHtml('showMax', 'Mostra màxim (val/max)', !!item.showMax)}
+        ${checkboxHtml('persistent', 'Persistent entre generacions', !!item.persistent)}
+        ${fieldHtml('Descripció glossari', textareaHtml('glossaryDesc', item.glossaryDesc, 3), true)}
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+// ZONE FORM
+// ============================================================
+
+function renderZoneForm(item) {
+  return `
+    <div class="section">
+      <div class="section-header">Identificació</div>
+      <div class="section-body cols-1">
+        ${fieldHtml('ID', textInput('id', item.id))}
+        ${fieldHtml('Label', textInput('label', item.label))}
+        ${fieldHtml('Descripció', textareaHtml('description', item.description, 3), true)}
+        ${checkboxHtml('starts_discovered', 'Disponible des del principi', !!item.starts_discovered)}
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+// BRANCH FORM
+// ============================================================
+
+function renderBranchForm(item) {
+  const condRows = (item.conditions?.conditions || []).map((c, i) => inclCondRow(c, i)).join('');
+  return `
+    <div class="section">
+      <div class="section-header">Identificació</div>
+      <div class="section-body">
+        ${fieldHtml('ID', textInput('id', item.id))}
+        ${fieldHtml('Nom', textInput('name', item.name))}
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Condicions d'inclinació</div>
+      <div class="section-body cols-1">
+        ${fieldHtml('Operador', selectHtml('incl_op', [{value:'AND',label:'AND'},{value:'OR',label:'OR'}], item.conditions?.operator ?? 'AND'))}
+      </div>
+      <div class="edit-list" id="incl-cond-list">
+        ${condRows}
+        <button type="button" class="btn-add-row" onclick="addInclCond()">+ Afegir condició</button>
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+// DESTRESA FORM
+// ============================================================
+
+function renderDestreseForm(item) {
+  const condRows = (item.conditions || []).map((c, i) => inclCondRow(c, i)).join('');
+  return `
+    <div class="section">
+      <div class="section-header">Identificació</div>
+      <div class="section-body">
+        ${fieldHtml('ID', textInput('id', item.id))}
+        ${fieldHtml('Nom', textInput('name', item.name))}
+        ${fieldHtml('Acció que desbloqueja', selectHtml('action_id', actionOptions(), item.action_id))}
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-header">Condicions d'inclinació</div>
+      <div class="edit-list" id="incl-cond-list">
+        ${condRows}
+        <button type="button" class="btn-add-row" onclick="addInclCond()">+ Afegir condició</button>
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+// DEPENDENCIES PANEL
+// ============================================================
+
+function renderDeps(cat, item) {
+  const rows = computeDeps(cat, item);
+  if (!rows.length) return '';
+  return `
+    <div class="section">
+      <div class="section-header">Dependències</div>
+      <div class="dep-section">
+        ${rows.map(r => `<div class="dep-row">
+          <span class="dep-label">${r.label}</span>
+          <span>${r.items.length === 0
+            ? '<span class="dep-none">cap</span>'
+            : r.items.map(it => `<span class="dep-link" onclick="selectCatItem('${it.cat}','${it.id}')">${escH(it.name)}</span>`).join(', ')
+          }</span>
+        </div>`).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function computeDeps(cat, item) {
+  const rows = [];
+
+  if (cat === 'actions') {
+    if (item.universal_prereq) {
+      const t = state.techs.find(x => x.id === item.universal_prereq);
+      rows.push({ label: 'Requereix tecnologia', items: t ? [{ cat:'techs', id:t.id, name:t.name }] : [] });
+    }
+    const skills = state.skills.filter(s => (s.unlocks_action_ids || []).includes(item.id));
+    rows.push({ label: 'Desbloquejada per habilitat', items: skills.map(s => ({ cat:'skills', id:s.id, name:s.name })) });
+    if (item.upgrades_action_id) {
+      const base = state.actions.find(a => a.id === item.upgrades_action_id);
+      rows.push({ label: 'Millora de', items: base ? [{ cat:'actions', id:base.id, name:base.name }] : [] });
+    }
+    if (item.destresa_id) {
+      const d = state.destreses.find(x => x.id === item.destresa_id);
+      rows.push({ label: 'Destresa associada', items: d ? [{ cat:'destreses', id:d.id, name:d.name }] : [] });
+    }
+    if (item.event_pool_id) {
+      const evts = state.events.filter(e => e._pool === item.event_pool_id);
+      rows.push({ label: `Events del pool "${item.event_pool_id}"`, items: evts.slice(0,6).map(e => ({ cat:'events', id:e.id, name:e.id })) });
+    }
+    const upgrades = state.actions.filter(a => a.upgrades_action_id === item.id);
+    if (upgrades.length) {
+      rows.push({ label: 'Millorada per', items: upgrades.map(a => ({ cat:'actions', id:a.id, name:a.name })) });
+    }
+  }
+
+  if (cat === 'skills') {
+    if (item.universal_prereq) {
+      const t = state.techs.find(x => x.id === item.universal_prereq);
+      rows.push({ label: 'Requereix tecnologia', items: t ? [{ cat:'techs', id:t.id, name:t.name }] : [] });
+    }
+    const actions = (item.unlocks_action_ids || []).map(aid => {
+      const a = state.actions.find(x => x.id === aid);
+      return a ? { cat:'actions', id:a.id, name:a.name } : { cat:'actions', id:aid, name:aid };
+    });
+    rows.push({ label: 'Desbloqueja accions', items: actions });
+    const evts = state.events.filter(e => e.discovery_skill_id === item.id);
+    rows.push({ label: 'Descoberta per event', items: evts.map(e => ({ cat:'events', id:e.id, name:e.id })) });
+    if (item.passive_effect?.type === 'unlock_zone') {
+      const z = state.zones.find(x => x.id === item.passive_effect.unlocks_zone);
+      if (z) rows.push({ label: 'Desbloqueja zona', items: [{ cat:'zones', id:z.id, name:z.label }] });
+    }
+  }
+
+  if (cat === 'techs') {
+    const skills = state.skills.filter(s => s.universal_prereq === item.id);
+    rows.push({ label: 'Prerequisit per habilitats', items: skills.map(s => ({ cat:'skills', id:s.id, name:s.name })) });
+    const actions = state.actions.filter(a => a.universal_prereq === item.id);
+    rows.push({ label: 'Prerequisit per accions', items: actions.map(a => ({ cat:'actions', id:a.id, name:a.name })) });
+  }
+
+  if (cat === 'events') {
+    rows.push({ label: 'Pool', items: [{ cat:'events', id: item.id, name: item._pool }] });
+    if (item.is_discovery_event && item.discovery_skill_id) {
+      const s = state.skills.find(x => x.id === item.discovery_skill_id);
+      rows.push({ label: 'Descobreix habilitat', items: s ? [{ cat:'skills', id:s.id, name:s.name }] : [] });
+    }
+    if (item.blocked_if?.length) {
+      rows.push({ label: 'Condicions de bloqueig', items: item.blocked_if.map(b => ({
+        cat: 'events', id: item.id, name: `${b.type}: ${b.id||b.stat||b.axis||b.resource||''}${b.min!=null?' ≥'+b.min:''}${b.value!=null?' > '+b.value:''}`
+      })) });
+    }
+  }
+
+  if (cat === 'destreses') {
+    if (item.action_id) {
+      const a = state.actions.find(x => x.id === item.action_id);
+      rows.push({ label: 'Acció que la desbloqueja', items: a ? [{ cat:'actions', id:a.id, name:a.name }] : [] });
+    }
+  }
+
+  if (cat === 'zones') {
+    const skills = state.skills.filter(s => s.passive_effect?.type === 'unlock_zone' && s.passive_effect.unlocks_zone === item.id);
+    rows.push({ label: 'Desbloquejada per habilitat', items: skills.map(s => ({ cat:'skills', id:s.id, name:s.name })) });
+    const actions = state.actions.filter(a => a.zona === item.id);
+    rows.push({ label: `Accions en aquesta zona (${actions.length})`, items: actions.slice(0,8).map(a => ({ cat:'actions', id:a.id, name:a.name })) });
+  }
+
+  if (cat === 'branches') {
+    const axes = (item.conditions?.conditions || []).map(c => c.axis).filter(Boolean);
+    if (axes.length) {
+      rows.push({ label: 'Eixos d\'inclinació', items: [] });
+    }
+  }
+
+  return rows;
+}
+
+function selectCatItem(cat, id) {
+  if (currentView === 'map') switchView('list');
+  selectCat(cat);
+  setTimeout(() => selectItem(id), 30);
+}
+
+// ============================================================
+// DIRTY / SAVE / DISCARD
+// ============================================================
+
+function markDirty() {
+  if (!isDirty) {
+    isDirty = true;
+    showSaveBar();
+  }
+}
+
+function showSaveBar() { document.getElementById('save-bar').classList.add('visible'); }
+function hideSaveBar() { document.getElementById('save-bar').classList.remove('visible'); }
+
+function discardChanges() {
+  isDirty = false;
+  hideSaveBar();
+  if (currentItemId) renderDetail(currentCat, currentItemId);
+}
+
+function saveCurrentItem() {
+  if (!currentItemId) return;
+  const form = document.getElementById('item-form');
+  if (!form) return;
+  const item = getItem(currentCat, currentItemId);
+  if (!item) return;
+  readFormIntoItem(currentCat, form, item);
+  modified.add(item.id);
+  isDirty = false;
+  hideSaveBar();
+  renderItemList(getSortedList(currentCat), document.getElementById('search-box').value);
+  renderDetail(currentCat, item.id);
+}
+
+// ============================================================
+// FORM -> ITEM DATA EXTRACTION
+// ============================================================
+
+function formData(form) {
+  const fd = new FormData(form);
+  const out = {};
+  for (const [k, v] of fd.entries()) out[k] = v;
+  form.querySelectorAll('input[type=checkbox]').forEach(cb => {
+    if (!(cb.name in out)) out[cb.name] = 'off';
+  });
+  return out;
+}
+
+function readFormIntoItem(cat, form, item) {
+  const d = formData(form);
+  const get = k => d[k];
+  const getNum = (k, fallback = null) => {
+    const v = d[k];
+    if (v === undefined || v === '') return fallback;
+    const n = parseFloat(v);
+    return isNaN(n) ? fallback : n;
+  };
+  const getBool = k => d[k] === 'on';
+  const getStr = k => (d[k] ?? '').trim() || null;
+
+  if (cat === 'actions') {
+    item.id = get('id') || item.id;
+    item.name = get('name');
+    item.zona = getStr('zona');
+    item.universal_prereq = getStr('universal_prereq');
+    item.description = get('description') || '';
+    item.is_base = getBool('is_base');
+    item.is_upgrade = getBool('is_upgrade');
+    item.upgrades_action_id = getStr('upgrades_action_id');
+    item.is_discovery_action = getBool('is_discovery_action');
+    item.purchase_cost = getNum('purchase_cost');
+    item.execute_cost = getNum('execute_cost');
+    item.minAge = getNum('minAge');
+    item.maxAge = getNum('maxAge');
+    item.output_resource = getStr('output_resource');
+    item.output_min = getNum('output_min');
+    item.output_max = getNum('output_max');
+    item.material_min = getNum('material_min');
+    item.material_max = getNum('material_max');
+    item.reputation_gain = getNum('reputation_gain');
+    item.stat_key = getStr('stat_key');
+    item.stat_gain = getNum('stat_gain');
+    item.destresa_id = getStr('destresa_id');
+    item.event_pool_id = getStr('event_pool_id');
+    item.inclination_deltas = {};
+    for (const ax of AXES) {
+      item.inclination_deltas[ax] = getNum(`incl_${ax}`, 0);
+    }
+    const seEls = form.querySelectorAll('[data-type="se"]');
+    item.side_effects = [];
+    seEls.forEach(el => {
+      const i = el.dataset.idx;
+      const res = d[`se_resource_${i}`];
+      const delta = parseFloat(d[`se_delta_${i}`]);
+      if (res) item.side_effects.push({ resource: res, delta: isNaN(delta) ? 0 : delta });
+    });
+    if (!item.side_effects.length) delete item.side_effects;
+    const reqEls = form.querySelectorAll('[data-type="req"]');
+    item.requires = [];
+    reqEls.forEach(el => {
+      const i = el.dataset.idx;
+      const type = d[`req_type_${i}`];
+      const key = (d[`req_key_${i}`] || '').trim();
+      const min = d[`req_min_${i}`] !== '' ? parseFloat(d[`req_min_${i}`]) : undefined;
+      const max = d[`req_max_${i}`] !== '' ? parseFloat(d[`req_max_${i}`]) : undefined;
+      if (!key) return;
+      const r = {};
+      if (type === 'state') r.state = key;
+      else r.resource = key;
+      if (min !== undefined && !isNaN(min)) r.min = min;
+      if (max !== undefined && !isNaN(max)) r.max = max;
+      item.requires.push(r);
+    });
+    if (!item.requires.length) delete item.requires;
+    const cet = getStr('char_effect_type');
+    if (cet) {
+      try { item.character_effect = JSON.parse(get('char_effect_params') || `{"type":"${cet}"}`); }
+      catch { item.character_effect = { type: cet }; }
+    } else { delete item.character_effect; }
+  }
+
+  if (cat === 'skills') {
+    item.id = get('id') || item.id;
+    item.name = get('name');
+    item.universal_prereq = getStr('universal_prereq');
+    item.inheritanceRate = getNum('inheritanceRate');
+    item.is_hidden = getBool('is_hidden');
+    const operator = get('incl_op') || 'AND';
+    const condEls = form.querySelectorAll('[data-type="incl-cond"]');
+    const conditions = [];
+    condEls.forEach(el => {
+      const i = el.dataset.idx;
+      const axis = d[`ic_axis_${i}`];
+      const minV = d[`ic_min_${i}`] !== '' ? parseFloat(d[`ic_min_${i}`]) : undefined;
+      const maxV = d[`ic_max_${i}`] !== '' ? parseFloat(d[`ic_max_${i}`]) : undefined;
+      if (!axis) return;
+      const c = { axis };
+      if (minV !== undefined && !isNaN(minV)) c.min = minV;
+      if (maxV !== undefined && !isNaN(maxV)) c.max = maxV;
+      conditions.push(c);
+    });
+    item.inclination_conditions = { operator, conditions };
+    const uaEls = form.querySelectorAll('[data-type="unlock-action"]');
+    item.unlocks_action_ids = [];
+    uaEls.forEach(el => {
+      const i = el.dataset.idx;
+      const aid = d[`ua_${i}`];
+      if (aid) item.unlocks_action_ids.push(aid);
+    });
+    const ptype = getStr('passive_type');
+    if (ptype) {
+      try { item.passive_effect = JSON.parse(get('passive_params') || `{"type":"${ptype}"}`); }
+      catch { item.passive_effect = { type: ptype }; }
+    } else { delete item.passive_effect; }
+  }
+
+  if (cat === 'techs') {
+    item.id = get('id') || item.id;
+    item.name = get('name');
+    item.icon = get('icon') || '';
+    item.cycle = getNum('cycle');
+    item.description = get('description') || '';
+    const hb  = getNum('effect_healthBonus');
+    const hpb = getNum('effect_healthPctBonus');
+    const ngh = getNum('effect_nextGenHealthMax');
+    const edesc = (get('effect_desc') || '').trim();
+    if (hb !== null || hpb !== null || ngh !== null || edesc) {
+      item.effect = {};
+      if (hb !== null)  item.effect.healthBonus      = hb;
+      if (hpb !== null) item.effect.healthPctBonus   = hpb;
+      if (ngh !== null) item.effect.nextGenHealthMax = ngh;
+      if (edesc)        item.effect.desc             = edesc;
+    } else { item.effect = null; }
+  }
+
+  if (cat === 'events') {
+    item.id = get('id') || item.id;
+    item._pool = get('pool') || item._pool;
+    item.text = get('text') || '';
+    item.is_single_use = getBool('is_single_use') || undefined;
+    item.is_discovery_event = getBool('is_discovery_event') || undefined;
+    item.discovery_skill_id = getStr('discovery_skill_id');
+    const effKeys = ['food','health','material','reputacio','pedra','eina'];
+    const effects = {};
+    for (const k of effKeys) {
+      const v = getNum(`eff_${k}`);
+      if (v !== null) effects[k] = v;
+    }
+    item.effects = Object.keys(effects).length ? effects : undefined;
+    const blEls = form.querySelectorAll('[data-type="blocked"]');
+    item.blocked_if = [];
+    blEls.forEach(el => {
+      const i = el.dataset.idx;
+      const type = d[`bl_type_${i}`];
+      const key = (d[`bl_key_${i}`] || '').trim();
+      const val = d[`bl_val_${i}`] !== '' ? parseFloat(d[`bl_val_${i}`]) : undefined;
+      if (!type) return;
+      const b = { type };
+      if (key) {
+        if (type === 'has_skill' || type === 'not_has_skill' || type === 'has_destresa') b.id = key;
+        else if (type === 'stat_min') { b.stat = key; if (val !== undefined) b.min = val; }
+        else if (type === 'axis_above') { b.axis = key; if (val !== undefined) b.value = val; }
+        else if (type === 'resource_below') { b.resource = key; if (val !== undefined) b.value = val; }
+      }
+      item.blocked_if.push(b);
+    });
+    if (!item.blocked_if.length) delete item.blocked_if;
+    const optEls = form.querySelectorAll('[data-type="ev-option"]');
+    item.options = [];
+    const effResources = ['food','health','material','reputacio','pedra','eina'];
+    optEls.forEach(el => {
+      const i = el.dataset.idx;
+      const text = (d[`eo_text_${i}`] || '').trim();
+      const o = { text, discovers: false };
+      for (const r of effResources) {
+        const v = d[`eo_${r}_${i}`];
+        if (v !== '' && v !== undefined) {
+          const n = parseFloat(v);
+          if (!isNaN(n) && n !== 0) o[`${r}_delta`] = n;
+        }
+      }
+      item.options.push(o);
+    });
+    if (!item.options.length) delete item.options;
+  }
+
+  if (cat === 'resources') {
+    item.id = get('id') || item.id;
+    item.label = get('label');
+    item.emoji = get('emoji') || '';
+    item.section = get('section') || 'resources';
+    item.startVal = getNum('startVal', 0);
+    item.max = getNum('max');
+    item.upkeep = getNum('upkeep');
+    item.critAt = getNum('critAt');
+    item.warnAt = getNum('warnAt');
+    item.inheritDecay = getNum('inheritDecay');
+    item.showMax = getBool('showMax');
+    item.persistent = getBool('persistent') || undefined;
+    item.glossaryDesc = get('glossaryDesc') || '';
+  }
+
+  if (cat === 'zones') {
+    item.id = get('id') || item.id;
+    item.label = get('label');
+    item.description = get('description') || '';
+    item.starts_discovered = getBool('starts_discovered');
+  }
+
+  if (cat === 'branches') {
+    item.id = get('id') || item.id;
+    item.name = get('name');
+    const operator = get('incl_op') || 'AND';
+    const condEls = form.querySelectorAll('[data-type="incl-cond"]');
+    const conditions = [];
+    condEls.forEach(el => {
+      const i = el.dataset.idx;
+      const axis = d[`ic_axis_${i}`];
+      const minV = d[`ic_min_${i}`] !== '' ? parseFloat(d[`ic_min_${i}`]) : undefined;
+      const maxV = d[`ic_max_${i}`] !== '' ? parseFloat(d[`ic_max_${i}`]) : undefined;
+      if (!axis) return;
+      const c = { axis };
+      if (minV !== undefined && !isNaN(minV)) c.min = minV;
+      if (maxV !== undefined && !isNaN(maxV)) c.max = maxV;
+      conditions.push(c);
+    });
+    item.conditions = { operator, conditions };
+  }
+
+  if (cat === 'destreses') {
+    item.id = get('id') || item.id;
+    item.name = get('name');
+    item.action_id = getStr('action_id');
+    const condEls = form.querySelectorAll('[data-type="incl-cond"]');
+    item.conditions = [];
+    condEls.forEach(el => {
+      const i = el.dataset.idx;
+      const axis = d[`ic_axis_${i}`];
+      const minV = d[`ic_min_${i}`] !== '' ? parseFloat(d[`ic_min_${i}`]) : undefined;
+      const maxV = d[`ic_max_${i}`] !== '' ? parseFloat(d[`ic_max_${i}`]) : undefined;
+      if (!axis) return;
+      const c = { axis };
+      if (minV !== undefined && !isNaN(minV)) c.min = minV;
+      if (maxV !== undefined && !isNaN(maxV)) c.max = maxV;
+      item.conditions.push(c);
+    });
+  }
+}
+
+// ============================================================
+// CREATE NEW ITEM
+// ============================================================
+
+function createNewItem() {
+  const cat = currentCat;
+  const id = `new_${cat}_${Date.now()}`;
+  const base = defaultItem(cat, id);
+  state[cat].push(base);
+  newItems.add(id);
+  renderItemList(getSortedList(cat), '');
+  selectItem(id);
+}
+
+function defaultItem(cat, id) {
+  const defaults = {
+    actions:   { id, name: 'Nova Acció', is_base: false, zona: 'Campament', inclination_deltas: { impuls:0, "intel·lecte":0, espiritualitat:0, sociabilitat:0 } },
+    skills:    { id, name: 'Nova Habilitat', inheritanceRate: 0.40, inclination_conditions: { operator:'AND', conditions:[] }, unlocks_action_ids: [], is_hidden: false },
+    techs:     { id, name: 'Nova Tecnologia', icon: '', cycle: 0, description: '', effect: null },
+    events:    { id, text: 'Nou esdeveniment', _pool: 'pool_social' },
+    resources: { id, label: 'Nou Recurs', emoji: '', section: 'resources', startVal: 0, max: null, showMax: false },
+    zones:     { id, label: 'Nova Zona', description: '', starts_discovered: false },
+    branches:  { id, name: 'Nova Branca', conditions: { operator:'AND', conditions:[] } },
+    destreses: { id, name: 'Nova Destresa', action_id: '', conditions: [] },
+  };
+  return defaults[cat] || { id, name: 'Nou item' };
+}
+
+// ============================================================
+// EXPORT
+// ============================================================
+
+let exportTabActive = 'full';
+
+function openExport() {
+  document.getElementById('modal-overlay').classList.add('visible');
+  renderExport(exportTabActive);
+}
+function closeExport() {
+  document.getElementById('modal-overlay').classList.remove('visible');
+}
+function switchExportTab(tab, btn) {
+  exportTabActive = tab;
+  document.querySelectorAll('.modal-tab').forEach(b => b.classList.toggle('active', b === btn));
+  renderExport(tab);
+}
+
+function renderExport(tab) {
+  const text = tab === 'full' ? generateFullExport() : generateDiffExport();
+  document.getElementById('export-textarea').value = text;
+}
+
+function copyExport() {
+  const ta = document.getElementById('export-textarea');
+  ta.select();
+  document.execCommand('copy');
+  const btn = document.getElementById('btn-copy-export');
+  btn.textContent = 'Copiat!';
+  setTimeout(() => btn.textContent = 'Copiar', 2000);
+}
+
+function generateFullExport() {
+  const lines = [];
+  lines.push('// ── UNIVERSAL_TECHS ─────────────────────────────────────────');
+  lines.push('const UNIVERSAL_TECHS = ' + JSON.stringify(state.techs, null, 2) + ';\n');
+  lines.push('// ── SKILL_DEFS ───────────────────────────────────────────────');
+  lines.push('const SKILL_DEFS = ' + JSON.stringify(state.skills, null, 2) + ';\n');
+  lines.push('// ── DESTRESA_DEFS ────────────────────────────────────────────');
+  lines.push('const DESTRESA_DEFS = ' + JSON.stringify(state.destreses, null, 2) + ';\n');
+  lines.push('// ── ZONE_DEFS ────────────────────────────────────────────────');
+  lines.push('const ZONE_DEFS = ' + JSON.stringify(state.zones, null, 2) + ';\n');
+  lines.push('// ── RESOURCE_DEFS ────────────────────────────────────────────');
+  lines.push('const RESOURCE_DEFS = ' + JSON.stringify(state.resources, null, 2) + ';\n');
+  lines.push('// ── BRANCHES ─────────────────────────────────────────────────');
+  lines.push('const BRANCHES = ' + JSON.stringify(state.branches, null, 2) + ';\n');
+  lines.push('// ── ACTIONS ──────────────────────────────────────────────────');
+  lines.push('const ACTIONS = ' + JSON.stringify(state.actions, null, 2) + ';\n');
+  const pools = {};
+  for (const ev of state.events) {
+    const pool = ev._pool;
+    const evClean = { ...ev };
+    delete evClean._pool;
+    if (!pools[pool]) pools[pool] = [];
+    pools[pool].push(evClean);
+  }
+  lines.push('// ── EVENT_POOLS ──────────────────────────────────────────────');
+  lines.push('const EVENT_POOLS = ' + JSON.stringify(pools, null, 2) + ';');
+  return lines.join('\n');
+}
+
+function generateDiffExport() {
+  const diffs = [];
+  const cats = ['techs','skills','destreses','zones','resources','branches','actions','events'];
+  for (const cat of cats) {
+    for (const item of state[cat]) {
+      const orig = original[cat].find(x => x.id === item.id);
+      if (newItems.has(item.id)) {
+        diffs.push(`// NOU: ${cat} — ${item.id}\n` + JSON.stringify(item, null, 2));
+      } else if (modified.has(item.id)) {
+        const diff = diffObjects(orig, item);
+        if (Object.keys(diff).length > 0) {
+          diffs.push(`// MODIFICAT: ${cat} — ${item.id}\n// Canvis: ${JSON.stringify(diff, null, 2)}\n// Valor complet:\n` + JSON.stringify(item, null, 2));
+        }
+      }
+    }
+  }
+  if (!diffs.length) return '// Cap canvi registrat des de l\'obertura del designer.';
+  return diffs.join('\n\n─────────────────────────────────────────\n\n');
+}
+
+function diffObjects(a, b) {
+  const diff = {};
+  for (const k of new Set([...Object.keys(a || {}), ...Object.keys(b || {})])) {
+    if (JSON.stringify(a?.[k]) !== JSON.stringify(b?.[k])) {
+      diff[k] = { from: a?.[k], to: b?.[k] };
+    }
+  }
+  return diff;
+}
+
+// ============================================================
+// MAP VIEW
+// ============================================================
+
+// Node colors by category/subtype
+const NODE_COLORS = {
+  tech:          '#fb923c',
+  skill:         '#a855f7',
+  action_base:   '#60a5fa',
+  action_upgrade:'#4ade80',
+  action_gated:  '#f59e0b',
+  action_shop:   '#93c5fd',
+  destresa:      '#e879f9',
+  zone:          '#34d399',
+  branch:        '#fb7185',
+  resource:      '#94a3b8',
+  event:         '#6b7280',
+};
+
+// Edge styles
+const EDGE_STYLES = {
+  prereq:    { stroke: '#60a5fa', dash: '6,4',  label: 'Prerequisit' },
+  unlock:    { stroke: '#d4a853', dash: null,    label: 'Desbloqueja' },
+  upgrade:   { stroke: '#4ade80', dash: null,    label: 'Millora' },
+  discovery: { stroke: '#a855f7', dash: '4,4',  label: 'Descoberta' },
+  zone_unlock:{ stroke: '#34d399', dash: null,  label: 'Zona' },
+};
+
+// Band y-centers (fraction of height, top to bottom)
+const BAND_ORDER = ['techs','skills','actions','destreses','zones','branches','resources','events'];
+const BAND_FRACTIONS = { techs:0.07, skills:0.20, actions:0.38, destreses:0.53, zones:0.65, branches:0.75, resources:0.85, events:0.95 };
+
+// Map state
+let mapNodes = [];        // { id, cat, subtype, name, x, y, vx, vy, pinned }
+let mapEdges = [];        // { from, to, type }
+let mapCatVisible = {};   // cat -> bool
+let mapSelectedId = null;
+let mapSearchHighlight = null; // null | Set of node ids to treat as selected+chain
+let mapSearchDebounce = null;
+let mapSimRunning = false;
+let mapRafId = null;
+
+// Pan/zoom
+let mapTransform = { x: 0, y: 0, scale: 1 };
+let mapPanStart = null;
+let mapDragNode = null;
+let mapDragOffset = { x: 0, y: 0 };
+
+const NODE_W = 110;
+const NODE_H = 28;
+
+function getNodeSubtype(cat, item) {
+  if (cat === 'techs')     return 'tech';
+  if (cat === 'skills')    return 'skill';
+  if (cat === 'destreses') return 'destresa';
+  if (cat === 'zones')     return 'zone';
+  if (cat === 'branches')  return 'branch';
+  if (cat === 'resources') return 'resource';
+  if (cat === 'events')    return 'event';
+  if (cat === 'actions') {
+    if (item.upgrades_action_id) return 'action_upgrade';
+    // Check if gated by a skill
+    const isGated = state.skills.some(s => (s.unlocks_action_ids || []).includes(item.id));
+    if (isGated) return 'action_gated';
+    if (item.purchase_cost && item.is_base === false) return 'action_shop';
+    return 'action_base';
+  }
+  return 'action_base';
+}
+
+function buildMapGraph() {
+  // Only discovery events in map
+  const discoveryEvents = state.events.filter(e => e.is_discovery_event);
+
+  mapNodes = [];
+  mapEdges = [];
+
+  // Build node set for each visible category
+  const addNodes = (cat, items) => {
+    for (const item of items) {
+      mapNodes.push({
+        id: item.id,
+        cat,
+        subtype: getNodeSubtype(cat, item),
+        name: itemName(item),
+        x: 0, y: 0,
+        vx: 0, vy: 0,
+        pinned: false,
+      });
+    }
+  };
+
+  addNodes('techs', state.techs);
+  addNodes('skills', state.skills);
+  addNodes('actions', state.actions);
+  addNodes('destreses', state.destreses);
+  addNodes('zones', state.zones);
+  addNodes('branches', state.branches);
+  addNodes('resources', state.resources);
+  addNodes('events', discoveryEvents);
+
+  const nodeIds = new Set(mapNodes.map(n => n.id));
+
+  // Build edges
+  // Tech prereq -> Skill
+  for (const skill of state.skills) {
+    if (skill.universal_prereq && nodeIds.has(skill.universal_prereq) && nodeIds.has(skill.id)) {
+      mapEdges.push({ from: skill.universal_prereq, to: skill.id, type: 'prereq' });
+    }
+  }
+  // Tech prereq -> Action (when action has universal_prereq)
+  for (const action of state.actions) {
+    if (action.universal_prereq && nodeIds.has(action.universal_prereq) && nodeIds.has(action.id)) {
+      mapEdges.push({ from: action.universal_prereq, to: action.id, type: 'prereq' });
+    }
+  }
+  // Skill -> unlocks_action_ids
+  for (const skill of state.skills) {
+    for (const aid of (skill.unlocks_action_ids || [])) {
+      if (nodeIds.has(skill.id) && nodeIds.has(aid)) {
+        mapEdges.push({ from: skill.id, to: aid, type: 'unlock' });
+      }
+    }
+  }
+  // Action upgrades_action_id
+  for (const action of state.actions) {
+    if (action.upgrades_action_id && nodeIds.has(action.upgrades_action_id) && nodeIds.has(action.id)) {
+      mapEdges.push({ from: action.upgrades_action_id, to: action.id, type: 'upgrade' });
+    }
+  }
+  // Discovery event -> Skill
+  for (const ev of discoveryEvents) {
+    if (ev.discovery_skill_id && nodeIds.has(ev.id) && nodeIds.has(ev.discovery_skill_id)) {
+      mapEdges.push({ from: ev.id, to: ev.discovery_skill_id, type: 'discovery' });
+    }
+  }
+  // Skill passive unlock_zone -> Zone
+  for (const skill of state.skills) {
+    if (skill.passive_effect?.type === 'unlock_zone' && skill.passive_effect.unlocks_zone) {
+      const zid = skill.passive_effect.unlocks_zone;
+      if (nodeIds.has(skill.id) && nodeIds.has(zid)) {
+        mapEdges.push({ from: skill.id, to: zid, type: 'zone_unlock' });
+      }
+    }
+  }
+}
+
+function initMapPositions(svgW, svgH) {
+  // Group nodes by cat
+  const groups = {};
+  for (const cat of BAND_ORDER) groups[cat] = [];
+  for (const node of mapNodes) {
+    if (groups[node.cat]) groups[node.cat].push(node);
+    else groups['actions'] && groups['actions'].push && groups['actions'];
+  }
+
+  for (const cat of BAND_ORDER) {
+    const nodes = mapNodes.filter(n => n.cat === cat);
+    const yCenter = (BAND_FRACTIONS[cat] || 0.5) * svgH;
+    const total = nodes.length;
+    nodes.forEach((node, i) => {
+      node.y = yCenter;
+      node.x = (svgW * 0.05) + (i / Math.max(total - 1, 1)) * (svgW * 0.90);
+      node.vx = 0;
+      node.vy = 0;
+    });
+  }
+}
+
+// ── Simulation ──
+let simTick = 0;
+const SIM_TICKS = 250;
+
+function startSim() {
+  if (mapRafId) cancelAnimationFrame(mapRafId);
+  simTick = 0;
+  mapSimRunning = true;
+  simStep();
+}
+
+function simStep() {
+  if (!mapSimRunning || simTick >= SIM_TICKS) {
+    mapSimRunning = false;
+    drawMap();
+    return;
+  }
+  simTick++;
+  tickForces();
+  drawMap();
+  mapRafId = requestAnimationFrame(simStep);
+}
+
+function tickForces() {
+  const svg = document.getElementById('map-svg');
+  const svgW = svg.clientWidth || 800;
+  const svgH = svg.clientHeight || 600;
+
+  const REPULSION   = 3500;
+  const SPRING_K    = 0.06;
+  const SPRING_LEN  = 160;
+  const GRAVITY_K   = 0.10;
+  const DAMPING     = 0.85;
+
+  const visibleNodes = mapNodes.filter(n => mapCatVisible[n.cat] !== false);
+
+  // Reset forces
+  for (const n of visibleNodes) {
+    n.fx = 0; n.fy = 0;
+  }
+
+  // Repulsion
+  for (let i = 0; i < visibleNodes.length; i++) {
+    for (let j = i + 1; j < visibleNodes.length; j++) {
+      const a = visibleNodes[i];
+      const b = visibleNodes[j];
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+      const force = REPULSION / (dist * dist);
+      const fx = (dx / dist) * force;
+      const fy = (dy / dist) * force;
+      a.fx -= fx; a.fy -= fy;
+      b.fx += fx; b.fy += fy;
+    }
+  }
+
+  // Springs along edges
+  const nodeMap = {};
+  for (const n of mapNodes) nodeMap[n.id] = n;
+
+  for (const edge of mapEdges) {
+    const a = nodeMap[edge.from];
+    const b = nodeMap[edge.to];
+    if (!a || !b) continue;
+    if (mapCatVisible[a.cat] === false || mapCatVisible[b.cat] === false) continue;
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+    const stretch = dist - SPRING_LEN;
+    const fx = (dx / dist) * SPRING_K * stretch;
+    const fy = (dy / dist) * SPRING_K * stretch;
+    a.fx += fx; a.fy += fy;
+    b.fx -= fx; b.fy -= fy;
+  }
+
+  // Band gravity
+  for (const n of visibleNodes) {
+    const yTarget = (BAND_FRACTIONS[n.cat] || 0.5) * svgH;
+    n.fy += (yTarget - n.y) * GRAVITY_K;
+  }
+
+  // Integrate
+  for (const n of visibleNodes) {
+    if (n.pinned) { n.vx = 0; n.vy = 0; continue; }
+    n.vx = (n.vx + n.fx) * DAMPING;
+    n.vy = (n.vy + n.fy) * DAMPING;
+    n.x += n.vx;
+    n.y += n.vy;
+    // Clamp
+    n.x = Math.max(NODE_W/2 + 10, Math.min(svgW - NODE_W/2 - 10, n.x));
+    n.y = Math.max(NODE_H/2 + 10, Math.min(svgH - NODE_H/2 - 10, n.y));
+  }
+}
+
+// ── Drawing ──
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+function svgEl(tag, attrs) {
+  const el = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  return el;
+}
+
+function drawMap() {
+  const svg = document.getElementById('map-svg');
+  if (!svg) return;
+
+  // Clear and rebuild
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+  // Defs (arrowheads)
+  const defs = svgEl('defs', {});
+  for (const [type, style] of Object.entries(EDGE_STYLES)) {
+    const marker = svgEl('marker', {
+      id: `arrow-${type}`, markerWidth: '8', markerHeight: '8',
+      refX: '6', refY: '3', orient: 'auto',
+    });
+    const path = svgEl('path', { d: 'M0,0 L0,6 L8,3 z', fill: style.stroke });
+    marker.appendChild(path);
+    defs.appendChild(marker);
+  }
+  svg.appendChild(defs);
+
+  // Pan/zoom group
+  const g = svgEl('g', {
+    transform: `translate(${mapTransform.x},${mapTransform.y}) scale(${mapTransform.scale})`
+  });
+  svg.appendChild(g);
+
+  // Invisible drag background
+  const bg = svgEl('rect', {
+    x: -50000, y: -50000, width: 100000, height: 100000,
+    fill: 'transparent', cursor: 'grab',
+  });
+  g.appendChild(bg);
+
+  const nodeMap = {};
+  for (const n of mapNodes) nodeMap[n.id] = n;
+
+  // Determine highlight sets (transitive: all ancestors and all descendants)
+  let predecessors = new Set();
+  let successors = new Set();
+  if (mapSelectedId) {
+    // Walk backwards (ancestors) via BFS
+    const ancestorQueue = [mapSelectedId];
+    while (ancestorQueue.length) {
+      const cur = ancestorQueue.shift();
+      for (const e of mapEdges) {
+        if (e.to === cur && mapCatVisible[nodeMap[e.from]?.cat] !== false && !predecessors.has(e.from) && e.from !== mapSelectedId) {
+          predecessors.add(e.from);
+          ancestorQueue.push(e.from);
+        }
+      }
+    }
+    // Walk forwards (descendants) via BFS
+    const descendantQueue = [mapSelectedId];
+    while (descendantQueue.length) {
+      const cur = descendantQueue.shift();
+      for (const e of mapEdges) {
+        if (e.from === cur && mapCatVisible[nodeMap[e.to]?.cat] !== false && !successors.has(e.to) && e.to !== mapSelectedId) {
+          successors.add(e.to);
+          descendantQueue.push(e.to);
+        }
+      }
+    }
+  }
+
+  // Draw edges first
+  for (const edge of mapEdges) {
+    const a = nodeMap[edge.from];
+    const b = nodeMap[edge.to];
+    if (!a || !b) continue;
+    if (mapCatVisible[a.cat] === false || mapCatVisible[b.cat] === false) continue;
+
+    const style = EDGE_STYLES[edge.type] || EDGE_STYLES.prereq;
+
+    // Highlight logic — show edge if both endpoints are in the transitive chain
+    let opacity = 1;
+    let strokeW = 1.5;
+    if (mapSearchHighlight) {
+      const inChain = (id) => mapSearchHighlight.matched.has(id) || mapSearchHighlight.ancestors.has(id) || mapSearchHighlight.descendants.has(id);
+      const isRelated = inChain(edge.from) && inChain(edge.to);
+      opacity = isRelated ? 1 : 0.08;
+      strokeW = isRelated ? 2.5 : 1;
+    } else if (mapSelectedId) {
+      const fromHighlighted = edge.from === mapSelectedId || predecessors.has(edge.from) || successors.has(edge.from);
+      const toHighlighted   = edge.to   === mapSelectedId || predecessors.has(edge.to)   || successors.has(edge.to);
+      const isRelated = fromHighlighted && toHighlighted;
+      opacity = isRelated ? 1 : 0.08;
+      strokeW = isRelated ? 2.5 : 1;
+    }
+
+    // Compute endpoints (from center of node rect)
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+    // Offset to node edge
+    const offX = (dx / dist) * (NODE_W / 2 + 4);
+    const offY = (dy / dist) * (NODE_H / 2 + 4);
+    const x1 = a.x + offX;
+    const y1 = a.y + offY;
+    const x2 = b.x - offX;
+    const y2 = b.y - offY;
+
+    const line = svgEl('line', {
+      x1, y1, x2, y2,
+      stroke: style.stroke,
+      'stroke-width': strokeW,
+      'stroke-opacity': opacity,
+      'marker-end': `url(#arrow-${edge.type})`,
+    });
+    if (style.dash) line.setAttribute('stroke-dasharray', style.dash);
+    g.appendChild(line);
+  }
+
+  // Draw nodes
+  for (const node of mapNodes) {
+    if (mapCatVisible[node.cat] === false) continue;
+
+    const color = NODE_COLORS[node.subtype] || '#888';
+
+    let isSelected, isPred, isSucc, isDimmed;
+    if (mapSearchHighlight) {
+      isSelected = mapSearchHighlight.matched.has(node.id);
+      isPred     = mapSearchHighlight.ancestors.has(node.id);
+      isSucc     = mapSearchHighlight.descendants.has(node.id);
+      isDimmed   = !isSelected && !isPred && !isSucc;
+    } else {
+      isSelected = node.id === mapSelectedId;
+      isPred     = predecessors.has(node.id);
+      isSucc     = successors.has(node.id);
+      isDimmed   = mapSelectedId && !isSelected && !isPred && !isSucc;
+    }
+
+    let opacity = isDimmed ? 0.2 : 1;
+    let strokeColor = isSelected ? '#d4a853' : isPred ? '#60a5fa' : isSucc ? '#4ade80' : 'rgba(0,0,0,0.3)';
+    let strokeW = isSelected ? 2.5 : (isPred || isSucc) ? 2 : 1;
+
+    const nodeG = svgEl('g', {
+      transform: `translate(${node.x - NODE_W/2},${node.y - NODE_H/2})`,
+      opacity,
+      cursor: 'pointer',
+      'data-id': node.id,
+    });
+
+    // Rounded rect
+    const rect = svgEl('rect', {
+      x: 0, y: 0,
+      width: NODE_W, height: NODE_H,
+      rx: 5, ry: 5,
+      fill: color,
+      'fill-opacity': isSelected ? 1 : 0.85,
+      stroke: strokeColor,
+      'stroke-width': strokeW,
+    });
+    nodeG.appendChild(rect);
+
+    // Icon
+    const icon = getCatIcon(node.cat);
+    const iconText = svgEl('text', {
+      x: 7, y: NODE_H / 2 + 4,
+      'font-size': 11,
+      'font-family': 'system-ui, sans-serif',
+    });
+    iconText.textContent = icon;
+    nodeG.appendChild(iconText);
+
+    // Label (truncated)
+    const maxChars = 13;
+    const label = node.name.length > maxChars ? node.name.slice(0, maxChars) + '…' : node.name;
+    const labelText = svgEl('text', {
+      x: 22, y: NODE_H / 2 + 4,
+      'font-size': 10,
+      'font-family': 'system-ui, sans-serif',
+      fill: '#0d0d0d',
+      'font-weight': '600',
+    });
+    labelText.textContent = label;
+    nodeG.appendChild(labelText);
+
+    g.appendChild(nodeG);
+  }
+}
+
+// ── Map event listeners ──
+
+function setupMapEvents() {
+  const svg = document.getElementById('map-svg');
+
+  // Wheel zoom
+  svg.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const rect = svg.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    const newScale = Math.min(3, Math.max(0.3, mapTransform.scale * delta));
+    // Zoom toward mouse
+    mapTransform.x = mx - (mx - mapTransform.x) * (newScale / mapTransform.scale);
+    mapTransform.y = my - (my - mapTransform.y) * (newScale / mapTransform.scale);
+    mapTransform.scale = newScale;
+    drawMap();
+  }, { passive: false });
+
+  // Mousedown: start pan or node drag
+  svg.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    const target = findNodeTarget(e);
+    if (target) {
+      mapDragNode = target;
+      const svgPt = svgPoint(svg, e);
+      mapDragOffset.x = svgPt.x - target.x;
+      mapDragOffset.y = svgPt.y - target.y;
+      e.preventDefault();
+    } else {
+      mapPanStart = { x: e.clientX - mapTransform.x, y: e.clientY - mapTransform.y };
+    }
+  });
+
+  svg.addEventListener('mousemove', (e) => {
+    if (mapDragNode) {
+      const svgPt = svgPoint(svg, e);
+      mapDragNode.x = svgPt.x - mapDragOffset.x;
+      mapDragNode.y = svgPt.y - mapDragOffset.y;
+      mapDragNode.pinned = true;
+      mapDragNode.vx = 0; mapDragNode.vy = 0;
+      if (!mapSimRunning) drawMap();
+    } else if (mapPanStart) {
+      mapTransform.x = e.clientX - mapPanStart.x;
+      mapTransform.y = e.clientY - mapPanStart.y;
+      if (!mapSimRunning) drawMap();
+    }
+  });
+
+  svg.addEventListener('mouseup', (e) => {
+    mapDragNode = null;
+    mapPanStart = null;
+  });
+
+  svg.addEventListener('mouseleave', () => {
+    mapDragNode = null;
+    mapPanStart = null;
+  });
+
+  // Click and double-click on nodes
+  // Use a pending-click timer so dblclick can cancel the single-click handler
+  // before drawMap() rebuilds the SVG (which would make findNodeTarget fail on dblclick).
+  let clickTimer = null;
+  let lastClickTarget = null;
+
+  svg.addEventListener('click', (e) => {
+    const target = findNodeTarget(e);
+    lastClickTarget = target;
+    clearTimeout(clickTimer);
+    clickTimer = setTimeout(() => {
+      if (target) {
+        if (mapSelectedId === target.id) {
+          mapSelectedId = null;
+        } else {
+          mapSelectedId = target.id;
+        }
+      } else {
+        mapSelectedId = null;
+      }
+      mapSearchHighlight = null;
+      drawMap();
+    }, 220);
+  });
+
+  svg.addEventListener('dblclick', (e) => {
+    // Cancel the pending single-click so drawMap doesn't rebuild SVG mid-event
+    clearTimeout(clickTimer);
+    clickTimer = null;
+    const target = lastClickTarget || findNodeTarget(e);
+    if (target) {
+      switchView('list');
+      selectCat(target.cat);
+      setTimeout(() => selectItem(target.id), 30);
+    }
+  });
+}
+
+function svgPoint(svg, e) {
+  const rect = svg.getBoundingClientRect();
+  const cx = (e.clientX - rect.left - mapTransform.x) / mapTransform.scale;
+  const cy = (e.clientY - rect.top  - mapTransform.y) / mapTransform.scale;
+  return { x: cx, y: cy };
+}
+
+function findNodeTarget(e) {
+  const svg = document.getElementById('map-svg');
+  const pt = svgPoint(svg, e);
+  // Hit-test in reverse order (last drawn = on top)
+  for (let i = mapNodes.length - 1; i >= 0; i--) {
+    const n = mapNodes[i];
+    if (mapCatVisible[n.cat] === false) continue;
+    if (pt.x >= n.x - NODE_W/2 && pt.x <= n.x + NODE_W/2 &&
+        pt.y >= n.y - NODE_H/2 && pt.y <= n.y + NODE_H/2) {
+      return n;
+    }
+  }
+  return null;
+}
+
+// ── Map cat filter sidebar ──
+
+function renderMapCatFilter() {
+  const container = document.getElementById('map-cat-filter');
+  const cats = ['techs','skills','actions','destreses','zones','branches','resources','events'];
+
+  // Count nodes per cat (events: only discovery)
+  const countMap = {
+    techs: state.techs.length,
+    skills: state.skills.length,
+    actions: state.actions.length,
+    destreses: state.destreses.length,
+    zones: state.zones.length,
+    branches: state.branches.length,
+    resources: state.resources.length,
+    events: state.events.filter(e => e.is_discovery_event).length,
+  };
+
+  container.innerHTML = `<div style="padding:8px 14px 4px;font-size:10px;font-weight:600;color:var(--text2);letter-spacing:0.08em;text-transform:uppercase;">Filtres del mapa</div>` +
+    cats.map(cat => {
+      const vis = mapCatVisible[cat] !== false;
+      return `<div class="map-filter-item">
+        <input type="checkbox" id="mf_${cat}" ${vis ? 'checked' : ''} onchange="toggleMapCat('${cat}', this.checked)">
+        <label for="mf_${cat}">${getCatIcon(cat)} ${getCatLabel(cat)}</label>
+        <span class="map-filter-count">${countMap[cat]}</span>
+      </div>`;
+    }).join('');
+}
+
+function toggleMapCat(cat, visible) {
+  mapCatVisible[cat] = visible;
+  mapSelectedId = null;
+  if (mapRafId) cancelAnimationFrame(mapRafId);
+  startSim();
+}
+
+// ── Map legend ──
+function renderMapLegend() {
+  const legend = document.getElementById('map-legend');
+  const nodeEntries = [
+    { color: NODE_COLORS.tech,           label: 'Tecnologia' },
+    { color: NODE_COLORS.skill,          label: 'Habilitat' },
+    { color: NODE_COLORS.action_base,    label: 'Acció base' },
+    { color: NODE_COLORS.action_upgrade, label: 'Acció millora' },
+    { color: NODE_COLORS.action_gated,   label: 'Acció bloq. habilitat' },
+    { color: NODE_COLORS.destresa,       label: 'Destresa' },
+    { color: NODE_COLORS.zone,           label: 'Zona' },
+    { color: NODE_COLORS.branch,         label: 'Branca' },
+    { color: NODE_COLORS.resource,       label: 'Recurs' },
+    { color: NODE_COLORS.event,          label: 'Descoberta' },
+  ];
+  const edgeEntries = Object.entries(EDGE_STYLES).map(([, s]) => ({ color: s.stroke, dash: !!s.dash, label: s.label }));
+
+  legend.innerHTML =
+    `<div style="font-size:9px;font-weight:700;color:var(--text2);letter-spacing:0.08em;margin-bottom:4px;">LLEGENDA</div>` +
+    nodeEntries.map(e => `<div class="legend-item"><div class="legend-dot" style="background:${e.color}"></div><span style="color:var(--text2)">${e.label}</span></div>`).join('') +
+    `<div style="margin:4px 0;border-top:1px solid var(--border)"></div>` +
+    edgeEntries.map(e => {
+      const style = e.dash ? `border-top:2px dashed ${e.color}` : `border-top:2px solid ${e.color}`;
+      return `<div class="legend-item"><div class="legend-line" style="${style}"></div><span style="color:var(--text2)">${e.label}</span></div>`;
+    }).join('');
+}
+
+// ── Map search ──
+function onMapSearch(val) {
+  clearTimeout(mapSearchDebounce);
+  mapSearchDebounce = setTimeout(() => {
+    const q = val.trim().toLowerCase();
+    if (!q) {
+      mapSearchHighlight = null;
+      mapSelectedId = null;
+      drawMap();
+      return;
+    }
+    // Find all nodes whose name matches
+    const matched = mapNodes.filter(n =>
+      mapCatVisible[n.cat] !== false && n.name.toLowerCase().includes(q)
+    );
+    if (!matched.length) {
+      mapSearchHighlight = null;
+      mapSelectedId = null;
+      drawMap();
+      return;
+    }
+    // Build transitive ancestor+descendant sets for all matched nodes
+    const nodeMap = {};
+    for (const n of mapNodes) nodeMap[n.id] = n;
+    const highlighted = new Set(matched.map(n => n.id));
+    const ancestorsAll = new Set();
+    const descendantsAll = new Set();
+    for (const m of matched) {
+      const aQueue = [m.id];
+      while (aQueue.length) {
+        const cur = aQueue.shift();
+        for (const e of mapEdges) {
+          if (e.to === cur && mapCatVisible[nodeMap[e.from]?.cat] !== false && !ancestorsAll.has(e.from) && !highlighted.has(e.from)) {
+            ancestorsAll.add(e.from);
+            aQueue.push(e.from);
+          }
+        }
+      }
+      const dQueue = [m.id];
+      while (dQueue.length) {
+        const cur = dQueue.shift();
+        for (const e of mapEdges) {
+          if (e.from === cur && mapCatVisible[nodeMap[e.to]?.cat] !== false && !descendantsAll.has(e.to) && !highlighted.has(e.to)) {
+            descendantsAll.add(e.to);
+            dQueue.push(e.to);
+          }
+        }
+      }
+    }
+    mapSearchHighlight = { matched: highlighted, ancestors: ancestorsAll, descendants: descendantsAll };
+    mapSelectedId = null;
+    drawMap();
+  }, 200);
+}
+
+// ── Main render ──
+function renderMap() {
+  const svg = document.getElementById('map-svg');
+  const svgW = svg.clientWidth || 1000;
+  const svgH = svg.clientHeight || 700;
+
+  // Initialize cat visibility if first time
+  for (const cat of BAND_ORDER) {
+    if (mapCatVisible[cat] === undefined) mapCatVisible[cat] = true;
+  }
+
+  buildMapGraph();
+  initMapPositions(svgW, svgH);
+  renderMapLegend();
+  setupMapEvents();
+  startSim();
+}
+
+function resetMapLayout() {
+  mapSelectedId = null;
+  mapSearchHighlight = null;
+  const ms = document.getElementById('map-search');
+  if (ms) ms.value = '';
+  // Unpin all nodes
+  for (const n of mapNodes) n.pinned = false;
+  const svg = document.getElementById('map-svg');
+  const svgW = svg.clientWidth || 1000;
+  const svgH = svg.clientHeight || 700;
+  initMapPositions(svgW, svgH);
+  if (mapRafId) cancelAnimationFrame(mapRafId);
+  startSim();
+}
+
+</script>
+</body>
+</html>
