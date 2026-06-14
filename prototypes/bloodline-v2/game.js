@@ -920,6 +920,13 @@ function executeAction(actionId) {
         state.pendingDiscoveries.push({ _isEvent: true, icon: getActionIcon(a), name: a.name, desc: `Ja tens edat per "${a.name}". ${a.description || ''}` });
       }
     }
+    // Alerta quan cercar_parella s'acosta al maxAge sense haver trobat parella
+    if (characterAge() === 12 && state.character.charState.parella === 0) {
+      const alreadyWarned = state.pendingDiscoveries.some(d => d._isPartnerWarning);
+      if (!alreadyWarned) {
+        state.pendingDiscoveries.push({ _isPartnerWarning: true, icon: '💑', name: 'Edat per a la parella s\'acaba', desc: 'Tens 2 cicles per cercar parella (l\'acció s\'esgota a edat 14). Sense parella, no hi ha successió possible.' });
+      }
+    }
     // Log
     if (output > 0) addLog(`[${state.cycle}] ${action.name}: +${output} ${outDef?.label || outRes}`);
     else            addLog(`[${state.cycle}] ${action.name}`);
@@ -1080,7 +1087,7 @@ function showDonutAnimation(action, label, onComplete) {
   show('exec-donut-overlay');
   document.body.classList.add('donut-active');
   requestAnimationFrame(() => requestAnimationFrame(() => {
-    ring.style.transition      = `stroke-dasharray 1.8s linear`;
+    ring.style.transition      = `stroke-dasharray 1.1s linear`;
     ring.style.strokeDasharray = `${C} 0`;
   }));
   setTimeout(() => {
@@ -1089,7 +1096,7 @@ function showDonutAnimation(action, label, onComplete) {
     ring.style.strokeDasharray = `0 ${C}`;
     document.body.classList.remove('donut-active');
     onComplete();
-  }, 1950);
+  }, 1250);
 }
 
 // ═══════════════════════════════════════════════════════════ SKY / SUN / LIFE
@@ -1139,7 +1146,7 @@ function renderSky() {
 
   const remaining = Math.max(0, LIFE_EXPECTANCY - characterAge());
   const capEl = el('sun-cap');
-  if (capEl) capEl.textContent = `⚑ ~${remaining}`;
+  if (capEl) capEl.textContent = `⚑ ~${remaining} cicles`;
 }
 
 // ═══════════════════════════════════════════════════════════ FORMING BRANCH PILL
@@ -1859,10 +1866,12 @@ function calculateScore() {
   // Gen score weighted by age lived — discourages deliberate early death
   const genScore  = state.genealogy.reduce((s, g) => {
     const lifePct = Math.min(1, (g.age || 0) / LIFE_EXPECTANCY);
-    return s + Math.round(50 * lifePct);
+    return s + Math.round(60 * lifePct);
   }, 0);
-  const total = cycles * 2 + genScore + techs * 100 + skills * 30 + branches * 40 + heirBonus;
-  return { total, cycles, gens, genScore, techs, skills, branches, heirBonus };
+  // Bonus per gen que va viure >= 85% de la vida esperada
+  const fullLifeBonus = state.genealogy.filter(g => (g.age || 0) >= LIFE_EXPECTANCY * 0.85).length * 30;
+  const total = cycles * 2 + genScore + techs * 100 + skills * 30 + branches * 40 + heirBonus + fullLifeBonus;
+  return { total, cycles, gens, genScore, techs, skills, branches, heirBonus, fullLifeBonus };
 }
 
 function getDynastyTitle(score) {
@@ -1910,6 +1919,7 @@ function renderEndScreen() {
     score.skills   > 0 ? `${score.skills} habilitats × 30 = <b>${score.skills * 30}</b>` : null,
     score.branches > 0 ? `${score.branches} branques × 40 = <b>${score.branches * 40}</b>` : null,
     score.heirBonus > 0 ? `Hereus deixats: <b>+${score.heirBonus}</b>` : null,
+    score.fullLifeBonus > 0 ? `Vides completes × 30: <b>+${score.fullLifeBonus}</b>` : null,
     `${score.cycles} cicles × 2 = <b>${score.cycles * 2}</b>`,
   ].filter(Boolean).map(t => `<div class="score-line">${t}</div>`).join('');
 
