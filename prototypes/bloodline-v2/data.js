@@ -491,6 +491,88 @@ const SKILL_DEFS = [
   }
 ];
 
+// ─── Requisits d'inclinació per acció ─────────────────────────────────────────
+// Les accions BASE de supervivència no tenen requisits (visibles sempre).
+// Les accions de branca o pont requereixen cert perfil d'inclinació.
+// Format: { [axis]: { min?, max? } }  — totes les condicions son AND.
+// Consultat per getActionVisibility() com a fallback si l'acció no té inclination_requirements propi.
+const ACTION_INCLINATION_REQUIREMENTS = {
+  // ── Vetlla al Foc (universal/foc) — lleu toc espiritual ──
+  act_ritual_foc:              { espiritualitat: { min: 0.05 } },
+
+  // ══ CAÇADOR ══════════════════════════════════════════════
+  act_caca_llanca:             { impuls: { min: 0.15 }, sociabilitat: { max: 0.45 } },
+  act_emboscada_nocturna:      { impuls: { min: 0.20 }, sociabilitat: { max: 0.30 } },
+  act_marcar_territori:        { impuls: { min: 0.10 } },
+  act_rastreig_rutes:          { impuls: { min: 0.10 } },
+  act_caçar_amb_arc:           { impuls: { min: 0.15 } },
+  act_practicar_tir:           { impuls: { min: 0.08 } },           // pont caçador/artesà
+  act_amansar_animal:          { sociabilitat: { min: 0.05 } },     // transició cap a social
+  act_pasturar_bestiar:        { impuls: { min: 0.05 } },           // pont caçador/social
+  act_control_territori:       { impuls: { min: 0.08 }, sociabilitat: { min: 0.08 } },
+  act_aguait_coordinat:        { impuls: { min: 0.10 } },           // upgrade espiar_ramat
+
+  // ══ RECOL·LECTOR ═════════════════════════════════════════
+  act_molda_grans:             { impuls: { max: 0.30 } },
+  act_parar_trampes:           { impuls: { max: 0.35 } },           // pont recol·lector/caçador
+  act_revisar_trampes:         { impuls: { max: 0.35 } },
+  act_recollida_bolets:        { impuls: { max: 0.20 } },
+  act_assecament_plantes:      { impuls: { max: 0.20 } },
+  act_seleccionar_llavors:     { "intel·lecte": { min: 0.08 }, impuls: { max: 0.20 } },
+  act_preparar_terreny:        { impuls: { max: 0.25 } },
+  act_recollecta_metodica:     { impuls: { max: 0.25 } },           // upgrade recollectar_arrels
+
+  // ══ ARTESÀ ═══════════════════════════════════════════════
+  act_faonar_eines:            { "intel·lecte": { min: 0.10 } },
+  act_gravar_os:               { "intel·lecte": { min: 0.15 } },
+  act_intercanviar_eines:      { "intel·lecte": { min: 0.08 } },    // pont artesà/social
+  act_cosir_pells:             { "intel·lecte": { min: 0.12 } },
+  act_construir_refugi:        { "intel·lecte": { min: 0.08 } },
+  act_destillar_quitra:        { "intel·lecte": { min: 0.15 }, impuls: { max: 0.30 } },
+  act_emmanegar_eines:         { "intel·lecte": { min: 0.12 } },
+  act_modelar_argila:          { "intel·lecte": { min: 0.12 } },    // pont artesà/místic
+  act_coure_ceramica:          { "intel·lecte": { min: 0.15 } },
+  act_sembrar_llavors:         { "intel·lecte": { min: 0.12 }, impuls: { max: 0.20 } },
+  act_collita_sistematica:     { "intel·lecte": { min: 0.10 } },
+  act_talla_avancada:          { "intel·lecte": { min: 0.10 } },    // upgrade tallar_pedra
+  act_edificar_cabana:         { "intel·lecte": { min: 0.10 } },
+
+  // ══ MÍSTIC ════════════════════════════════════════════════
+  act_curar_herbes:            { espiritualitat: { min: 0.10 } },
+  act_preparar_ungüent:        { espiritualitat: { min: 0.08 } },   // pont místic/artesà
+  act_pintar_parets:           { espiritualitat: { min: 0.20 }, sociabilitat: { min: 0.10 } },
+  act_narrar_llegendes:        { espiritualitat: { min: 0.10 }, sociabilitat: { min: 0.10 } },
+  act_ornamentar_se:           { espiritualitat: { min: 0.05 } },   // accessible (pont)
+  act_consagrar_ornaments:     { espiritualitat: { min: 0.15 }, sociabilitat: { min: 0.08 } },
+  act_observar_cel:            { espiritualitat: { min: 0.08 } },   // pont místic/artesà
+  act_transit_nocturn:         { espiritualitat: { min: 0.20 } },
+  act_ofrena_eines:            { espiritualitat: { min: 0.12 }, sociabilitat: { min: 0.08 } },
+  act_cerimonia_eines:         { espiritualitat: { min: 0.12 }, sociabilitat: { min: 0.10 } },
+  act_tallar_flauta:           { "intel·lecte": { min: 0.08 }, espiritualitat: { min: 0.05 } },
+  act_musica_vetlla:           { espiritualitat: { min: 0.08 } },
+  act_ritual_nusos:            { espiritualitat: { min: 0.10 } },
+  act_tela_sagrada:            { espiritualitat: { min: 0.08 } },
+  act_ofrena_terra:            { espiritualitat: { min: 0.15 }, sociabilitat: { min: 0.08 } },
+  act_danses_fertilitat:       { espiritualitat: { min: 0.12 }, sociabilitat: { min: 0.12 } },
+  act_gran_ritual:             { espiritualitat: { min: 0.10 } },   // upgrade ritual_foc
+
+  // ══ PONT / SOCIAL / COMPARTIT ═════════════════════════════
+  act_cocinar_arrels:          { impuls: { max: 0.30 } },           // recol·lector/artesà
+  act_ahumar_carn:             { impuls: { max: 0.30 } },
+  act_torxa_escolta:           { impuls: { min: 0.05 } },
+  act_roba_hivern:             { "intel·lecte": { min: 0.05 } },
+  act_decorar_cos:             { espiritualitat: { min: 0.05 }, sociabilitat: { min: 0.05 } },
+  act_tenyir_pells:            { espiritualitat: { min: 0.05 } },
+  act_xarxa_pesca:             { "intel·lecte": { min: 0.05 } },
+  act_fira_intercanvi:         { sociabilitat: { min: 0.10 } },
+  act_ceramica_regalada:       { sociabilitat: { min: 0.08 } },
+  act_negociar_pastures:       { sociabilitat: { min: 0.08 } },
+  act_explicar_orígens:        { sociabilitat: { min: 0.10 }, espiritualitat: { min: 0.05 } },
+  act_cants_grup:              { sociabilitat: { min: 0.08 } },
+  act_reforçar_palissada:      { impuls: { min: 0.05 } },
+  act_defensa_activa:          { sociabilitat: { min: 0.05 } },     // upgrade vigilar_campament
+};
+
 // output_resource: "food" (default) | "material" | "health"  — ha de coincidir amb id de RESOURCE_DEFS
 // side_effects: array de side-effects [{ resource: 'health'|'food'|..., delta: N }] — s'apliquen genèricament
 // stat_key: "forca" | "enginy" | "vincle" — which stat multiplies output + grows on use
