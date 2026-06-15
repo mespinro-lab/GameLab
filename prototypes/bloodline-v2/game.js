@@ -1117,10 +1117,18 @@ function bezierArcPoint(t) {
   return { x, y };
 }
 
+const SKY_LABELS = { 'sky-albada': 'Albada', 'sky-dia': 'Dia', 'sky-ocas': 'Ocàs', 'sky-nit': 'Nit' };
+
 function renderSky() {
   const progress = computeLifeProgress();
   const skyEl = el('layer-sky');
-  if (skyEl) skyEl.className = getSkyStage(progress);
+  const stage = getSkyStage(progress);
+  if (skyEl) {
+    skyEl.className = stage;
+    skyEl.setAttribute('aria-label', `Etapa de vida: ${SKY_LABELS[stage]}`);
+  }
+  const stageLabel = el('sky-stage-label');
+  if (stageLabel) stageLabel.textContent = `✦ ${SKY_LABELS[stage]}`;
 
   const t = Math.min(0.985, progress);
   const sunPos = bezierArcPoint(t);
@@ -1209,6 +1217,21 @@ function renderZoneNodes() {
     });
     node.addEventListener('mouseleave', () => node.classList.remove('zone-node-pressed'));
     mapZone.appendChild(node);
+  }
+
+  // Zones no descobertes amb starts_discovered:false — mostrar com a blocat
+  for (const zoneDef of ZONE_DEFS) {
+    if (zoneDef.starts_discovered !== false) continue;
+    if (state.discoveredZoneIds.has(zoneDef.id)) continue;
+    const pos = ZONE_POS[zoneDef.id] || { left: 50, top: 50 };
+    const locked = document.createElement('div');
+    locked.className = 'zone-node zone-node-locked';
+    locked.style.left = pos.left + '%';
+    locked.style.top  = pos.top  + '%';
+    locked.innerHTML  = `
+      <div class="zone-node-icon" style="font-size:2.2rem;opacity:.4">${ZONE_ICONS[zoneDef.id] || '❓'}</div>
+      <span class="zone-node-name" style="opacity:.4">🔒 ${zoneDef.label || zoneDef.id}</span>`;
+    mapZone.appendChild(locked);
   }
 
   // Shop node — always visible
@@ -1447,7 +1470,7 @@ function renderCharPanel() {
   // Portrait
   el('char-bust-img').src = bustImgSrc();
   el('char-name-inlay').textContent = state.character.label || state.dynastyName || '—';
-  el('char-gen-inlay').textContent  = `Gen ${state.generation} · ${characterAge()} cicles`;
+  el('char-gen-inlay').textContent  = `Generació ${state.generation} · ${characterAge()} cicles`;
 
   // Attrs (right column of left half)
   el('hex-forca').textContent  = (state.character.stats['forca']  || 0).toFixed(1);
@@ -1734,6 +1757,8 @@ function renderSuccessionOverlays() {
   if (state.pendingSuccession) {
     const s = state.pendingSuccession;
     el('succ-death-msg').textContent = `El llinatge ${state.dynastyName} continua.`;
+    const inheritNote = el('succ-inherit-note');
+    if (inheritNote) inheritNote.textContent = `El successor hereta ${Math.round(INCLINATION_INHERITANCE_RATE * 100)}% de la inclinació · ${Math.round(STAT_INHERITANCE_RATE * 100)}% dels atributs · ${Math.round(DESTRESA_INHERIT_RATE * 100)}% de les destreses`;
     const list = el('succ-children-list');
     list.innerHTML = '';
     for (const c of s.successors) {

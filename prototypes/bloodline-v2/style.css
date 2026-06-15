@@ -117,13 +117,25 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   pointer-events: none;
   transition: background 3s ease;
 }
+#sky-stage-label {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255,240,210,.7);
+  letter-spacing: 0.06em;
+  text-shadow: 0 1px 4px rgba(0,0,0,.6);
+  text-transform: uppercase;
+  pointer-events: none;
+}
 
 /* Sky stage gradients */
 #layer-sky.sky-albada {
   background: linear-gradient(180deg,
-    rgba(246,198,208,.82) 0%,
-    rgba(244,217,168,.55) 50%,
-    rgba(255,200,140,.12) 100%);
+    rgba(246,198,208,.52) 0%,
+    rgba(244,217,168,.32) 50%,
+    rgba(255,200,140,.06) 100%);
 }
 #layer-sky.sky-dia {
   background: linear-gradient(180deg,
@@ -414,10 +426,12 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   z-index: 5;
   display: flex;
   gap: 5px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   pointer-events: none;
   min-height: var(--know-h);
+  max-height: var(--know-h);
+  overflow: hidden;
 }
 #branch-badges, #skill-badges, #destresa-badges {
   display: flex;
@@ -516,7 +530,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   max-height: 100%;
 }
 #session-log-list li {
-  font-size: 9.5px;
+  font-size: 11px;
   color: #f5ead5;
   text-shadow: 0 1px 2px rgba(40,20,5,.9);
   white-space: nowrap;
@@ -566,6 +580,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   pointer-events: all;
 }
 .zone-node-pressed { transform: scale(1.1); }
+.zone-node-locked { pointer-events: none; cursor: default; }
 .zone-node-img {
   width: 90px;
   height: 90px;
@@ -1216,6 +1231,7 @@ body.donut-active * { pointer-events: none !important; }
 .succ-child-name { font-weight: 700; color: var(--gold); font-size: 0.95rem; }
 .succ-child-sub { font-size: 0.75rem; color: var(--text-dim); }
 .succ-note { font-size: 0.72rem; color: var(--text-dim); text-align: center; }
+.succ-inherit-note { font-size: 0.7rem; color: var(--text-dim); text-align: center; opacity: 0.8; padding: 0 4px; }
 
 /* Death summary */
 #overlay-death-summary { z-index: 106; }
