@@ -287,8 +287,9 @@ function applyInclinationDeltas(deltas) {
 // ═══════════════════════════════════════════════════════════ ACTION VISIBILITY
 function getActionVisibility(action) {
   if (action.universal_prereq && !state.discoveredUniversalTechIds.has(action.universal_prereq)) return 'HIDDEN';
-  if (!action.inclination_requirements) return 'ACTIVE';
-  for (const [axis, range] of Object.entries(action.inclination_requirements)) {
+  const reqs = action.inclination_requirements || ACTION_INCLINATION_REQUIREMENTS[action.id];
+  if (!reqs) return 'ACTIVE';
+  for (const [axis, range] of Object.entries(reqs)) {
     const val = state.character.inclination[axis];
     const min = range.min !== undefined ? range.min : -Infinity;
     const max = range.max !== undefined ? range.max : Infinity;
@@ -1359,11 +1360,13 @@ function buildCarouselItems() {
   const vp = el('zone-carousel-viewport');
   vp.innerHTML = '';
   CAROUSEL.actions.forEach((action, i) => {
-    const blocked = getActionVisibility(action) !== 'ACTIVE';
+    const vis     = getActionVisibility(action);
+    const faded   = vis === 'FADED';
+    const blocked = vis !== 'ACTIVE';
     const unavail = !blocked && !evaluateCharacterRequires(action);
     const upgrade = getActionUpgrade(action.id);
     const item = document.createElement('div');
-    item.className = 'zc-item' + (blocked ? ' zc-blocked' : unavail ? ' zc-unavailable' : '');
+    item.className = 'zc-item' + (faded ? ' zc-faded' : blocked ? ' zc-blocked' : unavail ? ' zc-unavailable' : '');
     item.dataset.idx = i;
     const upgradeBtn = upgrade
       ? `<button class="zc-upgrade-btn" data-action-id="${action.id}" aria-label="Upgrade disponible">↑</button>`
@@ -1451,7 +1454,9 @@ function updateCarouselInfo() {
   }
   const action   = actions[idx];
   const tooYoung = isActionTooYoung(action);
-  const blocked  = tooYoung || getActionVisibility(action) !== 'ACTIVE';
+  const vis      = getActionVisibility(action);
+  const faded    = !tooYoung && vis === 'FADED';
+  const blocked  = tooYoung || vis !== 'ACTIVE';
   const outIcons = { food: '🌾', material: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️' };
   const parts = [];
   if ((action.execute_cost || 0) > 0) {
@@ -1483,6 +1488,8 @@ function updateCarouselInfo() {
   el('zc-benefits').innerHTML = parts.join('  ');
   el('zc-desc').textContent     = tooYoung
     ? 'No tens edat per a això'
+    : faded
+    ? '〰 La branca s\'allunya — acció al límit de la inclinació'
     : blocked
     ? '🔒 Inclinació insuficient'
     : !resourceReqMet

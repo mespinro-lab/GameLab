@@ -745,7 +745,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   transform-style: preserve-3d;
 }
 .zc-item.zc-active { filter: drop-shadow(0 0 14px rgba(200,160,60,.65)); }
-.zc-item.zc-blocked { filter: grayscale(0.65) opacity(0.5); }
+.zc-item.zc-faded    { filter: grayscale(0.55) opacity(0.55); border-style: dashed; }
+.zc-item.zc-blocked  { filter: grayscale(0.85) opacity(0.30); }
 .zc-item.zc-unavailable { filter: grayscale(0.3) opacity(0.45); }
 .zc-icon { font-size: 3.6rem; line-height: 1; pointer-events: none; }
 .zc-info-btn {
