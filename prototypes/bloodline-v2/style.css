@@ -225,6 +225,12 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   font-weight: 700;
 }
 #panel-turn-info { color: var(--text-dim); }
+.meta-warn {
+  font-size: 13px;
+  animation: warn-pulse 1.2s ease-in-out infinite alternate;
+}
+.meta-warn.hidden { display: none; }
+@keyframes warn-pulse { from { opacity: 1; } to { opacity: 0.4; } }
 #meta-right {
   display: flex;
   align-items: center;
@@ -500,6 +506,26 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   transition: width 0.4s ease;
 }
 .pill-forming > span { position: relative; z-index: 1; }
+.forming-tooltip {
+  position: fixed;
+  bottom: 140px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20,16,10,.92);
+  border: 1px solid rgba(150,185,245,.5);
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 12px;
+  color: #eaf2ff;
+  line-height: 1.6;
+  text-align: center;
+  pointer-events: all;
+  z-index: 9999;
+  animation: tooltip-in 0.18s ease;
+  max-width: 240px;
+  backdrop-filter: blur(8px);
+}
+@keyframes tooltip-in { from { opacity: 0; transform: translateX(-50%) translateY(6px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
 /* Overflow badge for hidden knowledge pills */
 .pill-more {
   font-size: 9.5px;

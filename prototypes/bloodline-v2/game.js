@@ -1179,6 +1179,46 @@ function getFormingBranch() {
   return best;
 }
 
+function showFormingBranchTooltip(forming) {
+  const existing = document.getElementById('forming-tooltip');
+  if (existing) existing.remove();
+
+  // Troba l'eix més fluix (menor val/min ratio entre les condicions min)
+  let weakAxis = null;
+  let weakRatio = Infinity;
+  for (const cond of (forming.branch.conditions?.conditions || [])) {
+    if (cond.min === undefined || cond.min <= 0) continue;
+    const val = state.character.inclination[cond.axis] ?? 0;
+    const ratio = val / cond.min;
+    if (ratio < weakRatio) { weakRatio = ratio; weakAxis = cond.axis; }
+  }
+
+  // Cerca acció disponible que millori l'eix fluix
+  let suggAction = null;
+  if (weakAxis) {
+    let bestDelta = 0;
+    for (const action of ACTIONS) {
+      const delta = action.inclination_deltas?.[weakAxis] ?? 0;
+      if (delta > bestDelta) { bestDelta = delta; suggAction = action; }
+    }
+  }
+
+  const pctInt = Math.round(Math.min(1, forming.pct) * 100);
+  const axisLabel = weakAxis ? weakAxis.charAt(0).toUpperCase() + weakAxis.slice(1) : null;
+  const tip = document.createElement('div');
+  tip.id = 'forming-tooltip';
+  tip.className = 'forming-tooltip';
+  tip.innerHTML = [
+    `<strong>${forming.branch.name}</strong> — ${pctInt}%`,
+    axisLabel ? `Eix a desenvolupar: <em>${axisLabel}</em>` : null,
+    suggAction  ? `Acció recomanada: <em>${suggAction.name}</em>` : null,
+  ].filter(Boolean).join('<br>');
+
+  document.body.appendChild(tip);
+  const autoClose = setTimeout(() => tip.remove(), 3500);
+  tip.addEventListener('click', () => { clearTimeout(autoClose); tip.remove(); });
+}
+
 // ═══════════════════════════════════════════════════════════ ZONE MAP RENDERING
 function renderZoneNodes() {
   const mapZone = el('layer-nodes');
@@ -1527,6 +1567,8 @@ function renderCharPanel() {
       const isNear = pct >= 0.8;
       const pill = document.createElement('span');
       pill.className = 'pill-forming' + (isNear ? ' near' : '');
+      pill.style.pointerEvents = 'all';
+      pill.style.cursor = 'pointer';
       const fillDiv = document.createElement('div');
       fillDiv.className = 'form-fill';
       fillDiv.style.width = (pct * 100).toFixed(0) + '%';
@@ -1534,6 +1576,7 @@ function renderCharPanel() {
       label.textContent = (isNear ? '✦ ' : '') + forming.branch.name;
       pill.appendChild(fillDiv);
       pill.appendChild(label);
+      pill.addEventListener('click', () => showFormingBranchTooltip(forming));
       branchEl.appendChild(pill);
     }
   }
@@ -1570,6 +1613,11 @@ function renderTopBar() {
   const matDef = RESOURCE_DEFS.find(r => r.id === 'material');
   const matMax = matDef?.max;
   el('tok-material-val').textContent = matMax ? `${Math.round(state.material || 0)}/${matMax}` : Math.round(state.material || 0);
+  // Warning chips — apareixen només en valors crítics
+  const foodWarn = el('warn-food');
+  const healthWarn = el('warn-health');
+  if (foodWarn)   foodWarn.classList.toggle('hidden', (state.food   || 0) > 4);
+  if (healthWarn) healthWarn.classList.toggle('hidden', (state.health || 0) > 15);
 }
 
 // ═══════════════════════════════════════════════════════════ BOTTOM PANEL
