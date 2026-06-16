@@ -3,8 +3,23 @@
 'use strict';
 
 // ═══════════════════════════════════════════════════════════ ENGINE CONSTANTS
-const INERTIA_FACTOR = 2.0;
+const INERTIA_FACTOR   = 2.0;
+const BASE_LIFE_INC    = 1 / LIFE_EXPECTANCY; // per turn at healthy/young baseline
 // FADE_MARGIN is defined in data.js
+
+function agingFactor(age) {
+  if (age <= 5)  return 1.0;
+  if (age <= 10) return 1.2;
+  return 1.5;
+}
+function healthPenalty(health) {
+  if (health >= 30) return 1.0;
+  if (health >= 15) return 1.3;
+  return 1.8;
+}
+function lifeIncPerTurn() {
+  return BASE_LIFE_INC * agingFactor(characterAge()) * healthPenalty(state.health);
+}
 
 // ═══════════════════════════════════════════════════════════ DERIVED LOOKUPS
 const AXES        = AXIS_DEFS.map(a => a.id);
@@ -12,11 +27,11 @@ const AXIS_LABELS = Object.fromEntries(AXIS_DEFS.map(a => [a.id, { left: a.left,
 
 // ═══════════════════════════════════════════════════════════ ZONE MAP CONFIG
 const ZONE_POS = {
-  'Campament': { left: 63, top: 74 },
-  'Planes':    { left: 80, top: 32 },
-  'Bosc':      { left: 20, top: 35 },
-  'Llar':      { left: 23, top: 76 },
-  'Mercat':    { left: 50, top: 52 },
+  'Planes':    { left: 79, top: 52 },
+  'Bosc':      { left: 18, top: 60 },
+  'Mercat':    { left: 53, top: 66 },
+  'Campament': { left: 76, top: 76 },
+  'Llar':      { left: 30, top: 78 },
 };
 const ZONE_IMG = {
   'Campament': 'HOME',
@@ -142,6 +157,7 @@ function saveGame() {
       explorationAttempts: state.explorationAttempts || 0,
       foodUpkeepReduction: state.foodUpkeepReduction || 0,
       foodMax: state.foodMax ?? FOOD_MAX_START,
+      lifeProgress: state.lifeProgress || 0,
       gameOver: state.gameOver, gameOverReason: state.gameOverReason,
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(d));
@@ -190,6 +206,7 @@ function loadGame() {
       explorationAttempts: d.explorationAttempts || 0,
       foodUpkeepReduction: d.foodUpkeepReduction || 0,
       foodMax: d.foodMax ?? FOOD_MAX_START,
+      lifeProgress: d.lifeProgress || 0,
       pendingEvent: null, pendingSuccession: null, pendingDeath: null, pendingNewGen: null,
       pendingDiscoveries: [], pendingBirths: [],
       gameOver: d.gameOver || false, gameOverReason: d.gameOverReason || null,
@@ -289,6 +306,7 @@ function initState(dynastyName, race) {
     explorationAttempts: 0,
     foodUpkeepReduction: 0,
     foodMax: FOOD_MAX_START,
+    lifeProgress: 0,
     gameOver: false,
     gameOverReason: null,
   };
@@ -780,8 +798,9 @@ function continueSuccession(successorId) {
       state[res.id] = Math.floor((state[res.id] || 0) * res.inheritDecay);
     }
   }
-  // Reset exploration state for new generation
+  // Reset per-generation state
   state.explorationAttempts = 0;
+  state.lifeProgress = 0;
   state.generation++;
   const gender = Math.random() < 0.5 ? 'M' : 'F';
   state.gender = gender;
@@ -830,6 +849,8 @@ function applyTurnUpkeep() {
   state.health = Math.max(0, state.health - getAgingLoss(age));
   // Enforce health cap (decline phase)
   state.health = Math.min(cap, state.health);
+  // Life progress (health-speed model — advances faster when ill or old)
+  state.lifeProgress = Math.min(1, (state.lifeProgress || 0) + lifeIncPerTurn());
 }
 
 // ═══════════════════════════════════════════════════════════ ACTION EXECUTION
@@ -859,7 +880,7 @@ function executeAction(actionId) {
       applyTurnUpkeep();
       applyFxFloaters(snap);
       addLog(`[${state.cycle}] ${action.name}`);
-      if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
+      if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0 || state.lifeProgress >= 1) triggerSuccession();
       renderAll();
     });
     return;
@@ -1161,7 +1182,7 @@ function showDonutAnimation(action, label, onComplete) {
 
 // ═══════════════════════════════════════════════════════════ SKY / SUN / LIFE
 function computeLifeProgress() {
-  return Math.min(1, characterAge() / LIFE_EXPECTANCY);
+  return Math.min(1, state?.lifeProgress || 0);
 }
 
 function getSkyStage(progress) {
@@ -1178,6 +1199,7 @@ function bezierArcPoint(t) {
 }
 
 const SKY_LABELS = { 'sky-albada': 'Albada', 'sky-dia': 'Dia', 'sky-ocas': 'Ocàs', 'sky-nit': 'Nit' };
+const SKY_ICONS  = { 'sky-albada': '🌅', 'sky-dia': '☀️', 'sky-ocas': '🌆', 'sky-nit': '🌙' };
 
 function renderSky() {
   const progress = computeLifeProgress();
@@ -1188,7 +1210,24 @@ function renderSky() {
     skyEl.setAttribute('aria-label', `Etapa de vida: ${SKY_LABELS[stage]}`);
   }
   const stageLabel = el('sky-stage-label');
-  if (stageLabel) stageLabel.textContent = `✦ ${SKY_LABELS[stage]}`;
+  if (stageLabel) stageLabel.textContent = `${SKY_ICONS[stage]} ${SKY_LABELS[stage]}`;
+
+  // Animate SVG sky gradient to match life stage
+  const SVG_SKY_STOPS = {
+    'sky-albada': ['#e8a0c0', '#f0cdb0', '#e8dfc0'],
+    'sky-dia':    ['#77b3d6', '#a6cdd2', '#dbe5c4'],
+    'sky-ocas':   ['#2a2a60', '#6a4a72', '#c06040'],
+    'sky-nit':    ['#101230', '#1e1840', '#2a1c0e'],
+  };
+  const stops = SVG_SKY_STOPS[stage];
+  if (stops) {
+    const sTop = document.getElementById('wg-sky-top');
+    const sMid = document.getElementById('wg-sky-mid');
+    const sBot = document.getElementById('wg-sky-bot');
+    if (sTop) sTop.setAttribute('stop-color', stops[0]);
+    if (sMid) sMid.setAttribute('stop-color', stops[1]);
+    if (sBot) sBot.setAttribute('stop-color', stops[2]);
+  }
 
   const t = Math.min(0.985, progress);
   const sunPos = bezierArcPoint(t);
@@ -1212,7 +1251,9 @@ function renderSky() {
     deathLine.setAttribute('y2', '27');
   }
 
-  const remaining = Math.max(0, LIFE_EXPECTANCY - characterAge());
+  // Projected cycles remaining based on current health speed
+  const inc = lifeIncPerTurn();
+  const remaining = inc > 0 ? Math.ceil((1 - progress) / inc) : LIFE_EXPECTANCY;
   const capEl = el('sun-cap');
   if (capEl) capEl.textContent = `⚑ ~${remaining} cicles`;
 }
@@ -1293,14 +1334,23 @@ function renderZoneNodes() {
     node.style.left   = pos.left + '%';
     node.style.top    = pos.top  + '%';
     const imgSrc = `../../design/life-tycoon/zones/ZONA-PRE-${imgCode}.png`;
-    const stashHtml = (zoneDef.id === 'Campament' && ((state.pedra || 0) > 0 || (state.eina || 0) > 0))
-      ? `<div class="node-stash">${(state.pedra || 0) > 0 ? `<span class="node-stash-item">🪨${state.pedra}</span>` : ''}${(state.eina || 0) > 0 ? `<span class="node-stash-item">⚒️${state.eina}</span>` : ''}</div>`
-      : '';
+    // Zone info chips (Campament: resources; Llar: family)
+    let chipHtml = '';
+    if (zoneDef.id === 'Campament' && ((state.pedra || 0) > 0 || (state.eina || 0) > 0)) {
+      const pedraChip = (state.pedra || 0) > 0 ? `<span>🪨 ${state.pedra}</span>` : '';
+      const einaChip  = (state.eina  || 0) > 0 ? `<span>⚒️ ${state.eina}</span>` : '';
+      chipHtml = `<div class="zone-chip">${pedraChip}${einaChip}</div>`;
+    }
+    if (zoneDef.id === 'Llar' && state.character.partnerName) {
+      const fills = state.character.children.length;
+      const fillsChip = fills > 0 ? `<span>👶×${fills}</span>` : '';
+      chipHtml = `<div class="zone-chip"><span>💑 ${state.character.partnerName}</span>${fillsChip}</div>`;
+    }
     node.innerHTML = `
       <img class="zone-node-img" src="${imgSrc}" alt=""
            onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
       <div class="zone-node-icon" style="display:none;font-size:3rem">${ZONE_ICONS[zoneDef.id] || '❓'}</div>
-      <span class="zone-node-name">${zoneDef.label || zoneDef.id}</span>${stashHtml}`;
+      <span class="zone-node-name">${zoneDef.label || zoneDef.id}</span>${chipHtml}`;
     node.addEventListener('touchstart', e => { e.preventDefault(); node.classList.add('zone-node-pressed'); }, { passive: false });
     node.addEventListener('touchend', e => {
       e.preventDefault();
@@ -1827,7 +1877,7 @@ function dismissEvent() {
   trackEventFired(ev);
   applyEventEffects(ev.effects);
   state.pendingEvent = null;
-  if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
+  if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0 || state.lifeProgress >= 1) triggerSuccession();
   renderAll();
   saveGame();
 }
@@ -1864,7 +1914,7 @@ function resolveDiscoveryOption(optionIndex) {
   if (ev.is_single_use && opt.discovers !== false) state.firedSingleUseEventIds.add(ev.id);
   trackEventFired(ev);
   state.pendingEvent = null;
-  if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) triggerSuccession();
+  if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0 || state.lifeProgress >= 1) triggerSuccession();
   renderAll();
   saveGame();
 }
