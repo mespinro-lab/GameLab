@@ -448,11 +448,32 @@ function checkDestresesAfterAction(executedActionId) {
   }
 }
 
+// ═══════════════════════════════════════════════════════════ APRENENTATGE DISCOVERY
+function checkAprenentagesAfterAction(executedActionId) {
+  if (state.character.aprenentatges.size >= APRENENTATGE_MAX) return;
+  for (const def of APRENENTATGE_DEFS) {
+    if (state.character.aprenentatges.size >= APRENENTATGE_MAX) break;
+    if (state.character.aprenentatges.has(def.id)) continue;
+    if (!def.discovery_action_ids.includes(executedActionId)) continue;
+    const uses = state.character.actionUseCounts[executedActionId] || 0;
+    if (uses < APRENENTATGE_THRESHOLD) continue;
+    if (Math.random() >= def.discoveryChance) continue;
+    state.character.aprenentatges.add(def.id);
+    addLog(`📖 Aprenentatge: ${def.name}`);
+    state.pendingDiscoveries.push({
+      _isAprenentatge: true, icon: def.icon, name: def.name,
+      desc: `Has après "${def.name}". ${def.effect.desc}`,
+      effect: { desc: def.effect.desc },
+    });
+  }
+}
+
 // ═══════════════════════════════════════════════════════════ CHARACTER STATE
 function evaluateCharacterRequires(action) {
   if (!action.requires || action.requires.length === 0) return true;
   return action.requires.every(req => {
-    if (req.type === 'has_any_skill') return state.character.unlockedSkillIds.size > 0;
+    if (req.type === 'has_any_skill')        return state.character.unlockedSkillIds.size > 0;
+    if (req.type === 'has_any_aprenentatge') return state.character.aprenentatges.size > 0;
     if (req.type === 'has_destresa') return state.character.destreses.has(req.id);
     if (req.resource !== undefined) {
       const val = state[req.resource] ?? 0;
@@ -699,9 +720,13 @@ function triggerSuccession() {
   const inheritedSkills       = new Set(state.character.unlockedSkillIds);
   // Destreses: 1 del pare (tirada aleatòria entre les seves) + 1 aleatòria del pool global
   const inheritedDestreses    = pickInitialDestreses(state.character.destreses);
-  // Aprenentatges: el fill rep el del pare si va executar act_ensenyar (PENDENT: implementar quan existeixin APRENENTATGE_DEFS)
-  const hasEnsenyat           = state.character.charState.ensenyat === 1;
-  const inheritedAprenentatges = new Set(); // stub — transferència real pendent de disseny d'aprenentatges
+  // Aprenentatges: el fill rep UN del pare si va executar act_ensenyar (tirada aleatòria entre els del pare)
+  const hasEnsenyat            = state.character.charState.ensenyat === 1;
+  const inheritedAprenentatges = new Set();
+  if (hasEnsenyat && state.character.aprenentatges.size > 0) {
+    const aprArr = [...state.character.aprenentatges];
+    inheritedAprenentatges.add(aprArr[Math.floor(Math.random() * aprArr.length)]);
+  }
   const childSuccessors = children.map(c => ({
     ...c, is_sibling: false,
     inheritedInclination, inheritedStats, inheritedPurchased, inheritedSkills, inheritedDestreses, inheritedAprenentatges, hasEnsenyat,
@@ -792,7 +817,11 @@ function applyTurnUpkeep() {
   }
   // Food upkeep
   const childUpkeep = state.character.children.length;
-  const totalUpkeep = Math.max(0.5, FOOD_UPKEEP - (state.foodUpkeepReduction || 0)) + childUpkeep;
+  const aprUpkeepReduction = [...state.character.aprenentatges].reduce((s, aid) => {
+    const apr = APRENENTATGE_DEFS.find(a => a.id === aid);
+    return apr?.effect?.type === 'food_upkeep_reduction' ? s + apr.effect.value : s;
+  }, 0);
+  const totalUpkeep = Math.max(0.5, FOOD_UPKEEP - (state.foodUpkeepReduction || 0) - aprUpkeepReduction) + childUpkeep;
   const prevFood = state.food;
   state.food = Math.max(0, state.food - totalUpkeep);
   if (prevFood < totalUpkeep) {
@@ -852,11 +881,19 @@ function executeAction(actionId) {
       const bt = SKILL_DEFS.find(t => t.id === sid);
       return bt?.passive_effect?.type === 'bonus_action_output' && bt.passive_effect.action_id === actionId
         ? s + (bt.passive_effect.output_min_bonus || 0) : s;
+    }, 0) + [...state.character.aprenentatges].reduce((s, aid) => {
+      const apr = APRENENTATGE_DEFS.find(a => a.id === aid);
+      return apr?.effect?.type === 'bonus_action_output' && apr.effect.action_id === actionId
+        ? s + (apr.effect.output_min_bonus || 0) : s;
     }, 0);
     const outMaxBonus = [...state.character.unlockedSkillIds].reduce((s, sid) => {
       const bt = SKILL_DEFS.find(t => t.id === sid);
       return bt?.passive_effect?.type === 'bonus_action_output' && bt.passive_effect.action_id === actionId
         ? s + (bt.passive_effect.output_max_bonus || 0) : s;
+    }, 0) + [...state.character.aprenentatges].reduce((s, aid) => {
+      const apr = APRENENTATGE_DEFS.find(a => a.id === aid);
+      return apr?.effect?.type === 'bonus_action_output' && apr.effect.action_id === actionId
+        ? s + (apr.effect.output_max_bonus || 0) : s;
     }, 0);
     // Primary resource output (food/health) — not all actions have this
     const outRes = action.output_resource;
@@ -877,7 +914,11 @@ function executeAction(actionId) {
     // Universal material generation — ALL actions generate material (currency to buy new actions)
     const matMin = action.material_min ?? 2;
     const matMax = action.material_max ?? 3;
-    state.material = Math.min(materialMax(), state.material + randInt(matMin, matMax));
+    const aprMatBonus = [...state.character.aprenentatges].reduce((s, aid) => {
+      const apr = APRENENTATGE_DEFS.find(a => a.id === aid);
+      return apr?.effect?.type === 'material_bonus' ? s + apr.effect.value : s;
+    }, 0);
+    state.material = Math.min(materialMax(), state.material + randInt(matMin, matMax) + aprMatBonus);
     // Side effects
     if (action.side_effects) {
       for (const se of action.side_effects) {
@@ -915,8 +956,9 @@ function executeAction(actionId) {
     applyCharacterEffect(action);
     // Track action use counts (for DESTRESA_THRESHOLD gate)
     state.character.actionUseCounts[actionId] = (state.character.actionUseCounts[actionId] || 0) + 1;
-    // Destresa check
+    // Destresa + aprenentatge check
     checkDestresesAfterAction(actionId);
+    checkAprenentagesAfterAction(actionId);
     // Zone unlock
     if (action.unlocks_zone && !state.discoveredZoneIds.has(action.unlocks_zone)) {
       state.discoveredZoneIds.add(action.unlocks_zone);
@@ -1544,7 +1586,11 @@ function renderCharPanel() {
   // Vital: food
   el('hex-food').textContent = Math.round(state.food);
   const childUpkeep  = state.character.children.length;
-  const foodUpkeep   = Math.max(0.5, FOOD_UPKEEP - (state.foodUpkeepReduction || 0)) + childUpkeep;
+  const aprUpkeepRed = [...state.character.aprenentatges].reduce((s, aid) => {
+    const a = APRENENTATGE_DEFS.find(d => d.id === aid);
+    return a?.effect?.type === 'food_upkeep_reduction' ? s + a.effect.value : s;
+  }, 0);
+  const foodUpkeep   = Math.max(0.5, FOOD_UPKEEP - (state.foodUpkeepReduction || 0) - aprUpkeepRed) + childUpkeep;
   const foodDanger   = state.food < foodUpkeep;
   const foodRateEl   = el('hex-food-rate');
   if (foodRateEl) {
@@ -1628,6 +1674,20 @@ function renderCharPanel() {
       pill.className   = 'pill-destresa';
       pill.textContent = '⭐ ' + def.name;
       destreseEl.appendChild(pill);
+    }
+  }
+
+  // Aprenentatge pills
+  const aprEl = el('aprenentatge-badges');
+  if (aprEl) {
+    aprEl.innerHTML = '';
+    for (const aId of state.character.aprenentatges) {
+      const def = APRENENTATGE_DEFS.find(d => d.id === aId);
+      if (!def) continue;
+      const pill = document.createElement('span');
+      pill.className   = 'pill-aprenentatge';
+      pill.textContent = def.icon + ' ' + def.name;
+      aprEl.appendChild(pill);
     }
   }
 }
@@ -1925,6 +1985,17 @@ function renderTestingPanel() {
       : `<span class="test-badge test-badge-skill locked">○ ${d.name}</span>`;
   }).join('');
 
+  // Aprenentatges
+  const aprTestEl = el('test-aprenentatges');
+  if (aprTestEl) {
+    aprTestEl.innerHTML = APRENENTATGE_DEFS.map(a => {
+      const have = state.character.aprenentatges.has(a.id);
+      return have
+        ? `<span class="test-badge test-badge-destresa">${a.icon} ${a.name}</span>`
+        : `<span class="test-badge test-badge-skill locked">○ ${a.name}</span>`;
+    }).join('');
+  }
+
   // Zones
   const zoEl = el('test-zones');
   zoEl.innerHTML = ZONE_DEFS.map(z => {
@@ -2187,11 +2258,16 @@ function showColStatTooltip(stat, anchorEl) {
   const lines = [];
   if (stat === 'food') {
     const childUp = state.character.children.length;
-    const base    = Math.max(0.5, FOOD_UPKEEP - (state.foodUpkeepReduction || 0));
+    const aprRed  = [...state.character.aprenentatges].reduce((s, aid) => {
+      const a = APRENENTATGE_DEFS.find(d => d.id === aid);
+      return a?.effect?.type === 'food_upkeep_reduction' ? s + a.effect.value : s;
+    }, 0);
+    const base    = Math.max(0.5, FOOD_UPKEEP - (state.foodUpkeepReduction || 0) - aprRed);
     const total   = base + childUp;
     lines.push('Consum de menjar per torn:');
     lines.push('  Base: −' + FOOD_UPKEEP);
     if (state.foodUpkeepReduction > 0) lines.push('  Conservació: +' + state.foodUpkeepReduction.toFixed(1));
+    if (aprRed > 0) lines.push('  Aprenentatge: +' + aprRed.toFixed(1));
     if (childUp > 0) lines.push('  Fills (' + childUp + '): −' + childUp);
     lines.push('  Total: −' + (total % 1 === 0 ? total : total.toFixed(1)));
     lines.push('Quedarà: ' + Math.max(0, state.food - total).toFixed(1) + '/' + foodMax());
@@ -2571,12 +2647,25 @@ function openCharDetail() {
   // Destreses
   const destresaEl = el('cd-destreses-list');
   if (c.destreses.size === 0) {
-    destresaEl.innerHTML = '<span class="cd-empty">Cap destresa encara</span>';
+    destresaEl.innerHTML = '<span class="cd-empty">Cap destresa (innata)</span>';
   } else {
     destresaEl.innerHTML = [...c.destreses].map(did => {
       const d = DESTRESA_DEFS.find(x => x.id === did);
       return `<span class="cd-pill-destresa">⭐ ${d ? d.name : did}</span>`;
     }).join('');
+  }
+
+  // Aprenentatges
+  const aprListEl = el('cd-aprenentatges-list');
+  if (aprListEl) {
+    if (!c.aprenentatges || c.aprenentatges.size === 0) {
+      aprListEl.innerHTML = '<span class="cd-empty">Cap aprenentatge encara</span>';
+    } else {
+      aprListEl.innerHTML = [...c.aprenentatges].map(aid => {
+        const a = APRENENTATGE_DEFS.find(x => x.id === aid);
+        return a ? `<span class="cd-pill-aprenentatge">${a.icon} ${a.name}</span>` : '';
+      }).join('');
+    }
   }
 
   show('overlay-char-detail');
