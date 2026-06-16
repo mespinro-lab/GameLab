@@ -161,10 +161,10 @@
 
 Propostes per als que manquen de forma més flagrant:
 - **bt_punta_llanca**: `+1 output_min a act_espiar_ramat` (millora la caça base amb puntes)
-- **bt_buri**: `reputation_gain: +1 per cicle` o desbloqueja intercanvi especial
+- **bt_buri**: `material_bonus: +1 per cicle` o desbloqueja intercanvi especial
 - **bt_guariment_plantes**: `+5 Salut one_time` (el primer guariment)
 - **bt_marques_territori**: `unlock_zone: "Bosc"` si Bosc no es descobreix per altra via
-- **bt_ornaments**: `+1 Salut per cicle` (benestar social) o `+1 reputation`
+- **bt_ornaments**: `+1 Salut per cicle` (benestar social) o `health_bonus: +1`
 
 ### 4 habilitats amb 1 sola acció ⚠️
 `bt_trampes`, `bt_guariment_plantes`, `bt_llavor_selectiva`, `bt_domini_terra`

@@ -248,8 +248,6 @@ child_characteristics = inherited + [new_char]   // màxim 2
 |---|---|---|---|
 | `KNOWLEDGE_INHERITANCE_RATE` | 0.70 | 0.40–0.90 | % d'aprenentatges transmesos per generació. |
 | `RESOURCE_INHERITANCE_RATE` | 0.50 | 0.00–0.80 | % de recursos transmesos en successió. **Prototip usa 0.00** (C3-06, 2026-05-30). |
-| `REPUTATION_INHERITANCE_RATE` | 0.85 | 0.60–1.00 | % de reputació mantinguda entre generacions dins era. |
-| `REPUTATION_ERA_DECAY` | 0.70 | 0.50–0.90 | % de reputació mantinguda en transició d'era. |
 | `MAX_CHRONICLE_EVENTS` | 5 | 3–8 | Màxim d'events que apareixen a la crònica d'era. |
 | `MAX_CHILDREN` | Per era (era.json) | 1–6 | Màxim de fills que pot tenir un personatge. |
 
