@@ -7,216 +7,131 @@
 <!--   ESTAT: OPEN | IN-PROGRESS | DONE | BLOCKED | DEFERRED                                         -->
 <!--   TIPUS: BUG | FEAT | BALANCE | CONTENT | DESIGN | QA | DOCS                                    -->
 <!--                                                                                                  -->
-<!-- TARGET: prototypes/bloodline/ (game.js, data.js, index.html, style.css)                         -->
+<!-- TARGET: prototypes/bloodline-v2/ (game.js, data.js, index.html, style.css)                      -->
+<!-- prototypes/bloodline/ (sense -v2) ABANDONAT — no tocar                                          -->
 <!-- GODOT (src/bloodline/) ABANDONAT — no afegir tasques que apuntin a fitxers Godot                -->
 
 ---
 
-## P1 DONE BUG — PT-01 — Double count visual de tokens (0→2→1)
+## P1 DONE BUG — BL2-01 — Meta bar no mostra menjar ni salut
 
-- **File**: `prototypes/bloodline/game.js`
-- **Fix**: Arrel: events amb `token_delta` negatiu eren invisibles al jugador. Ara els botons d'opció mostren `[+N🌾 −N🧠]` per cada opció. El 0→2→1 és comportament correcte (acció +2, event −1 = net 1).
-- **Completada**: 2026-06-06
-
----
-
-## P1 DONE BUG — PT-02 — Acció ritual de foc disponible sense prerequisit de foc
-
-- **File**: `prototypes/bloodline/game.js` → `getActionVisibility()`
-- **Fix**: Afegit `if (action.universal_prereq && !state.discoveredUniversalTechIds.has(...)) return 'HIDDEN'`.
-- **Completada**: 2026-06-06
+- **File**: `prototypes/bloodline-v2/index.html`, `prototypes/bloodline-v2/game.js`
+- **Issue**: La barra superior no té indicadors visuals de menjar ni salut. El jugador no veu l'estat crític dels recursos principals sense obrir el panell de personatge.
+- **Source**: Playtest 2026-06-14, S1 CM (casual-mobile)
+- **Acceptance**: Menjar i salut visibles a la meta bar en tot moment, sense obrir cap overlay.
 
 ---
 
-## P1 DONE BUG — PT-03 — Skill "Custodi del Foc" elegible sense foc descobert
+## P1 DONE UX — BL2-02 — Ghost pill no tappable ni explicada
 
-- **File**: `prototypes/bloodline/game.js` → `getEligiblePoolEvents()`
-- **Fix**: Filtre de `universal_prereq` ja existia; confirmat i verificat.
-- **Completada**: 2026-06-06
-
----
-
-## P1 DONE DESIGN — PT-04 — Tokens acumulen tota la dinastia
-
-- **File**: `prototypes/bloodline/data.js` → `material` resource
-- **Fix**: `persistent: true` afegit a `material` en RESOURCE_DEFS. `continueSuccession` respecta la flag.
-- **Completada**: 2026-06-06
+- **File**: `prototypes/bloodline-v2/game.js`, `prototypes/bloodline-v2/style.css`
+- **Issue**: La ghost pill (branca en formació) és purament visual. No es pot tocar ni mostra cap explicació. El jugador no sap que es pot activar o com progressa.
+- **Source**: Playtest 2026-06-14, S5 CM (casual-mobile)
+- **Acceptance**: Tap a la ghost pill mostra info breu: nom de la branca en formació i progrés cap al llindar d'activació.
 
 ---
 
-## P1 DONE DESIGN — PT-05 — Totes les accions generen ≥1 token
+## P1 DONE BALANCE — BL2-03 — act_emboscada_nocturna letal sense avis (-14 HP)
 
-- **File**: `prototypes/bloodline/data.js`
-- **Fix**: `output_min` ≥ 1 per totes les accions. `act_ensenyar`, `act_tenir_fills`, `act_cercar_parella` corregits.
-- **Completada**: 2026-06-06
-
----
-
-## P1 DONE DESIGN — PT-06 — Sistema de salut: inanició i envelliment
-
-- **File**: `prototypes/bloodline/game.js` → `applyTurnUpkeep()`
-- **Fix**: Inanició −10 HP si menjar insuficient. Edat avançada −2 HP/torn (cicle 11+). Fills costen +1 menjar/torn.
-- **Completada**: 2026-06-06
+- **File**: `prototypes/bloodline-v2/data.js`, `prototypes/bloodline-v2/game.js`
+- **Issue**: act_emboscada_nocturna costa -14 health per us. Tres usos = mort a Gen 2+ (STARTING_HEALTH=30). No hi ha avis de risc al carrusel.
+- **Source**: Playtest 2026-06-14, D6
+- **Decision**: Badge de risc visible al cost de l'accio al carrusel quan health_delta <= -10. Mante el balanco, avisa el jugador.
+- **Acceptance**: Jugador veu indicador de risc al card de l'accio quan el cost de salut es alt.
 
 ---
 
-## P1 DONE BUG — PT-07 — Zones es descobreixen buides
+## P1 DONE BALANCE — BL2-04 — Pacing late-game: ut_ceramica/ut_agricultura comprimits
 
-- **File**: `prototypes/bloodline/data.js`
-- **Fix**: Zona Ritual eliminada. Campament i Planes `starts_discovered: true`. Bosc via `act_explorar_voltants`. Totes les zones comencen amb accions visibles (comprades o comprable).
-- **Completada**: 2026-06-06
-
----
-
-## P1 DONE DESIGN — PT-08 — Fills costen menjar extra per torn
-
-- **File**: `prototypes/bloodline/game.js` → `applyTurnUpkeep()`
-- **Fix**: `childUpkeep = children.length` sumat al consum base. Visible al bottom panel `−Y/t`.
-- **Completada**: 2026-06-06
+- **File**: `prototypes/bloodline-v2/data.js`
+- **Issue**: ut_ceramica (cicle 80) i ut_agricultura (cicle 92) deixen 20 cicles per explorar 4 techs noves. Si Gen 4 mor al cicle 77-78, Gen 5 no arriba al cicle 100.
+- **Source**: Playtest 2026-06-14, D4
+- **Decision**: Avançar ut_ceramica a cicle 70, ut_agricultura a cicle 85. Preserva ERA_CYCLES=100.
+- **Acceptance**: Un personatge que arrenqui al cicle 78 pot assolir i usar les techs finals.
 
 ---
 
-## P1 DONE BALANCE — PT-09 — Inclinació massa lenta
+## P1 DONE BUG — BL2-05 — Constants zombie reputacio al codi
 
-- **File**: `prototypes/bloodline/data.js`
-- **Fix**: Deltes inclinació ×1.5. Thresholds branques −25% (cacador 0.30→0.22, recol·lector 0.20→0.15, artesà 0.25→0.18, místic 0.30→0.22).
-- **Completada**: 2026-06-06
-
----
-
-## P1 DONE BUG — PT-10 — Successió: pool acumula germans de generacions anteriors
-
-- **File**: `prototypes/bloodline/game.js` → `triggerSuccession()`
-- **Fix**: `successors = children.length > 0 ? childSuccessors : siblingSuccessors`. Germans mai es barregen amb fills.
-- **Completada**: 2026-06-06
+- **File**: `prototypes/bloodline-v2/game.js`
+- **Issue**: Constants obsoletes del sistema de reputacio eliminat (FAMILY_REP_INHERITANCE i similars) sobreviuen al codi sense efecte.
+- **Source**: Playtest 2026-06-14, S4 (V2-09/10/11 tycoon)
+- **Acceptance**: Cap referencia a reputation, reputacio, FAMILY_REP_INHERITANCE al codi de game.js.
+- **Completada**: 2026-06-16 (grep confirmat — cap referencia trobada)
 
 ---
 
-## P1 DONE UX — PT-11 — Tokens al centre del top bar
+## P2 OPEN BALANCE — BL2-06 — Loop pedra-faonar: font de material sense cost real
 
-- **File**: `prototypes/bloodline/index.html`
-- **Fix**: Reordenat HTML del top bar: `[🔬 Test] [🧠 Tokens center] [☰ Menú]`. Justify-content space-between ja centrava automàticament.
-- **Completada**: 2026-06-06
-
----
-
-## P1 DONE UX — PT-12 — Menjar X/MAX (−Y/torn) al panell inferior
-
-- **File**: `prototypes/bloodline/game.js` → `renderBottomPanel()`
-- **Fix**: `panel-food-val` mostra `X/20`, `panel-food-fc` mostra `−(base+fills)/t` dinàmic.
-- **Completada**: 2026-06-06
-
----
-
-## P1 DONE UX — PT-13 — Overlay dramàtic de descobriment de tecnologia
-
-- **File**: `prototypes/bloodline/game.js`, `prototypes/bloodline/style.css`
-- **Fix**: `autoDiscoverUniversalTechs` marca `_isTech: true`. Classe `.discovery-tech` aplica icona 4.5rem, nom 1.5rem, badge daurat, fons especial.
-- **Completada**: 2026-06-06
-
----
-
-## P1 DONE DESIGN — D-01 — Universal Techs cicle ut_eines avanç (22→16)
-
-- **File**: `prototypes/bloodline/data.js`
-- **Fix**: `ut_eines` ja estava a `cycle: 16` al JS prototype. Confirmat.
-- **Completada**: 2026-06-06
-
----
-
-## P1 DONE DESIGN — D-02 — discoveredZoneIds persisteix entre generacions
-
-- **File**: `prototypes/bloodline/game.js` → `saveGame/loadGame`, `continueSuccession`
-- **Fix**: `discoveredZoneIds` no es reinicia a successió. Persistit al save.
-- **Completada**: 2026-06-06
-
----
-
-## P1 DONE DESIGN — D-03 — Events single_use: per dinastia, no per personatge
-
-- **File**: `prototypes/bloodline/game.js`
-- **Fix**: `firedSingleUseEventIds` mogut de `state.character` a `state`. Reseteja al new game, no a successió.
-- **Completada**: 2026-06-06
-
----
-
-## P1 DONE FEAT — SAVE — Save/load via localStorage
-
-- **File**: `prototypes/bloodline/game.js`
-- **Fix**: `saveGame/loadGame/hasSave/clearSave`. Auto-save cada acció i event. "Continua" habilitat si hi ha save.
-- **Completada**: 2026-06-06
-
----
-
-## P1 DONE FEAT — SCORE — Pantalla scoring millorada
-
-- **File**: `prototypes/bloodline/game.js`, `prototypes/bloodline/style.css`
-- **Fix**: `calculateScore()` + `getDynastyTitle()`. 5 títols. Desglossat de punts visible.
-- **Completada**: 2026-06-06
-
----
-
-## P1 DONE FEAT — BALANCE-EV — Sistema de balanceig d'events dinàmic
-
-- **File**: `prototypes/bloodline/game.js`, `prototypes/bloodline/data.js`
-- **Fix**: `classifyEvent`, `trackEventFired`, `selectBalancedEvent`. Objectius: 5 positius / 4 negatius per vida. `EVENT_BALANCE_WEIGHT = 0.6`.
-- **Completada**: 2026-06-06
-
----
-
-## P2 DEFERRED BUG — S2-06 — Comprar upgrade elimina progrés de destresa de l'acció base
-
-- **File**: `prototypes/bloodline/game.js`
-- **Decision**: Deferred — amb el nou sistema de destreses per inclinació (no per acció), aquest bug no s'aplica. Les destreses es descobreixen per condicions d'inclinació, no per comptadors d'ús.
-
----
-
-## P3 DONE BALANCE — B-01 — Branca Recol·lector sense payoff accessible en Gen 1
-
-- **File**: `prototypes/bloodline/game.js` → `unlockSkill()`
-- **Fix**: Implementat `unlocks_action_ids` a `unlockSkill()`: quan es descobreix una branch tech, les seves accions s'afegeixen a `purchasedActionIds`. Fix sistèmic: beneficia totes les branques. `bt_rasclador_fi` (accessible a Recol·lectors via `impuls < 0.10`) desbloqueja `act_molda_grans` (food 3-7).
-- **Completada**: 2026-06-06
-
----
-
-## P3 OPEN CONTENT — C-01 — Efectes de les 13 branch techs pendents de definir
-
-- **File**: `prototypes/bloodline/data.js` → SKILL_DEFS passive_effects, `design/gdd/bloodline/content-plan-era1.md`
-- **Fix**: (pendent decisió — veure Decision)
-- **Acceptance**: Cada skill té un `passive_effect` tangible i documentat.
-- **Decision**: (pendent)
+- **File**: `prototypes/bloodline-v2/data.js`
+- **Issue**: act_recollectar_pedra (gratuita) + act_faonar_eines (pedra -2, material +4/+7) genera 2x material que qualsevol altra accio sense cost d'inclinacio.
+- **Source**: Playtest 2026-06-14, D7 (optimizer)
 - **Options**:
-  - A) game-designer proposa efectes per branca, usuari els aprova
-  - B) Implementar directament sense document previ
-
----
-
-## P3 OPEN CONTENT — C-02 — Condicions dels 6 títols de dinastia i 10 badges
-
-- **File**: `prototypes/bloodline/game.js` → `getDynastyTitle()`, scoring
-- **Fix**: (pendent decisió — veure Decision)
-- **Acceptance**: 6 títols amb condicions numèriques/branca verificables. 10 badges amb criteri.
+  - A) Afegir execute_cost: { material: 1 } a act_faonar_eines
+  - B) Reduir output de act_faonar_eines de +4/+7 a +3/+5
 - **Decision**: (pendent)
-- **Options**:
-  - A) Títols per estil de joc (branca dominant, combinació)
-  - B) Títols per fites numèriques (X generacions, Y techs)
-  - C) Híbrid: 3 narratius + 3 mecànics; 5 normals + 5 secrets
+- **Acceptance**: El material acumulat per hora de joc amb el loop pedra no supera en 2x la mitjana de les altres rutes.
 
 ---
 
-## P3 OPEN DESIGN — PT-16 — Incentiu per vides llargues del personatge
+## P2 OPEN DESIGN — BL2-07 — Scoring path Mistic/Social sense diferenciacio
 
-- **File**: `prototypes/bloodline/game.js` → scoring, upkeep
-- **Fix**: (pendent decisió — veure Decision)
+- **File**: `prototypes/bloodline-v2/game.js` → calculateScore()
+- **Issue**: Jugadors Mistics i de pura supervivencia amb el mateix nombre de techs puntuen igual. El scoring no distingeix playstyle.
+- **Source**: Playtest 2026-06-14, D1
+- **Options**:
+  - A) Bonus per diversitat de branques desbloq.
+  - B) Titol especial per Mistics si >2 techs de la branca Mistic
 - **Decision**: (pendent)
-- **Options**:
-  - A) Bonus de puntuació per cicles viscuts (p.ex. +5 pts per cicle a partir del cicle 10)
-  - B) Tokens extra generats per edat avançada (+2 tokens/torn a partir del cicle 11)
-  - C) Herència d'inclinació proporcional a l'edat del difunt
 
 ---
 
-<!-- STATS: actualitzat 2026-06-06 -->
-<!-- DONE: 20 (PT-01..PT-13, D-01..D-03, SAVE, SCORE, BALANCE-EV, B-01) -->
-<!-- OPEN: P3=3 (C-01, C-02, PT-16) | DEFERRED=1 (S2-06) -->
-<!-- APARCAT: Era 2 -->
+## P2 OPEN FEAT — BL2-08 — Ghost pill sense avis de proximitat a condicions max
+
+- **File**: `prototypes/bloodline-v2/game.js` → getFormingBranch()
+- **Issue**: La pill no avisa quan s'acosta a violar una condicio max d'inclinacio (ex: sociabilitat > 0.40 bloquejarà el Caçador).
+- **Source**: Playtest 2026-06-14, D2
+- **Acceptance**: Quan l'inclinacio es a <0.05 d'una condicio max, la ghost pill canvia de color/estat.
+
+---
+
+## P3 OPEN CONTENT — C-01 — Passive effects de les branch techs sense efecte
+
+- **File**: `prototypes/bloodline-v2/data.js` → SKILL_DEFS passive_effects
+- **Issue**: Vuit de les 30 branch techs no tenen passive_effect tangible: bt_punta_llanca, bt_buri, bt_trampes, bt_guariment_plantes, bt_marques_territori, bt_ornaments, bt_coneixement_plantes, bt_llavor_selectiva.
+- **Source**: design/eras/prehistoria/03-skills.md §7
+- **Acceptance**: Totes les 30 branch techs amb passive_effect documentat i implementat.
+
+---
+
+## P3 OPEN CONTENT — C-02 — Titols de dinastia amb condicions verificables
+
+- **File**: `prototypes/bloodline-v2/game.js` → calculateScore()
+- **Issue**: El scoring final te 5 titols basics sense condicions numeriques precises. No hi ha badges.
+- **Options**:
+  - A) 3 narratius (branca dominant) + 3 mecanics (fites) + secrets
+  - B) Titols per fites numeriques (X generacions, Y techs)
+- **Decision**: (pendent)
+- **Acceptance**: >=6 titols amb condicions verificables; almenys 1 secret.
+
+---
+
+## P3 OPEN DESIGN — PT-16 — Incentiu per vides llargues
+
+- **File**: `prototypes/bloodline-v2/game.js`
+- **Issue**: No hi ha incentiu per viure fins al limit de LIFE_EXPECTANCY. L'optim es successio anticipada.
+- **Options**:
+  - A) Bonus puntuacio per cicles viscuts
+  - B) Tokens extra per edat avançada
+  - C) Herencia d'inclinacio proporcional a l'edat del difunt
+- **Decision**: (pendent)
+
+---
+
+<!-- HISTORIAL (prototypes/bloodline/ ABANDONAT) -->
+<!-- DONE sessions 2026-06-06: PT-01..PT-13, D-01..D-03, SAVE, SCORE, BALANCE-EV, B-01 (20 tasques) -->
+<!-- DONE sessions 2026-06-14/16: aprenentatge, redesign pantalla, S3/S4 (commits 16fef8d, ce20117, a120039) -->
+
+<!-- STATS: actualitzat 2026-06-16 -->
+<!-- DONE: BL2-01..05 (tots els P1 tancats, 2026-06-16) -->
+<!-- OPEN: P2=3 (BL2-06..08) | P3=3 (C-01, C-02, PT-16) -->

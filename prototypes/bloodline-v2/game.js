@@ -1578,7 +1578,8 @@ function updateCarouselInfo() {
   if (action.side_effects) {
     for (const se of action.side_effects) {
       const icon = outIcons[se.resource] || '📦';
-      parts.push(`${icon} ${se.delta > 0 ? '+' : ''}${se.delta}`);
+      const riskBadge = (se.resource === 'health' && se.delta <= -10) ? '<span class="benefit-risk">❗</span>' : '';
+      parts.push(`${riskBadge}${icon} ${se.delta > 0 ? '+' : ''}${se.delta}`);
     }
   }
 
@@ -1693,7 +1694,7 @@ function renderCharPanel() {
       fillDiv.className = 'form-fill';
       fillDiv.style.width = (pct * 100).toFixed(0) + '%';
       const label = document.createElement('span');
-      label.textContent = (isNear ? '✦ ' : '') + forming.branch.name;
+      label.textContent = (isNear ? '✦ ' : '') + forming.branch.name + ' ⓘ';
       pill.appendChild(fillDiv);
       pill.appendChild(label);
       pill.addEventListener('click', () => showFormingBranchTooltip(forming));
@@ -1747,11 +1748,14 @@ function renderTopBar() {
   const matDef = RESOURCE_DEFS.find(r => r.id === 'material');
   const matMax = matDef?.max;
   el('tok-material-val').textContent = matMax ? `${Math.round(state.material || 0)}/${matMax}` : Math.round(state.material || 0);
-  // Warning chips — apareixen només en valors crítics
-  const foodWarn = el('warn-food');
-  const healthWarn = el('warn-health');
-  if (foodWarn)   foodWarn.classList.toggle('hidden', (state.food   || 0) > 4);
-  if (healthWarn) healthWarn.classList.toggle('hidden', (state.health || 0) > 15);
+  const food   = Math.round(state.food   || 0);
+  const health = Math.round(state.health || 0);
+  const foodEl   = el('meta-food-val');
+  const healthEl = el('meta-health-val');
+  if (foodEl)   foodEl.textContent   = food;
+  if (healthEl) healthEl.textContent = health;
+  el('meta-food')?.classList.toggle('warn',   food   <= 4);
+  el('meta-health')?.classList.toggle('warn', health <= 15);
 }
 
 // ═══════════════════════════════════════════════════════════ BOTTOM PANEL

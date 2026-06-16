@@ -219,12 +219,29 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   font-weight: 700;
 }
 #panel-turn-info { color: var(--text-dim); }
-.meta-warn {
-  font-size: 13px;
+#meta-vitals {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.meta-vital {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text);
+  background: rgba(28,22,14,.55);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 10px;
+  padding: 3px 7px;
+  min-width: 36px;
+  text-align: center;
+  transition: background .25s, border-color .25s;
+}
+.meta-vital.warn {
+  background: rgba(160,40,20,.55);
+  border-color: rgba(255,100,60,.5);
   animation: warn-pulse 1.2s ease-in-out infinite alternate;
 }
-.meta-warn.hidden { display: none; }
-@keyframes warn-pulse { from { opacity: 1; } to { opacity: 0.4; } }
+@keyframes warn-pulse { from { opacity: 1; } to { opacity: 0.5; } }
 #meta-right {
   display: flex;
   align-items: center;
@@ -852,6 +869,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   pointer-events: none;
 }
 .bsb-tri.neg { color: #f87171; }
+.benefit-risk { font-size: 0.75rem; }
 
 /* ══════════════════════════════════════════════════════════
    DONUT EXECUTION TIMER
