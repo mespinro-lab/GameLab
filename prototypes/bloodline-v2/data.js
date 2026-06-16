@@ -634,7 +634,6 @@ const ACTION_INCLINATION_REQUIREMENTS = {
 // destresa_id/name/threshold: personal skill discovered after N uses of this action
 // is_upgrade / upgrades_action_id: substitutory improved action, replaces base when purchased
 // minAge / maxAge: character age gates (edat del personatge, no cicle d'era)
-// reputation_gain: adds to state.reputacio (persistent across generations)
 const ACTIONS = [
   // BASE
   {
@@ -756,7 +755,6 @@ const ACTIONS = [
     requires: [{ state: 'fills', min: 1 }, { state: 'ensenyat', max: 0 }, { type: 'has_any_aprenentatge' }],
     character_effect: { type: 'delta', state: 'ensenyat', delta: 1 },
     material_min: 1, material_max: 2,
-    reputation_gain: 3,
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: +0.03, sociabilitat: +0.05 },
     event_pool_id: "pool_familia"
@@ -960,7 +958,6 @@ const ACTIONS = [
   {
     id: "act_narrar_llegendes", name: "Narrar les Llegendes", is_base: false, zona: "Campament",
     description: "Expliques les gestes i llegendes del llinatge davant del foc del campament.",
-    reputation_gain: 2,
     purchase_cost: 3, execute_cost: 0, material_min: 1, material_max: 2,
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: +0.05 },
@@ -971,7 +968,6 @@ const ACTIONS = [
   {
     id: "act_ornamentar_se", name: "Ornamentar-se", is_base: false, zona: "Campament",
     description: "Et poses les closques, dents i pedres que has recollit. El grup et mira diferent.",
-    reputation_gain: 1,
     purchase_cost: 3, execute_cost: 0, side_effects: [{ resource: 'health', delta: +3 }],
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.02, sociabilitat: +0.02 },
@@ -980,7 +976,6 @@ const ACTIONS = [
   {
     id: "act_consagrar_ornaments", name: "Consagrar Ornaments", is_base: false, zona: "Campament",
     description: "Passes els ornaments pel fum del foc del campament. Queden carregats de significat per al clan.",
-    reputation_gain: 2,
     purchase_cost: 4, execute_cost: 0, output_resource: "material", output_min: 2, output_max: 4,
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: +0.03 },
@@ -1192,7 +1187,6 @@ const ACTIONS = [
     id: "act_tallar_flauta", name: "Tallar una Flauta d'Os", is_base: false, zona: "Campament",
     description: "Forades un os d'ala de voltor amb el burí, forat a forat. Quan hi bufes, en surt una veu que no és de ningú.",
     purchase_cost: 4, execute_cost: 0, material_min: 1, material_max: 2,
-    reputation_gain: 1,
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: +0.03, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
@@ -1201,7 +1195,6 @@ const ACTIONS = [
     id: "act_musica_vetlla", name: "Música a la Vetlla", is_base: false, zona: "Campament",
     description: "Toques la flauta quan el campament es recull. Els infants s'adormen abans i els vells parlen més fluix.",
     purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 6,
-    reputation_gain: 1,
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: +0.03, sociabilitat: +0.04 },
     event_pool_id: "pool_ritual"

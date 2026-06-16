@@ -16,12 +16,134 @@
 
     <!-- ═══════════════════ WORLD LAYERS ═══════════════════ -->
 
-    <!-- L0: World background image — swap --world-bg to change art -->
-    <!-- NOTE: To swap the world asset, change `--world-bg` in style.css :root -->
+    <!-- L0: World background — single SVG (cel+muntanyes+terra+riu+zones estàtiques) -->
+    <!-- ASSET: per substituir per world.png: canvia #layer-world a background-image: var(--world-bg) i elimina el SVG -->
     <div id="layer-world">
-      <div id="scenery-mtn"></div>
-      <div id="scenery-ground"></div>
-      <div id="scenery-river"></div>
+      <svg id="world-svg" viewBox="0 0 360 772" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="wg-sky" x1="0" y1="0" x2="0" y2="1">
+            <stop id="wg-sky-top" offset="0%"   stop-color="#77b3d6"/>
+            <stop id="wg-sky-mid" offset="55%"  stop-color="#a6cdd2"/>
+            <stop id="wg-sky-bot" offset="100%" stop-color="#dbe5c4"/>
+          </linearGradient>
+          <radialGradient id="wg-grd" cx="50%" cy="0%" r="120%">
+            <stop offset="0%"   stop-color="#b7c879"/>
+            <stop offset="55%"  stop-color="#9fb866"/>
+            <stop offset="100%" stop-color="#8aa257"/>
+          </radialGradient>
+          <linearGradient id="wg-riv" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="#8fd0e0"/>
+            <stop offset="100%" stop-color="#5fa8c2"/>
+          </linearGradient>
+          <g id="wg-tree">
+            <rect x="-2" y="3" width="4" height="8" rx="1.5" fill="#6e4a2c"/>
+            <circle cx="0" cy="-1" r="11" fill="#4d7a43"/>
+            <circle cx="-5" cy="-5" r="7" fill="#5b8c4f"/>
+            <circle cx="5" cy="-4" r="6" fill="#5b8c4f"/>
+          </g>
+          <g id="wg-pine">
+            <rect x="-1.6" y="6" width="3.2" height="6" rx="1" fill="#6e4a2c"/>
+            <path d="M0,-14 L9,2 L-9,2 Z" fill="#3f6b3a"/>
+            <path d="M0,-8 L10,8 L-10,8 Z" fill="#4d7a43"/>
+          </g>
+          <g id="wg-grass">
+            <path d="M0,0 C-1,-6 -3,-7 -4,-9 M0,0 C0,-7 0,-9 0,-11 M0,0 C1,-6 3,-7 4,-9"
+                  stroke="#7a9a45" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+          </g>
+        </defs>
+
+        <!-- Cel -->
+        <rect x="0" y="0" width="360" height="420" fill="url(#wg-sky)"/>
+
+        <!-- Muntanyes (2 capes — bases cobertes per la terra) -->
+        <path d="M0,384 L0,340 L46,300 L96,346 L150,296 L210,348 L262,308 L320,350 L360,316 L360,384 Z" fill="#8f86a0" opacity=".88"/>
+        <path d="M0,390 L0,356 L54,326 L110,360 L168,322 L226,360 L286,330 L360,360 L360,390 Z" fill="#7c8a78" opacity=".95"/>
+
+        <!-- Terra (gradient verd) -->
+        <path d="M0,772 L0,360 Q90,348 180,358 Q270,368 360,352 L360,772 Z" fill="url(#wg-grd)"/>
+
+        <!-- Riu serpentejant pel corredor central -->
+        <path d="M130,360 C116,420 138,470 132,515 C128,560 152,600 174,650 C190,705 196,750 192,772"
+              fill="none" stroke="url(#wg-riv)" stroke-width="15" stroke-linecap="round"/>
+        <path d="M130,360 C116,420 138,470 132,515 C128,560 152,600 174,650 C190,705 196,750 192,772"
+              fill="none" stroke="#cdeef5" stroke-width="4" stroke-linecap="round" opacity=".55"/>
+
+        <!-- Guals (pedres) -->
+        <g fill="#cbb78c">
+          <ellipse cx="132" cy="518" rx="4" ry="2.4"/>
+          <ellipse cx="140" cy="512" rx="4" ry="2.4"/>
+          <ellipse cx="124" cy="524" rx="4" ry="2.4"/>
+        </g>
+        <g fill="#cbb78c">
+          <ellipse cx="172" cy="610" rx="4" ry="2.4"/>
+          <ellipse cx="180" cy="604" rx="4" ry="2.4"/>
+          <ellipse cx="164" cy="616" rx="4" ry="2.4"/>
+        </g>
+
+        <!-- Senders -->
+        <path d="M272,566 Q282,490 286,430" stroke="#a98f5e" stroke-width="3" fill="none" stroke-dasharray="2 6" stroke-linecap="round" opacity=".7"/>
+        <path d="M250,572 Q220,540 200,524" stroke="#a98f5e" stroke-width="3" fill="none" stroke-dasharray="2 6" stroke-linecap="round" opacity=".7"/>
+        <path d="M246,580 Q150,536 100,478" stroke="#a98f5e" stroke-width="3" fill="none" stroke-dasharray="2 6" stroke-linecap="round" opacity=".7"/>
+        <path d="M250,600 Q180,612 146,606" stroke="#a98f5e" stroke-width="3" fill="none" stroke-dasharray="2 6" stroke-linecap="round" opacity=".7"/>
+
+        <!-- Planes (dreta alta) -->
+        <path d="M243,405 Q250,365 290,362 Q330,368 327,408 Q322,444 285,446 Q250,440 243,405 Z" fill="#bcd082" opacity=".85"/>
+        <use href="#wg-grass" transform="translate(262,396) scale(1.3)"/>
+        <use href="#wg-grass" transform="translate(294,382) scale(1.1)"/>
+        <use href="#wg-grass" transform="translate(308,420) scale(1.2)"/>
+        <use href="#wg-grass" transform="translate(276,428) scale(1.1)"/>
+        <ellipse cx="300" cy="436" rx="10" ry="6" fill="#b6a87e"/>
+        <ellipse cx="252" cy="420" rx="7" ry="4.5" fill="#b6a87e"/>
+
+        <!-- Bosc (esquerra) -->
+        <path d="M22,460 Q26,416 70,414 Q112,418 110,460 Q106,502 66,504 Q26,498 22,460 Z" fill="#6f9a52" opacity=".9"/>
+        <use href="#wg-tree" transform="translate(46,452) scale(1.02)"/>
+        <use href="#wg-pine" transform="translate(74,430) scale(1.05)"/>
+        <use href="#wg-tree" transform="translate(96,466) scale(.9)"/>
+        <use href="#wg-pine" transform="translate(54,482) scale(.95)"/>
+        <use href="#wg-pine" transform="translate(84,486) scale(.85)"/>
+
+        <!-- Mercat (centre) -->
+        <path d="M160,515 Q164,485 192,483 Q220,487 218,515 Q214,543 188,545 Q162,539 160,515 Z" fill="#cbc594" opacity=".72"/>
+        <g transform="translate(190,512)">
+          <ellipse cx="0" cy="15" rx="30" ry="8" fill="#000" opacity=".12"/>
+          <rect x="-20" y="-12" width="3" height="24" rx="1.5" fill="#7a5430"/>
+          <rect x="18" y="-12" width="3" height="24" rx="1.5" fill="#7a5430"/>
+          <path d="M-24,-10 L24,-14 L22,-4 L-22,-2 Z" fill="#d8a76a"/>
+          <path d="M-24,-10 L24,-14" stroke="#b07f49" stroke-width="1.4"/>
+          <ellipse cx="-9" cy="8" rx="5.5" ry="4.2" fill="#a9763f"/>
+          <ellipse cx="2" cy="10" rx="4.5" ry="3.6" fill="#8c6a45"/>
+          <ellipse cx="11" cy="8" rx="5.5" ry="4.2" fill="#bb8a55"/>
+        </g>
+
+        <!-- Campament (dreta baixa) -->
+        <path d="M230,588 Q234,546 274,544 Q314,548 312,590 Q308,630 268,632 Q230,626 230,588 Z" fill="#cdbb86" opacity=".8"/>
+        <g transform="translate(272,586)">
+          <ellipse cx="0" cy="20" rx="42" ry="11" fill="#000" opacity=".12"/>
+          <path d="M-28,12 Q-24,-18 2,-20 Q30,-18 28,12 Z" fill="#b9ad92"/>
+          <path d="M-28,12 Q-24,-18 2,-20 Q30,-18 28,12 Z" fill="none" stroke="#9a8e74" stroke-width="1.4"/>
+          <ellipse cx="0" cy="9" rx="11" ry="9" fill="#34281d"/>
+          <path d="M14,12 L27,-12 L40,12 Z" fill="#caa06a"/>
+          <path d="M27,-12 L27,12" stroke="#8a6a42" stroke-width="1.3"/>
+          <path d="M-20,14 q3,-8 0,-12 q5,3 4,8 q4,-3 3,-6 q4,5 1,10 Z" fill="#f08a3a"/>
+          <path d="M-20,14 q2,-4 0,-7 q3,2 2,4 Z" fill="#ffd06a"/>
+        </g>
+
+        <!-- Llar (esquerra baixa) -->
+        <path d="M70,606 Q74,568 110,566 Q148,570 146,606 Q142,642 106,644 Q72,638 70,606 Z" fill="#b6c578" opacity=".82"/>
+        <g transform="translate(108,604)">
+          <ellipse cx="0" cy="18" rx="36" ry="9" fill="#000" opacity=".12"/>
+          <rect x="-18" y="-4" width="36" height="22" rx="3" fill="#c9a06a"/>
+          <path d="M-24,-4 L0,-24 L24,-4 Z" fill="#9c6f44"/>
+          <rect x="-5" y="5" width="11" height="13" rx="2" fill="#5e3f25"/>
+          <path d="M13,-24 q5,-6 0,-11 q6,-4 2,-11" stroke="#e8e2d2" stroke-width="3" fill="none" stroke-linecap="round" opacity=".75"/>
+          <circle cx="-27" cy="9" r="3.6" fill="#6b4a2e"/>
+          <rect x="-29.6" y="12" width="5.2" height="8" rx="2.2" fill="#7d5836"/>
+          <circle cx="29" cy="11" r="3.6" fill="#6b4a2e"/>
+          <rect x="26.4" y="14" width="5.2" height="8" rx="2.2" fill="#7d5836"/>
+          <circle cx="36" cy="14" r="2.4" fill="#6b4a2e"/>
+        </g>
+      </svg>
     </div>
 
     <!-- L1: Sky overlay (life stage color, semi-transparent) -->
