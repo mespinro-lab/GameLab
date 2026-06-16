@@ -503,10 +503,8 @@ const ACTION_INCLINATION_REQUIREMENTS = {
   // ══ CAÇADOR ══════════════════════════════════════════════
   act_caca_llanca:             { impuls: { min: 0.15 }, sociabilitat: { max: 0.45 } },
   act_emboscada_nocturna:      { impuls: { min: 0.20 }, sociabilitat: { max: 0.30 } },
-  act_marcar_territori:        { impuls: { min: 0.10 } },
   act_rastreig_rutes:          { impuls: { min: 0.10 } },
   act_caçar_amb_arc:           { impuls: { min: 0.15 } },
-  act_practicar_tir:           { impuls: { min: 0.08 } },           // pont caçador/artesà
   act_amansar_animal:          { sociabilitat: { min: 0.05 } },     // transició cap a social
   act_pasturar_bestiar:        { impuls: { min: 0.05 } },           // pont caçador/social
   act_control_territori:       { impuls: { min: 0.08 }, sociabilitat: { min: 0.08 } },
@@ -530,7 +528,6 @@ const ACTION_INCLINATION_REQUIREMENTS = {
   act_construir_refugi:        { "intel·lecte": { min: 0.08 } },
   act_destillar_quitra:        { "intel·lecte": { min: 0.15 }, impuls: { max: 0.30 } },
   act_emmanegar_eines:         { "intel·lecte": { min: 0.12 } },
-  act_modelar_argila:          { "intel·lecte": { min: 0.12 } },    // pont artesà/místic
   act_coure_ceramica:          { "intel·lecte": { min: 0.15 } },
   act_sembrar_llavors:         { "intel·lecte": { min: 0.12 }, impuls: { max: 0.20 } },
   act_collita_sistematica:     { "intel·lecte": { min: 0.10 } },
@@ -539,12 +536,10 @@ const ACTION_INCLINATION_REQUIREMENTS = {
 
   // ══ MÍSTIC ════════════════════════════════════════════════
   act_curar_herbes:            { espiritualitat: { min: 0.10 } },
-  act_preparar_ungüent:        { espiritualitat: { min: 0.08 } },   // pont místic/artesà
   act_pintar_parets:           { espiritualitat: { min: 0.20 }, sociabilitat: { min: 0.10 } },
   act_narrar_llegendes:        { espiritualitat: { min: 0.10 }, sociabilitat: { min: 0.10 } },
   act_ornamentar_se:           { espiritualitat: { min: 0.05 } },   // accessible (pont)
   act_consagrar_ornaments:     { espiritualitat: { min: 0.15 }, sociabilitat: { min: 0.08 } },
-  act_observar_cel:            { espiritualitat: { min: 0.08 } },   // pont místic/artesà
   act_transit_nocturn:         { espiritualitat: { min: 0.20 } },
   act_ofrena_eines:            { espiritualitat: { min: 0.12 }, sociabilitat: { min: 0.08 } },
   act_cerimonia_eines:         { espiritualitat: { min: 0.12 }, sociabilitat: { min: 0.10 } },
@@ -567,7 +562,7 @@ const ACTION_INCLINATION_REQUIREMENTS = {
   act_fira_intercanvi:         { sociabilitat: { min: 0.10 } },
   act_ceramica_regalada:       { sociabilitat: { min: 0.08 } },
   act_negociar_pastures:       { sociabilitat: { min: 0.08 } },
-  act_explicar_orígens:        { sociabilitat: { min: 0.10 }, espiritualitat: { min: 0.05 } },
+  act_explicar_orígens:        { sociabilitat: { min: 0.10 } },
   act_cants_grup:              { sociabilitat: { min: 0.08 } },
   act_reforçar_palissada:      { impuls: { min: 0.05 } },
   act_defensa_activa:          { sociabilitat: { min: 0.05 } },     // upgrade vigilar_campament
