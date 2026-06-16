@@ -160,7 +160,6 @@ var branch_techs_discovered: Array[String]
 var actions_purchased: Array[String]
 var discovered_actions: Array[String]    # acció revelada per branch_tech (comprable però no comprada)
 var inclination: Dictionary              # axis_id → float [-1.0, 1.0]
-var reputation: float
 var resources: Dictionary               # resource_id → float
 var genealogy: Array[CharacterState]
 var chronicle_events: Array[Dictionary]

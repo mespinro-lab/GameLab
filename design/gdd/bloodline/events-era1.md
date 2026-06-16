@@ -3,7 +3,11 @@
 **Tipus de document**: Proposta de contingut (events). No és un GDD de sistema.
 **Rol d'autoria**: arqueòleg del Paleolític Superior + game designer d'events.
 **Data**: 2026-06-11
-**Fonts**: `prototypes/bloodline/data.js` (post-lots A–D), `design/gdd/bloodline/content-review-era1.md` (§4.3, §9), `_overview.md`
+**Fonts**: `prototypes/bloodline-v2/data.js` (post-lots A–D), `design/gdd/bloodline/content-review-era1.md` (§4.3, §9), `_overview.md`
+
+> ⚠️ **Nota (2026-06-16)**: La `reputació` com a recurs persistent ha estat eliminada del joc (D3, 2026-06-14).
+> Els camps `reputacio` i `reputacio_delta` en els efectes d'events d'aquest document son propostes de disseny
+> pendents de migrar. En implementar-los, substituir per efectes de `salut`, `material` o efectes narratius purs.
 **Escala canònica**: cicle *c* ≈ 50.000 − 400·*c* AEC (Era 1: 100 cicles)
 
 ---

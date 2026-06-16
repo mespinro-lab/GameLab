@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bloodline · v13</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#16181c;color:#e7e2d8;
+    font-family:"SF Pro Display",-apple-system,"Segoe UI",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;padding:26px 14px 64px;display:flex;flex-direction:column;align-items:center}
+  h1{font-size:18px;font-weight:700;letter-spacing:-.01em;margin-bottom:3px;text-align:center}
+  .sub{color:#9aa0a8;font-size:12.5px;text-align:center;max-width:440px;margin-bottom:20px}
+
+  .phone{width:min(355px,93vw);aspect-ratio:9/19.3;border-radius:33px;overflow:hidden;position:relative;
+    box-shadow:0 24px 60px rgba(0,0,0,.55),0 0 0 8px #0c0d0f,0 0 0 9px #2c2e33;background:#86a9c2}
+
+  .bg{position:absolute;inset:0;z-index:0}
+  .bg svg{width:100%;height:100%;display:block}
+
+  .zlabel{position:absolute;z-index:3;font-size:11px;font-weight:800;color:#fff;
+    text-shadow:0 1px 3px rgba(30,40,15,.95),0 0 2px rgba(30,40,15,.8);pointer-events:none}
+  .zchip{position:absolute;z-index:3;display:inline-flex;gap:7px;align-items:center;
+    background:rgba(20,24,16,.58);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
+    border:1px solid rgba(255,255,255,.18);border-radius:11px;padding:3px 8px;
+    box-shadow:0 3px 8px rgba(20,30,10,.35)}
+  .zchip span{font-size:10px;font-weight:700;color:#f3efe0;white-space:nowrap}
+
+  .meta{position:absolute;top:11px;left:12px;right:12px;z-index:6;display:flex;justify-content:space-between;align-items:center}
+  .mleft{font-size:9.5px;color:#2f4a55;font-weight:700;background:rgba(225,240,245,.72);border-radius:8px;padding:2px 7px}
+  .mright{display:flex;gap:7px}
+  .chip{background:rgba(28,30,28,.42);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.18);
+    border-radius:11px;padding:5px 9px;font-size:11.5px;font-weight:800;color:#fdf8ee}
+
+  .ident{position:absolute;top:40px;left:10px;right:10px;z-index:5;
+    background:rgba(22,26,24,.5);backdrop-filter:blur(11px);-webkit-backdrop-filter:blur(11px);
+    border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:9px;display:flex;gap:8px}
+  .half{flex:1 1 0;display:flex;flex-direction:column;gap:7px}
+  .attrs{display:flex;gap:5px;justify-content:space-around;background:rgba(0,0,0,.22);border-radius:9px;padding:6px 4px}
+  .at{font-size:12px;font-weight:800;color:#e3e3d4;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:3px}
+  .at .ic{font-size:13px}.at.hot{color:#8fd5a6}
+  .pid{display:flex;gap:9px;align-items:center}
+  .portrait{width:60px;height:60px;border-radius:15px;flex:none;
+    background:linear-gradient(160deg,#9a86a8 0%,#b6a6bf 50%,#c9b79e 100%);
+    box-shadow:inset 0 2px 5px rgba(255,255,255,.45),0 3px 7px rgba(0,0,0,.3),0 0 14px rgba(124,92,210,.45);
+    display:flex;align-items:center;justify-content:center;font-size:34px;border:1.5px solid rgba(150,120,210,.55)}
+  .who .nm{font-size:15px;font-weight:800;color:#fdf8ee;line-height:1.1}
+  .who .gn{font-size:10px;font-weight:600;color:#c4c0b0;margin-top:2px}
+
+  .vcard{justify-content:center}
+  .cell{border-radius:11px;padding:6px 10px;background:rgba(255,255,255,.08);display:flex;align-items:baseline;justify-content:space-between}
+  .cell.food{background:linear-gradient(180deg,rgba(239,123,70,.34),rgba(221,74,44,.3));border:1px solid rgba(255,150,90,.55)}
+  .cell .lab{font-size:9px;color:#d2cdbc;text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+  .cell .num{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1}
+  .cell .num .d{font-size:11px;font-weight:600}
+  .cell.food .num{color:#ffd9c4}.cell.food .num .d{color:#ffcaa8}.cell .num .d.n{color:#aab0a0}
+
+  .know{position:absolute;top:160px;left:16px;right:16px;z-index:4;display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+  .pill{font-size:9.5px;font-weight:800;padding:4px 9px;border-radius:20px;color:#fff;
+    box-shadow:0 4px 9px rgba(20,30,10,.4),inset 0 1px 0 rgba(255,255,255,.3)}
+  .pill.br{background:linear-gradient(180deg,#5384c7,#3a66a8)}
+  .pill.sk{background:linear-gradient(180deg,#52ab7c,#388a62)}
+  .pill.de{background:linear-gradient(180deg,#e0bb4a,#c39d2c);color:#3a2e07}
+  .pill.mr{background:rgba(30,34,24,.55);color:#fdf8ee;backdrop-filter:blur(6px)}
+  .forming{position:relative;font-size:9.5px;font-weight:800;padding:4px 9px;border-radius:20px;color:#eaf2ff;
+    border:1.5px dashed rgba(150,185,245,.95);background:rgba(40,60,100,.6);overflow:hidden;backdrop-filter:blur(4px);
+    display:flex;align-items:center;gap:4px;box-shadow:0 4px 11px rgba(40,60,120,.5)}
+  .forming .fill{position:absolute;left:0;top:0;bottom:0;width:80%;
+    background:linear-gradient(180deg,rgba(83,132,199,.75),rgba(58,102,168,.75));z-index:0}
+  .forming>span{position:relative;z-index:1}
+
+  .logbar{position:absolute;left:0;right:0;bottom:0;padding:11px 13px 14px;z-index:5;
+    background:linear-gradient(180deg,rgba(50,60,30,0),rgba(35,45,20,.6) 60%)}
+  .log{font-size:9.5px;color:#f1f0d8;text-shadow:0 1px 2px rgba(30,40,15,.85)}
+</style>
+</head>
+<body>
+
+<h1>Bloodline — v13</h1>
+<p class="sub">Muntanyes contra el cel amb gradient · info de zona en xips llegibles.</p>
+
+<div class="phone">
+  <div class="bg">
+    <svg viewBox="0 0 360 772" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#77b3d6"/><stop offset="55%" stop-color="#a6cdd2"/><stop offset="100%" stop-color="#dbe5c4"/>
+        </linearGradient>
+        <radialGradient id="grd" cx="50%" cy="0%" r="120%">
+          <stop offset="0%" stop-color="#b7c879"/><stop offset="55%" stop-color="#9fb866"/><stop offset="100%" stop-color="#8aa257"/>
+        </radialGradient>
+        <linearGradient id="riv" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#8fd0e0"/><stop offset="100%" stop-color="#5fa8c2"/>
+        </linearGradient>
+        <g id="tree">
+          <rect x="-2" y="3" width="4" height="8" rx="1.5" fill="#6e4a2c"/>
+          <circle cx="0" cy="-1" r="11" fill="#4d7a43"/><circle cx="-5" cy="-5" r="7" fill="#5b8c4f"/><circle cx="5" cy="-4" r="6" fill="#5b8c4f"/>
+        </g>
+        <g id="pine">
+          <rect x="-1.6" y="6" width="3.2" height="6" rx="1" fill="#6e4a2c"/>
+          <path d="M0,-14 L9,2 L-9,2 Z" fill="#3f6b3a"/><path d="M0,-8 L10,8 L-10,8 Z" fill="#4d7a43"/>
+        </g>
+        <g id="grass">
+          <path d="M0,0 C-1,-6 -3,-7 -4,-9 M0,0 C0,-7 0,-9 0,-11 M0,0 C1,-6 3,-7 4,-9"
+                stroke="#7a9a45" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+        </g>
+      </defs>
+
+      <rect x="0" y="0" width="360" height="420" fill="url(#sky)"/>
+
+      <path d="M0,384 L0,340 L46,300 L96,346 L150,296 L210,348 L262,308 L320,350 L360,316 L360,384 Z" fill="#8f86a0" opacity=".88"/>
+      <path d="M0,390 L0,356 L54,326 L110,360 L168,322 L226,360 L286,330 L360,360 L360,390 Z" fill="#7c8a78" opacity=".95"/>
+
+      <path d="M0,772 L0,360 Q90,348 180,358 Q270,368 360,352 L360,772 Z" fill="url(#grd)"/>
+
+      <path d="M130,360 C116,420 138,470 132,515 C128,560 152,600 174,650 C190,705 196,750 192,772"
+            fill="none" stroke="url(#riv)" stroke-width="15" stroke-linecap="round"/>
+      <path d="M130,360 C116,420 138,470 132,515 C128,560 152,600 174,650 C190,705 196,750 192,772"
+            fill="none" stroke="#cdeef5" stroke-width="4" stroke-linecap="round" opacity=".55"/>
+
+      <path d="M243,405 Q250,365 290,362 Q330,368 327,408 Q322,444 285,446 Q250,440 243,405 Z" fill="#bcd082" opacity=".85"/>
+      <path d="M22,460 Q26,416 70,414 Q112,418 110,460 Q106,502 66,504 Q26,498 22,460 Z" fill="#6f9a52" opacity=".9"/>
+      <path d="M160,515 Q164,485 192,483 Q220,487 218,515 Q214,543 188,545 Q162,539 160,515 Z" fill="#cbc594" opacity=".72"/>
+      <path d="M230,588 Q234,546 274,544 Q314,548 312,590 Q308,630 268,632 Q230,626 230,588 Z" fill="#cdbb86" opacity=".8"/>
+      <path d="M70,606 Q74,568 110,566 Q148,570 146,606 Q142,642 106,644 Q72,638 70,606 Z" fill="#b6c578" opacity=".82"/>
+
+      <path d="M272,566 Q282,490 286,430" stroke="#a98f5e" stroke-width="3" fill="none" stroke-dasharray="2 6" stroke-linecap="round" opacity=".7"/>
+      <path d="M250,572 Q220,540 200,524" stroke="#a98f5e" stroke-width="3" fill="none" stroke-dasharray="2 6" stroke-linecap="round" opacity=".7"/>
+      <path d="M246,580 Q150,536 100,478" stroke="#a98f5e" stroke-width="3" fill="none" stroke-dasharray="2 6" stroke-linecap="round" opacity=".7"/>
+      <path d="M250,600 Q180,612 146,606" stroke="#a98f5e" stroke-width="3" fill="none" stroke-dasharray="2 6" stroke-linecap="round" opacity=".7"/>
+      <g fill="#cbb78c"><ellipse cx="132" cy="518" rx="4" ry="2.4"/><ellipse cx="140" cy="512" rx="4" ry="2.4"/><ellipse cx="124" cy="524" rx="4" ry="2.4"/></g>
+      <g fill="#cbb78c"><ellipse cx="172" cy="610" rx="4" ry="2.4"/><ellipse cx="180" cy="604" rx="4" ry="2.4"/><ellipse cx="164" cy="616" rx="4" ry="2.4"/></g>
+
+      <use href="#tree" transform="translate(46,452) scale(1.02)"/>
+      <use href="#pine" transform="translate(74,430) scale(1.05)"/>
+      <use href="#tree" transform="translate(96,466) scale(.9)"/>
+      <use href="#pine" transform="translate(54,482) scale(.95)"/>
+      <use href="#pine" transform="translate(84,486) scale(.85)"/>
+
+      <use href="#grass" transform="translate(262,396) scale(1.3)"/>
+      <use href="#grass" transform="translate(294,382) scale(1.1)"/>
+      <use href="#grass" transform="translate(308,420) scale(1.2)"/>
+      <use href="#grass" transform="translate(276,428) scale(1.1)"/>
+      <ellipse cx="300" cy="436" rx="10" ry="6" fill="#b6a87e"/>
+      <ellipse cx="252" cy="420" rx="7" ry="4.5" fill="#b6a87e"/>
+
+      <g transform="translate(190,512)">
+        <ellipse cx="0" cy="15" rx="30" ry="8" fill="#000" opacity=".12"/>
+        <rect x="-20" y="-12" width="3" height="24" rx="1.5" fill="#7a5430"/>
+        <rect x="18" y="-12" width="3" height="24" rx="1.5" fill="#7a5430"/>
+        <path d="M-24,-10 L24,-14 L22,-4 L-22,-2 Z" fill="#d8a76a"/>
+        <path d="M-24,-10 L24,-14" stroke="#b07f49" stroke-width="1.4"/>
+        <ellipse cx="-9" cy="8" rx="5.5" ry="4.2" fill="#a9763f"/>
+        <ellipse cx="2" cy="10" rx="4.5" ry="3.6" fill="#8c6a45"/>
+        <ellipse cx="11" cy="8" rx="5.5" ry="4.2" fill="#bb8a55"/>
+      </g>
+
+      <g transform="translate(272,586)">
+        <ellipse cx="0" cy="20" rx="42" ry="11" fill="#000" opacity=".12"/>
+        <path d="M-28,12 Q-24,-18 2,-20 Q30,-18 28,12 Z" fill="#b9ad92"/>
+        <path d="M-28,12 Q-24,-18 2,-20 Q30,-18 28,12 Z" fill="none" stroke="#9a8e74" stroke-width="1.4"/>
+        <ellipse cx="0" cy="9" rx="11" ry="9" fill="#34281d"/>
+        <path d="M14,12 L27,-12 L40,12 Z" fill="#caa06a"/><path d="M27,-12 L27,12" stroke="#8a6a42" stroke-width="1.3"/>
+        <path d="M-20,14 q3,-8 0,-12 q5,3 4,8 q4,-3 3,-6 q4,5 1,10 Z" fill="#f08a3a"/>
+        <path d="M-20,14 q2,-4 0,-7 q3,2 2,4 Z" fill="#ffd06a"/>
+      </g>
+
+      <g transform="translate(108,604)">
+        <ellipse cx="0" cy="18" rx="36" ry="9" fill="#000" opacity=".12"/>
+        <rect x="-18" y="-4" width="36" height="22" rx="3" fill="#c9a06a"/>
+        <path d="M-24,-4 L0,-24 L24,-4 Z" fill="#9c6f44"/>
+        <rect x="-5" y="5" width="11" height="13" rx="2" fill="#5e3f25"/>
+        <path d="M13,-24 q5,-6 0,-11 q6,-4 2,-11" stroke="#e8e2d2" stroke-width="3" fill="none" stroke-linecap="round" opacity=".75"/>
+        <circle cx="-27" cy="9" r="3.6" fill="#6b4a2e"/><rect x="-29.6" y="12" width="5.2" height="8" rx="2.2" fill="#7d5836"/>
+        <circle cx="29" cy="11" r="3.6" fill="#6b4a2e"/><rect x="26.4" y="14" width="5.2" height="8" rx="2.2" fill="#7d5836"/>
+        <circle cx="36" cy="14" r="2.4" fill="#6b4a2e"/>
+      </g>
+    </svg>
+  </div>
+
+  <div class="zlabel" style="top:52%;left:70%">Planes</div>
+  <div class="zlabel" style="top:60%;left:9%">Bosc</div>
+  <div class="zlabel" style="top:66%;left:46%">Mercat</div>
+  <div class="zlabel" style="top:75%;left:62%">Campament</div>
+  <div class="zlabel" style="top:78%;left:19%">Llar</div>
+
+  <div class="zchip" style="top:78.5%;left:60%"><span>🪨 7</span><span>⚒️ 2</span></div>
+  <div class="zchip" style="top:81.5%;left:13%"><span>💑 Mira</span><span>👶 ×3</span></div>
+
+  <div class="meta">
+    <div class="mleft">Partida 78/100</div>
+    <div class="mright"><div class="chip">🔵 28/35</div><div class="chip">☰</div></div>
+  </div>
+
+  <div class="ident">
+    <div class="half">
+      <div class="attrs">
+        <div class="at"><span class="ic">💪</span>3.8</div>
+        <div class="at hot"><span class="ic">🧠</span>2.5</div>
+        <div class="at"><span class="ic">🔗</span>4.1</div>
+      </div>
+      <div class="pid">
+        <div class="portrait">🧙</div>
+        <div class="who"><div class="nm">Karn</div><div class="gn">Gen 5</div></div>
+      </div>
+    </div>
+    <div class="half vcard">
+      <div class="cell food"><span class="lab">🌾 menjar</span><span class="num">9/14 <span class="d">↓3</span></span></div>
+      <div class="cell"><span class="lab">❤️ salut</span><span class="num">42 <span class="d n">↓2</span></span></div>
+    </div>
+  </div>
+
+  <div class="know">
+    <span class="pill br">Caçador</span>
+    <span class="forming"><span class="fill"></span><span>◔ Místic 80%</span></span>
+    <span class="pill sk">Punta Llança</span><span class="pill de">⭐ Botànica</span><span class="pill mr">+2</span>
+  </div>
+
+  <div class="logbar"><div class="log">› Recol·lectar Arrels a les Planes: +3🌾 · 🧠▲</div></div>
+</div>
+
+</body>
+</html>

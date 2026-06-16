@@ -3,14 +3,15 @@
 **Nom comercial**: Bloodline
 **Gènere**: Tycoon de llinatge humà, gestió estratègica per sessions llargues
 **Plataforma**: iOS + Android, portrait, touch-first
-**Engine (prototip)**: HTML/JS pur — `prototypes/bloodline/` (Godot abandonat 2026-06)
+**Engine (prototip)**: HTML/JS pur — `prototypes/bloodline-v2/` (Godot abandonat 2026-06)
 **Art**: Reutilitza assets de Life Tycoon 1 (busts, zones, mapa)
 **Sessions**: 30–90 min; múltiples eres per partida completa
 
-> **NOTA D'ESTAT (2026-06-06)**: El prototip HTML/JS és el joc actiu.
+> **NOTA D'ESTAT (2026-06-16)**: El prototip HTML/JS és el joc actiu.
 > Els GDDs de `design/gdd/bloodline/` contenen el disseny conceptual i poden
-> divergir del codi real. La font de veritat és `prototypes/bloodline/data.js`.
-> Veure `prototypes/bloodline/README.md` per a l'estat actual implementat.
+> divergir del codi real. La font de veritat és `prototypes/bloodline-v2/data.js`
+> i `prototypes/bloodline-v2/game.js`.
+> Veure `prototypes/bloodline-v2/README.md` per a l'estat actual implementat.
 
 > **Principi fonamental**: Tot el contingut del joc —eres, branques, accions,
 > tecnologies, events— és completament parametritzat en fitxers de dades.
@@ -302,7 +303,6 @@ result = action.base_output + Σ (event_i.modifier)   per cada event en la caden
 era_score = (branch_techs_discovered × W_TECH)
           + (rare_events_triggered   × W_RARE)
           + (efficiency_bonus        × W_EFF)
-          + (dynasty_reputation      × W_REP)
 
 efficiency_bonus = max(0, BASE_CYCLES_PER_ERA − cycles_used) × EFFICIENCY_PER_CYCLE
 ```
@@ -364,7 +364,6 @@ efficiency_bonus = max(0, BASE_CYCLES_PER_ERA − cycles_used) × EFFICIENCY_PER
 | `W_TECH` | 50 | Pes tecns. de branca en score d'era |
 | `W_RARE` | 200 | Pes events rars en score d'era |
 | `W_EFF` | 30 | Pes eficiència en score d'era |
-| `W_REP` | 10 | Pes reputació dinàstica en score d'era |
 
 ---
 

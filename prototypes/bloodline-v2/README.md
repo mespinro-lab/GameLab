@@ -14,7 +14,7 @@ Obre `index.html` directament al navegador (no cal servidor).
 
 ## Estat actual
 
-**En actiu** (2026-06-13). Versió jugable completa de l'Era 1 (Paleolític Superior).
+**En actiu** (2026-06-16). Versió jugable completa de l'Era 1 (Paleolític Superior).
 
 ### Contingut implementat
 
@@ -23,9 +23,9 @@ Obre `index.html` directament al navegador (no cal servidor).
 | Accions totals | 79 (11 base auto-desbloq. + 68 comprables) |
 | Tecnologies de branca (branch techs) | 30 |
 | Tecnologies universals | 7 |
-| Zones del mapa | 4 (Campament, Planes, Bosc, Llar) |
+| Zones del mapa | 5 (Campament, Planes, Bosc, Mercat, Llar) |
 | Destreses | 5 |
-| Recursos actius | 6 (menjar, salut, material, reputació, pedra, eines) |
+| Recursos actius | 5 (menjar, salut, material, pedra, eines) |
 
 ### Sistemes implementats
 
@@ -37,7 +37,7 @@ Obre `index.html` directament al navegador (no cal servidor).
 - **5 destreses**: aptituds desbloq. per repetició (llindar configurable)
 - **Cadena d'eines**: Recollir Pedra → Tallar Pedra (🪨→⚒️) → Talla Avançada (+30% output eines)
 - **Menjar dinàmic**: cap inicial 8, creix fins a 20 amb Assecar Provisions (×3); consum reduïble
-- **Recursos persistents**: material (30%), reputació (60%), pedra (100%), eines (30%) hereten entre generacions
+- **Recursos persistents**: material (30%), pedra (100%), eines (30%) hereten entre generacions
 - **Successió generacional**: fills hereten inclinació (85%) i stats (50%)
 - **Sistema d'events** balancejat dinàmicament (positius/negatius per historial)
 - **Zona Llar**: apareix en trobar parella; indicador família visible al panell

@@ -1,4 +1,4 @@
-> ⚠️ OBSOLET (2026-06-06) — Font de veritat: `prototypes/bloodline/data.js`. Reescriure quan el prototip passi a producció.
+> ⚠️ DISSENY PROSPECTIU — Font de veritat: `prototypes/bloodline-v2/game.js`. Reputació eliminada (2026-06-14).
 
 # Life Tycoon 2 — Scoring System
 
@@ -41,7 +41,6 @@ El score d'era es calcula en completar la transició de l'era (veure
 | **Tecnologies de branca descobertes** | Nombre de branch techs descobertes durant l'era. |
 | **Events rars trigats** | Nombre d'events `is_rare: true` disparats durant l'era. |
 | **Bonus d'eficiència** | Cicles estalviats respecte al màxim possible de l'era. |
-| **Reputació dinàstica** | Valor de reputació acumulada al final de l'era. |
 | **Bonus de branca dominant** | Bonus per tenir una branca dominant clara (inclinació > llindar). |
 
 **Nota sobre independència**: el score d'era no té en compte el score d'eres
@@ -123,24 +122,6 @@ La pantalla de score ha de mostrar:
 5. **Quantes tecnologies de branca hi havia disponibles vs quantes s'han
    descobert** (incentiva tornar a jugar per descobrir les ocultes).
 
-### 3.5 Reputació Dinàstica
-
-La reputació és un indicador persistent entre generacions i eres. No es
-reinicia en la transició d'era (a diferència dels altres indicadors). Contribueix
-al score d'era i desbloqueja accions i events exclusius.
-
-| Acció | Efecte sobre reputació |
-|---|---|
-| Resoldre events rars favorablement | +rep |
-| Descobrir tecnologies de branca | +rep |
-| Assolir un títol | +rep significatiu |
-| Morir amb indicadors molt baixos | −rep |
-| Opcions d'events "deshonoroses" | −rep (definit per event) |
-
-La reputació **no es transmet al 100%** en la transició d'era. Es degrada
-parcialment (controlat per `REPUTATION_ERA_DECAY`) — el llinatge ha de
-guanyar-se el respecte en cada nova era.
-
 ---
 
 ## 4. Fórmules
@@ -152,7 +133,6 @@ era_score =
     (branch_techs_discovered_this_era × W_TECH)
   + (rare_events_triggered_this_era   × W_RARE)
   + (efficiency_bonus)
-  + (dynasty_reputation_end_of_era    × W_REP)
   + (dominant_branch_bonus)
   + (Σ title.score_bonus for each title unlocked this era)
 
@@ -174,12 +154,6 @@ run_score = Σ era_score[i]
 coherence_bonus = (eres_amb_mateixa_branca_dominant_encadenades ≥ 2)
                   ? COHERENCE_BONUS_PER_ERA × eres_coherents
                   : 0
-```
-
-### Reputació — Transició d'Era
-
-```
-reputation_new_era = reputation_end_of_era × REPUTATION_ERA_DECAY
 ```
 
 ---
@@ -226,11 +200,9 @@ reputation_new_era = reputation_end_of_era × REPUTATION_ERA_DECAY
 | `W_TECH` | 50 | 20–150 | Pes de cada tecnologia de branca descoberta. |
 | `W_RARE` | 200 | 100–500 | Pes de cada event rar trigat. |
 | `W_EFF` | 20 | 5–50 | Punts per cicle estalviat. |
-| `W_REP` | 0.5 | 0.1–2.0 | Multiplicador de reputació al score d'era. |
 | `DOMINANT_BRANCH_THRESHOLD` | 0.55 | 0.40–0.75 | % d'inclinació per activar el bonus de branca dominant. |
 | `DOMINANT_BRANCH_BONUS` | 300 | 100–600 | Bonus fix per tenir branca dominant. |
 | `COHERENCE_BONUS_PER_ERA` | 150 | 50–300 | Bonus per era coherent encadenada. |
-| `REPUTATION_ERA_DECAY` | 0.70 | 0.50–0.90 | % de reputació que es manté en la transició d'era. |
 
 ---
 
@@ -245,5 +217,3 @@ reputation_new_era = reputation_end_of_era × REPUTATION_ERA_DECAY
 - [ ] El score de partida augmenta en completar cada era, visible en temps real
 - [ ] La pantalla de score mostra quantes branch techs s'han descobert vs
       quantes hi ha disponibles (incentiu de replayability)
-- [ ] La reputació dinàstica al final d'una era és palpablement diferent
-      entre un jugador que ha resolt events favorablement vs un que no

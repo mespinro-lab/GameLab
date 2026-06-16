@@ -1,6 +1,6 @@
 # Bloodline — Brief de la pantalla principal (per a Claude Code)
 
-> Referència visual: `bloodline-v9.html` (mock d'estat **Gen 5 ple**, en ocàs).
+> Referència visual: `bloodline-v13.html` (mock d'estat **Gen 5**, en dia per llegir el mapa; el cel és el que tenyeix la vida).
 > Aquest document descriu **estructura, capes i comportament**, no l'art final.
 
 ---
@@ -9,9 +9,9 @@
 
 Redissenyar la pantalla principal del prototip actual. Principis que han de quedar implementats:
 
-- **Identitat a dalt, món a sota.** El bloc superior diu "qui ets" (personatge, característiques, coneixement); la resta de pantalla és "on actues" (món + nodes).
+- **Identitat a dalt, món a sota.** El bloc superior diu "qui ets" (personatge, característiques, coneixement); la resta de pantalla és "on actues" (món + zones).
 - **Supervivència mana.** Menjar i salut sempre visibles i prominents.
-- **Els números es veuen, però el que crida és el CANVI.** L'estat en repòs és tranquil; en executar una acció, els deltes salten i les caselles afectades s'encenen. (No amagar números: en un tycoon, veure'ls evolucionar és el premi.)
+- **Els números es veuen, però el que crida és el CANVI.** L'estat en repòs és tranquil; en executar una acció, els deltes salten i les caselles afectades s'encenen.
 - **Vida = ambient diegètic.** La mortalitat es comunica pel **color del cel** (fons), no per un número.
 
 ---
@@ -28,44 +28,43 @@ El fons és **una imatge**, no HTML. Estructurar en capes independents perquè l
 
 | Capa | Contingut | Implementació ara (placeholder) | Implementació final |
 |------|-----------|----------------------------------|---------------------|
-| L0 · Món | Escena de fons (terra, riu, muntanyes) | Gradient/CSS simple o imatge temporal | `world.png` (una imatge) |
-| L1 · Cel/Vida | To del cel segons etapa de vida | **Overlay de color** semi-transparent damunt L0 | Possible art per etapa, o capa de cel pròpia |
+| L0 · Món | Escena de fons: cel + muntanyes + terra (veure §11) | SVG/CSS en UNA capa | `world.png` (una imatge) |
+| L1 · Cel/Vida | To del cel segons etapa de vida | **Overlay/gradient** de to | Possible art per etapa |
 | L2 · Sol | Sol baix a l'horitzó + posta prevista | Sprite/SVG posicionat | Sprite final |
-| L3 · Nodes | Campament, Planes, Bosc, Llar (tappables) | Sprites/botons posicionats en **%** | Sprites finals, coords alineades amb `world.png` |
+| L3 · Zones | Planes, Bosc, Mercat, Campament, Llar (tappables) | Indrets posicionats en **%** | Sprites finals, coords alineades amb `world.png` |
 | L4 · HUD | Bloc d'identitat, vitals, etiquetes, meta, log | DOM/UI | Igual |
 
-**Clau d'implementació:** la imatge de fons s'assigna a una sola variable/asset (`--world-bg` o `<img id="world">`). Canviar-la = una línia. Les coordenades dels nodes en **percentatges**, perquè es mantinguin en posar l'art definitiu (cal dissenyar art i coords junts).
+**Clau:** la imatge de fons s'assigna a una sola variable/asset. Canviar-la = una línia. Coordenades de zones en **percentatges** (veure §11) perquè es mantinguin amb l'art definitiu.
 
 ---
 
-## 3. Layout (zones, de dalt a baix)
+## 3. Layout (zones de pantalla, de dalt a baix)
 
-1. **Barra meta** (sobreposada): esquerra `Partida X/100` (progrés global, discret); dreta `🔵 tokens` + menú `☰`.
+1. **Barra meta** (sobreposada): esquerra `Partida X/100` (discret); dreta `🔵 tokens` + menú `☰`.
 2. **Bloc d'identitat** (targeta, 50/50):
-   - **Meitat esquerra (jugador):**
-     - *A sobre:* característiques **només icona + número** (`💪 3.8 · 🧠 2.5 · 🔗 4.1`). Sense text FOR/ENG/VIN.
-     - *A sota:* retrat + nom + `Gen N`.
+   - **Meitat esquerra (jugador):** característiques **només icona + número** (`💪 3.8 · 🧠 2.5 · 🔗 4.1`) **a sobre**, i a sota el retrat + nom + `Gen N`.
    - **Meitat dreta (vitals):** `🌾 menjar` i `❤️ salut`, números grans.
-3. **Etiquetes de coneixement** (FORA de la targeta, surant sobre el món, just sota): branques + branca en formació + habilitats + destreses.
-4. **Món** (capes L0–L3): nodes + magatzem del camp + família.
-5. **Log** (sobreposat a baix): últimes accions/events, 1 línia.
+3. **Etiquetes de coneixement** (FORA de la targeta, surant sobre el món): branques + branca en formació + habilitats + destreses.
+4. **Món** (capes L0–L3): zones com a indrets + info de zona en xips (veure §11).
+5. **Log** (sobreposat a baix): 1 línia.
 
 ---
 
 ## 4. Mapping de cada indicador
 
-| Indicador | On viu | Visibilitat | Persistència entre gen. |
-|-----------|--------|-------------|--------------------------|
+| Indicador | On viu | Visibilitat | Persistència |
+|-----------|--------|-------------|--------------|
 | 🌾 Menjar (actual/màx + ↓consum) | Vitals (dreta) | Sempre, prominent. Palpita si actual < consum | — |
 | ❤️ Salut (valor + ↑/↓ del torn) | Vitals (dreta) | Sempre. El delta s'amaga si és 0 | — |
-| 💪🧠🔗 Característiques | Capçalera del jugador | Sempre, icona+núm. S'animen en canviar | 50% |
-| 🪨 Pedra / ⚒️ Eines | Magatzem discret al Campament | Tènue al món + **s'il·luminen al carrusel** quan una acció els gasta | 100% / 30% |
-| Branques | Etiquetes surant | Apareixen en emergir (veure §6) | herència de descobriments |
-| Branca en formació | Etiquetes surant | Quan hi ha deriva cap a un eix (veure §6) | — |
-| Habilitats / Destreses | Etiquetes surant | Apareixen en descobrir-se | permanents |
-| Inclinació (4 eixos crus) | **Fitxa (tap del retrat)** com a radar | No a la pantalla principal | 85% |
-| 🔵 Tokens de material | Barra meta | Sempre | 30% |
-| Vida / mortalitat | Color del cel + sol | Sempre (veure §5) | — |
+| 💪🧠🔗 Característiques | Capçalera del jugador (icona+núm) | Sempre. S'animen en canviar | 50% |
+| 🪨 Pedra / ⚒️ Eines | **Xip al Campament** + carrusel | Xip discret + s'il·luminen al carrusel quan es gasten | 100% / 30% |
+| Branques | Etiquetes surant | En emergir (§6) | herència descobriments |
+| Branca en formació | Etiquetes surant | Amb deriva (§6) | — |
+| Habilitats / Destreses | Etiquetes surant | En descobrir-se | permanents |
+| Inclinació (4 eixos crus) | **Fitxa (tap)** com a radar | No a la principal | 85% |
+| 🔵 Tokens | Barra meta | Sempre | 30% |
+| 👪 Família | **Xip a la Llar** | Quan hi ha família | — |
+| Vida / mortalitat | Color del cel + sol | Sempre (§5) | — |
 | Partida X/100 | Barra meta | Sempre, discret | — |
 | ~~Reputació~~ | **Eliminada** | — | — |
 
@@ -73,104 +72,104 @@ El fons és **una imatge**, no HTML. Estructurar en capes independents perquè l
 
 ## 5. Vida i mortalitat (cel + sol)
 
-La vida del personatge **no és un nombre fix de cicles**: depèn de com es jugui (la salut marca la velocitat).
+La vida **no és un nombre fix de cicles**: la salut marca la velocitat.
 
-**Color del cel = etapa de vida** (capa L1, overlay de to sobre el fons):
+**Color del cel = etapa de vida** (mai queda tapat, és el fons): Albada (jove) · Dia (plenitud) · Ocàs (envellint) · Nit (mort a prop).
 
-| Etapa | To | Significat |
-|-------|----|-----------|
-| Albada | rosat/càlid clar | jove |
-| Dia | blau clar | plenitud |
-| Ocàs | porpra→taronja | envellint |
-| Nit | blau fosc/porpra | mort a prop |
-
-Com que el cel és el fons, **mai queda tapat per la UI** — aquesta és la raó del canvi respecte al sol-en-arc anterior.
-
-**Sol baix a l'horitzó** (capa L2, a la franja lliure entre etiquetes i muntanyes): dona la precisió que el color no dona. Posició del sol = progrés de vida; marca de **posta prevista** = on projecta morir al ritme actual. Tap → `~N cicles a aquest ritme`.
+**Sol baix a l'horitzó**: posició = progrés de vida; marca de **posta prevista** = on projecta morir al ritme actual. Tap → `~N cicles a aquest ritme`.
 
 **Model (ajustable):**
 ```
-// progrés de vida 0..1 (1 = mort)
 incPerCicle = base * agingFactor(edat) * healthPenalty(salut)
-//  - agingFactor creix amb l'edat
-//  - healthPenalty > 1 quan la salut és baixa  → el cel s'enfosqueix més de pressa
 lifeProgress += incPerCicle
-ciclesRestants  = (1 - lifeProgress) / incPerCicle   // per a la "posta prevista"
-etapaCel        = mapa(lifeProgress → albada|dia|ocàs|nit)
-posicioSol      = lifeProgress  // al llarg de l'arc baix
+ciclesRestants = (1 - lifeProgress) / incPerCicle
+etapaCel = mapa(lifeProgress → albada|dia|ocàs|nit)
+posicioSol = lifeProgress
 ```
-Quan `lifeProgress >= 1` → mort → herència (fill segons regles: inclinació 85%, stats 50%, habilitats descobertes).
+`lifeProgress >= 1` → mort → herència (inclinació 85%, stats 50%, habilitats descobertes).
 
 ---
 
-## 6. Branques i evolució cap a branques  ← (punt que cal documentar)
+## 6. Branques i evolució cap a branques
 
-**Eixos d'inclinació → branques** (confirmar el mapatge al joc):
-`Impuls → Caçador` · `Intel·lecte → Artesà` · `Espiritualitat → Místic` · `Sociabilitat → Recol·lector`.
+**Eixos d'inclinació → branques** (confirmar): `Impuls → Caçador` · `Intel·lecte → Artesà` · `Espiritualitat → Místic` · `Sociabilitat → Recol·lector`.
 
-Cada acció empeny un o més eixos. Quan un eix supera el seu llindar, **emergeix** la branca corresponent.
+- **Branca emergida** = píndola sòlida (blau), permanent.
+- **Evolució cap a branca** = píndola **fantasma** que s'omple amb el % cap al llindar.
 
-**Com es mostra a la pantalla principal (a les etiquetes surant):**
-
-- **Branca emergida** = píndola sòlida de color (blau). Es queda allà (és permanent del llinatge).
-- **Evolució cap a una possible branca** = **píndola "fantasma" que s'omple**. Mostra el nom de la branca i el % cap al llindar.
-
-**Estats de la píndola en formació:**
 ```
 pct = valorEix / llindarEix
-- formant-se   (pct baix)    : contorn discontinu, ompliment parcial
-- a prop        (pct ≥ 80%)  : glow suau
-- emergeix      (pct ≥ 100%) : "pop" → es torna píndola sòlida; es retira la fantasma
+- formant-se (pct baix)  : contorn discontinu, ompliment parcial
+- a prop     (pct ≥ 80%) : glow suau
+- emergeix   (pct ≥ 100%): "pop" → píndola sòlida; es retira la fantasma
 ```
-- Es mostra la branca de **l'eix amb el pct més alt** encara sense emergir (la deriva dominant) = la "pista suau".
-- **Opcional:** si la deriva es reparteix entre dos eixos, mostrar-ne dues fantasma competint (més expressiu, ocupa més). Decidir segons freqüència real.
-- El detall complet (els 4 eixos crus, valors i taxes d'herència) viu al **radar de la fitxa** (tap del retrat), no a la vista principal.
-
-**Habilitats** (verd) i **destreses** (groc) també són etiquetes, però són mecàniques diferents de les branques (no surten de la inclinació): apareixen en descobrir-se / per repetició. Mantenir el codi de color per distingir-les.
+- Es mostra la branca de l'eix amb el pct més alt sense emergir (deriva dominant). Opcional: dues fantasma si la deriva es reparteix.
+- El radar dels 4 eixos viu a la **fitxa** (tap).
+- **Habilitats** (verd) i **destreses** (groc) són etiquetes amb mecàniques pròpies (no surten de la inclinació). Mantenir codi de color.
 
 ---
 
 ## 7. Feedback de canvi en actuar
 
-En executar una acció (al carrusel del node):
-- Els **deltes salten** prop de l'element afectat: `+3 🌾`, `+0.1 🧠`, `⭐ Botànica ▲`.
-- La **característica/recurs afectat s'encén** un instant (p. ex. verd) allà on viu.
-- Com que les característiques són tocant el retrat, l'evolució es veu just on mires el personatge.
-
-Aquest moment és el cor de la sensació de progrés; no l'estalviïs.
+En executar una acció: **deltes salten** prop de l'element afectat (`+3 🌾`, `+0.1 🧠`, `⭐ Botànica ▲`) i la **característica/recurs s'encén** un instant. Com que les característiques toquen el retrat, l'evolució es veu on mires el personatge. És el cor de la sensació de progrés.
 
 ---
 
 ## 8. Estat Gen 1 buit (degradació)
 
-El layout ha de funcionar buit, **sense mostrar contenidors buits**:
-
-- Cel = **albada** (personatge jove), sol alt/lent.
-- Sense família → **node Llar absent**, sense `👶`.
-- Sense branques → cap píndola sòlida; com a molt una **fantasma** quan comença la deriva.
+Funcionar buit **sense contenidors buits**:
+- Cel = **albada**; sol alt/lent.
+- Sense família → **node Llar absent** i sense xip de família.
+- Sense branques → cap píndola sòlida; com a molt una fantasma quan comença la deriva.
 - Sense habilitats/destreses → sense aquelles etiquetes.
-- Característiques al valor base; recursos a 0 → magatzem del camp ocult o molt tènue.
-- Sempre presents: retrat + nom + vitals (menjar/salut).
+- Característiques al valor base; recursos a 0 → xip del camp ocult o molt tènue.
+- Sempre presents: retrat + nom + vitals.
 
-Regla general: el que encara no existeix **no apareix** (ni com a "0/—" ni com a caixa buida).
+Regla: el que encara no existeix **no apareix**.
 
 ---
 
 ## 9. Interaccions / fitxa
 
-- **Tap al retrat / bloc d'identitat** → fitxa completa: radar dels 4 eixos d'inclinació, característiques exactes + taxes d'herència, edat exacta en cicles, detall de família. (Reputació ja no hi és.)
-- **Tap a un node** → carrusel d'accions de la zona; els **recursos necessaris s'hi il·luminen**.
+- **Tap al retrat** → fitxa: radar dels 4 eixos, característiques + taxes d'herència, edat exacta, família.
+- **Tap a una zona** → carrusel d'accions; els recursos necessaris s'hi il·luminen.
 - **Tap al sol** → `~N cicles a aquest ritme`.
 
 ---
 
 ## 10. Notes d'implementació
 
-- Separar **estat de joc** (model) de la **capa de render**. La UI llegeix l'estat; l'estat no sap de píxels.
-- To del cel via variable CSS (`--sky-stage`) o classe (`.albada/.dia/.ocas/.nit`) sobre l'overlay L1 — fàcil d'animar en transició d'etapa.
-- Coordenades de nodes i sol en **%** respecte al contenidor del món.
-- Placeholder de fons ara; deixar un punt únic de canvi d'asset documentat al codi.
-- Stack actual: HTML5 / Vanilla JS (mantenir).
+- Separar **estat de joc** (model) de la **capa de render**.
+- To del cel via variable CSS/classe sobre el cel — fàcil d'animar.
+- Coordenades de zones i sol en **%**.
+- Placeholder de fons ara; un sol punt de canvi d'asset.
+- Stack: HTML5 / Vanilla JS.
+
+---
+
+## 11. Composició del mapa (món)
+
+- **Fons en UNA capa**: cel (gradient) → muntanyes → terra. Les muntanyes seuen a l'horitzó amb les **bases cobertes per la terra** i els **cims contra el cel** (no tallades). El gradient del cel és el de la vida (§5).
+- **Les zones són indrets, no discos**: cada zona és una clapa integrada al terreny, amb **terra de marge** al voltant (res trepitja res):
+  - **Planes** — herba + roques.
+  - **Bosc** — clapa d'arbres a la vora del riu.
+  - **Mercat** — parada de troc (pals + tendal de pell + cistells).
+  - **Campament** — cova + tenda + foguera.
+  - **Llar** — cabana + fum + família.
+- **Riu**: baixa de les muntanyes i serpenteja pel **corredor central buit**, sense tocar cap zona. Els senders el creuen per **guals** (pedres).
+- **Info de zona en XIPS**: família (Llar) i recursos (Campament) en pastilles translúcides amb contorn, llegibles sobre qualsevol terreny — mai text solt.
+- **Posicions de referència** (centre de cada zona, en % de la pantalla; alinear amb el `world.png` final):
+
+| Zona | x | y |
+|------|---|---|
+| Horitzó (muntanyes) | — | ~46% |
+| Planes | ~79% | ~52% |
+| Bosc | ~18% | ~60% |
+| Mercat | ~53% | ~66% |
+| Campament | ~76% | ~76% |
+| Llar | ~30% | ~78% |
+
+- **Mercat**: decisió pendent — indret al mapa **o** lligar-lo al comptador 🔵 i treure'l. De moment, indret al mapa.
 
 ---
 
@@ -178,8 +177,9 @@ Regla general: el que encara no existeix **no apareix** (ni com a "0/—" ni com
 1. Reputació **eliminada** del joc.
 2. Bloc d'identitat 50/50 (característiques només icona, sobre el retrat) + vitals grans.
 3. Coneixement com a etiquetes **surant** fora de la targeta.
-4. Recursos **discrets** al camp + contextuals al carrusel.
+4. Recursos i família **en xips** discrets a la seva zona; recursos també al carrusel.
 5. Vida = **color del cel** (etapes) + sol baix amb posta prevista, lligat a la salut.
-6. Inclinació = **píndola de branca en formació**; radar dels 4 eixos només a la fitxa.
+6. Inclinació = **píndola de branca en formació**; radar dels 4 eixos a la fitxa.
 7. **Deltes animats** en executar accions.
-8. Fons com a **imatge en capes**, swappable.
+8. Fons com a **imatge en una capa** (cel+muntanyes+terra), swappable.
+9. Mapa: **5 zones com a indrets separats** (no discos), riu pels buits, muntanyes contra el cel (§11).
