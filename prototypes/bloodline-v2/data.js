@@ -261,12 +261,12 @@ const UNIVERSAL_TECHS = [
     effect: null
   },
   {
-    id: "ut_ceramica", name: "La Ceràmica", icon: "🏺", cycle: 80,
+    id: "ut_ceramica", name: "La Ceràmica", icon: "🏺", cycle: 70,
     description: "L'argila passada pel foc es torna pedra. Primer figures que expliquen el món; després, els primers vasos que guarden el que abans es perdia.",
     effect: null
   },
   {
-    id: "ut_agricultura", name: "El Primer Conreu", icon: "🌾", cycle: 92,
+    id: "ut_agricultura", name: "El Primer Conreu", icon: "🌾", cycle: 85,
     description: "Llavors triades i sembrades a posta. Encara no hi ha camps — hi ha un gest nou que canviarà totes les eres que vindran.",
     effect: null
   }
