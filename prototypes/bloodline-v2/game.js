@@ -114,10 +114,11 @@ function saveGame() {
       character: {
         birthCycle: state.character.birthCycle, label: state.character.label,
         inclination: { ...state.character.inclination },
-        purchasedActionIds: [...state.character.purchasedActionIds],
-        unlockedSkillIds:   [...state.character.unlockedSkillIds],
+        purchasedActionIds:  [...state.character.purchasedActionIds],
+        unlockedSkillIds:    [...state.character.unlockedSkillIds],
         stats:    { ...state.character.stats },
-        destreses: [...state.character.destreses],
+        destreses:           [...state.character.destreses],
+        aprenentatges:       [...(state.character.aprenentatges || [])],
         charState: { ...state.character.charState },
         actionUseCounts: { ...state.character.actionUseCounts },
         partnerName: state.character.partnerName || null,
@@ -131,9 +132,10 @@ function saveGame() {
       genealogy: state.genealogy,
       siblingPool: state.siblingPool.map(s => ({
         ...s,
-        inheritedPurchased:  [...(s.inheritedPurchased  || [])],
-        inheritedSkills:     [...(s.inheritedSkills     || [])],
-        inheritedDestreses:  [...(s.inheritedDestreses  || [])],
+        inheritedPurchased:      [...(s.inheritedPurchased      || [])],
+        inheritedSkills:         [...(s.inheritedSkills         || [])],
+        inheritedDestreses:      [...(s.inheritedDestreses      || [])],
+        inheritedAprenentatges:  [...(s.inheritedAprenentatges  || [])],
       })),
       nextGenHealthMax: state.nextGenHealthMax,
       currentHealthMax: state.currentHealthMax,
@@ -161,10 +163,11 @@ function loadGame() {
       character: {
         birthCycle: d.character.birthCycle, label: d.character.label,
         inclination: { ...d.character.inclination },
-        purchasedActionIds: new Set(d.character.purchasedActionIds),
-        unlockedSkillIds:   new Set(d.character.unlockedSkillIds),
+        purchasedActionIds:  new Set(d.character.purchasedActionIds),
+        unlockedSkillIds:    new Set(d.character.unlockedSkillIds),
         stats:    { ...d.character.stats },
-        destreses: new Set(d.character.destreses),
+        destreses:           new Set(d.character.destreses),
+        aprenentatges:       new Set(d.character.aprenentatges || []),
         charState: { ...d.character.charState },
         actionUseCounts: { ...(d.character.actionUseCounts || {}) },
         partnerName: d.character.partnerName || null,
@@ -177,9 +180,10 @@ function loadGame() {
       log: d.log || [], genealogy: d.genealogy || [],
       siblingPool: (d.siblingPool || []).map(s => ({
         ...s,
-        inheritedPurchased:  new Set(s.inheritedPurchased  || []),
-        inheritedSkills:     new Set(s.inheritedSkills     || []),
-        inheritedDestreses:  new Set(s.inheritedDestreses  || []),
+        inheritedPurchased:     new Set(s.inheritedPurchased     || []),
+        inheritedSkills:        new Set(s.inheritedSkills        || []),
+        inheritedDestreses:     new Set(s.inheritedDestreses     || []),
+        inheritedAprenentatges: new Set(s.inheritedAprenentatges || []),
       })),
       nextGenHealthMax: d.nextGenHealthMax || null,
       currentHealthMax: d.currentHealthMax || (d.nextGenHealthMax || HEALTH_MAX),
@@ -217,7 +221,24 @@ function randomDynastyName() {
   return RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)];
 }
 
-function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedSkillIds, inheritedStats, inheritedDestreses, birthCycle = 0, label = '') {
+// Assigns the 2 innate destreses a character is born with:
+// 1 inherited from the parent's pool (random pick), 1 random from the global DESTRESA_DEFS pool.
+// If parentDestreses is empty (Gen 1), both are random.
+function pickInitialDestreses(parentDestreses) {
+  const allIds = DESTRESA_DEFS.map(d => d.id);
+  const result = new Set();
+  const parentArr = [...parentDestreses];
+  if (parentArr.length > 0) {
+    result.add(parentArr[Math.floor(Math.random() * parentArr.length)]);
+  }
+  const remaining = allIds.filter(id => !result.has(id));
+  if (remaining.length > 0) {
+    result.add(remaining[Math.floor(Math.random() * remaining.length)]);
+  }
+  return result;
+}
+
+function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedSkillIds, inheritedStats, inheritedDestreses, inheritedAprenentatges, birthCycle = 0, label = '') {
   return {
     birthCycle,
     label,
@@ -228,6 +249,7 @@ function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedS
       ? { ...inheritedStats }
       : Object.fromEntries(STAT_DEFS.map(s => [s.id, STAT_STARTING_VALUE])),
     destreses: new Set(inheritedDestreses),
+    aprenentatges: new Set(inheritedAprenentatges),
     charState: Object.fromEntries(CHARACTER_STATE_DEFS.map(d => [d.id, d.startVal])),
     actionUseCounts: {},
     children: [],
@@ -248,7 +270,7 @@ function initState(dynastyName, race) {
     cycle: 0,
     generation: 1,
     ...Object.fromEntries(RESOURCE_DEFS.map(r => [r.id, r.startVal])),
-    character: createCharacter(inclination, basePurchased, new Set(), null, new Set(), 0, CHILD_NAMES[0]),
+    character: createCharacter(inclination, basePurchased, new Set(), null, pickInitialDestreses(new Set()), new Set(), 0, CHILD_NAMES[0]),
     discoveredUniversalTechIds: new Set(),
     discoveredZoneIds: new Set(ZONE_DEFS.filter(z => z.starts_discovered).map(z => z.id)),
     firedSingleUseEventIds: new Set(),
@@ -672,16 +694,17 @@ function triggerSuccession() {
       STAT_STARTING_VALUE * (1 - STAT_INHERITANCE_RATE)
     ])
   );
-  const inheritedPurchased = new Set(state.character.purchasedActionIds);
-  const inheritedSkills    = new Set(state.character.unlockedSkillIds);
-  // Destreses: probabilistic retention (DESTRESA_INHERIT_RATE per destresa)
-  const inheritedDestreses = new Set(
-    [...state.character.destreses].filter(() => Math.random() < DESTRESA_INHERIT_RATE)
-  );
-  const hasEnsenyat        = state.character.charState.ensenyat === 1;
+  const inheritedPurchased    = new Set(state.character.purchasedActionIds);
+  // Habilitats: sempre heretades al 100% — pertanyen al llinatge, no al personatge
+  const inheritedSkills       = new Set(state.character.unlockedSkillIds);
+  // Destreses: 1 del pare (tirada aleatòria entre les seves) + 1 aleatòria del pool global
+  const inheritedDestreses    = pickInitialDestreses(state.character.destreses);
+  // Aprenentatges: el fill rep el del pare si va executar act_ensenyar (PENDENT: implementar quan existeixin APRENENTATGE_DEFS)
+  const hasEnsenyat           = state.character.charState.ensenyat === 1;
+  const inheritedAprenentatges = new Set(); // stub — transferència real pendent de disseny d'aprenentatges
   const childSuccessors = children.map(c => ({
     ...c, is_sibling: false,
-    inheritedInclination, inheritedStats, inheritedPurchased, inheritedSkills, inheritedDestreses, hasEnsenyat,
+    inheritedInclination, inheritedStats, inheritedPurchased, inheritedSkills, inheritedDestreses, inheritedAprenentatges, hasEnsenyat,
   }));
   const siblingSuccessors = siblings.map(s => ({ ...s, is_sibling: true }));
   // Siblings only offered if the character leaves no children (PT-10)
@@ -735,21 +758,15 @@ function continueSuccession(successorId) {
   // Reset exploration state for new generation
   state.explorationAttempts = 0;
   state.generation++;
-  const teachingBonus = chosen.hasEnsenyat ? TEACHING_BONUS : 0;
-  const inheritedSkills = new Set();
-  for (const skillId of chosen.inheritedSkills) {
-    const bt = SKILL_DEFS.find(t => t.id === skillId);
-    const rate = Math.min(1, (bt ? (bt.inheritanceRate || 0) : 0) + teachingBonus);
-    if (Math.random() < rate) inheritedSkills.add(skillId);
-  }
   const gender = Math.random() < 0.5 ? 'M' : 'F';
   state.gender = gender;
   state.character = createCharacter(
     chosen.inheritedInclination,
     chosen.inheritedPurchased,
-    inheritedSkills,
+    chosen.inheritedSkills,
     chosen.inheritedStats,
     chosen.inheritedDestreses,
+    chosen.inheritedAprenentatges || new Set(),
     state.cycle,
     chosen.label
   );
@@ -1813,7 +1830,7 @@ function renderSuccessionOverlays() {
     const s = state.pendingSuccession;
     el('succ-death-msg').textContent = `El llinatge ${state.dynastyName} continua.`;
     const inheritNote = el('succ-inherit-note');
-    if (inheritNote) inheritNote.textContent = `El successor hereta ${Math.round(INCLINATION_INHERITANCE_RATE * 100)}% de la inclinació · ${Math.round(STAT_INHERITANCE_RATE * 100)}% dels atributs · ${Math.round(DESTRESA_INHERIT_RATE * 100)}% de les destreses`;
+    if (inheritNote) inheritNote.textContent = `El successor hereta ${Math.round(INCLINATION_INHERITANCE_RATE * 100)}% de la inclinació · ${Math.round(STAT_INHERITANCE_RATE * 100)}% dels atributs · totes les habilitats · 1 destresa innata + 1 nova`;
     const list = el('succ-children-list');
     list.innerHTML = '';
     for (const c of s.successors) {
