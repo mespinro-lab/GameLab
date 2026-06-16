@@ -40,8 +40,7 @@ const DESTRESA_THRESHOLD = 5;
 const DESTRESA_MAX       = 4;
 const DESTRESA_BONUS     = 1;
 
-const TEACHING_BONUS         = 0.5;  // S'afegeix a inheritanceRate de cada tech quan el pare ha ensenyat
-const DESTRESA_INHERIT_RATE  = 0.60; // probabilitat de retenir cada destresa en successió
+// Herència de destreses: 1 del pare (tirada aleatòria entre les seves) + 1 aleatòria del pool global
 
 // Estats del personatge — inicialitzats a startVal, resetejats en successió
 // Usats com a prerequisits (requires) i efectes (character_effect) de les accions
@@ -120,6 +119,15 @@ const DESTRESA_DEFS = [
   { id: "d_custodi_foc", name: "Custodi del Foc", action_id: "act_ritual_foc",          conditions: [{ axis: "espiritualitat", min: 0.10 }] },
   { id: "d_guardia",     name: "Guàrdia",         action_id: "act_vigilar_campament",   conditions: [{ axis: "sociabilitat",   min: 0.10 }] },
 ];
+
+// --- Aprenentatge Definitions ---
+// Aprenentatges: bonus permanents adquirits de dues maneres (fins a 2 per personatge):
+//   1. Via act_ensenyar: el pare transmet UN dels seus aprenentatges al fill (charState.ensenyat = 1)
+//   2. Via descoberta durant la partida: accions o events específics els desbloquegen
+// Un cop adquirit, l'aprenentatge pertany al personatge (no al llinatge) — no s'hereta automàticament.
+// El fill rep UN aprenentatge ensenyat (si el pare va executar act_ensenyar) i pot descobrir el segon durant la seva vida.
+// PENDENT DE DISSENY: definir els aprenentatges concrets de l'Era 1 i els seus efectes.
+const APRENENTATGE_DEFS = [];
 
 // --- Zone Definitions ---
 // Zona Ritual eliminada (playtest 2026-06-06): accions redistribuïdes a Bosc/Campament/Planes
@@ -211,9 +219,7 @@ const UNIVERSAL_TECHS = [
   }
 ];
 
-// inheritanceRate: probabilitat base que un fill hereti aquesta habilitat sense ensenyança explícita.
-// Amb act_ensenyar, s'afegeix TEACHING_BONUS a cada rate (fins a màx 0.95).
-// Baixa = habilitat física difícil de transmetre. Alta = coneixement oral transmissible.
+// inheritanceRate: camp llegat, no utilitzat. Les habilitats s'hereten sempre al 100% (pertanyen al llinatge, no al personatge).
 const SKILL_DEFS = [
   {
     id: "bt_punta_llanca", name: "Punta de Llança",
@@ -692,7 +698,7 @@ const ACTIONS = [
   },
   {
     id: "act_ensenyar", name: "Ensenyar el Fill", is_base: true, zona: "Llar",
-    description: "Passes temps transmetent al fill les tècniques que has après. Millora la taxa d'herència.",
+    description: "Passes temps transmetent al fill un dels teus aprenentatges. El fill el rebrà en nàixer.",
     minAge: 8,
     requires: [{ state: 'fills', min: 1 }, { state: 'ensenyat', max: 0 }, { type: 'has_any_skill' }],
     character_effect: { type: 'delta', state: 'ensenyat', delta: 1 },

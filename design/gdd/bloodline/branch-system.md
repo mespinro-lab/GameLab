@@ -228,6 +228,42 @@ Un event de descoberta sempre té **almenys dues opcions**:
 
 La descoberta no és automàtica: el jugador ha de triar l'opció activa.
 
+### 3.5.2 Herència d'una Tecnologia de Branca (Habilitat) entre Generacions
+
+Una habilitat és, conceptualment, **una tecnologia del llinatge**: igual que
+una tecnologia universal, un cop descoberta pertany al llinatge, no al
+personatge que la va descobrir. La diferència amb una tecnologia universal és
+només la *via* de descoberta — una universal apareix sola pel pas del temps
+(`state.cycle`); una habilitat requereix que el jugador hi participi
+activament (acció o event de descoberta, §3.5.1) **i** que el perfil
+d'inclinació del moment compleixi `inclination_conditions`.
+
+Aquesta condició d'inclinació només es comprova **en el moment de la
+descoberta**. Un cop `on_unlock(tech)` s'ha executat, l'habilitat no es torna
+mai a avaluar contra cap inclinació — ni la del personatge que la va
+descobrir si la seva inclinació canvia més tard, ni la de cap descendent.
+
+En la successió, **totes** les habilitats descobertes pel personatge es
+transmeten al fill de forma automàtica i garantida, sense cap tirada ni
+condició addicional:
+
+```
+on_succession:
+    fill.branch_techs_discovered = pare.branch_techs_discovered  (còpia directa)
+```
+
+Un fill pot rebre habilitats que requereixen `impuls ≥ 0.4` encara que el
+seu propi `impuls` heretat sigui 0.1. Això és intencionat: la inclinació
+gàta la *descoberta*, no la *possessió*. L'habilitat forma part del patrimoni
+del llinatge exactament com una tecnologia universal — irreversible, acumulativa,
+i independent de les condicions actuals del personatge que la porta.
+
+**Nota important**: no s'ha de confondre amb la inclinació mateixa (§3.3),
+que es transmet de forma directa però reduïda (`× BRANCH_INHERITANCE_RATE`),
+ni amb les destreses (§vet. design/gdd/bloodline/destresa-system.md) que
+s'hereten de forma parcial i innata. Les habilitats son l'únic element del
+llinatge que es transmet sempre al 100%, sense excepció ni atzar.
+
 ### 3.6 Accions i Visibilitat per Inclinació
 
 Les accions declaren `inclination_requirements`: el rang d'eixos dins del
