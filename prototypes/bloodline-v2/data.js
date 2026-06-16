@@ -36,9 +36,11 @@ const STAT_MAX            = 5.0;
 const STAT_STARTING_VALUE = 1.0;
 const STAT_OUTPUT_FACTOR  = 0.15;
 
-const DESTRESA_THRESHOLD = 5;
-const DESTRESA_MAX       = 4;
-const DESTRESA_BONUS     = 1;
+const DESTRESA_THRESHOLD     = 5;
+const DESTRESA_MAX           = 4;
+const DESTRESA_BONUS         = 1;
+const APRENENTATGE_THRESHOLD = 4;  // usos mínims d'una acció de descoberta per poder aprendre
+const APRENENTATGE_MAX       = 2;  // màxim per personatge (1 ensenyat + 1 descobert)
 
 // Herència de destreses: 1 del pare (tirada aleatòria entre les seves) + 1 aleatòria del pool global
 
@@ -126,8 +128,59 @@ const DESTRESA_DEFS = [
 //   2. Via descoberta durant la partida: accions o events específics els desbloquegen
 // Un cop adquirit, l'aprenentatge pertany al personatge (no al llinatge) — no s'hereta automàticament.
 // El fill rep UN aprenentatge ensenyat (si el pare va executar act_ensenyar) i pot descobrir el segon durant la seva vida.
-// PENDENT DE DISSENY: definir els aprenentatges concrets de l'Era 1 i els seus efectes.
-const APRENENTATGE_DEFS = [];
+// discoveryChance: probabilitat per tirada (quan s'han fet >= APRENENTATGE_THRESHOLD usos d'una discovery_action_id)
+// effect.type: "bonus_action_output" (bonus a una acció concreta) | "food_upkeep_reduction" | "material_bonus" (global, totes les accions)
+const APRENENTATGE_DEFS = [
+  {
+    id: "apr_cures_basiques", name: "Cures Bàsiques", icon: "🩹",
+    description: "Saps aplicar remeis senzills: compreses d'arrels i embenats. Curar és ara molt més eficaç.",
+    discoveryChance: 0.30,
+    discovery_action_ids: ["act_curar_herbes", "act_preparar_ungüent", "act_contemplacio"],
+    effect: { type: "bonus_action_output", action_id: "act_curar_herbes", output_min_bonus: 2, output_max_bonus: 2, desc: "+2 aliment en curar amb herbes" }
+  },
+  {
+    id: "apr_conservar_provisions", name: "Conservació", icon: "🧂",
+    description: "Saps assecar i preservar. L'aliment del clan es malgasta menys cada dia.",
+    discoveryChance: 0.30,
+    discovery_action_ids: ["act_assecament_plantes", "act_ahumar_carn", "act_assecar_provisions"],
+    effect: { type: "food_upkeep_reduction", value: 0.5, desc: "−0.5 aliment/torn en upkeep" }
+  },
+  {
+    id: "apr_orientacio", name: "Orientació", icon: "🧭",
+    description: "Llegeixes el terreny i les estrelles amb naturalitat. Explorar rendeix molt més.",
+    discoveryChance: 0.25,
+    discovery_action_ids: ["act_explorar_voltants", "act_rastreig_rutes", "act_transit_nocturn"],
+    effect: { type: "bonus_action_output", action_id: "act_explorar_voltants", output_min_bonus: 1, output_max_bonus: 2, desc: "+1/+2 material en explorar" }
+  },
+  {
+    id: "apr_treball_pedra", name: "Treball de la Pedra", icon: "🪨",
+    description: "Tries el millor sílex i calcules l'angle de talla. L'artesania de pedra dona molt més.",
+    discoveryChance: 0.30,
+    discovery_action_ids: ["act_tallar_pedra", "act_recollectar_pedra", "act_faonar_eines"],
+    effect: { type: "bonus_action_output", action_id: "act_faonar_eines", output_min_bonus: 2, output_max_bonus: 2, desc: "+2 material en artesania de pedra" }
+  },
+  {
+    id: "apr_lectura_senyals", name: "Lectura de Senyals", icon: "👣",
+    description: "Rastre, excrement, mossegades: el bosc t'explica on han passat els animals. La caça és molt menys incerta.",
+    discoveryChance: 0.30,
+    discovery_action_ids: ["act_espiar_ramat", "act_rastreig_rutes", "act_marcar_territori"],
+    effect: { type: "bonus_action_output", action_id: "act_espiar_ramat", output_min_bonus: 1, output_max_bonus: 2, desc: "+1/+2 aliment en espiar el ramat" }
+  },
+  {
+    id: "apr_plantes_medicinals", name: "Plantes Medicinals", icon: "🌿",
+    description: "Saps quines arrels curen, nodreixen i calmen. Cada recol·lecta dona una mica més.",
+    discoveryChance: 0.30,
+    discovery_action_ids: ["act_recollectar_arrels", "act_assecament_plantes", "act_preparar_ungüent"],
+    effect: { type: "bonus_action_output", action_id: "act_recollectar_arrels", output_min_bonus: 1, output_max_bonus: 2, desc: "+1/+2 aliment en recol·lectar arrels" }
+  },
+  {
+    id: "apr_veu_clan", name: "La Veu del Clan", icon: "🗣️",
+    description: "Saps transmetre, inspirar i mediar. Les teves paraules generen recursos allà on les llances no arriben.",
+    discoveryChance: 0.20,
+    discovery_action_ids: ["act_narrar_llegendes", "act_explicar_orígens", "act_cants_grup"],
+    effect: { type: "material_bonus", value: 1, desc: "+1 material a totes les accions" }
+  },
+];
 
 // --- Zone Definitions ---
 // Zona Ritual eliminada (playtest 2026-06-06): accions redistribuïdes a Bosc/Campament/Planes
@@ -700,7 +753,7 @@ const ACTIONS = [
     id: "act_ensenyar", name: "Ensenyar el Fill", is_base: true, zona: "Llar",
     description: "Passes temps transmetent al fill un dels teus aprenentatges. El fill el rebrà en nàixer.",
     minAge: 8,
-    requires: [{ state: 'fills', min: 1 }, { state: 'ensenyat', max: 0 }, { type: 'has_any_skill' }],
+    requires: [{ state: 'fills', min: 1 }, { state: 'ensenyat', max: 0 }, { type: 'has_any_aprenentatge' }],
     character_effect: { type: 'delta', state: 'ensenyat', delta: 1 },
     material_min: 1, material_max: 2,
     reputation_gain: 3,

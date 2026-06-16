@@ -439,13 +439,13 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   max-height: var(--know-h);
   overflow: hidden;
 }
-#branch-badges, #skill-badges, #destresa-badges {
+#branch-badges, #skill-badges, #destresa-badges, #aprenentatge-badges {
   display: flex;
   gap: 4px;
   align-items: center;
   flex-wrap: wrap;
 }
-#branch-badges:empty, #skill-badges:empty, #destresa-badges:empty { display: none; }
+#branch-badges:empty, #skill-badges:empty, #destresa-badges:empty, #aprenentatge-badges:empty { display: none; }
 
 /* Knowledge pills */
 .pill-branch {
@@ -475,6 +475,16 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   border-radius: 20px;
   color: #3a2e07;
   background: linear-gradient(180deg, #e0bb4a, #c39d2c);
+  box-shadow: 0 3px 8px rgba(40,25,10,.4), inset 0 1px 0 rgba(255,255,255,.25);
+  white-space: nowrap;
+}
+.pill-aprenentatge {
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 20px;
+  color: #1a0f2e;
+  background: linear-gradient(180deg, #b57bee, #8b5cf6);
   box-shadow: 0 3px 8px rgba(40,25,10,.4), inset 0 1px 0 rgba(255,255,255,.25);
   white-space: nowrap;
 }
@@ -1647,6 +1657,14 @@ body.donut-active * { pointer-events: none !important; }
   padding: 2px 8px;
   font-size: 0.68rem;
   color: #c084fc;
+}
+.cd-pill-aprenentatge {
+  background: rgba(139,92,246,.15);
+  border: 1px solid rgba(139,92,246,.4);
+  border-radius: 20px;
+  padding: 2px 8px;
+  font-size: 0.68rem;
+  color: #a78bfa;
 }
 .cd-empty { font-size: 0.72rem; color: var(--text-dim); font-style: italic; }
 
