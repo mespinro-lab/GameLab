@@ -936,8 +936,13 @@ function executeAction(actionId) {
       }
     }
     // Universal material generation — ALL actions generate material (currency to buy new actions)
-    const matMin = action.material_min ?? 2;
-    const matMax = action.material_max ?? 3;
+    const elderBonus = characterAge() >= 11 ? 1 : 0;
+    if (elderBonus && !(state.character.charState.loggedElder)) {
+      state.character.charState.loggedElder = 1;
+      addLog('Sàvia experiència: els ancians generen +1 material per acció');
+    }
+    const matMin = (action.material_min ?? 2) + elderBonus;
+    const matMax = (action.material_max ?? 3) + elderBonus;
     const aprMatBonus = [...state.character.aprenentatges].reduce((s, aid) => {
       const apr = APRENENTATGE_DEFS.find(a => a.id === aid);
       return apr?.effect?.type === 'material_bonus' ? s + apr.effect.value : s;
@@ -2136,6 +2141,24 @@ const DYNASTY_TITLES = {
   ],
 };
 
+function getAchievementBadges(score) {
+  const badges = [];
+  if (score.aprs >= 3)
+    badges.push({ icon: '📖', name: 'El Gran Transmissor', desc: '3+ aprenentatges acumulats al llinatge' });
+  if (state.discoveredZoneIds.size >= 5)
+    badges.push({ icon: '🗺️', name: 'Exploradors del Món', desc: 'Totes les zones descobertes' });
+  if (score.gens >= 4)
+    badges.push({ icon: '🌿', name: 'La Memòria del Llinatge', desc: '4 o més generacions viscudes' });
+  if (score.techs >= UNIVERSAL_TECHS.length)
+    badges.push({ icon: '🔮', name: 'La Saviesa de les Eres', desc: 'Totes les tecnologies universals descobertes' });
+  if (score.fullLifeBonus >= 60)
+    badges.push({ icon: '🦴', name: "L'Ancià del Llinatge", desc: '2+ personatges que han viscut fins al límit', secret: false });
+  // Secret: finish the era with only 1 generation (no succession)
+  if (state.gameOverReason === 'era_complete' && score.gens <= 1)
+    badges.push({ icon: '⚡', name: "L'Invicte Solitari", desc: 'Completada l\'era sense successió', secret: true });
+  return badges;
+}
+
 function getDynastyTitle(score) {
   const tier = score >= 2000 ? 4 : score >= 1200 ? 3 : score >= 650 ? 2 : score >= 300 ? 1 : 0;
   // Dominant axis across all generations
@@ -2190,11 +2213,27 @@ function renderEndScreen() {
     `${score.cycles} cicles × 2 = <b>${score.cycles * 2}</b>`,
   ].filter(Boolean).map(t => `<div class="score-line">${t}</div>`).join('');
 
+  const achievements = getAchievementBadges(score);
+  let achieveEl = el('end-achievements');
+  if (!achieveEl) {
+    achieveEl = document.createElement('div');
+    achieveEl.id = 'end-achievements';
+    breakdownEl.insertAdjacentElement('afterend', achieveEl);
+  }
+  if (achievements.length > 0) {
+    achieveEl.innerHTML = `<div class="achieve-title">Assoliments</div>` +
+      achievements.map(b =>
+        `<div class="achieve-badge${b.secret ? ' secret' : ''}"><span class="achieve-icon">${b.icon}</span><span class="achieve-name">${b.name}</span></div>`
+      ).join('');
+  } else {
+    achieveEl.innerHTML = '';
+  }
+
   let resultEl = el('end-result-msg');
   if (!resultEl) {
     resultEl = document.createElement('p');
     resultEl.id = 'end-result-msg';
-    breakdownEl.insertAdjacentElement('afterend', resultEl);
+    achieveEl.insertAdjacentElement('afterend', resultEl);
   }
   resultEl.textContent = taglineMsg;
 
