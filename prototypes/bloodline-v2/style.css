@@ -203,7 +203,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   position: absolute;
   top: 0; left: 0; right: 0;
   height: var(--meta-h);
-  z-index: 6;
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -669,10 +669,16 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 }
 .zone-node-name {
   font-size: 10px;
-  color: #fff;
-  font-weight: 700;
+  color: #f0e0c0;
+  font-weight: 800;
   text-align: center;
-  text-shadow: 0 1px 5px rgba(0,0,0,1), 0 0 10px rgba(0,0,0,.9);
+  background: rgba(20,12,4,.72);
+  border: 1px solid rgba(200,140,40,.35);
+  border-radius: 8px;
+  padding: 2px 7px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  white-space: nowrap;
 }
 /* Stash on camp node */
 .node-stash {
