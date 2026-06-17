@@ -1625,12 +1625,6 @@ function updateCarouselInfo() {
     const icon = outIcons[action.output_resource] || '📦';
     parts.push(`${icon} ${action.output_min}–${action.output_max}`);
   }
-  // Universal token generation — shown for all actions
-  if (!blocked) {
-    const tokMin = action.material_min ?? 2;
-    const tokMax = action.material_max ?? 3;
-    if (tokMin > 0 || tokMax > 0) parts.push(`🔵 +${tokMin}–${tokMax}`);
-  }
   if (action.side_effects) {
     for (const se of action.side_effects) {
       const icon = outIcons[se.resource] || '📦';
