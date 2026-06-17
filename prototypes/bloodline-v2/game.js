@@ -699,6 +699,7 @@ function triggerSuccession() {
       topAxis,
       branches: getActiveBranches().map(b => b.name),
       skills: state.character.unlockedSkillIds.size,
+      aprenentatges: state.character.aprenentatges.size,
       hadHeir: children.length > 0 || siblings.length > 0,
     });
     state.gameOver = true; state.gameOverReason = 'era_complete'; return;
@@ -715,6 +716,7 @@ function triggerSuccession() {
       topAxis,
       branches: getActiveBranches().map(b => b.name),
       skills: state.character.unlockedSkillIds.size,
+      aprenentatges: state.character.aprenentatges.size,
       hadHeir: false,
     });
     state.gameOver = true; state.gameOverReason = 'no_heir'; return;
@@ -764,6 +766,7 @@ function triggerSuccession() {
     topAxis,
     branches:   getActiveBranches().map(b => b.name),
     skills:     state.character.unlockedSkillIds.size,
+    aprenentatges: state.character.aprenentatges.size,
     hadHeir:    children.length > 0 || siblings.length > 0,
   });
 
@@ -1268,14 +1271,18 @@ function getFormingBranch() {
     if (!branch.conditions?.conditions) continue;
     let pct = Infinity;
     let violated = false;
+    let atRisk = false;
     for (const cond of branch.conditions.conditions) {
       const val = state.character.inclination[cond.axis] ?? 0;
-      if (cond.max !== undefined && val > cond.max) { violated = true; break; }
+      if (cond.max !== undefined) {
+        if (val > cond.max) { violated = true; break; }
+        if (cond.max - val < 0.05) atRisk = true;
+      }
       if (cond.min !== undefined && cond.min > 0) pct = Math.min(pct, val / cond.min);
     }
     if (violated || pct === Infinity) continue;
     pct = Math.max(0, Math.min(1.5, pct));
-    if (pct > bestPct) { bestPct = pct; best = { branch, pct }; }
+    if (pct > bestPct) { bestPct = pct; best = { branch, pct, atRisk }; }
   }
   return best;
 }
@@ -1687,14 +1694,15 @@ function renderCharPanel() {
       const pct = Math.min(1, forming.pct);
       const isNear = pct >= 0.8;
       const pill = document.createElement('span');
-      pill.className = 'pill-forming' + (isNear ? ' near' : '');
+      const isAtRisk = !!forming.atRisk;
+      pill.className = 'pill-forming' + (isNear ? ' near' : '') + (isAtRisk ? ' at-risk' : '');
       pill.style.pointerEvents = 'all';
       pill.style.cursor = 'pointer';
       const fillDiv = document.createElement('div');
       fillDiv.className = 'form-fill';
       fillDiv.style.width = (pct * 100).toFixed(0) + '%';
       const label = document.createElement('span');
-      label.textContent = (isNear ? '✦ ' : '') + forming.branch.name + ' ⓘ';
+      label.textContent = (isAtRisk ? '⚠ ' : isNear ? '✦ ' : '') + forming.branch.name + ' ⓘ';
       pill.appendChild(fillDiv);
       pill.appendChild(label);
       pill.addEventListener('click', () => showFormingBranchTooltip(forming));
@@ -2084,6 +2092,7 @@ function calculateScore() {
   const techs     = state.discoveredUniversalTechIds.size;
   const skills    = state.genealogy.reduce((s, g) => s + (g.skills || 0), 0);
   const branches  = new Set(state.genealogy.flatMap(g => g.branches || [])).size;
+  const aprs      = state.genealogy.reduce((s, g) => s + (g.aprenentatges || 0), 0);
   const heirBonus = state.genealogy.filter(g => g.hadHeir).length * 20;
   // Gen score weighted by age lived — discourages deliberate early death
   const genScore  = state.genealogy.reduce((s, g) => {
@@ -2092,16 +2101,51 @@ function calculateScore() {
   }, 0);
   // Bonus per gen que va viure >= 85% de la vida esperada
   const fullLifeBonus = state.genealogy.filter(g => (g.age || 0) >= LIFE_EXPECTANCY * 0.85).length * 30;
-  const total = cycles * 2 + genScore + techs * 100 + skills * 30 + branches * 40 + heirBonus + fullLifeBonus;
-  return { total, cycles, gens, genScore, techs, skills, branches, heirBonus, fullLifeBonus };
+  const total = cycles * 2 + genScore + techs * 100 + skills * 30 + branches * 40 + aprs * 50 + heirBonus + fullLifeBonus;
+  return { total, cycles, gens, genScore, techs, skills, branches, aprs, heirBonus, fullLifeBonus };
 }
 
+const DYNASTY_TITLES = {
+  impuls: [
+    'Supervivents del Paleolític',
+    'El Clan dels Caçadors',
+    'El Llinatge de l\'Impuls',
+    'Els Caçadors Llegendaris',
+    'La Gran Cacera del Temps',
+  ],
+  'intel·lecte': [
+    'Supervivents del Paleolític',
+    'El Clan dels Artesans',
+    'El Llinatge de la Pedra',
+    'Els Mestres de la Talla',
+    'La Gran Obra del Llinatge',
+  ],
+  espiritualitat: [
+    'Supervivents del Paleolític',
+    'El Clan dels Rituals',
+    'El Llinatge dels Esperits',
+    'Els Xamans del Clan',
+    'La Veu dels Avantpassats',
+  ],
+  sociabilitat: [
+    'Supervivents del Paleolític',
+    'El Clan dels Recol·lectors',
+    'El Llinatge del Vincle',
+    'Els Guardians de la Llar',
+    'La Gran Aliança del Temps',
+  ],
+};
+
 function getDynastyTitle(score) {
-  if (score >= 2000) return 'Llegenda de l\'Era';
-  if (score >= 1200) return 'Llinatge Llegendari';
-  if (score >= 650)  return 'Clan Respectat';
-  if (score >= 300)  return 'Tribu Establerta';
-  return 'Supervivents del Paleolític';
+  const tier = score >= 2000 ? 4 : score >= 1200 ? 3 : score >= 650 ? 2 : score >= 300 ? 1 : 0;
+  // Dominant axis across all generations
+  const axisCounts = {};
+  for (const g of state.genealogy) {
+    if (g.topAxis) axisCounts[g.topAxis] = (axisCounts[g.topAxis] || 0) + 1;
+  }
+  const domAxis = Object.keys(axisCounts).sort((a, b) => axisCounts[b] - axisCounts[a])[0];
+  const titles = DYNASTY_TITLES[domAxis] || DYNASTY_TITLES['impuls'];
+  return titles[tier];
 }
 
 // ═══════════════════════════════════════════════════════════ END SCREEN
@@ -2140,6 +2184,7 @@ function renderEndScreen() {
     score.techs    > 0 ? `${score.techs} techs × 100 = <b>${score.techs * 100}</b>` : null,
     score.skills   > 0 ? `${score.skills} habilitats × 30 = <b>${score.skills * 30}</b>` : null,
     score.branches > 0 ? `${score.branches} branques × 40 = <b>${score.branches * 40}</b>` : null,
+    score.aprs     > 0 ? `${score.aprs} aprenentatges × 50 = <b>${score.aprs * 50}</b>` : null,
     score.heirBonus > 0 ? `Hereus deixats: <b>+${score.heirBonus}</b>` : null,
     score.fullLifeBonus > 0 ? `Vides completes × 30: <b>+${score.fullLifeBonus}</b>` : null,
     `${score.cycles} cicles × 2 = <b>${score.cycles * 2}</b>`,

@@ -882,7 +882,7 @@ const ACTIONS = [
     purchase_cost: 3, execute_cost: 0,
     requires: [{ resource: 'pedra', min: 2 }],
     side_effects: [{ resource: 'pedra', delta: -2 }],
-    material_min: 4, material_max: 7,
+    material_min: 3, material_max: 5,
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"

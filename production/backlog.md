@@ -61,7 +61,7 @@
 
 ---
 
-## P2 OPEN BALANCE — BL2-06 — Loop pedra-faonar: font de material sense cost real
+## P2 DONE BALANCE — BL2-06 — Loop pedra-faonar: font de material sense cost real
 
 - **File**: `prototypes/bloodline-v2/data.js`
 - **Issue**: act_recollectar_pedra (gratuita) + act_faonar_eines (pedra -2, material +4/+7) genera 2x material que qualsevol altra accio sense cost d'inclinacio.
@@ -74,7 +74,7 @@
 
 ---
 
-## P2 OPEN DESIGN — BL2-07 — Scoring path Mistic/Social sense diferenciacio
+## P2 DONE DESIGN — BL2-07 — Scoring path Mistic/Social sense diferenciacio
 
 - **File**: `prototypes/bloodline-v2/game.js` → calculateScore()
 - **Issue**: Jugadors Mistics i de pura supervivencia amb el mateix nombre de techs puntuen igual. El scoring no distingeix playstyle.
@@ -86,7 +86,7 @@
 
 ---
 
-## P2 OPEN FEAT — BL2-08 — Ghost pill sense avis de proximitat a condicions max
+## P2 DONE FEAT — BL2-08 — Ghost pill sense avis de proximitat a condicions max
 
 - **File**: `prototypes/bloodline-v2/game.js` → getFormingBranch()
 - **Issue**: La pill no avisa quan s'acosta a violar una condicio max d'inclinacio (ex: sociabilitat > 0.40 bloquejarà el Caçador).
@@ -132,6 +132,6 @@
 <!-- DONE sessions 2026-06-06: PT-01..PT-13, D-01..D-03, SAVE, SCORE, BALANCE-EV, B-01 (20 tasques) -->
 <!-- DONE sessions 2026-06-14/16: aprenentatge, redesign pantalla, S3/S4 (commits 16fef8d, ce20117, a120039) -->
 
-<!-- STATS: actualitzat 2026-06-16 -->
-<!-- DONE: BL2-01..05 (tots els P1 tancats, 2026-06-16) -->
-<!-- OPEN: P2=3 (BL2-06..08) | P3=3 (C-01, C-02, PT-16) -->
+<!-- STATS: actualitzat 2026-06-17 -->
+<!-- DONE: BL2-01..08 (tots els P1+P2 tancats, 2026-06-16/17) -->
+<!-- OPEN: P3=3 (C-01, C-02, PT-16) -->
