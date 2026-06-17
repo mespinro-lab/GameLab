@@ -1155,8 +1155,8 @@ const ACTIONS = [
   },
   {
     id: "act_cants_grup", name: "Cants de Grup", is_base: false, zona: "Campament",
-    description: "Organitzes cants col·lectius al voltant del foc. El ritme compartit uneix el que les paraules no acaben de dir.",
-    purchase_cost: 3, execute_cost: 0, side_effects: [{ resource: "health", delta: +3 }],
+    description: "Organitzes cants col·lectius al voltant del foc. El festí que segueix no deixa mai la gent amb gana.",
+    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 2, output_max: 4,
     stat_key: "vincle", stat_gain: 0.10,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.04, sociabilitat: +0.05 },
     event_pool_id: "pool_ritual"

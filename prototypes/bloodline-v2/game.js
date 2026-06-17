@@ -1636,11 +1636,11 @@ function updateCarouselInfo() {
   if (state.character.purchasedActionIds.has('act_talla_avancada') && action.requires?.some(r => r.resource === 'eina')) {
     parts.push('⭐ eines qualitat');
   }
-  // Stat influence badge
+  // Stat influence badge — numeric so casual players understand the value
   if (action.stat_key && action.stat_gain) {
     const statEmoji = { forca: '💪', enginy: '🧠', vincle: '🔗' };
-    const tri = statGainTriangles(action.stat_gain);
-    parts.push(`<span class="benefit-stat-badge">${statEmoji[action.stat_key] || '⬆️'}<span class="bsb-tri${tri.neg ? ' neg' : ''}">${tri.text}</span></span>`);
+    const sign = action.stat_gain > 0 ? '+' : '';
+    parts.push(`<span class="benefit-stat-badge">${statEmoji[action.stat_key] || '⬆️'} ${sign}${Math.round(action.stat_gain * 100)}</span>`);
   }
   // Show resource requirements
   const resourceReqMet = evaluateCharacterRequires(action);
@@ -2695,9 +2695,6 @@ function actionStatSummary(action) {
   const parts = [];
   if (action.output_resource && action.output_min != null) {
     parts.push(`${outIcons[action.output_resource] || '📦'} ${action.output_min}–${action.output_max}`);
-  }
-  if (action.material_min != null && (action.material_min > 0 || action.material_max > 0)) {
-    parts.push(`🔵 +${action.material_min}–${action.material_max}`);
   }
   if (action.side_effects) {
     for (const se of action.side_effects) {
