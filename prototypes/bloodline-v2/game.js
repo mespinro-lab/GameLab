@@ -25,6 +25,28 @@ function lifeIncPerTurn() {
 const AXES        = AXIS_DEFS.map(a => a.id);
 const AXIS_LABELS = Object.fromEntries(AXIS_DEFS.map(a => [a.id, { left: a.left, right: a.right }]));
 
+// ═══════════════════════════════════════════════════════════ BRANCH SYSTEM
+// Each branch maps 1:1 to its primary axis. Activation threshold = 34% of normalized total.
+const BRANCH_ACTIVATION_PCT = 0.34;
+const BRANCH_AXIS = {
+  'branch_hunter':   'impuls',
+  'branch_gatherer': 'sociabilitat',
+  'branch_craftsman': 'intel·lecte',
+  'branch_mystic':   'espiritualitat',
+};
+
+function getBranchPct() {
+  const inc = state.character.inclination;
+  const vals = {};
+  let total = 0;
+  for (const ax of AXES) {
+    vals[ax] = Math.max(0, inc[ax] ?? 0);
+    total += vals[ax];
+  }
+  if (total === 0) return Object.fromEntries(AXES.map(a => [a, 0.25]));
+  return Object.fromEntries(AXES.map(a => [a, vals[a] / total]));
+}
+
 // ═══════════════════════════════════════════════════════════ ZONE MAP CONFIG
 const ZONE_POS = {
   'Planes':    { left: 79, top: 52 },
@@ -355,7 +377,11 @@ function evaluateConditions(condObj, inclination) {
   return condObj.operator === 'AND' ? results.every(Boolean) : results.some(Boolean);
 }
 function getActiveBranches() {
-  return BRANCHES.filter(b => evaluateConditions(b.conditions));
+  const pct = getBranchPct();
+  return BRANCHES.filter(b => {
+    const axis = BRANCH_AXIS[b.id];
+    return axis !== undefined && pct[axis] >= BRANCH_ACTIVATION_PCT;
+  });
 }
 
 function getHealthCap(age) {
@@ -878,10 +904,12 @@ function executeAction(actionId) {
     showDonutAnimation(action, null, () => {
       const snap = snapshotNums();
       unlockSkill(chosen);
+      const snapMid = snapshotNums();
+      applyFxFloaters(snap);
       state.cycle++;
       autoDiscoverUniversalTechs();
       applyTurnUpkeep();
-      applyFxFloaters(snap);
+      setTimeout(() => applyFxFloaters(snapMid), 550);
       addLog(`[${state.cycle}] ${action.name}`);
       if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0 || state.lifeProgress >= 1) triggerSuccession();
       renderAll();
@@ -997,10 +1025,17 @@ function executeAction(actionId) {
         name: action.unlocks_zone, desc: `Has descobert ${action.unlocks_zone}. Ara apareix al teu mapa.`,
       });
     }
+    // Snapshot after action effects, before upkeep (for two-phase floaters)
+    const snapMid = snapshotNums();
+    // Phase 1 floaters — action output (compare snap before action to snapMid after action)
+    spawnResBalls(snap);
+    applyFxFloaters(snap);
     // Cycle advance + upkeep
     state.cycle++;
     autoDiscoverUniversalTechs();
     applyTurnUpkeep();
+    // Phase 2 floaters — end-of-turn upkeep (delayed so user sees two separate waves)
+    setTimeout(() => applyFxFloaters(snapMid), 550);
     // Notify when age-gated base actions become available (only if not already visible/done)
     for (const a of ACTIONS.filter(x => x.is_base && x.minAge)) {
       const alreadyNotified = state.pendingDiscoveries.some(d => d._isEvent && d.name === a.name);
@@ -1019,9 +1054,6 @@ function executeAction(actionId) {
     // Log
     if (output > 0) addLog(`[${state.cycle}] ${action.name}: +${output} ${outDef?.label || outRes}`);
     else            addLog(`[${state.cycle}] ${action.name}`);
-    // Floaters + resource balls
-    spawnResBalls(snap);
-    applyFxFloaters(snap);
     // Event (balanced selection)
     if (action.event_pool_id && EVENT_POOLS[action.event_pool_id] && Math.random() < EVENT_TRIGGER_CHANCE) {
       const eligible = getEligiblePoolEvents(EVENT_POOLS[action.event_pool_id]);
@@ -1269,25 +1301,24 @@ function renderSky() {
 // ═══════════════════════════════════════════════════════════ FORMING BRANCH PILL
 function getFormingBranch() {
   const activeBranches = new Set(getActiveBranches().map(b => b.id));
+  const pct = getBranchPct();
   let best = null;
-  let bestPct = 0.05;
+  let bestRawPct = 0.02;
   for (const branch of BRANCHES) {
     if (activeBranches.has(branch.id)) continue;
-    if (!branch.conditions?.conditions) continue;
-    let pct = Infinity;
-    let violated = false;
-    let atRisk = false;
-    for (const cond of branch.conditions.conditions) {
-      const val = state.character.inclination[cond.axis] ?? 0;
-      if (cond.max !== undefined) {
-        if (val > cond.max) { violated = true; break; }
-        if (cond.max - val < 0.05) atRisk = true;
-      }
-      if (cond.min !== undefined && cond.min > 0) pct = Math.min(pct, val / cond.min);
+    const axis = BRANCH_AXIS[branch.id];
+    if (!axis) continue;
+    const rawPct = pct[axis];
+    if (rawPct > bestRawPct) {
+      bestRawPct = rawPct;
+      best = {
+        branch,
+        axis,
+        rawPct,
+        pct: rawPct / BRANCH_ACTIVATION_PCT,  // 0–1 progress toward activation
+        atRisk: false,
+      };
     }
-    if (violated || pct === Infinity) continue;
-    pct = Math.max(0, Math.min(1.5, pct));
-    if (pct > bestPct) { bestPct = pct; best = { branch, pct, atRisk }; }
   }
   return best;
 }
@@ -1296,37 +1327,37 @@ function showFormingBranchTooltip(forming) {
   const existing = document.getElementById('forming-tooltip');
   if (existing) existing.remove();
 
-  // Troba l'eix més fluix (menor val/min ratio entre les condicions min)
-  let weakAxis = null;
-  let weakRatio = Infinity;
-  for (const cond of (forming.branch.conditions?.conditions || [])) {
-    if (cond.min === undefined || cond.min <= 0) continue;
-    const val = state.character.inclination[cond.axis] ?? 0;
-    const ratio = val / cond.min;
-    if (ratio < weakRatio) { weakRatio = ratio; weakAxis = cond.axis; }
-  }
-
-  // Cerca acció disponible que millori l'eix fluix
+  // Cerca acció disponible que millori l'eix principal
   let suggAction = null;
-  if (weakAxis) {
-    let bestDelta = 0;
-    for (const action of ACTIONS) {
-      const delta = action.inclination_deltas?.[weakAxis] ?? 0;
-      if (delta > bestDelta) { bestDelta = delta; suggAction = action; }
-    }
+  let bestDelta = 0;
+  for (const action of ACTIONS) {
+    const delta = action.inclination_deltas?.[forming.axis] ?? 0;
+    if (delta > bestDelta) { bestDelta = delta; suggAction = action; }
   }
 
-  const pctInt = Math.round(Math.min(1, forming.pct) * 100);
-  const axisLabel = weakAxis ? weakAxis.charAt(0).toUpperCase() + weakAxis.slice(1) : null;
+  const rawInt   = Math.round(forming.rawPct * 100);
+  const threshInt = Math.round(BRANCH_ACTIVATION_PCT * 100);
   const tip = document.createElement('div');
   tip.id = 'forming-tooltip';
   tip.className = 'forming-tooltip';
   tip.innerHTML = [
-    `<strong>${forming.branch.name}</strong> — ${pctInt}%`,
-    axisLabel ? `Eix a desenvolupar: <em>${axisLabel}</em>` : null,
-    suggAction  ? `Acció recomanada: <em>${suggAction.name}</em>` : null,
+    `<strong>${forming.branch.name}</strong>`,
+    `${rawInt}% / ${threshInt}% — cal ${threshInt - rawInt}% més`,
+    suggAction ? `Acció: <em>${suggAction.name}</em>` : null,
   ].filter(Boolean).join('<br>');
 
+  document.body.appendChild(tip);
+  const autoClose = setTimeout(() => tip.remove(), 3500);
+  tip.addEventListener('click', () => { clearTimeout(autoClose); tip.remove(); });
+}
+
+function showPillInfoTooltip(title, body) {
+  const existing = document.getElementById('pill-info-tooltip');
+  if (existing) existing.remove();
+  const tip = document.createElement('div');
+  tip.id = 'pill-info-tooltip';
+  tip.className = 'pill-info-tooltip';
+  tip.innerHTML = `<strong>${title}</strong><br>${body}`;
   document.body.appendChild(tip);
   const autoClose = setTimeout(() => tip.remove(), 3500);
   tip.addEventListener('click', () => { clearTimeout(autoClose); tip.remove(); });
@@ -1435,7 +1466,8 @@ function getZoneActions(zoneId) {
     if (!state.character.purchasedActionIds.has(a.id)) return false;
     if (getActionVisibility(a) === 'HIDDEN') return false;
     if (a.maxAge !== undefined && age > a.maxAge) return false;
-    if (!evaluateCharacterRequires(a)) return false;
+    // always_show_locked: include even when character requirements not met (shown as unavailable)
+    if (!evaluateCharacterRequires(a) && !a.always_show_locked) return false;
     // Hide base action when a purchased upgrade supersedes it
     if (ACTIONS.some(u => u.is_upgrade && u.upgrades_action_id === a.id && state.character.purchasedActionIds.has(u.id))) return false;
     return true; // include even if minAge not met — shown as tooYoung
@@ -1737,6 +1769,10 @@ function renderCharPanel() {
       const pill = document.createElement('span');
       pill.className   = 'pill-destresa';
       pill.textContent = '⭐ ' + def.name;
+      pill.addEventListener('click', () => showPillInfoTooltip(
+        '⭐ ' + def.name,
+        `Acció: ${ACTIONS.find(a => a.id === def.action_id)?.name || def.action_id}`
+      ));
       destreseEl.appendChild(pill);
     }
   }
@@ -1751,6 +1787,10 @@ function renderCharPanel() {
       const pill = document.createElement('span');
       pill.className   = 'pill-aprenentatge';
       pill.textContent = def.icon + ' ' + def.name;
+      pill.addEventListener('click', () => showPillInfoTooltip(
+        def.icon + ' ' + def.name,
+        def.effect?.desc || def.description || ''
+      ));
       aprEl.appendChild(pill);
     }
   }
@@ -2029,12 +2069,16 @@ function renderTestingPanel() {
     inclEl.appendChild(row);
   }
 
-  // Branches
+  // Branches with pct display
   const activeBranches = getActiveBranches();
+  const branchPct = getBranchPct();
   const brEl = el('test-branches');
-  brEl.innerHTML = activeBranches.length
-    ? activeBranches.map(b => `<span class="test-badge test-badge-branch">${b.name}</span>`).join('')
-    : '<span style="font-size:0.7rem;color:var(--text-dim)">Cap</span>';
+  brEl.innerHTML = BRANCHES.map(b => {
+    const axis = BRANCH_AXIS[b.id];
+    const p = axis ? Math.round((branchPct[axis] || 0) * 100) : 0;
+    const active = activeBranches.some(ab => ab.id === b.id);
+    return `<span class="test-badge test-badge-branch${active ? '' : ' locked'}">${b.name} ${p}%</span>`;
+  }).join('');
 
   // Skills
   const skEl = el('test-skills');

@@ -751,6 +751,7 @@ const ACTIONS = [
   {
     id: "act_ensenyar", name: "Ensenyar el Fill", is_base: true, zona: "Llar",
     description: "Passes temps transmetent al fill un dels teus aprenentatges. El fill el rebrà en nàixer.",
+    always_show_locked: true,
     minAge: 8,
     requires: [{ state: 'fills', min: 1 }, { state: 'ensenyat', max: 0 }, { type: 'has_any_aprenentatge' }],
     character_effect: { type: 'delta', state: 'ensenyat', delta: 1 },
@@ -1548,8 +1549,8 @@ const EVENT_POOLS = {
   pool_artesania: [
     { id: "ev_eina_trencada", text: "L'eina es trenca durant la feina. Cal refer-la.", effects: { eina: -1 }, blocked_if: [{ type: "stat_min", stat: "enginy", min: 3.5 }] },
     { id: "ev_eina_trencada_material", text: "L'eina es trenca i arrossega part del material. La pedra també s'ha perdut.", effects: { eina: -1, pedra: -1 }, blocked_if: [{ type: "stat_min", stat: "enginy", min: 4.0 }] },
-    { id: "ev_tecnica_nova",     text: "Un descobriment accidental millora la tècnica.",               effects: { material: +1 } },
-    { id: "ev_intercanvi_eines", text: "Un grup veí demana eines a canvi de provisions.",              effects: { food: +1, material: +1 } },
+    { id: "ev_tecnica_nova",     text: "Un descobriment accidental millora la tècnica.",               effects: { food: +1 } },
+    { id: "ev_intercanvi_eines", text: "Un grup veí demana eines a canvi de provisions.",              effects: { food: +2 } },
     {
       id: "ev_desc_agulla", is_discovery_event: true, is_single_use: true,
       discovery_skill_id: "bt_agulla_os",
@@ -1699,7 +1700,7 @@ const EVENT_POOLS = {
   ],
   pool_social: [
     { id: "ev_dispute_interna",  text: "Una disputa interna distreu el grup.",                       effects: { health: -2 } },
-    { id: "ev_aliat_nou",        text: "Un grup veí ofereix col·laboració temporal.",               effects: { material: +2 } },
+    { id: "ev_aliat_nou",        text: "Un grup veí ofereix col·laboració temporal.",               effects: { food: +2 } },
     { id: "ev_lider_respectat",  text: "El respecte augmenta. El grup treballa millor.",            effects: { health: +3 } },
     {
       id: "ev_desc_ornaments", is_discovery_event: true, is_single_use: true,

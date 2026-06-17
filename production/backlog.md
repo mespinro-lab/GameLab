@@ -135,4 +135,5 @@
 
 <!-- STATS: actualitzat 2026-06-17 -->
 <!-- DONE: BL2-01..08 + C-01, C-02, PT-16 (backlog complet, 2026-06-16/17) -->
-<!-- OPEN: cap — tots els P1/P2/P3 tancats -->
+<!-- DONE sessió 2026-06-17: branques %normalitzats, tooltips destresa/apr, two-phase upkeep, act_ensenyar visible, material eliminat d'events -->
+<!-- OPEN: cap -->
