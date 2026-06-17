@@ -287,7 +287,7 @@ const SKILL_DEFS = [
     id: "bt_rasclador_fi", name: "Rasclador Fi",
     inheritanceRate: 0.35,
     universal_prereq: "ut_eines",
-    inclination_conditions: { operator: "OR", conditions: [{ axis: "impuls", max: 0.10 }, { axis: "intel·lecte", min: 0.20 }] },
+    inclination_conditions: { operator: "OR", conditions: [{ axis: "intel·lecte", min: 0.18 }, { axis: "sociabilitat", min: 0.18 }] },
     unlocks_action_ids: ["act_molda_grans", "act_faonar_eines"],
     passive_effect: { type: "bonus_action_output", action_id: "act_recollectar_arrels", output_min_bonus: 1, desc: "+1 mínim recol·lecta" },
     is_hidden: false
@@ -332,7 +332,7 @@ const SKILL_DEFS = [
     id: "bt_trampes", name: "Trampes i Llaços",
     inheritanceRate: 0.45,
     universal_prereq: "ut_corda",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "impuls", min: 0.10 }] },
+    inclination_conditions: { operator: "AND", conditions: [{ axis: "sociabilitat", min: 0.10 }] },
     unlocks_action_ids: ["act_parar_trampes", "act_revisar_trampes"],
     passive_effect: { type: "bonus_action_output", action_id: "act_parar_trampes", output_min_bonus: 1, desc: "+1 mínim parar trampes (les trampes de corda son més eficaces)" },
     is_hidden: false
@@ -443,7 +443,7 @@ const SKILL_DEFS = [
     id: "bt_coneixement_plantes", name: "Coneixement de Plantes",
     inheritanceRate: 0.45,
     universal_prereq: "ut_corda",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.10 }, { axis: "impuls", max: 0.20 }] },
+    inclination_conditions: { operator: "AND", conditions: [{ axis: "sociabilitat", min: 0.10 }] },
     unlocks_action_ids: ["act_recollida_bolets", "act_assecament_plantes"],
     passive_effect: { type: "bonus_action_output", action_id: "act_recollida_bolets", output_max_bonus: 2, desc: "+2 màxim recollida de bolets (coneixes quins valen la pena)" },
     is_hidden: false
@@ -461,7 +461,7 @@ const SKILL_DEFS = [
     id: "bt_pesca", name: "Pesca amb Arpó i Xarxa",
     inheritanceRate: 0.45,
     universal_prereq: "ut_corda",
-    inclination_conditions: { operator: "OR", conditions: [{ axis: "impuls", min: 0.12 }, { axis: "intel·lecte", min: 0.15 }] },
+    inclination_conditions: { operator: "OR", conditions: [{ axis: "impuls", min: 0.12 }, { axis: "sociabilitat", min: 0.12 }] },
     unlocks_action_ids: ["act_pescar_riu", "act_xarxa_pesca"],
     passive_effect: { type: "bonus_action_output", action_id: "act_pescar_riu", output_min_bonus: 1, desc: "+1 mínim pesca (coneixes els passos del riu)" },
     is_hidden: false
@@ -479,7 +479,7 @@ const SKILL_DEFS = [
     id: "bt_llavor_selectiva", name: "Llavor Selectiva",
     inheritanceRate: 0.35,
     universal_prereq: "ut_ceramica",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.18 }, { axis: "impuls", max: 0.10 }] },
+    inclination_conditions: { operator: "AND", conditions: [{ axis: "sociabilitat", min: 0.15 }] },
     unlocks_action_ids: ["act_seleccionar_llavors", "act_preparar_terreny"],
     passive_effect: { type: "bonus_action_output", action_id: "act_seleccionar_llavors", output_min_bonus: 2, desc: "+2 mínim selecció de llavors (les millors llavors formen part de la cultura del clan)" },
     is_hidden: false
@@ -654,7 +654,7 @@ const ACTIONS = [
     material_min: 2, material_max: 3,
     stat_key: "forca", stat_gain: 0.10,
     destresa_id: "d_botanica",
-    inclination_deltas: { impuls: -0.03, "intel·lecte": +0.04, espiritualitat: 0, sociabilitat: +0.03 },
+    inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.05 },
     event_pool_id: "pool_recollecta"
   },
   {
@@ -806,7 +806,7 @@ const ACTIONS = [
     description: "Segueixes les pistes dels animals per aprendre els seus camins. Coneixement que es converteix en provisions.",
     purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 3, output_max: 6,
     stat_key: "forca", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: +0.03, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_caca"
   },
 
@@ -816,7 +816,7 @@ const ACTIONS = [
     description: "Raspes grans silvestres amb el raspador fi per obtenir farina primitiva. Estable i nutritiu.",
     purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 3, output_max: 7,
     stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": -0.02, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.03 },
     event_pool_id: "pool_recollecta"
   },
 
@@ -827,7 +827,7 @@ const ACTIONS = [
     purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 2, output_max: 6,
     requires: [{ resource: 'material', min: 1 }], side_effects: [{ resource: 'material', delta: -1 }],
     stat_key: "forca", stat_gain: 0.15,
-    inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.03 },
     event_pool_id: "pool_caca"
   },
   {
@@ -835,7 +835,7 @@ const ACTIONS = [
     description: "Fas la ronda matinal per les trampes. Algunes han funcionat. Una t'ha agafat el dit.",
     purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 1, output_max: 4, side_effects: [{ resource: 'health', delta: -3 }],
     stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.03 },
     event_pool_id: "pool_caca"
   },
 
@@ -845,7 +845,7 @@ const ACTIONS = [
     description: "Coneixes quins bolets del bosc són comestibles i quins cal evitar. Provisions i salut.",
     purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 2, output_max: 5, side_effects: [{ resource: 'health', delta: +5 }],
     stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": -0.02, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.03 },
     event_pool_id: "pool_recollecta"
   },
   {
@@ -854,7 +854,7 @@ const ACTIONS = [
     purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 1, output_max: 3,
     side_effects: [{ resource: 'material', delta: -1 }],
     stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": -0.02, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.03 },
     event_pool_id: "pool_recollecta"
   },
 
@@ -864,7 +864,7 @@ const ACTIONS = [
     description: "Tries les millors llavors de la collita. Les plantes del proper cicle donaran més.",
     purchase_cost: 4, execute_cost: 0, output_resource: "food", output_min: 3, output_max: 6,
     stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.03 },
     event_pool_id: "pool_recollecta"
   },
   {
@@ -872,7 +872,7 @@ const ACTIONS = [
     description: "Neteges una petita parcel·la de pedres i males herbes. El terra nu et sembla prometedor.",
     purchase_cost: 4, execute_cost: 0, output_resource: "food", output_min: 2, output_max: 4, side_effects: [{ resource: 'health', delta: -5 }],
     stat_key: "forca", stat_gain: 0.15,
-    inclination_deltas: { impuls: +0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.04 },
     event_pool_id: "pool_recollecta"
   },
 
@@ -1026,7 +1026,7 @@ const ACTIONS = [
     description: "Coues arrels i tubercles al foc fins que es tornen tous i digeribles. El foc multiplica el valor dels aliments.",
     purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 3, output_max: 6,
     stat_key: "enginy", stat_gain: 0.10,
-    inclination_deltas: { impuls: -0.02, "intel·lecte": +0.04, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: -0.01, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: +0.02 },
     event_pool_id: "pool_recollecta"
   },
   {
@@ -1224,7 +1224,7 @@ const ACTIONS = [
     description: "T'esperes immòbil al gual amb l'arpó alçat. El riu dona menjar sense exigir sang a canvi.",
     purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 3, output_max: 6,
     stat_key: "forca", stat_gain: 0.10,
-    inclination_deltas: { impuls: +0.02, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: +0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.02 },
     event_pool_id: "pool_caca"
   },
   {
@@ -1233,7 +1233,7 @@ const ACTIONS = [
     purchase_cost: 5, execute_cost: 1, output_resource: "food", output_min: 4, output_max: 9,
     side_effects: [{ resource: 'health', delta: -2 }],
     stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: +0.02, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
+    inclination_deltas: { impuls: +0.01, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.04 },
     event_pool_id: "pool_caca"
   },
   // ── bt_intercanvi_troc (La Ceràmica — Místic/social) ─────────────────────────

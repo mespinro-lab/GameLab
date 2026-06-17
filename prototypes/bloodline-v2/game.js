@@ -1377,7 +1377,7 @@ function renderZoneNodes() {
     node.style.left   = pos.left + '%';
     node.style.top    = pos.top  + '%';
     const imgSrc = `../../design/life-tycoon/zones/ZONA-PRE-${imgCode}.png`;
-    // Zone info chips (Campament: resources; Llar: family)
+    // Zone info chips
     let chipHtml = '';
     if (zoneDef.id === 'Campament' && ((state.pedra || 0) > 0 || (state.eina || 0) > 0)) {
       const pedraChip = (state.pedra || 0) > 0 ? `<span>🪨 ${state.pedra}</span>` : '';
@@ -1388,6 +1388,12 @@ function renderZoneNodes() {
       const fills = state.character.children.length;
       const fillsChip = fills > 0 ? `<span>👶×${fills}</span>` : '';
       chipHtml = `<div class="zone-chip"><span>💑 ${state.character.partnerName}</span>${fillsChip}</div>`;
+    }
+    if (zoneDef.id === 'Planes') {
+      chipHtml = `<div class="zone-chip"><span>🏹 Caça · 🌿 Recol·lecta</span></div>`;
+    }
+    if (zoneDef.id === 'Bosc') {
+      chipHtml = `<div class="zone-chip"><span>🌲 Bosc · 🎣 Pesca</span></div>`;
     }
     node.innerHTML = `
       <img class="zone-node-img" src="${imgSrc}" alt=""
