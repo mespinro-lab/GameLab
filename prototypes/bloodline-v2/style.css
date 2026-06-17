@@ -1365,6 +1365,13 @@ body.donut-active * { pointer-events: none !important; }
 #end-score-breakdown { display: flex; flex-direction: column; gap: 0.2rem; margin: 0.5rem 0; }
 .score-line { font-size: 0.75rem; color: var(--text-dim); padding: 0.1rem 0; }
 .score-line b { color: var(--gold); font-weight: 700; }
+#end-achievements { margin: 0.6rem 0 0.4rem; }
+.achieve-title { font-size: 0.65rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.35rem; }
+.achieve-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(255,210,80,.12); border: 1px solid rgba(255,210,80,.28); border-radius: 20px; padding: 3px 10px; margin: 2px 3px 2px 0; }
+.achieve-badge.secret { background: rgba(180,100,255,.14); border-color: rgba(180,100,255,.4); }
+.achieve-icon { font-size: 0.85rem; }
+.achieve-name { font-size: 0.7rem; font-weight: 700; color: var(--gold); }
+.achieve-badge.secret .achieve-name { color: #c084fc; }
 #end-result-msg { font-size: 0.8rem; color: var(--text-dim); text-align: center; margin: 0.25rem 0 0.5rem; }
 #end-genealogy { display: flex; flex-direction: column; gap: 0.35rem; }
 .end-gen-row {

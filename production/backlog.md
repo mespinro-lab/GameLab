@@ -95,16 +95,17 @@
 
 ---
 
-## P3 OPEN CONTENT — C-01 — Passive effects de les branch techs sense efecte
+## P3 DONE CONTENT — C-01 — Passive effects de les branch techs sense efecte
 
 - **File**: `prototypes/bloodline-v2/data.js` → SKILL_DEFS passive_effects
 - **Issue**: Vuit de les 30 branch techs no tenen passive_effect tangible: bt_punta_llanca, bt_buri, bt_trampes, bt_guariment_plantes, bt_marques_territori, bt_ornaments, bt_coneixement_plantes, bt_llavor_selectiva.
 - **Source**: design/eras/prehistoria/03-skills.md §7
 - **Acceptance**: Totes les 30 branch techs amb passive_effect documentat i implementat.
+- **Completada**: 2026-06-17 (confirmada per grep — totes les 8 ja tenien efectes al codi)
 
 ---
 
-## P3 OPEN CONTENT — C-02 — Titols de dinastia amb condicions verificables
+## P3 DONE CONTENT — C-02 — Titols de dinastia amb condicions verificables
 
 - **File**: `prototypes/bloodline-v2/game.js` → calculateScore()
 - **Issue**: El scoring final te 5 titols basics sense condicions numeriques precises. No hi ha badges.
@@ -116,7 +117,7 @@
 
 ---
 
-## P3 OPEN DESIGN — PT-16 — Incentiu per vides llargues
+## P3 DONE DESIGN — PT-16 — Incentiu per vides llargues
 
 - **File**: `prototypes/bloodline-v2/game.js`
 - **Issue**: No hi ha incentiu per viure fins al limit de LIFE_EXPECTANCY. L'optim es successio anticipada.
@@ -133,5 +134,5 @@
 <!-- DONE sessions 2026-06-14/16: aprenentatge, redesign pantalla, S3/S4 (commits 16fef8d, ce20117, a120039) -->
 
 <!-- STATS: actualitzat 2026-06-17 -->
-<!-- DONE: BL2-01..08 (tots els P1+P2 tancats, 2026-06-16/17) -->
-<!-- OPEN: P3=3 (C-01, C-02, PT-16) -->
+<!-- DONE: BL2-01..08 + C-01, C-02, PT-16 (backlog complet, 2026-06-16/17) -->
+<!-- OPEN: cap — tots els P1/P2/P3 tancats -->
