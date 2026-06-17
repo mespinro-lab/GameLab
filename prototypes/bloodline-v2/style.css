@@ -522,6 +522,15 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   white-space: nowrap;
   transition: box-shadow 0.4s;
 }
+/* 20–27%: dotted border, transparent fill, dim text */
+.pill-forming.stage-early {
+  background: transparent;
+  border: 1.5px dashed rgba(150,185,245,.30);
+  color: rgba(234,242,255,.45);
+  box-shadow: none;
+}
+.pill-forming.stage-early .form-fill { display: none; }
+/* 27–34%: dotted border + colored fill (default pill-forming styles apply) */
 .pill-forming.near { box-shadow: 0 0 10px rgba(100,160,255,.65), 0 3px 10px rgba(40,60,120,.45); }
 .pill-forming.at-risk { background: rgba(120,30,10,.55); border-color: rgba(255,100,60,.55); box-shadow: 0 0 8px rgba(255,80,40,.4); }
 .pill-forming .form-fill {
