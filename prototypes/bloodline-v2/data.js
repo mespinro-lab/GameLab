@@ -88,11 +88,11 @@ const RESOURCE_DEFS = [
     glossaryDesc: `Estat físic. Neix amb ${STARTING_HEALTH}, creix fins a ${HEALTH_MAX} en ${HEALTH_GROW_TURNS} torns, estable ${HEALTH_STABLE_TURNS} torns, llavors decau. A 0 el personatge mor.`,
   },
   {
-    id: 'material', emoji: '🔵', label: 'Material', section: 'resources',
+    id: 'material', emoji: '🔵', label: 'Tokens', section: 'resources',
     startVal: 0, max: 35, upkeep: null, showMax: true, rateType: false,
     persistent: true, inheritDecay: 0.3,
     color: 'var(--blue)', borderColor: 'rgba(96,165,250,0.3)',
-    glossaryDesc: "Acumulat per qualsevol acció. Gastat per comprar noves accions. Persisteix entre generacions.",
+    glossaryDesc: "Derivat automàtic de tota acció executada. Gastat per comprar noves accions al Mercat. Persisteix entre generacions.",
   },
   {
     id: 'pedra', emoji: '🪨', label: 'Pedra', section: 'resources',
@@ -894,6 +894,7 @@ const ACTIONS = [
     id: "act_gravar_os", name: "Gravar Os i Ivori", is_base: false, zona: "Campament",
     description: "El burí permet gravar formes en os i ivori. Art i eina, alhora. Millora enginy i espiritualitat.",
     purchase_cost: 4, execute_cost: 0, material_min: 2, material_max: 3,
+    side_effects: [{ resource: 'health', delta: +2 }],
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: +0.02, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
@@ -960,6 +961,7 @@ const ACTIONS = [
     id: "act_narrar_llegendes", name: "Narrar les Llegendes", is_base: false, zona: "Campament",
     description: "Expliques les gestes i llegendes del llinatge davant del foc del campament.",
     purchase_cost: 3, execute_cost: 0, material_min: 1, material_max: 2,
+    side_effects: [{ resource: 'health', delta: +3 }],
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: +0.05 },
     event_pool_id: "pool_social"
@@ -1095,6 +1097,7 @@ const ACTIONS = [
     id: "act_preparar_cuiro", name: "Preparar Cuiro", is_base: false, zona: "Campament",
     description: "Estires i asseques la pell fins que queda rígida i dura. Material resistent per a roba i estris.",
     purchase_cost: 3, execute_cost: 0, material_min: 2, material_max: 4,
+    side_effects: [{ resource: 'health', delta: +2 }],
     stat_key: "forca", stat_gain: 0.10,
     inclination_deltas: { impuls: +0.02, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
@@ -1183,6 +1186,7 @@ const ACTIONS = [
     id: "act_tallar_flauta", name: "Tallar una Flauta d'Os", is_base: false, zona: "Campament",
     description: "Forades un os d'ala de voltor amb el burí, forat a forat. Quan hi bufes, en surt una veu que no és de ningú.",
     purchase_cost: 4, execute_cost: 0, material_min: 1, material_max: 2,
+    side_effects: [{ resource: 'health', delta: +3 }],
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: +0.03, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
@@ -1208,6 +1212,7 @@ const ACTIONS = [
     id: "act_tela_sagrada", name: "Tela Sagrada", is_base: false, zona: "Campament",
     description: "Treballes fils i fibres en patrons complexos que el clan reconeix com a símbols de protecció.",
     purchase_cost: 3, execute_cost: 0, material_min: 1, material_max: 3,
+    side_effects: [{ resource: 'health', delta: +3 }],
     stat_key: "vincle", stat_gain: 0.10,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.04, sociabilitat: +0.03 },
     event_pool_id: "pool_ritual"

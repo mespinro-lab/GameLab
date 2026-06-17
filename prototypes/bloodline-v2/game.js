@@ -967,7 +967,7 @@ function executeAction(actionId) {
     const elderBonus = characterAge() >= 11 ? 1 : 0;
     if (elderBonus && !(state.character.charState.loggedElder)) {
       state.character.charState.loggedElder = 1;
-      addLog('Sàvia experiència: els ancians generen +1 material per acció');
+      addLog('Sàvia experiència: els ancians generen +1 token per acció');
     }
     const matMin = (action.material_min ?? 2) + elderBonus;
     const matMax = (action.material_max ?? 3) + elderBonus;
@@ -1624,6 +1624,12 @@ function updateCarouselInfo() {
   if (!blocked && action.output_resource && action.output_min != null) {
     const icon = outIcons[action.output_resource] || '📦';
     parts.push(`${icon} ${action.output_min}–${action.output_max}`);
+  }
+  // Universal token generation — shown for all actions
+  if (!blocked) {
+    const tokMin = action.material_min ?? 2;
+    const tokMax = action.material_max ?? 3;
+    if (tokMin > 0 || tokMax > 0) parts.push(`🔵 +${tokMin}–${tokMax}`);
   }
   if (action.side_effects) {
     for (const se of action.side_effects) {
