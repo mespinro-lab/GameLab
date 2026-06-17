@@ -1303,7 +1303,7 @@ function getFormingBranch() {
   const activeBranches = new Set(getActiveBranches().map(b => b.id));
   const pct = getBranchPct();
   let best = null;
-  let bestRawPct = 0.02;
+  let bestRawPct = 0.20;
   for (const branch of BRANCHES) {
     if (activeBranches.has(branch.id)) continue;
     const axis = BRANCH_AXIS[branch.id];
@@ -1738,7 +1738,8 @@ function renderCharPanel() {
       const isNear = pct >= 0.8;
       const pill = document.createElement('span');
       const isAtRisk = !!forming.atRisk;
-      pill.className = 'pill-forming' + (isNear ? ' near' : '') + (isAtRisk ? ' at-risk' : '');
+      const stage = forming.rawPct >= 0.27 ? 'stage-colored' : 'stage-early';
+      pill.className = 'pill-forming ' + stage + (isNear ? ' near' : '') + (isAtRisk ? ' at-risk' : '');
       pill.style.pointerEvents = 'all';
       pill.style.cursor = 'pointer';
       const fillDiv = document.createElement('div');
