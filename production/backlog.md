@@ -129,6 +129,37 @@
 
 ---
 
+---
+
+## P1 OPEN DESIGN — DESIGN-01 — Rethinking complet accions + habilitats Era 1
+
+- **Fitxers**: `prototypes/bloodline-v2/data.js`, `design/gdd/bloodline/action-economy.md`,
+  `design/eras/prehistoria/03-skills.md`
+- **Issue**: El disseny actual de les accions de la branca Místic (i potencialment totes les branques)
+  té tres problemes fonamentals:
+  1. **Justificació temàtica feble**: accions com `narrar_llegendes` i `cants_grup` generen menjar
+     sense que la narrativa ho justifiqui de manera creïble. La regla és: si no pots explicar en
+     una frase PER QUÈ una acció dona el recurs que dona, el disseny és incorrecte.
+  2. **Diferenciació risc/recompensa insuficient**: `narrar_llegendes` (🌾 1–3, sense risc) vs
+     `cants_grup` (🌾 2–4, sense risc) vs `transit_nocturn` (🌾 2–4, −5 salut) — el primer i el
+     segon son massa similars, el tercer s'hauria de diferenciar més que amb un simple −HP.
+  3. **Absència de transicions entre branques via accions**: cada acció hauria de poder empentar
+     la inclinació cap a la seva branca principal PERÒ algunes accions haurien d'actuar com a ponts
+     naturals cap a altres branques (vegeu la filosofia a `action-economy.md §RETHINKING`).
+- **Filosofia de disseny (nova)**: Una persona espiritual té accions espirituals, però el xamanisme
+  la pot aproximar a l'enginy (intel·lecte); el sacrifici ritual la pot aproximar al guerrer (impuls);
+  la cerimònia col·lectiva la pot aproximar al recol·lector social (sociabilitat). Les accions son el
+  mecanisme de transició entre branques, no la confirmació de la branca actual.
+- **Abast**: totes les accions de la branca Místic (16 accions + 8 branch techs) han de ser
+  revisades. Potencialment totes les branques si s'aplica el mateix criteri de coherència.
+- **Prerequisit**: decisió de disseny prèvia sobre quines transicions son possibles per branca
+  (veure `action-economy.md §RETHINKING` per les preguntes obertes).
+- **Acceptance**: cada acció té una justificació narrativa d'una frase per al seu output principal;
+  cap dues accions de la mateixa branca donen el mateix recurs amb el mateix perfil de risc;
+  almenys 2 accions per branca actuen com a ponts temàtics cap a altres branques.
+
+---
+
 <!-- HISTORIAL (prototypes/bloodline/ ABANDONAT) -->
 <!-- DONE sessions 2026-06-06: PT-01..PT-13, D-01..D-03, SAVE, SCORE, BALANCE-EV, B-01 (20 tasques) -->
 <!-- DONE sessions 2026-06-14/16: aprenentatge, redesign pantalla, S3/S4 (commits 16fef8d, ce20117, a120039) -->
