@@ -441,3 +441,60 @@ Accions que satisfan la mateixa necessitat han de tenir un trade-off clar:
 Nova zona que apareix quan el personatge troba parella. Conté:
 - `tenir_fills` (risc basat en salut)
 - `ensenyar_fill` (millora herència de skills)
+
+---
+
+## ⚠️ RETHINKING PENDENT — Disseny d'accions Era 1 (2026-06-17)
+
+**Estat**: Pendent de rethinking complet. Veure `production/backlog.md — DESIGN-01`.
+
+### Problemes identificats al prototip actual
+
+**1. Justificació temàtica feble**
+Cada acció ha de poder respondre "Per qué dona aquest recurs?" en una frase narrativa creïble.
+Exemples del problema actual (branca Místic):
+- `narrar_llegendes`: dona 🌾 1–3 perquè "el clan s'aplega i comparteix provisions" — justificació
+  feble (per qué compartir provisions és exclusiu del moment de narrar?)
+- `cants_grup`: dona 🌾 2–4 perquè "la celebració inclou un festí" — millor, però massa similar
+  a narrar_llegendes sense diferenciació real de perfil
+
+**Regla**: Si la justificació narrativa podria aplicar-se a qualsevol altra acció, el disseny
+és incorrecte. Cal que sigui ESPECÍFICA a aquella acció.
+
+**2. Diferenciació risc/recompensa insuficient**
+No n'hi ha prou amb canviar el risc per al mateix output. La diferenciació ha de ser:
+- Recursos DIFFERENT (no el mateix recurs amb més risc)
+- Condicions DIFFERENT (requeriments d'inclinació, de recursos, d'estat)
+- Efectes COLATERALS different (quines inclinacions empenta, quins stats millora)
+
+Exemple CORRECTE (del joc actual):
+- `recollectar_arrels`: 🌾 1–3, sense risc, +sociabilitat (el recol·lector social i segur)
+- `espiar_ramat`: 🌾 5–12 + ❤️ −5, +impuls (el caçador arriscat i agressiu)
+No son "el mateix amb més risc" — son perfils completament different.
+
+**3. Absència de transicions entre branques via accions**
+Les accions han de ser el mecanisme de transició, no la confirmació de la branca.
+
+### Filosofia de disseny — Transicions entre branques
+
+Una persona amb inclinació espiritual té accions espirituals. Però **algunes d'aquelles
+accions han d'empentar cap a altres branques** via els seus `inclination_deltas`:
+
+| Acció Místic | Mecanisme de transició | Branca destí |
+|---|---|---|
+| Sacrifici ritual | Alta intensitat física, risc de mort | Caçador (impuls ↑) |
+| Xamanisme de plantes | Coneixement detallat d'espècies, tècnica | Artesà (intel·lecte ↑) |
+| Ritus de fertilitat | Gestió de recursos col·lectius, organització | Recol·lector (sociabilitat ↑) |
+
+Això no vol dir que el jugador "deixi" el Místic — vol dir que, si fa prou sacrificis rituals,
+la seva inclinació d'impuls puja i li apareixen accions de Caçador mentre les Místic
+s'atenuen. La tensió entre identitat espiritual i comportament guerrer és la decisió del jugador.
+
+### Preguntes obertes (a resoldre al rethinking)
+
+1. Quines transicions son possibles per a cada branca? Cal una matriu de transicions.
+2. Totes les branques han de tenir accés a menjar i salut via accions pròpies, o algunes
+   depenen estructuralment d'altres branques per a un dels recursos?
+3. Quantes accions per branch tech son l'òptim? (actual: 2 per bt, podria ser 1 per a bts simples)
+4. Les accions base (visibles sense branch tech) son suficients per a tots els jugadors
+   independentment de la branca que eventualment prenguin?
