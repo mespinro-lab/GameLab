@@ -327,7 +327,6 @@ function initState(dynastyName, race) {
     log: [],
     turnHistory: [],
     _pendingTurnEntry: null,
-    _lastStatDeltas: { forca: 0, enginy: 0, vincle: 0 },
     genealogy: [],
     siblingPool: [],
     pendingEvent: null,
@@ -964,7 +963,6 @@ function executeAction(actionId) {
   if (isActionTooYoung(action)) return; // blocked — shown but not executable
   if (action.maxAge !== undefined && age > action.maxAge) return;
   if (!evaluateCharacterRequires(action)) return;
-  state._lastStatDeltas = { forca: 0, enginy: 0, vincle: 0 };
 
   // Handle discovery action (learn a branch tech)
   if (action.is_discovery_action) {
@@ -1154,9 +1152,6 @@ function applyFxFloaters(before) {
   for (const [k, anchorId] of Object.entries(anchorMap)) {
     const delta = (cur[k] || 0) - (before[k] || 0);
     if (Math.abs(delta) < 0.001) continue;
-    if (['forca', 'enginy', 'vincle'].includes(k) && state._lastStatDeltas) {
-      state._lastStatDeltas[k] = (state._lastStatDeltas[k] || 0) + delta;
-    }
     const anchor = el(anchorId);
     if (!anchor) continue;
     // Flash the parent vital-cell or attr-chip
@@ -1352,11 +1347,6 @@ function renderSky() {
     deathLine.setAttribute('y2', '27');
   }
 
-  // Projected cycles remaining based on current health speed
-  const inc = lifeIncPerTurn();
-  const remaining = inc > 0 ? Math.ceil((1 - progress) / inc) : LIFE_EXPECTANCY;
-  const capEl = el('sun-cap');
-  if (capEl) capEl.textContent = `⚑ ~${remaining} cicles`;
 }
 
 // ═══════════════════════════════════════════════════════════ FORMING BRANCH PILL
@@ -1665,18 +1655,22 @@ function updateCarouselInfo() {
   const blocked  = tooYoung || vis !== 'ACTIVE';
   const outIcons = { food: '🌾', material: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️' };
   const parts = [];
+  const _resTri = (mag, pos) => { const n = mag >= 8 ? 3 : mag >= 4 ? 2 : 1; return (pos ? '▲' : '▼').repeat(n); };
   if ((action.execute_cost || 0) > 0) {
-    parts.push(`🌾 −${action.execute_cost}`);
+    parts.push(`<span class="benefit-stat-badge neg">🌾<span class="bsb-tri neg">▼</span></span>`);
   }
   if (!blocked && action.output_resource && action.output_min != null) {
     const icon = outIcons[action.output_resource] || '📦';
-    parts.push(`${icon} ${action.output_min}–${action.output_max}`);
+    const tri = _resTri(action.output_max, true);
+    parts.push(`<span class="benefit-stat-badge">${icon}<span class="bsb-tri">${tri}</span></span>`);
   }
   if (action.side_effects) {
     for (const se of action.side_effects) {
       const icon = outIcons[se.resource] || '📦';
-      const riskBadge = (se.resource === 'health' && se.delta <= -10) ? '<span class="benefit-risk">❗</span>' : '';
-      parts.push(`${riskBadge}${icon} ${se.delta > 0 ? '+' : ''}${se.delta}`);
+      const abs = Math.abs(se.delta);
+      const tri = _resTri(abs, se.delta > 0);
+      const cls = se.delta < 0 ? ' neg' : '';
+      parts.push(`<span class="benefit-stat-badge${cls}">${icon}<span class="bsb-tri${cls}">${tri}</span></span>`);
     }
   }
 
@@ -1732,16 +1726,6 @@ function renderCharPanel() {
   el('hex-forca').textContent  = (state.character.stats['forca']  || 0).toFixed(1);
   el('hex-enginy').textContent = (state.character.stats['enginy'] || 0).toFixed(1);
   el('hex-vincle').textContent = (state.character.stats['vincle'] || 0).toFixed(1);
-  const _sd = state._lastStatDeltas || {};
-  for (const [stat, deltaId] of [['forca','attr-delta-forca'],['enginy','attr-delta-enginy'],['vincle','attr-delta-vincle']]) {
-    const d = el(deltaId);
-    if (!d) continue;
-    const dv = _sd[stat] || 0;
-    if (Math.abs(dv) < 0.001) { d.textContent = ''; d.className = 'attr-delta'; continue; }
-    const n = Math.abs(dv) >= 0.15 ? 3 : Math.abs(dv) >= 0.10 ? 2 : 1;
-    d.textContent = (dv > 0 ? '▲' : '▼').repeat(n);
-    d.className = 'attr-delta ' + (dv > 0 ? 'attr-delta-pos' : 'attr-delta-neg');
-  }
 
   // Vital: food
   el('hex-food').textContent = `${Math.round(state.food)}/${foodMax()}`;
@@ -1755,7 +1739,7 @@ function renderCharPanel() {
   const foodRateEl   = el('hex-food-rate');
   if (foodRateEl) {
     const fVal = foodUpkeep % 1 === 0 ? foodUpkeep : foodUpkeep.toFixed(1);
-    foodRateEl.textContent = '↓' + fVal + '/t';
+    foodRateEl.textContent = '↓' + fVal;
     foodRateEl.className   = 'vital-rate vital-rate-neg' + (foodDanger ? ' vital-rate-danger' : '');
   }
   const vitalFood = el('vital-food');
@@ -1771,7 +1755,7 @@ function renderCharPanel() {
     else if (age > HEALTH_GROW_TURNS + HEALTH_STABLE_TURNS) { hDelta = -getAgingLoss(age); }
     if (hDelta !== 0) {
       const hDanger = hDelta < 0 && state.health <= Math.abs(hDelta);
-      healthRateEl.textContent = (hDelta > 0 ? '↑' : '↓') + Math.abs(hDelta) + '/t';
+      healthRateEl.textContent = (hDelta > 0 ? '↑' : '↓') + Math.abs(hDelta);
       healthRateEl.className   = 'vital-rate ' + (hDelta > 0 ? 'vital-rate-pos' : 'vital-rate-neg') + (hDanger ? ' vital-rate-danger' : '');
     } else {
       healthRateEl.textContent = '';
@@ -1779,37 +1763,16 @@ function renderCharPanel() {
     }
   }
 
-  // Critical warning banner (age already declared above in health section)
-  const agingLoss     = getAgingLoss(age);
-  const foodPenalty   = foodDanger ? 10 : 0;
-  const totalHLoss    = foodPenalty + agingLoss;
-  const willDie       = state.health <= totalHLoss;
-  const warnEl        = el('warn-banner');
-  if (warnEl) {
-    let msg = '';
-    if (willDie) {
-      const hasHealthAction = ACTIONS.some(a =>
-        state.character.purchasedActionIds.has(a.id) &&
-        a.output_resource === 'health' &&
-        getActionVisibility(a) === 'ACTIVE' &&
-        !isActionTooYoung(a)
-      );
-      msg = '💀 Mort al fi de torn';
-      if (foodDanger) msg += ' — menjar insuficient (−10 salut)';
-      if (agingLoss > 0) msg += `${foodDanger ? ' +' : ' — '}edat avançada (−${agingLoss} salut)`;
-      if (!hasHealthAction) msg += '. Cap acció de salut disponible.';
-    } else if (foodDanger) {
-      msg = `⚠️ Menjar insuficient — perdràs 10 salut al fi de torn`;
-    } else if (agingLoss > 0 && state.health <= agingLoss + 5) {
-      msg = `⚠️ Salut molt baixa — risc de mort en propers torns`;
-    }
-    if (msg) {
-      warnEl.textContent = msg;
-      warnEl.className = willDie ? 'warn-banner warn-death' : 'warn-banner warn-alert';
-    } else {
-      warnEl.className = 'warn-banner hidden';
-    }
-  }
+  // Vital warn badges (! blinking inside each vital cell)
+  const agingLoss  = getAgingLoss(age);
+  const foodPenalty = foodDanger ? 10 : 0;
+  const totalHLoss  = foodPenalty + agingLoss;
+  const willDie     = state.health <= totalHLoss;
+  const foodWarnEl  = el('vital-warn-food');
+  const hlthWarnEl  = el('vital-warn-health');
+  if (foodWarnEl)  foodWarnEl.classList.toggle('hidden', !foodDanger);
+  const healthCrit = willDie || (agingLoss > 0 && state.health <= agingLoss + 5);
+  if (hlthWarnEl)  hlthWarnEl.classList.toggle('hidden', !healthCrit);
 
   // Branch badges + forming pill
   const branchEl = el('branch-badges');
@@ -2002,7 +1965,6 @@ function renderInMapOverlay() {
         const fxParts = [];
         if (opt.food_delta)     fxParts.push(`${opt.food_delta > 0 ? '+' : ''}${opt.food_delta}🌾`);
         if (opt.health_delta)   fxParts.push(`${opt.health_delta > 0 ? '+' : ''}${opt.health_delta}❤️`);
-        if (opt.material_delta) fxParts.push(`${opt.material_delta > 0 ? '+' : ''}${opt.material_delta}🔵`);
         const fxHint = fxParts.length ? `<span class="ev-choice-fx">${fxParts.join('  ')}</span>` : '';
         btn.innerHTML = `<span class="ev-choice-name">${opt.text}</span>${fxHint}`;
         btn.dataset.idx = i;
@@ -2080,7 +2042,6 @@ function resolveDiscoveryOption(optionIndex) {
 
   // Direct resource deltas
   if (opt.food_delta)      state.food      = Math.max(0, Math.min(foodMax(), state.food + opt.food_delta));
-  if (opt.material_delta)  state.material  = Math.max(0, Math.min(materialMax(), state.material + opt.material_delta));
 
   // Health (may be modified by skill_modifier)
   let healthDelta = opt.health_delta ?? 0;
@@ -2318,8 +2279,10 @@ function calculateScore() {
   }, 0);
   // Bonus per gen que va viure >= 85% de la vida esperada
   const fullLifeBonus = state.genealogy.filter(g => (g.age || 0) >= LIFE_EXPECTANCY * 0.85).length * 30;
-  const total = cycles * 2 + genScore + techs * 100 + skills * 30 + branches * 40 + aprs * 50 + heirBonus + fullLifeBonus;
-  return { total, cycles, gens, genScore, techs, skills, branches, aprs, heirBonus, fullLifeBonus };
+  // PT-16:A — bonus per cada cicle viscut més enllà de l'edat base (incentiu per no morir aviat)
+  const longLifeBonus = state.genealogy.reduce((s, g) => s + Math.max(0, ((g.age || 0) - 8) * 5), 0);
+  const total = cycles * 2 + genScore + longLifeBonus + techs * 100 + skills * 30 + branches * 40 + aprs * 50 + heirBonus + fullLifeBonus;
+  return { total, cycles, gens, genScore, techs, skills, branches, aprs, heirBonus, fullLifeBonus, longLifeBonus };
 }
 
 const DYNASTY_TITLES = {
@@ -2919,10 +2882,70 @@ function showStatTooltip(statId) {
   const resDef = RESOURCE_DEFS.find(r => r.id === statId);
   const statDef = STAT_DEFS ? STAT_DEFS.find(s => s.id === statId) : null;
   let emoji, name, value, desc;
-  if (resDef) {
+  if (statId === 'food') {
+    emoji = '🌾'; name = 'Menjar';
+    value = `${Math.round(state.food)}/${foodMax()}`;
+    const childCount = state.character.children.length;
+    const aprUpkeepRed = [...state.character.aprenentatges].reduce((s, aid) => {
+      const a = APRENENTATGE_DEFS.find(d => d.id === aid);
+      return a?.effect?.type === 'food_upkeep_reduction' ? s + a.effect.value : s;
+    }, 0);
+    const base = FOOD_UPKEEP;
+    const reduction = state.foodUpkeepReduction || 0;
+    const upkeep = Math.max(0.5, base - reduction - aprUpkeepRed) + childCount;
+    const upkeepStr = upkeep % 1 === 0 ? upkeep : upkeep.toFixed(1);
+    const lines = [`Consum base: −${base}/t`];
+    if (reduction > 0 || aprUpkeepRed > 0) lines.push(`Reducció: +${(reduction + aprUpkeepRed).toFixed(1)}/t`);
+    if (childCount > 0) lines.push(`Fills: −${childCount}/t`);
+    lines.push(`Total: −${upkeepStr}/t`);
+    lines.push(`Emmagatzematge: ${Math.round(state.food)}/${foodMax()}`);
+    const agL = getAgingLoss(characterAge());
+    const fDanger = state.food < upkeep;
+    const fPenalty = fDanger ? 10 : 0;
+    const wDie = state.health <= fPenalty + agL;
+    if (wDie) {
+      lines.push(''); lines.push('💀 Mort al fi de torn');
+      lines.push('"Pren bé la darrera decisió i preparat, la teva hora s\'acosta."');
+    } else if (fDanger) {
+      lines.push(''); lines.push('⚠️ Menjar insuficient — perdràs 10 salut al fi de torn');
+    }
+    desc = lines.join('\n');
+  } else if (statId === 'health') {
+    emoji = '❤️'; name = 'Salut';
+    value = `${Math.round(state.health)}/${healthMax()}`;
+    const age = characterAge();
+    const lines = [];
+    if (age <= HEALTH_GROW_TURNS) {
+      lines.push(`+1/t creixement (edat ≤ ${HEALTH_GROW_TURNS})`);
+    } else if (age > HEALTH_GROW_TURNS + HEALTH_STABLE_TURNS) {
+      const loss = getAgingLoss(age);
+      lines.push(`−${loss}/t envelliment (edat ${age})`);
+    } else {
+      lines.push('Estable (sense canvi per edat)');
+    }
+    const childCount = state.character.children.length;
+    const aprUpkeepRed = [...state.character.aprenentatges].reduce((s, aid) => {
+      const a = APRENENTATGE_DEFS.find(d => d.id === aid);
+      return a?.effect?.type === 'food_upkeep_reduction' ? s + a.effect.value : s;
+    }, 0);
+    const base = FOOD_UPKEEP;
+    const reduction = state.foodUpkeepReduction || 0;
+    const upkeep = Math.max(0.5, base - reduction - aprUpkeepRed) + childCount;
+    const fDanger = state.food < upkeep;
+    if (fDanger) lines.push('⚠️ Menjar insuficient: −10 salut addicional');
+    const agL = getAgingLoss(age);
+    const wDie = state.health <= (fDanger ? 10 : 0) + agL;
+    if (wDie) {
+      lines.push(''); lines.push('💀 Mort al fi de torn');
+      lines.push('"Pren bé la darrera decisió i preparat, la teva hora s\'acosta."');
+    } else if (agL > 0 && state.health <= agL + 5) {
+      lines.push(''); lines.push('⚠️ Salut molt baixa — risc de mort proper');
+    }
+    desc = lines.join('\n');
+  } else if (resDef) {
     emoji = resDef.emoji;
     name  = resDef.label;
-    const displayMax = statId === 'food' ? foodMax() : resDef.max;
+    const displayMax = resDef.max;
     value = displayMax != null ? `${Math.round(state[statId] || 0)}/${displayMax}` : Math.round(state[statId] || 0);
     desc  = resDef.glossaryDesc || '';
   } else if (statDef) {

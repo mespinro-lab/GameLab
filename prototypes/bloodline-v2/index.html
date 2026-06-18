@@ -169,7 +169,6 @@
         <circle id="sun-core" cx="5" cy="27" r="4.5" fill="#ffe9b8"/>
       </svg>
       <!-- Sunset caption — tap to see projected cycles -->
-      <button id="sun-cap" aria-label="Posta prevista">⚑ —</button>
     </div>
 
     <!-- L3: Zone nodes (rendered dynamically by JS) -->
@@ -193,9 +192,9 @@
       <!-- Left: attrs + portrait -->
       <div class="ident-half ident-left">
         <div id="attrs-row">
-          <span class="attr-chip" data-stat="forca">💪 <span id="hex-forca">—</span><span class="attr-delta" id="attr-delta-forca"></span></span>
-          <span class="attr-chip" data-stat="enginy">🧠 <span id="hex-enginy">—</span><span class="attr-delta" id="attr-delta-enginy"></span></span>
-          <span class="attr-chip" data-stat="vincle">🔗 <span id="hex-vincle">—</span><span class="attr-delta" id="attr-delta-vincle"></span></span>
+          <span class="attr-chip" data-stat="forca">💪 <span id="hex-forca">—</span></span>
+          <span class="attr-chip" data-stat="enginy">🧠 <span id="hex-enginy">—</span></span>
+          <span class="attr-chip" data-stat="vincle">🔗 <span id="hex-vincle">—</span></span>
         </div>
         <div id="portrait-wrap">
           <img id="char-bust-img"
@@ -212,19 +211,28 @@
       <div class="ident-half ident-right">
         <div class="vital-cell vital-food" id="vital-food" data-stat="food">
           <span class="vital-label">🌾 menjar</span>
-          <span class="vital-num" id="hex-food">—</span>
-          <span class="vital-rate" id="hex-food-rate"></span>
+          <div class="vital-main">
+            <span class="vital-num" id="hex-food">—</span>
+            <div class="vital-rate-area">
+              <span class="vital-rate" id="hex-food-rate"></span>
+              <span class="vital-warn hidden" id="vital-warn-food">!</span>
+            </div>
+          </div>
         </div>
         <div class="vital-cell vital-health" id="vital-health" data-stat="health">
           <span class="vital-label">❤️ salut</span>
-          <span class="vital-num" id="hex-health">—</span>
-          <span class="vital-rate" id="hex-health-rate"></span>
+          <div class="vital-main">
+            <span class="vital-num" id="hex-health">—</span>
+            <div class="vital-rate-area">
+              <span class="vital-rate" id="hex-health-rate"></span>
+              <span class="vital-warn hidden" id="vital-warn-health">!</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Critical resource warning banner -->
-    <div id="warn-banner" class="hidden"></div>
+
 
     <!-- Floating knowledge tags (over the world, just below ident) -->
     <div id="layer-know">
