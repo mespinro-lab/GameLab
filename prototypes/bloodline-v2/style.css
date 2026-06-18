@@ -1868,3 +1868,31 @@ body.donut-active * { pointer-events: none !important; }
 .th-event  { color: #fcd34d; font-size: 0.7rem; }
 .th-choice { color: var(--text-dim); font-size: 0.68rem; }
 .th-upkeep { color: #f87171; font-size: 0.68rem; }
+
+/* ══════════════════════════════════════════════════════════
+   CRITICAL RESOURCE WARNING BANNER (BL2-14) */
+#warn-banner {
+  position: absolute;
+  left: 0; right: 0;
+  top: calc(var(--ident-h, 140px) + 2px);
+  z-index: 8;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 5px 12px;
+  pointer-events: none;
+  line-height: 1.3;
+}
+.warn-banner.warn-alert {
+  background: rgba(220,120,0,.85);
+  color: #fff8e1;
+}
+.warn-banner.warn-death {
+  background: rgba(160,20,20,.92);
+  color: #ffe0e0;
+  animation: warn-pulse 1.1s infinite alternate;
+}
+@keyframes warn-pulse {
+  from { opacity: 0.85; }
+  to   { opacity: 1; }
+}
