@@ -1608,7 +1608,7 @@ const EVENT_POOLS = {
   ],
   pool_ritual: [
     {
-      id: "pe_malaltia",
+      id: "pe_malaltia", is_single_use: true,
       text: "Una febre s'escampa pel campament. Alguns membres cauen malalts i les reserves s'esgoten. Com actuaràs?",
       options: [
         {
