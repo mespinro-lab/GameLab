@@ -160,11 +160,144 @@
 
 ---
 
+---
+
+## P0 DONE BUG — BL2-09 — Upkeep s'aplica abans de l'event
+
+- **Resolt**: 2026-06-18. `beginEndOfTurnPhase()` mou upkeep al 3r donut (🌙), sempre després de l'event.
+
+---
+
+## P0 DONE BUG — BL2-10 — Fases del torn no comproven mort
+
+- **Resolt**: 2026-06-18. `beginEndOfTurnPhase()` fa succession check al final de tot; age-gate checks comproven `state.health > 0` primer.
+
+---
+
+## P1 DONE UX — BL2-11 — Menjar i salut sense upkeep ni límit visible
+
+- **Resolt**: 2026-06-18. Vital cells mostren `4/8` (valor/límit) i `↓2` (upkeep). Menjar i salut eliminats de la meta bar superior.
+
+---
+
+## P1 DONE BUG — BL2-12 — Capacitat menjar incorrecta al panell de debug
+
+- **Resolt**: 2026-06-18. `showStatTooltip('food')` usa `foodMax()` en lloc de `FOOD_MAX`.
+
+---
+
+## P1 DONE UX — BL2-13 — Fases del torn invisibles
+
+- **Resolt**: 2026-06-18. 3 donuts separats: acció → event → 🌙 fi de torn. Cada fase té la seva animació i efectes diferenciats.
+
+---
+
+## P1 DONE UX — BL2-14 — Alertes crítiques sense explicació
+
+- **Resolt**: 2026-06-18. `!` parpelleja DINS del requadre de menjar/salut quan hi ha perill. Clic → tooltip explicatiu amb desglossament complet i missatge de mort si toca.
+
+---
+
+## P1 DONE UX — BL2-15 — Naix un fill sense avís d'augment de consum
+
+- **Resolt**: 2026-06-18. `pane-birth` mostra el nou upkeep total de menjar per torn.
+
+---
+
+## P1 DONE BALANCE — BL2-16 — Febre pot aparèixer dues vegades seguides
+
+- **Resolt**: 2026-06-18. `pe_malaltia` té `is_single_use: true`. Anti-repeat via `state.recentEventIds` (últims 4 events).
+
+---
+
+## P1 DONE BUG — BL2-17 — Copy incorrecte destreses
+
+- **Resolt**: 2026-06-18. Missatge actualitzat a "Has despertat la capacitat innata de X. Es manifesta per la teva inclinació."
+
+---
+
+## P1 DONE UX — BL2-18 — Selecció hereu sense destreses ni aprenentatges
+
+- **Resolt**: 2026-06-18. Botons d'hereu mostren ⭐ destreses i icones aprenentatges. Pantalla nou personatge mostra destreses inicials.
+
+---
+
+## P2 DONE UX — BL2-19 — Recursos sense indicadors de tendència visual
+
+- **Resolt**: 2026-06-18. Carrusel d'accions usa `▲▼` per magnitud en tots els recursos (menjar, salut, pedra, eina, execute_cost, side_effects). Consistent amb les stats.
+
+---
+
+## P2 DONE UX — BL2-20 — Historial de torns no accessible
+
+- **Resolt**: 2026-06-18. Log bar és clicable → overlay historial últims 10 torns (acció + event + upkeep per torn).
+
+---
+
+## P2 DONE CSS — BL2-21 — Targeta cicles de vida solapa amb Planes
+
+- **Resolt**: 2026-06-18. `sun-cap` eliminat completament (era innecessari). Posicionament del logbar corregit.
+
+---
+
+## P1 OPEN DESIGN — DESIGN-01 — Rethinking complet accions + habilitats Era 1
+
+- **Fitxers**: `prototypes/bloodline-v2/data.js`, `design/gdd/bloodline/action-economy.md`,
+  `design/eras/prehistoria/03-skills.md`
+- **Issue**: El disseny actual de les accions de la branca Místic (i potencialment totes les branques)
+  té tres problemes fonamentals:
+  1. **Justificació temàtica feble**: accions com `narrar_llegendes` i `cants_grup` generen menjar
+     sense que la narrativa ho justifiqui de manera creïble. La regla és: si no pots explicar en
+     una frase PER QUÈ una acció dona el recurs que dona, el disseny és incorrecte.
+  2. **Diferenciació risc/recompensa insuficient**: `narrar_llegendes` (🌾 1–3, sense risc) vs
+     `cants_grup` (🌾 2–4, sense risc) vs `transit_nocturn` (🌾 2–4, −5 salut) — el primer i el
+     segon son massa similars, el tercer s'hauria de diferenciar més que amb un simple −HP.
+  3. **Absència de transicions entre branques via accions**: cada acció hauria de poder empentar
+     la inclinació cap a la seva branca principal PERÒ algunes accions haurien d'actuar com a ponts
+     naturals cap a altres branques.
+- **Abast**: totes les accions de la branca Místic (16 accions + 8 branch techs) han de ser
+  revisades. Potencialment totes les branques si s'aplica el mateix criteri de coherència.
+- **Acceptance**: cada acció té una justificació narrativa d'una frase per al seu output principal;
+  cap dues accions de la mateixa branca donen el mateix recurs amb el mateix perfil de risc;
+  almenys 2 accions per branca actuen com a ponts temàtics cap a altres branques.
+
+---
+
+## P2 DEFERRED BALANCE — BL2-06 — Loop pedra-faonar: font de material sense cost real
+
+- **Fitxers**: `prototypes/bloodline-v2/data.js`
+- **Issue**: `act_recollectar_pedra` (gratuïta) + `act_faonar_eines` (pedra -2, material +4/+7) genera 2x material que qualsevol altra acció sense cost d'inclinació.
+- **Decisió pendent**:
+  - A) Afegir `execute_cost: { material: 1 }` a `act_faonar_eines`
+  - B) Reduir output de `act_faonar_eines` de +4/+7 a +3/+5
+
+---
+
+## P2 DEFERRED DESIGN — BL2-07 — Scoring Místic/Social sense diferenciació
+
+- **Fitxers**: `prototypes/bloodline-v2/game.js` → `calculateScore()`
+- **Issue**: Jugadors Místics i de pura supervivència amb el mateix nombre de techs puntuen igual.
+- **Decisió pendent**:
+  - A) Bonus per diversitat de branques desbloq.
+  - B) Títol especial Místic si >2 techs de la branca Místic
+
+---
+
+## P3 DEFERRED CONTENT — C-02 — Títols de dinastia amb condicions verificables
+
+- **Fitxers**: `prototypes/bloodline-v2/game.js` → `calculateScore()`
+- **Issue**: 5 títols bàsics sense condicions numèriques precises; no hi ha badges.
+- **Decisió pendent**:
+  - A) 3 narratius (branca dominant) + 3 mecànics (fites) + secrets
+  - B) Títols per fites numèriques (X generacions, Y techs)
+
+---
+
 <!-- HISTORIAL (prototypes/bloodline/ ABANDONAT) -->
 <!-- DONE sessions 2026-06-06: PT-01..PT-13, D-01..D-03, SAVE, SCORE, BALANCE-EV, B-01 (20 tasques) -->
-<!-- DONE sessions 2026-06-14/16: aprenentatge, redesign pantalla, S3/S4 (commits 16fef8d, ce20117, a120039) -->
-
-<!-- STATS: actualitzat 2026-06-17 -->
-<!-- DONE: BL2-01..08 + C-01, C-02, PT-16 (backlog complet, 2026-06-16/17) -->
-<!-- DONE sessió 2026-06-17: branques %normalitzats, tooltips destresa/apr, two-phase upkeep, act_ensenyar visible, material eliminat d'events -->
-<!-- OPEN: cap -->
+<!-- DONE sessions 2026-06-14/16: aprenentatge, redesign pantalla, S3/S4 -->
+<!-- DONE sessió 2026-06-17: branques %normalitzats, tooltips, two-phase upkeep, material d'events -->
+<!-- DONE sessió 2026-06-18 (mati): 9 fixes playtest + 5 UI (zones, menjar barra, icones) -->
+<!-- DONE sessió 2026-06-18 (tarda): BL2-09..21, PT-16:A, assecar_provisions, 11 fixes UI -->
+<!-- OPEN: DESIGN-01, BL2-06 (dec.), BL2-07 (dec.), C-02 (dec.) -->
+<!-- STATS: actualitzat 2026-06-18 nit -->
