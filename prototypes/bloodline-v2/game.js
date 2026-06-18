@@ -270,9 +270,12 @@ function pickInitialDestreses(parentDestreses) {
   if (parentArr.length > 0) {
     result.add(parentArr[Math.floor(Math.random() * parentArr.length)]);
   }
-  const remaining = allIds.filter(id => !result.has(id));
-  if (remaining.length > 0) {
-    result.add(remaining[Math.floor(Math.random() * remaining.length)]);
+  // Always pick at least 2 random destreses total (first character gets 2 random)
+  let pool = allIds.filter(id => !result.has(id));
+  while (result.size < 2 && pool.length > 0) {
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    result.add(pick);
+    pool = pool.filter(id => id !== pick);
   }
   return result;
 }
@@ -378,10 +381,17 @@ function evaluateConditions(condObj, inclination) {
 }
 function getActiveBranches() {
   const pct = getBranchPct();
-  return BRANCHES.filter(b => {
+  const active = BRANCHES.filter(b => {
     const axis = BRANCH_AXIS[b.id];
     return axis !== undefined && pct[axis] >= BRANCH_ACTIVATION_PCT;
   });
+  if (active.length > 0) return active;
+  // Fallback: highest-% branch is considered active when none reach threshold
+  const candidates = BRANCHES.filter(b => BRANCH_AXIS[b.id] !== undefined);
+  if (candidates.length === 0) return [];
+  const maxPct = Math.max(...candidates.map(b => pct[BRANCH_AXIS[b.id]]));
+  const tied = candidates.filter(b => pct[BRANCH_AXIS[b.id]] === maxPct);
+  return [tied[Math.floor(Math.random() * tied.length)]];
 }
 
 function getHealthCap(age) {
@@ -518,7 +528,8 @@ function evaluateCharacterRequires(action) {
   return action.requires.every(req => {
     if (req.type === 'has_any_skill')        return state.character.unlockedSkillIds.size > 0;
     if (req.type === 'has_any_aprenentatge') return state.character.aprenentatges.size > 0;
-    if (req.type === 'has_destresa') return state.character.destreses.has(req.id);
+    if (req.type === 'has_destresa')     return state.character.destreses.has(req.id);
+    if (req.type === 'has_aprenentatge') return state.character.aprenentatges.has(req.id);
     if (req.resource !== undefined) {
       const val = state[req.resource] ?? 0;
       if (req.min !== undefined && val < req.min) return false;
@@ -699,9 +710,10 @@ function getEligiblePoolEvents(pool) {
 function evaluateBlockedIf(conditions) {
   if (!conditions || conditions.length === 0) return false;
   return conditions.some(cond => {
-    if (cond.type === 'has_skill')      return state.character.unlockedSkillIds.has(cond.id);
-    if (cond.type === 'not_has_skill')  return !state.character.unlockedSkillIds.has(cond.id);
-    if (cond.type === 'has_destresa')   return state.character.destreses.has(cond.id);
+    if (cond.type === 'has_skill')        return state.character.unlockedSkillIds.has(cond.id);
+    if (cond.type === 'not_has_skill')    return !state.character.unlockedSkillIds.has(cond.id);
+    if (cond.type === 'has_destresa')     return state.character.destreses.has(cond.id);
+    if (cond.type === 'has_aprenentatge') return state.character.aprenentatges.has(cond.id);
     if (cond.type === 'stat_min')       return (state.character.stats[cond.stat] || 0) >= cond.min;
     if (cond.type === 'axis_above')     return (state.character.inclination[cond.axis] || 0) >= cond.value;
     if (cond.type === 'resource_below') return (state[cond.resource] || 0) < cond.value;
@@ -1370,13 +1382,11 @@ function renderZoneNodes() {
   for (const zoneDef of ZONE_DEFS) {
     if (!state.discoveredZoneIds.has(zoneDef.id)) continue;
     const pos = ZONE_POS[zoneDef.id] || { left: 50, top: 50 };
-    const imgCode = ZONE_IMG[zoneDef.id] || zoneDef.id.toUpperCase();
     const node = document.createElement('button');
     node.className    = 'zone-node';
     node.dataset.zone = zoneDef.id;
     node.style.left   = pos.left + '%';
     node.style.top    = pos.top  + '%';
-    const imgSrc = `../../design/life-tycoon/zones/ZONA-PRE-${imgCode}.png`;
     // Zone info chips
     let chipHtml = '';
     if (zoneDef.id === 'Campament' && ((state.pedra || 0) > 0 || (state.eina || 0) > 0)) {
@@ -1389,17 +1399,7 @@ function renderZoneNodes() {
       const fillsChip = fills > 0 ? `<span>👶×${fills}</span>` : '';
       chipHtml = `<div class="zone-chip"><span>💑 ${state.character.partnerName}</span>${fillsChip}</div>`;
     }
-    if (zoneDef.id === 'Planes') {
-      chipHtml = `<div class="zone-chip"><span>🏹 Caça · 🌿 Recol·lecta</span></div>`;
-    }
-    if (zoneDef.id === 'Bosc') {
-      chipHtml = `<div class="zone-chip"><span>🌲 Bosc · 🎣 Pesca</span></div>`;
-    }
-    node.innerHTML = `
-      <img class="zone-node-img" src="${imgSrc}" alt=""
-           onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-      <div class="zone-node-icon" style="display:none;font-size:3rem">${ZONE_ICONS[zoneDef.id] || '❓'}</div>
-      <span class="zone-node-name">${zoneDef.label || zoneDef.id}</span>${chipHtml}`;
+    node.innerHTML = `<span class="zone-node-name">${zoneDef.label || zoneDef.id}</span>${chipHtml}`;
     node.addEventListener('touchstart', e => { e.preventDefault(); node.classList.add('zone-node-pressed'); }, { passive: false });
     node.addEventListener('touchend', e => {
       e.preventDefault();
@@ -1636,11 +1636,13 @@ function updateCarouselInfo() {
   if (state.character.purchasedActionIds.has('act_talla_avancada') && action.requires?.some(r => r.resource === 'eina')) {
     parts.push('⭐ eines qualitat');
   }
-  // Stat influence badge — numeric so casual players understand the value
   if (action.stat_key && action.stat_gain) {
     const statEmoji = { forca: '💪', enginy: '🧠', vincle: '🔗' };
-    const sign = action.stat_gain > 0 ? '+' : '';
-    parts.push(`<span class="benefit-stat-badge">${statEmoji[action.stat_key] || '⬆️'} ${sign}${Math.round(action.stat_gain * 100)}</span>`);
+    const abs = Math.abs(action.stat_gain);
+    const triCount = abs <= 0.07 ? 1 : abs <= 0.12 ? 2 : 3;
+    const triChar = action.stat_gain > 0 ? '▲' : '▽';
+    const negClass = action.stat_gain < 0 ? ' neg' : '';
+    parts.push(`<span class="benefit-stat-badge">${statEmoji[action.stat_key] || '⬆️'}<span class="bsb-tri${negClass}">${triChar.repeat(triCount)}</span></span>`);
   }
   // Show resource requirements
   const resourceReqMet = evaluateCharacterRequires(action);
@@ -1728,6 +1730,8 @@ function renderCharPanel() {
     const pill = document.createElement('span');
     pill.className   = 'pill-branch';
     pill.textContent = b.name;
+    pill.style.cursor = 'pointer';
+    pill.addEventListener('click', () => showPillInfoTooltip(b.name, b.desc || ''));
     branchEl.appendChild(pill);
   }
   // Forming branch pill (ghost) — mostra sempre, fins i tot si ja hi ha branques actives
@@ -1776,9 +1780,10 @@ function renderCharPanel() {
       const pill = document.createElement('span');
       pill.className   = 'pill-destresa';
       pill.textContent = '⭐ ' + def.name;
+      const linkedAction = ACTIONS.find(a => a.id === def.action_id);
       pill.addEventListener('click', () => showPillInfoTooltip(
         '⭐ ' + def.name,
-        `Acció: ${ACTIONS.find(a => a.id === def.action_id)?.name || def.action_id}`
+        `Capacitat innata. Millora "${linkedAction?.name || def.action_id}" en +${DESTRESA_BONUS} al resultat.`
       ));
       destreseEl.appendChild(pill);
     }
@@ -1794,9 +1799,10 @@ function renderCharPanel() {
       const pill = document.createElement('span');
       pill.className   = 'pill-aprenentatge';
       pill.textContent = def.icon + ' ' + def.name;
+      const aprDesc = [def.description, def.effect?.desc ? `Efecte: ${def.effect.desc}` : ''].filter(Boolean).join('\n');
       pill.addEventListener('click', () => showPillInfoTooltip(
         def.icon + ' ' + def.name,
-        def.effect?.desc || def.description || ''
+        aprDesc
       ));
       aprEl.appendChild(pill);
     }
