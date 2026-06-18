@@ -1046,11 +1046,10 @@ const ACTIONS = [
   },
   {
     id: "act_assecar_provisions", name: "Assecar Provisions", is_base: false, zona: "Campament",
-    description: "Poses a assecar carn i arrels sobre la calor del foc. Les provisions aguanten molt més temps i pots guardar-ne més (+4 capacitat).",
+    description: "Poses a assecar carn i arrels sobre la calor del foc. Les provisions aguanten molt més temps: el magatzem s'amplia en +2.",
     universal_prereq: "ut_foc",
     purchase_cost: 5, execute_cost: 0,
-    output_resource: "food", output_min: 1, output_max: 3,
-    food_upkeep_delta: -0.3, food_cap_delta: 4, max_executions: 3,
+    food_cap_delta: 2, max_executions: 3,
     material_min: 1, material_max: 2,
     stat_key: "enginy", stat_gain: 0.08,
     inclination_deltas: { impuls: -0.01, "intel·lecte": +0.02, espiritualitat: +0.01, sociabilitat: 0 },
