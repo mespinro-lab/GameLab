@@ -327,6 +327,7 @@ function initState(dynastyName, race) {
     log: [],
     turnHistory: [],
     _pendingTurnEntry: null,
+    _lastStatDeltas: { forca: 0, enginy: 0, vincle: 0 },
     genealogy: [],
     siblingPool: [],
     pendingEvent: null,
@@ -963,6 +964,7 @@ function executeAction(actionId) {
   if (isActionTooYoung(action)) return; // blocked — shown but not executable
   if (action.maxAge !== undefined && age > action.maxAge) return;
   if (!evaluateCharacterRequires(action)) return;
+  state._lastStatDeltas = { forca: 0, enginy: 0, vincle: 0 };
 
   // Handle discovery action (learn a branch tech)
   if (action.is_discovery_action) {
@@ -1152,6 +1154,9 @@ function applyFxFloaters(before) {
   for (const [k, anchorId] of Object.entries(anchorMap)) {
     const delta = (cur[k] || 0) - (before[k] || 0);
     if (Math.abs(delta) < 0.001) continue;
+    if (['forca', 'enginy', 'vincle'].includes(k) && state._lastStatDeltas) {
+      state._lastStatDeltas[k] = (state._lastStatDeltas[k] || 0) + delta;
+    }
     const anchor = el(anchorId);
     if (!anchor) continue;
     // Flash the parent vital-cell or attr-chip
@@ -1225,7 +1230,7 @@ function spawnResBalls(before) {
 function animateCounters(before) {
   const cur = snapshotNums();
   const targets = [
-    { key: 'food',   id: 'hex-food',   fmt: v => Math.round(v) },
+    { key: 'food',   id: 'hex-food',   fmt: v => `${Math.round(v)}/${foodMax()}` },
     { key: 'health', id: 'hex-health', fmt: v => Math.round(v) },
     { key: 'forca',  id: 'hex-forca',  fmt: v => v.toFixed(1) },
     { key: 'enginy', id: 'hex-enginy', fmt: v => v.toFixed(1) },
@@ -1727,6 +1732,16 @@ function renderCharPanel() {
   el('hex-forca').textContent  = (state.character.stats['forca']  || 0).toFixed(1);
   el('hex-enginy').textContent = (state.character.stats['enginy'] || 0).toFixed(1);
   el('hex-vincle').textContent = (state.character.stats['vincle'] || 0).toFixed(1);
+  const _sd = state._lastStatDeltas || {};
+  for (const [stat, deltaId] of [['forca','attr-delta-forca'],['enginy','attr-delta-enginy'],['vincle','attr-delta-vincle']]) {
+    const d = el(deltaId);
+    if (!d) continue;
+    const dv = _sd[stat] || 0;
+    if (Math.abs(dv) < 0.001) { d.textContent = ''; d.className = 'attr-delta'; continue; }
+    const n = Math.abs(dv) >= 0.15 ? 3 : Math.abs(dv) >= 0.10 ? 2 : 1;
+    d.textContent = (dv > 0 ? '▲' : '▼').repeat(n);
+    d.className = 'attr-delta ' + (dv > 0 ? 'attr-delta-pos' : 'attr-delta-neg');
+  }
 
   // Vital: food
   el('hex-food').textContent = `${Math.round(state.food)}/${foodMax()}`;

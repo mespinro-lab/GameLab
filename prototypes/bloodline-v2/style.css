@@ -302,9 +302,18 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   transition: color 0.2s;
 }
 .attr-chip.lit { color: #6ee7b7; }
-.attr-chip[data-stat="forca"] span:last-child  { color: #e67e22; }
-.attr-chip[data-stat="enginy"] span:last-child  { color: #a29bfe; }
-.attr-chip[data-stat="vincle"] span:last-child  { color: #5dade2; }
+#hex-forca  { color: #e67e22; }
+#hex-enginy { color: #a29bfe; }
+#hex-vincle { color: #5dade2; }
+.attr-delta {
+  font-size: 8px;
+  font-weight: 700;
+  vertical-align: super;
+  margin-left: 1px;
+  letter-spacing: -1px;
+}
+.attr-delta-pos { color: #4ade80; }
+.attr-delta-neg { color: #f87171; }
 
 #portrait-wrap {
   position: relative;
