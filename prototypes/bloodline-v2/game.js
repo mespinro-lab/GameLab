@@ -1471,9 +1471,7 @@ function renderZoneNodes() {
     locked.className = 'zone-node zone-node-locked';
     locked.style.left = pos.left + '%';
     locked.style.top  = pos.top  + '%';
-    locked.innerHTML  = `
-      <div class="zone-node-icon" style="font-size:2.2rem;opacity:.4">${ZONE_ICONS[zoneDef.id] || '❓'}</div>
-      <span class="zone-node-name" style="opacity:.4">🔒 ${zoneDef.label || zoneDef.id}</span>`;
+    locked.innerHTML  = `<span class="zone-node-name" style="opacity:.4">🔒 ${zoneDef.label || zoneDef.id}</span>`;
     mapZone.appendChild(locked);
   }
 
@@ -1731,7 +1729,7 @@ function renderCharPanel() {
   el('hex-vincle').textContent = (state.character.stats['vincle'] || 0).toFixed(1);
 
   // Vital: food
-  el('hex-food').textContent = Math.round(state.food);
+  el('hex-food').textContent = `${Math.round(state.food)}/${foodMax()}`;
   const childUpkeep  = state.character.children.length;
   const aprUpkeepRed = [...state.character.aprenentatges].reduce((s, aid) => {
     const a = APRENENTATGE_DEFS.find(d => d.id === aid);
@@ -1742,7 +1740,7 @@ function renderCharPanel() {
   const foodRateEl   = el('hex-food-rate');
   if (foodRateEl) {
     const fVal = foodUpkeep % 1 === 0 ? foodUpkeep : foodUpkeep.toFixed(1);
-    foodRateEl.textContent = '↓' + fVal;
+    foodRateEl.textContent = '↓' + fVal + '/t';
     foodRateEl.className   = 'vital-rate vital-rate-neg' + (foodDanger ? ' vital-rate-danger' : '');
   }
   const vitalFood = el('vital-food');
@@ -1758,7 +1756,7 @@ function renderCharPanel() {
     else if (age > HEALTH_GROW_TURNS + HEALTH_STABLE_TURNS) { hDelta = -getAgingLoss(age); }
     if (hDelta !== 0) {
       const hDanger = hDelta < 0 && state.health <= Math.abs(hDelta);
-      healthRateEl.textContent = (hDelta > 0 ? '↑' : '↓') + Math.abs(hDelta);
+      healthRateEl.textContent = (hDelta > 0 ? '↑' : '↓') + Math.abs(hDelta) + '/t';
       healthRateEl.className   = 'vital-rate ' + (hDelta > 0 ? 'vital-rate-pos' : 'vital-rate-neg') + (hDanger ? ' vital-rate-danger' : '');
     } else {
       healthRateEl.textContent = '';
@@ -1890,23 +1888,6 @@ function renderTopBar() {
   const matDef = RESOURCE_DEFS.find(r => r.id === 'material');
   const matMax = matDef?.max;
   el('tok-material-val').textContent = matMax ? `${Math.round(state.material || 0)}/${matMax}` : Math.round(state.material || 0);
-  const food   = Math.round(state.food   || 0);
-  const health = Math.round(state.health || 0);
-  // Upkeep calculation for meta bar display
-  const childUpkeep = state.character?.children?.length || 0;
-  const aprUpkeepRed = [...(state.character?.aprenentatges || [])].reduce((s, aid) => {
-    const a = APRENENTATGE_DEFS.find(d => d.id === aid);
-    return a?.effect?.type === 'food_upkeep_reduction' ? s + a.effect.value : s;
-  }, 0);
-  const fUpkeep = Math.max(0.5, FOOD_UPKEEP - (state.foodUpkeepReduction || 0) - aprUpkeepRed) + childUpkeep;
-  const fMax    = foodMax();
-  const foodEl   = el('meta-food-val');
-  const healthEl = el('meta-health-val');
-  const fUpkeepStr = fUpkeep % 1 === 0 ? fUpkeep : fUpkeep.toFixed(1);
-  if (foodEl)   foodEl.textContent   = `${food}/${fMax} −${fUpkeepStr}/t`;
-  if (healthEl) healthEl.textContent = health;
-  el('meta-food')?.classList.toggle('warn',   food   < fUpkeep);
-  el('meta-health')?.classList.toggle('warn', health <= 15);
 }
 
 // ═══════════════════════════════════════════════════════════ BOTTOM PANEL
