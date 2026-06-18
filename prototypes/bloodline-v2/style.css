@@ -145,7 +145,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 }
 #sun-cap {
   position: absolute;
-  bottom: 0; right: 10px;
+  bottom: 0; left: 10px;
   font-size: 12px;
   font-weight: 700;
   color: #5a1e0e;
@@ -601,7 +601,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   z-index: 5;
   padding: 8px 12px 10px;
   background: linear-gradient(180deg, rgba(70,45,18,0) 0%, rgba(45,28,10,.68) 55%);
-  pointer-events: none;
+  pointer-events: all;
+  cursor: pointer;
   overflow: hidden;
 }
 #session-log-list {
@@ -1822,3 +1823,48 @@ body.donut-active * { pointer-events: none !important; }
 .test-kv { font-size: 0.75rem; color: var(--text); display: flex; justify-content: space-between; }
 .test-kv span { color: var(--gold); font-weight: 700; }
 .test-log-item { font-size: 0.7rem; color: var(--text-dim); line-height: 1.4; }
+
+/* ══════════════════════════════════════════════════════════
+   SUCCESSION CHILD SKILLS */
+.succ-child-skills { font-size: 0.68rem; color: #b8a88a; margin-top: 2px; }
+
+/* ══════════════════════════════════════════════════════════
+   NEW GEN SKILLS */
+#new-gen-skills { font-size: 0.78rem; color: #c8b890; margin: 4px 0 8px; min-height: 1.2em; text-align: center; }
+
+/* ══════════════════════════════════════════════════════════
+   TURN HISTORY OVERLAY */
+.th-card {
+  display: flex; flex-direction: column;
+  max-height: 80vh; overflow: hidden;
+  padding: 0;
+}
+.th-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 16px 8px;
+  font-weight: 700; font-size: 0.9rem; color: var(--gold);
+  border-bottom: 1px solid rgba(200,160,80,.2);
+  flex-shrink: 0;
+}
+.th-header button {
+  background: none; border: none; color: var(--text-dim);
+  font-size: 1.2rem; cursor: pointer; padding: 0 4px;
+}
+#th-list {
+  list-style: none; overflow-y: auto; padding: 8px 0;
+  flex: 1;
+}
+.th-empty { color: var(--text-dim); font-size: 0.8rem; padding: 12px 16px; }
+.th-entry {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr;
+  gap: 2px 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid rgba(200,160,80,.08);
+  font-size: 0.75rem;
+}
+.th-cycle { grid-row: 1 / 5; color: var(--gold); font-weight: 700; font-size: 0.7rem; align-self: center; }
+.th-action { color: var(--text); }
+.th-event  { color: #fcd34d; font-size: 0.7rem; }
+.th-choice { color: var(--text-dim); font-size: 0.68rem; }
+.th-upkeep { color: #f87171; font-size: 0.68rem; }

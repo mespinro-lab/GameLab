@@ -164,8 +164,10 @@ function saveGame() {
       discoveredUniversalTechIds: [...state.discoveredUniversalTechIds],
       discoveredZoneIds:          [...state.discoveredZoneIds],
       firedSingleUseEventIds:     [...state.firedSingleUseEventIds],
+      recentEventIds:             state.recentEventIds || [],
       eventStats: state.eventStats || { positive: 0, negative: 0, neutral: 0 },
       log: state.log,
+      turnHistory: state.turnHistory || [],
       genealogy: state.genealogy,
       siblingPool: state.siblingPool.map(s => ({
         ...s,
@@ -214,8 +216,12 @@ function loadGame() {
       discoveredUniversalTechIds: new Set(d.discoveredUniversalTechIds),
       discoveredZoneIds:          new Set(d.discoveredZoneIds),
       firedSingleUseEventIds:     new Set(d.firedSingleUseEventIds || []),
+      recentEventIds:             d.recentEventIds || [],
       eventStats: d.eventStats || { positive: 0, negative: 0, neutral: 0 },
-      log: d.log || [], genealogy: d.genealogy || [],
+      log: d.log || [],
+      turnHistory: d.turnHistory || [],
+      _pendingTurnEntry: null,
+      genealogy: d.genealogy || [],
       siblingPool: (d.siblingPool || []).map(s => ({
         ...s,
         inheritedPurchased:     new Set(s.inheritedPurchased     || []),
@@ -316,8 +322,11 @@ function initState(dynastyName, race) {
     discoveredUniversalTechIds: new Set(),
     discoveredZoneIds: new Set(ZONE_DEFS.filter(z => z.starts_discovered).map(z => z.id)),
     firedSingleUseEventIds: new Set(),
+    recentEventIds: [],
     eventStats: { positive: 0, negative: 0, neutral: 0 },
     log: [],
+    turnHistory: [],
+    _pendingTurnEntry: null,
     genealogy: [],
     siblingPool: [],
     pendingEvent: null,
@@ -495,7 +504,7 @@ function checkDestresesAfterAction(executedActionId) {
       const linkedAction = ACTIONS.find(a => a.destresa_id === def.id);
       state.pendingDiscoveries.push({
         _isDestresa: true, icon: '⭐', name: def.name,
-        desc: `Has après la destresa "${def.name}" per la teva inclinació vital.`,
+        desc: `Has despertat la capacitat innata de "${def.name}". Es manifesta per la teva inclinació.`,
         effect: linkedAction ? { desc: `+${DESTRESA_BONUS} a "${linkedAction.name}"` } : null,
       });
     }
@@ -699,6 +708,7 @@ function selectBalancedEvent(eligible) {
 function getEligiblePoolEvents(pool) {
   return pool.filter(ev => {
     if (ev.is_single_use && state.firedSingleUseEventIds.has(ev.id)) return false;
+    if (!ev.is_single_use && (state.recentEventIds || []).includes(ev.id)) return false;
     if (ev.blocked_if && evaluateBlockedIf(ev.blocked_if)) return false;
     if (!ev.is_discovery_event) return true;
     const bt = SKILL_DEFS.find(t => t.id === ev.discovery_skill_id);
@@ -894,6 +904,55 @@ function applyTurnUpkeep() {
   state.lifeProgress = Math.min(1, (state.lifeProgress || 0) + lifeIncPerTurn());
 }
 
+// ═══════════════════════════════════════════════════════════ END-OF-TURN PHASE
+// Called after action effects (if no event) OR after event resolves.
+// Shows its own donut, then applies cycle/upkeep, then checks succession.
+function beginEndOfTurnPhase() {
+  const ring = el('exec-donut-ring');
+  if (ring) ring.style.stroke = '#888';
+  showDonutAnimation({ _icon: '🌙', id: '_eot', name: 'Fi de torn' }, null, () => {
+    if (ring) ring.style.stroke = 'var(--gold)';
+    const snapEot = snapshotNums();
+    state.cycle++;
+    autoDiscoverUniversalTechs();
+    applyTurnUpkeep();
+    applyFxFloaters(snapEot);
+    // Age-gate notifications
+    for (const a of ACTIONS.filter(x => x.is_base && x.minAge)) {
+      const alreadyNotified = state.pendingDiscoveries.some(d => d._isEvent && d.name === a.name);
+      const requiresSatisfied = !a.requires?.[0]?.state || !state.character.charState[a.requires[0].state];
+      if (characterAge() === a.minAge && requiresSatisfied && !alreadyNotified) {
+        state.pendingDiscoveries.push({ _isEvent: true, icon: getActionIcon(a), name: a.name, desc: `Ja tens edat per "${a.name}". ${a.description || ''}` });
+      }
+    }
+    // Partner warning (only if still alive)
+    if (state.health > 0 && characterAge() === 12 && state.character.charState.parella === 0) {
+      const alreadyWarned = state.pendingDiscoveries.some(d => d._isPartnerWarning);
+      if (!alreadyWarned) {
+        state.pendingDiscoveries.push({ _isPartnerWarning: true, icon: '💑', name: 'Edat per a la parella s\'acaba', desc: 'Tens 2 cicles per cercar parella (l\'acció s\'esgota a edat 14). Sense parella, no hi ha successió possible.' });
+      }
+    }
+    // Complete turn history entry
+    if (state._pendingTurnEntry) {
+      const foodDelta   = Math.round(state.food)   - Math.round(snapEot.food);
+      const healthDelta = Math.round(state.health) - Math.round(snapEot.health);
+      const parts = [];
+      if (foodDelta   !== 0) parts.push(`${foodDelta   > 0 ? '+' : ''}${foodDelta}🌾`);
+      if (healthDelta !== 0) parts.push(`${healthDelta > 0 ? '+' : ''}${healthDelta}❤️`);
+      state._pendingTurnEntry.upkeep = parts.join(' ') || '—';
+      state.turnHistory.unshift(state._pendingTurnEntry);
+      if (state.turnHistory.length > 10) state.turnHistory.length = 10;
+      state._pendingTurnEntry = null;
+    }
+    // Succession / death check
+    if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0 || state.lifeProgress >= 1) {
+      triggerSuccession();
+    }
+    renderAll();
+    saveGame();
+  });
+}
+
 // ═══════════════════════════════════════════════════════════ ACTION EXECUTION
 function executeAction(actionId) {
   if (state.pendingEvent || state.pendingSuccession || state.gameOver) return;
@@ -916,15 +975,10 @@ function executeAction(actionId) {
     showDonutAnimation(action, null, () => {
       const snap = snapshotNums();
       unlockSkill(chosen);
-      const snapMid = snapshotNums();
       applyFxFloaters(snap);
-      state.cycle++;
-      autoDiscoverUniversalTechs();
-      applyTurnUpkeep();
-      setTimeout(() => applyFxFloaters(snapMid), 550);
-      addLog(`[${state.cycle}] ${action.name}`);
-      if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0 || state.lifeProgress >= 1) triggerSuccession();
-      renderAll();
+      addLog(`[${state.cycle + 1}] ${action.name}`);
+      state._pendingTurnEntry = { cycle: state.cycle + 1, action: action.name, event: null, eventChoice: null, upkeep: null };
+      beginEndOfTurnPhase();
     });
     return;
   }
@@ -1037,46 +1091,36 @@ function executeAction(actionId) {
         name: action.unlocks_zone, desc: `Has descobert ${action.unlocks_zone}. Ara apareix al teu mapa.`,
       });
     }
-    // Snapshot after action effects, before upkeep (for two-phase floaters)
-    const snapMid = snapshotNums();
-    // Phase 1 floaters — action output (compare snap before action to snapMid after action)
+    // Action floaters
     spawnResBalls(snap);
     applyFxFloaters(snap);
-    // Cycle advance + upkeep
-    state.cycle++;
-    autoDiscoverUniversalTechs();
-    applyTurnUpkeep();
-    // Phase 2 floaters — end-of-turn upkeep (delayed so user sees two separate waves)
-    setTimeout(() => applyFxFloaters(snapMid), 550);
-    // Notify when age-gated base actions become available (only if not already visible/done)
-    for (const a of ACTIONS.filter(x => x.is_base && x.minAge)) {
-      const alreadyNotified = state.pendingDiscoveries.some(d => d._isEvent && d.name === a.name);
-      const requiresSatisfied = !a.requires?.[0]?.state || !state.character.charState[a.requires[0].state];
-      if (characterAge() === a.minAge && requiresSatisfied && !alreadyNotified) {
-        state.pendingDiscoveries.push({ _isEvent: true, icon: getActionIcon(a), name: a.name, desc: `Ja tens edat per "${a.name}". ${a.description || ''}` });
-      }
-    }
-    // Alerta quan cercar_parella s'acosta al maxAge sense haver trobat parella
-    if (characterAge() === 12 && state.character.charState.parella === 0) {
-      const alreadyWarned = state.pendingDiscoveries.some(d => d._isPartnerWarning);
-      if (!alreadyWarned) {
-        state.pendingDiscoveries.push({ _isPartnerWarning: true, icon: '💑', name: 'Edat per a la parella s\'acaba', desc: 'Tens 2 cicles per cercar parella (l\'acció s\'esgota a edat 14). Sense parella, no hi ha successió possible.' });
-      }
-    }
-    // Log
-    if (output > 0) addLog(`[${state.cycle}] ${action.name}: +${output} ${outDef?.label || outRes}`);
-    else            addLog(`[${state.cycle}] ${action.name}`);
+    // Log (cycle not yet incremented)
+    const actionLabel = output > 0 ? `${action.name}: +${output} ${outDef?.label || outRes}` : action.name;
+    addLog(`[${state.cycle + 1}] ${actionLabel}`);
+    // Store action entry for turn history
+    state._pendingTurnEntry = { cycle: state.cycle + 1, action: actionLabel, event: null, eventChoice: null, upkeep: null };
     // Event (balanced selection)
     if (action.event_pool_id && EVENT_POOLS[action.event_pool_id] && Math.random() < EVENT_TRIGGER_CHANCE) {
       const eligible = getEligiblePoolEvents(EVENT_POOLS[action.event_pool_id]);
       if (eligible.length > 0) state.pendingEvent = selectBalancedEvent(eligible);
     }
-    // Succession check
-    if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0) {
-      if (!state.pendingEvent) triggerSuccession();
+    // If action killed the character, go to succession (skip event + EOT)
+    if (state.health <= 0) {
+      state._pendingTurnEntry = null;
+      state.pendingEvent = null;
+      triggerSuccession();
+      renderAll();
+      saveGame();
+      return;
     }
-    renderAll();
-    saveGame();
+    // If event pending, render and wait for player to resolve (EOT happens in dismiss/resolve)
+    if (state.pendingEvent) {
+      renderAll();
+      saveGame();
+      return;
+    }
+    // No event: go directly to end-of-turn phase
+    beginEndOfTurnPhase();
   });
 }
 
@@ -1208,7 +1252,7 @@ function animateCounters(before) {
 
 // Donut animation over the map zone
 function showDonutAnimation(action, label, onComplete) {
-  const icon = getActionIcon(action);
+  const icon = action._icon || getActionIcon(action);
   el('exec-donut-icon').textContent = icon;
   const labelEl = el('exec-donut-label');
   if (labelEl) labelEl.textContent = label || action.name || '';
@@ -1816,11 +1860,20 @@ function renderTopBar() {
   el('tok-material-val').textContent = matMax ? `${Math.round(state.material || 0)}/${matMax}` : Math.round(state.material || 0);
   const food   = Math.round(state.food   || 0);
   const health = Math.round(state.health || 0);
+  // Upkeep calculation for meta bar display
+  const childUpkeep = state.character?.children?.length || 0;
+  const aprUpkeepRed = [...(state.character?.aprenentatges || [])].reduce((s, aid) => {
+    const a = APRENENTATGE_DEFS.find(d => d.id === aid);
+    return a?.effect?.type === 'food_upkeep_reduction' ? s + a.effect.value : s;
+  }, 0);
+  const fUpkeep = Math.max(0.5, FOOD_UPKEEP - (state.foodUpkeepReduction || 0) - aprUpkeepRed) + childUpkeep;
+  const fMax    = foodMax();
   const foodEl   = el('meta-food-val');
   const healthEl = el('meta-health-val');
-  if (foodEl)   foodEl.textContent   = food;
+  const fUpkeepStr = fUpkeep % 1 === 0 ? fUpkeep : fUpkeep.toFixed(1);
+  if (foodEl)   foodEl.textContent   = `${food}/${fMax} −${fUpkeepStr}/t`;
   if (healthEl) healthEl.textContent = health;
-  el('meta-food')?.classList.toggle('warn',   food   <= 4);
+  el('meta-food')?.classList.toggle('warn',   food   < fUpkeep);
   el('meta-health')?.classList.toggle('warn', health <= 15);
 }
 
@@ -1834,6 +1887,28 @@ function renderBottomPanel() {
     li.textContent = msg;
     logEl.appendChild(li);
   }
+}
+
+// ═══════════════════════════════════════════════════════════ TURN HISTORY OVERLAY
+function openTurnHistory() {
+  const hist = state.turnHistory || [];
+  const listEl = el('th-list');
+  if (!listEl) return;
+  listEl.innerHTML = '';
+  if (hist.length === 0) {
+    listEl.innerHTML = '<li class="th-empty">Cap torn registrat encara.</li>';
+  } else {
+    for (const entry of hist) {
+      const li = document.createElement('li');
+      li.className = 'th-entry';
+      const evLine = entry.event
+        ? `<span class="th-event">⚡ ${entry.event}</span>${entry.eventChoice ? `<span class="th-choice">→ ${entry.eventChoice}</span>` : ''}`
+        : '';
+      li.innerHTML = `<span class="th-cycle">C${entry.cycle}</span><span class="th-action">${entry.action || '—'}</span>${evLine}<span class="th-upkeep">${entry.upkeep || ''}</span>`;
+      listEl.appendChild(li);
+    }
+  }
+  show('overlay-turn-history');
 }
 
 // ═══════════════════════════════════════════════════════════ IN-MAP OVERLAYS
@@ -1860,9 +1935,16 @@ function renderInMapOverlay() {
     const birth = state.pendingBirths[0];
     el('birth-avatar').textContent = '👶';
     el('birth-name').textContent   = birth.childLabel;
+    const fills = state.character.children.length;
+    const childUpkeepNew = fills;
+    const aprUpkeepRedNew = [...state.character.aprenentatges].reduce((s, aid) => {
+      const a = APRENENTATGE_DEFS.find(d => d.id === aid);
+      return a?.effect?.type === 'food_upkeep_reduction' ? s + a.effect.value : s;
+    }, 0);
+    const newUpkeep = (Math.max(0.5, FOOD_UPKEEP - (state.foodUpkeepReduction || 0) - aprUpkeepRedNew) + childUpkeepNew).toFixed(1);
     el('birth-virtue').textContent = birth.n === 1
-      ? 'La successió és assegurada.'
-      : `${birth.n}è fill. Podreu triar successor.`;
+      ? `La successió és assegurada. Consum de menjar ara: −${newUpkeep}/torn.`
+      : `${birth.n}è fill. Podreu triar successor. Consum de menjar ara: −${newUpkeep}/torn.`;
     showPane('pane-birth');
     return;
   }
@@ -1944,12 +2026,24 @@ function dismissEvent() {
   const ev = state.pendingEvent;
   if (!ev) return;
   if (ev.is_single_use) state.firedSingleUseEventIds.add(ev.id);
+  if (!ev.is_single_use) {
+    state.recentEventIds = [...(state.recentEventIds || []), ev.id].slice(-4);
+  }
   trackEventFired(ev);
   applyEventEffects(ev.effects);
+  if (state._pendingTurnEntry) {
+    state._pendingTurnEntry.event = ev.text.slice(0, 50);
+    state._pendingTurnEntry.eventChoice = '(continua)';
+  }
   state.pendingEvent = null;
-  if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0 || state.lifeProgress >= 1) triggerSuccession();
-  renderAll();
-  saveGame();
+  if (state.health <= 0 || state.lifeProgress >= 1) {
+    state._pendingTurnEntry = null;
+    triggerSuccession();
+    renderAll();
+    saveGame();
+    return;
+  }
+  beginEndOfTurnPhase();
 }
 function resolveDiscoveryOption(optionIndex) {
   const ev = state.pendingEvent;
@@ -1982,11 +2076,23 @@ function resolveDiscoveryOption(optionIndex) {
   }
   // Only consume single-use if the player accepted the discovery — declining lets it re-fire in future gens
   if (ev.is_single_use && opt.discovers !== false) state.firedSingleUseEventIds.add(ev.id);
+  if (!ev.is_single_use) {
+    state.recentEventIds = [...(state.recentEventIds || []), ev.id].slice(-4);
+  }
   trackEventFired(ev);
+  if (state._pendingTurnEntry) {
+    state._pendingTurnEntry.event = ev.text.slice(0, 50);
+    state._pendingTurnEntry.eventChoice = opt.text.slice(0, 35);
+  }
   state.pendingEvent = null;
-  if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0 || state.lifeProgress >= 1) triggerSuccession();
-  renderAll();
-  saveGame();
+  if (state.health <= 0 || state.lifeProgress >= 1) {
+    state._pendingTurnEntry = null;
+    triggerSuccession();
+    renderAll();
+    saveGame();
+    return;
+  }
+  beginEndOfTurnPhase();
 }
 
 // ═══════════════════════════════════════════════════════════ FULL-SCREEN OVERLAYS
@@ -2019,7 +2125,16 @@ function renderSuccessionOverlays() {
       const dominant = c.inheritedInclination
         ? AXES.reduce((a, b) => Math.abs(c.inheritedInclination[a]||0) > Math.abs(c.inheritedInclination[b]||0) ? a : b)
         : null;
-      btn.innerHTML = `<span class="succ-child-name">${c.label} ${state.dynastyName}</span><span class="succ-child-sub">${c.is_sibling ? 'Germà' : 'Fill'} · ${dominant ? `Inclinació: ${dominant}` : ''}</span>`;
+      const destresesTags = [...(c.inheritedDestreses || [])].map(did => {
+        const d = DESTRESA_DEFS.find(x => x.id === did);
+        return d ? `⭐ ${d.name}` : did;
+      }).join('  ');
+      const aprTags = [...(c.inheritedAprenentatges || [])].map(aid => {
+        const a = APRENENTATGE_DEFS.find(x => x.id === aid);
+        return a ? `${a.icon} ${a.name}` : aid;
+      }).join('  ');
+      const tagLine = [destresesTags, aprTags].filter(Boolean).join('  |  ');
+      btn.innerHTML = `<span class="succ-child-name">${c.label} ${state.dynastyName}</span><span class="succ-child-sub">${c.is_sibling ? 'Germà' : 'Fill'} · ${dominant ? `Inclinació: ${dominant}` : ''}</span>${tagLine ? `<span class="succ-child-skills">${tagLine}</span>` : ''}`;
       btn.addEventListener('click', () => {
         hide('overlay-succession');
         continueSuccession(c.id);
@@ -2035,6 +2150,18 @@ function renderSuccessionOverlays() {
     el('new-gen-bust').src    = bustImgSrc();
     el('new-gen-name').textContent    = `${ng.label} ${state.dynastyName}`;
     el('new-gen-subtitle').textContent = `Generació ${ng.generation}`;
+    const ngSkillsEl = el('new-gen-skills');
+    if (ngSkillsEl) {
+      const destrTags = [...state.character.destreses].map(did => {
+        const d = DESTRESA_DEFS.find(x => x.id === did);
+        return d ? `⭐ ${d.name}` : did;
+      });
+      const aprTags = [...state.character.aprenentatges].map(aid => {
+        const a = APRENENTATGE_DEFS.find(x => x.id === aid);
+        return a ? `${a.icon} ${a.name}` : aid;
+      });
+      ngSkillsEl.textContent = [...destrTags, ...aprTags].join('  ') || '';
+    }
     const ring = el('new-gen-ring');
     const C    = 106.8;
     ring.style.transition      = 'none';
@@ -2498,6 +2625,12 @@ function showColStatTooltip(stat, anchorEl) {
 
 // ═══════════════════════════════════════════════════════════ EVENT LISTENERS
 function setupEventListeners() {
+  // Logbar → turn history overlay
+  const logbarEl = el('logbar');
+  if (logbarEl) logbarEl.addEventListener('click', openTurnHistory);
+  const thCloseEl = el('btn-close-turn-history');
+  if (thCloseEl) thCloseEl.addEventListener('click', () => hide('overlay-turn-history'));
+
   // Menu
   el('btn-open-menu').addEventListener('click', () => show('overlay-menu'));
   el('btn-continue-game').addEventListener('click', () => { hide('overlay-menu'); renderAll(); });
@@ -2761,7 +2894,8 @@ function showStatTooltip(statId) {
   if (resDef) {
     emoji = resDef.emoji;
     name  = resDef.label;
-    value = resDef.max != null ? `${Math.round(state[statId] || 0)}/${resDef.max}` : Math.round(state[statId] || 0);
+    const displayMax = statId === 'food' ? foodMax() : resDef.max;
+    value = displayMax != null ? `${Math.round(state[statId] || 0)}/${displayMax}` : Math.round(state[statId] || 0);
     desc  = resDef.glossaryDesc || '';
   } else if (statDef) {
     emoji = statDef.emoji || '📊';
