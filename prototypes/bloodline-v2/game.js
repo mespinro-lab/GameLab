@@ -1766,6 +1766,38 @@ function renderCharPanel() {
     }
   }
 
+  // Critical warning banner (age already declared above in health section)
+  const agingLoss     = getAgingLoss(age);
+  const foodPenalty   = foodDanger ? 10 : 0;
+  const totalHLoss    = foodPenalty + agingLoss;
+  const willDie       = state.health <= totalHLoss;
+  const warnEl        = el('warn-banner');
+  if (warnEl) {
+    let msg = '';
+    if (willDie) {
+      const hasHealthAction = ACTIONS.some(a =>
+        state.character.purchasedActionIds.has(a.id) &&
+        a.output_resource === 'health' &&
+        getActionVisibility(a) === 'ACTIVE' &&
+        !isActionTooYoung(a)
+      );
+      msg = '💀 Mort al fi de torn';
+      if (foodDanger) msg += ' — menjar insuficient (−10 salut)';
+      if (agingLoss > 0) msg += `${foodDanger ? ' +' : ' — '}edat avançada (−${agingLoss} salut)`;
+      if (!hasHealthAction) msg += '. Cap acció de salut disponible.';
+    } else if (foodDanger) {
+      msg = `⚠️ Menjar insuficient — perdràs 10 salut al fi de torn`;
+    } else if (agingLoss > 0 && state.health <= agingLoss + 5) {
+      msg = `⚠️ Salut molt baixa — risc de mort en propers torns`;
+    }
+    if (msg) {
+      warnEl.textContent = msg;
+      warnEl.className = willDie ? 'warn-banner warn-death' : 'warn-banner warn-alert';
+    } else {
+      warnEl.className = 'warn-banner hidden';
+    }
+  }
+
   // Branch badges + forming pill
   const branchEl = el('branch-badges');
   branchEl.innerHTML = '';
