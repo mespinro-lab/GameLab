@@ -119,7 +119,6 @@ const DESTRESA_DEFS = [
   { id: "d_botanica",    name: "Botànica",        action_id: "act_recollectar_arrels",  conditions: [{ axis: "intel·lecte",    min: 0.10 }] },
   { id: "d_talla_silex", name: "Talla de Sílex",  action_id: "act_tallar_pedra",        conditions: [{ axis: "intel·lecte",    min: 0.15 }] },
   { id: "d_custodi_foc", name: "Custodi del Foc", action_id: "act_ritual_foc",          conditions: [{ axis: "espiritualitat", min: 0.10 }] },
-  { id: "d_guardia",     name: "Guàrdia",         action_id: "act_vigilar_campament",   conditions: [{ axis: "sociabilitat",   min: 0.10 }] },
 ];
 
 // --- Aprenentatge Definitions ---
@@ -179,6 +178,13 @@ const APRENENTATGE_DEFS = [
     discoveryChance: 0.20,
     discovery_action_ids: ["act_narrar_llegendes", "act_explicar_orígens", "act_cants_grup"],
     effect: { type: "material_bonus", value: 1, desc: "+1 material a totes les accions" }
+  },
+  {
+    id: "apr_guardia", name: "Guàrdia", icon: "🛡️",
+    description: "Has après a coordinar torns de vigilància i distribuir rols de defensa. El campament es manté segur i el grup rendeix millor.",
+    discoveryChance: 0.30,
+    discovery_action_ids: ["act_vigilar_campament"],
+    effect: { type: "bonus_action_output", action_id: "act_vigilar_campament", output_min_bonus: 1, output_max_bonus: 2, desc: "+1/+2 salut en vigilar el campament" }
   },
 ];
 
@@ -691,7 +697,6 @@ const ACTIONS = [
     description: "Protegeixes el campament i observes els voltants. Responsabilitat compartida.",
     execute_cost: 0, output_resource: "health", output_min: 2, output_max: 4,
     stat_key: "vincle", stat_gain: 0.10,
-    destresa_id: "d_guardia",
     inclination_deltas: { impuls: +0.03, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.04 },
     event_pool_id: "pool_social"
   },
@@ -1386,7 +1391,7 @@ const ACTIONS = [
   {
     id: "act_defensa_activa", name: "Defensa Activa", is_upgrade: true, upgrades_action_id: "act_vigilar_campament", zona: "Campament",
     description: "Distribuïu rols i torns de guàrdia. El campament queda segur i el grup rendeix més.",
-    requires: [{ type: 'has_destresa', id: 'd_guardia' }],
+    requires: [{ type: 'has_aprenentatge', id: 'apr_guardia' }],
     purchase_cost: 8, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 6,
     stat_key: "vincle", stat_gain: 0.10,
     inclination_deltas: { impuls: +0.02, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: +0.03 },
@@ -1509,7 +1514,7 @@ const EVENT_POOLS = {
       options: [
         { text: "Seguir recollint fins que truoni",          food_delta: +3, health_delta: -1, discovers: false },
         { text: "Arreplegar el que tinc i córrer",           food_delta: +1, health_delta: +1, discovers: false },
-        { text: "Marco els tubercles, agafo les baies peribles i marxo", food_delta: +2, health_delta: +1, material_delta: +1, requires_skill: "bt_coneixement_plantes", discovers: false }
+        { text: "Marco els tubercles, agafo les baies peribles i marxo", food_delta: +2, health_delta: +1, requires_skill: "bt_coneixement_plantes", discovers: false }
       ]
     },
     {
@@ -1568,7 +1573,7 @@ const EVENT_POOLS = {
       text: "El cop de percussor ha obert una fissura que no havia vist. La pedra cruix lleugerament sota els dits. La línia corre en diagonal, cap a la part que volia conservar. Puc seguir tallant per aquí, adaptar el tall a on la roca vol anar, o llençar-ho i buscar un altre bloc.",
       options: [
         { text: "Forçar l'angle: aprofitar la fissura com a guia natural.", material_delta: -4, discovers: false },
-        { text: "Canviar el tall: deixo que la pedra decideixi la forma.",  material_delta: +1, discovers: false },
+        { text: "Canviar el tall: deixo que la pedra decideixi la forma.",  discovers: false },
         { text: "Descartar. Camino fins al jaç de sílex a cercar un bloc millor.", food_delta: -1, material_delta: -1, discovers: false }
       ]
     },
@@ -1577,7 +1582,7 @@ const EVENT_POOLS = {
       text: "Un infant s'ha aturat darrere meu i mira com treballo la pedra. No fa soroll. Observa on cau el rebuig i segueix el moviment de la meva mà. Podria deixar-lo quedar i anar explicant en veu baixa, fer-lo marxar ara i ensenyar-lo quan tingui temps, o donar-li els fragments petits perquè s'hi entreni.",
       options: [
         { text: "Deixar-lo quedar. Parlo mentre treballo, sense aturar-me.", material_delta: -1, discovers: false },
-        { text: "Fer-lo marxar. Li diré que torni quan acabi aquesta peça.",  material_delta: +1, discovers: false },
+        { text: "Fer-lo marxar. Li diré que torni quan acabi aquesta peça.",  discovers: false },
         { text: "Donar-li el rebuig. Que aprengui amb els fragments que jo no vull.", health_delta: +1, material_delta: -1, discovers: false }
       ]
     },
@@ -1587,7 +1592,7 @@ const EVENT_POOLS = {
       options: [
         { text: "Donar-li la meva fulla. Ell torna amb menjar per als dos.", food_delta: +2, material_delta: -2, discovers: false },
         { text: "Donar-li un fragment de rebuig. Serveix per netejar, si va amb compte.", food_delta: +1, material_delta: -1, discovers: false },
-        { text: "Dir-li que no. Avui la necessito.", food_delta: -1, material_delta: +1, discovers: false }
+        { text: "Dir-li que no. Avui la necessito.", food_delta: -1, discovers: false }
       ]
     },
     {
@@ -1595,9 +1600,9 @@ const EVENT_POOLS = {
       blocked_if: [{ type: "not_has_skill", id: "bt_buri" }],
       text: "He notat que quan inclino el burí uns dits cap a l'esquerra, el solc surt net i sense esclats. Un artesà que no havia vist mai s'ha assegut al costat i treballa amb el burí inclinat, exactament com ho he provat jo. Sembla que ja ho sap des de fa temps.",
       options: [
-        { text: "Preguntar-li directament: mostro el meu solc i el seu, i espero.", health_delta: +1, material_delta: +1, discovers: false },
+        { text: "Preguntar-li directament: mostro el meu solc i el seu, i espero.", health_delta: +1, discovers: false },
         { text: "No dir res. Segueixo experimentant sol fins que ho entenc del tot.", discovers: false },
-        { text: "Ensenyar-li el que he descobert jo primer, abans de preguntar-li res.", health_delta: +2, material_delta: +1, discovers: false }
+        { text: "Ensenyar-li el que he descobert jo primer, abans de preguntar-li res.", health_delta: +2, discovers: false }
       ]
     }
   ],
@@ -1728,7 +1733,7 @@ const EVENT_POOLS = {
       id: "ev_rancor_ancians",
       text: "Dos dels homes vells del clan s'han encarar a crits davant tothom. La disputa és per la queixalada millor d'un cérvol abatut ahir. Ningú s'atreveix a intervenir, però tots m'estan mirant.",
       options: [
-        { text: "Prenc part pel que crec que té raó i li cedeixo el que li toca.", material_delta: +1, discovers: false },
+        { text: "Prenc part pel que crec que té raó i li cedeixo el que li toca.", health_delta: +2, discovers: false },
         { text: "Proposo dividir la peça de manera que cap dels dos surti guanyador.", material_delta: -1, discovers: false },
         { text: "M'allunyo. Que ho resolguin ells.", discovers: false }
       ]
@@ -1738,7 +1743,7 @@ const EVENT_POOLS = {
       blocked_if: [{ type: "resource_below", resource: "health", value: 3 }],
       text: "Un home s'acosta al campament arrossegant els peus. No és del clan. Porta una bossa de cuir amb pedres que no he vist mai per aquí. Té els llavis secs i els ulls enfonsats de caminada llarga.",
       options: [
-        { text: "L'invito a seure i li ofereixo menjar. Acabem bescanviant pedres.", food_delta: -1, material_delta: +2, discovers: false },
+        { text: "L'invito a seure i li ofereixo menjar. Acabem bescanviant pedres.", food_delta: -1, health_delta: +2, discovers: false },
         { text: "Li dono una mica de menjar i li indico el camí per on ha de seguir.", food_delta: -1, discovers: false },
         { text: "No el deixo apropar-se. Protegeixo els meus primer.", requires_children: true, discovers: false }
       ]
@@ -1761,8 +1766,8 @@ const EVENT_POOLS = {
       text: "El fill s'ha assegut al teu costat mentre treballes. \"Per què fem això?\", pregunta, assenyalant les teves mans. La pregunta és senzilla però no trobes una resposta fàcil.",
       options: [
         { text: "Li explico pas a pas, amb paciència. Parem de fer feina una estona.", food_delta: -1, health_delta: +2, discovers: false },
-        { text: "\"Perquè cal fer-ho\". Li ensenyaré quan sigui gran.", material_delta: +1, discovers: false },
-        { text: "Li deixo que ho provi ell mateix. Superviso des de lluny.", food_delta: -1, material_delta: +1, discovers: false }
+        { text: "\"Perquè cal fer-ho\". Li ensenyaré quan sigui gran.", discovers: false },
+        { text: "Li deixo que ho provi ell mateix. Superviso des de lluny.", food_delta: -1, discovers: false }
       ]
     },
     {
@@ -1770,7 +1775,7 @@ const EVENT_POOLS = {
       text: "El fill ha reproduït, sense que li ho diguessis, una tècnica que li vas ensenyar fa setmanes. No era perfecta, però la intuïció hi era. Es gira a mirar-te.",
       options: [
         { text: "El felicito davant del grup. Que tothom ho vegi.", food_delta: 0, health_delta: +2, discovers: false },
-        { text: "Li dic on ha fallat i com millorar-ho. Aprenentatge primer.", food_delta: 0, material_delta: +1, discovers: false },
+        { text: "Li dic on ha fallat i com millorar-ho. Aprenentatge primer.", food_delta: 0, health_delta: +1, discovers: false },
         { text: "Faig veure que no l'he vist. Vull que ho descobreixi sol.", food_delta: 0, health_delta: +1, discovers: false }
       ]
     },
@@ -1808,18 +1813,22 @@ const EVENT_POOLS = {
 const BRANCHES = [
   {
     id: "branch_hunter",   name: "Caçador",
+    desc: "Caçador ràpid i decisiu. Fort en impuls, lliure de lligams socials. Domina la caça i el risc.",
     conditions: { operator: "AND", conditions: [{ axis: "impuls", min: 0.18 }, { axis: "sociabilitat", max: 0.40 }] }
   },
   {
     id: "branch_gatherer", name: "Recol·lector",
+    desc: "Recol·lector pacient i reflexiu. Coneix les plantes i el territori. Sostenible i segur.",
     conditions: { operator: "AND", conditions: [{ axis: "impuls", max: 0.10 }, { axis: "intel·lecte", min: 0.15 }] }
   },
   {
     id: "branch_craftsman", name: "Artesà",
+    desc: "Artesà analític i meticulós. Crea eines i estructures. L'intel·lecte guia les mans.",
     conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.18 }, { axis: "impuls", max: 0.20 }] }
   },
   {
     id: "branch_mystic",   name: "Místic",
+    desc: "Místic espiritual i social. Manté la cohesió del clan amb rituals i paraules. Pont entre el visible i l'invisible.",
     conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.22 }, { axis: "sociabilitat", min: 0.19 }] }
   }
 ];
