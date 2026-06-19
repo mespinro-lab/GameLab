@@ -1004,16 +1004,16 @@ const ACTIONS = [
   // MYSTIC branch — bt_pintura_rupestre
   {
     id: "act_pintar_parets", name: "Pintar les Parets", is_base: false, zona: "Bosc",
-    description: "Fixes les visions en les parets de roca del bosc. Els animals pintats semblen moure's amb el foc.",
-    purchase_cost: 4, execute_cost: 0, side_effects: [{ resource: 'health', delta: +5 }],
+    description: "Fixes les visions en la roca durant hores de concentració total. El treball de memòria i silenci deixa el cos i la ment nets.",
+    purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 7,
     stat_key: "vincle", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: 0 },
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: +0.05, sociabilitat: 0 },
     event_pool_id: "pool_ritual"
   },
   {
     id: "act_narrar_llegendes", name: "Narrar les Llegendes", is_base: false, zona: "Campament",
-    description: "Expliques les gestes i llegendes del llinatge davant del foc del campament. El clan s'aplega i comparteix provisions.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 1, output_max: 3,
+    description: "La veu pren força davant del foc. El clan escolta en silenci i el narrador es renova: dir el que s'ha viscut és medicina.",
+    purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 4, output_max: 7,
     material_min: 1, material_max: 2,
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: +0.05 },
@@ -1037,8 +1037,8 @@ const ACTIONS = [
   // MYSTIC branch — bt_ornaments
   {
     id: "act_ornamentar_se", name: "Ornamentar-se", is_base: false, zona: "Campament",
-    description: "Et poses les closques, dents i pedres que has recollit. El grup et mira diferent.",
-    purchase_cost: 3, execute_cost: 0, side_effects: [{ resource: 'health', delta: +3 }],
+    description: "El ritual de preparar-se i posar-se les marques t'ancora. El grup et mira diferent i tu et sents diferent.",
+    purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 2, output_max: 4,
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.02, sociabilitat: +0.02 },
     event_pool_id: "pool_social"
@@ -1055,18 +1055,18 @@ const ACTIONS = [
   // MYSTIC branch — bt_calendari_natural
   {
     id: "act_observar_cel", name: "Observar el Cel Nocturn", is_base: false, zona: "Planes",
-    description: "Segueixes els moviments de la lluna i les estrelles des de les planes obertes. Els cicles del cel anuncien els cicles de la terra.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 2, output_max: 4,
+    description: "Fixes els patrons dels astres en la memòria nit rere nit. La disciplina de recordar obre la ment al coneixement sistemàtic.",
+    purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 2, output_max: 5,
     stat_key: "vincle", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: 0 },
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.04, espiritualitat: +0.04, sociabilitat: 0 },
     event_pool_id: "pool_ritual"
   },
   {
     id: "act_transit_nocturn", name: "Trànsit Nocturn", is_base: false, zona: "Bosc",
-    description: "Et mous de nit pel bosc seguint els senyals del cel. Perillós, però els que tornen parlen de visions.",
-    purchase_cost: 4, execute_cost: 0, output_resource: "food", output_min: 2, output_max: 4, side_effects: [{ resource: 'health', delta: -5 }],
+    description: "Et submergeix en la nit guiat pels astres. L'ordalia física és real — però els que tornen tornen transformats, el cos i la ment renovats per l'esforç.",
+    purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 6, output_max: 12, side_effects: [{ resource: 'health', delta: -5 }],
     stat_key: "vincle", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.08, sociabilitat: 0 },
+    inclination_deltas: { impuls: +0.06, "intel·lecte": 0, espiritualitat: +0.08, sociabilitat: 0 },
     event_pool_id: "pool_ritual"
   },
 
@@ -1193,8 +1193,8 @@ const ACTIONS = [
   // ── bt_pigments_tintures (La Vestimenta — Místic) ────────────────────────────
   {
     id: "act_decorar_cos", name: "Decorar el Cos", is_base: false, zona: "Campament",
-    description: "Cobreixes el teu cos d'ocre vermell i carbó en patrons que el clan reconeix. El grup et mira diferent.",
-    purchase_cost: 3, execute_cost: 0, side_effects: [{ resource: "health", delta: +3 }],
+    description: "La preparació del cos per a la cerimònia inclou plantes i resines especials que es mengen per purificar. La decoració comença per dins.",
+    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 1, output_max: 2,
     stat_key: "vincle", stat_gain: 0.10,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.04, sociabilitat: +0.04 },
     event_pool_id: "pool_social"
@@ -1236,7 +1236,7 @@ const ACTIONS = [
   },
   {
     id: "act_cants_grup", name: "Cants de Grup", is_base: false, zona: "Campament",
-    description: "Organitzes cants col·lectius al voltant del foc. El festí que segueix no deixa mai la gent amb gana.",
+    description: "La veu col·lectiva convoca el festí. Qui ha cantat prou fort no pot marxar amb gana: és una llei no escrita del clan.",
     purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 2, output_max: 4,
     stat_key: "vincle", stat_gain: 0.10,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.04, sociabilitat: +0.05 },
