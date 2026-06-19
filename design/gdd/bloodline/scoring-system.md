@@ -112,6 +112,16 @@ consistent entre eres (els mateixos eixos dominants a cada era), s'aplica
 un petit bonus. El motor compara els eixos més alts de l'última era amb
 els de l'era anterior directament sobre els valors numèrics dels 4 eixos globals.
 
+> **Decisió de disseny (2026-06-19)**: La diversitat de branques NO és un
+> mèrit de scoring. Passar per múltiples branques és una experiència de joc
+> diferent, no una estratègia superior. El sistema de puntuació recompensa
+> **profunditat** (branch techs, coherència entre eres, branca dominant clara),
+> no **amplitud** (nombre de branques visitades). La condició `multi_branch_active`
+> pot aparèixer en títols de dinastia com a reconeixement d'una experiència concreta,
+> però mai com a multiplicador de score ni com a bonus directe. Un jugador que
+> s'especialitza en una sola branca durant tota la partida ha de poder puntuar tant
+> com un que ha transitat per quatre branques.
+
 ### 3.4 Pantalla de Score d'Era
 
 La pantalla de score ha de mostrar:
