@@ -1674,6 +1674,9 @@ function updateCarouselInfo() {
     }
   }
 
+  if (action.food_cap_delta) {
+    parts.push(`<span class="benefit-stat-badge">📦<span class="bsb-tri">+${action.food_cap_delta}</span></span>`);
+  }
   if (state.character.purchasedActionIds.has('act_talla_avancada') && action.requires?.some(r => r.resource === 'eina')) {
     parts.push('⭐ eines qualitat');
   }
@@ -2385,6 +2388,7 @@ function renderEndScreen() {
     score.aprs     > 0 ? `${score.aprs} aprenentatges × 50 = <b>${score.aprs * 50}</b>` : null,
     score.heirBonus > 0 ? `Hereus deixats: <b>+${score.heirBonus}</b>` : null,
     score.fullLifeBonus > 0 ? `Vides completes × 30: <b>+${score.fullLifeBonus}</b>` : null,
+    score.longLifeBonus > 0 ? `Longevitat (+5/cicle > 8): <b>+${score.longLifeBonus}</b>` : null,
     `${score.cycles} cicles × 2 = <b>${score.cycles * 2}</b>`,
   ].filter(Boolean).map(t => `<div class="score-line">${t}</div>`).join('');
 
