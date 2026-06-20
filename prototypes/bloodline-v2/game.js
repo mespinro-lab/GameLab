@@ -235,7 +235,7 @@ function loadGame() {
       foodUpkeepReduction: d.foodUpkeepReduction || 0,
       foodMax: d.foodMax ?? FOOD_MAX_START,
       lifeProgress: d.lifeProgress || 0,
-      pendingEvent: null, pendingSuccession: null, pendingDeath: null, pendingNewGen: null,
+      pendingEvent: null, pendingActionResult: null, pendingSuccession: null, pendingDeath: null, pendingNewGen: null,
       pendingDiscoveries: [], pendingBirths: [],
       gameOver: d.gameOver || false, gameOverReason: d.gameOverReason || null,
     };
@@ -330,6 +330,7 @@ function initState(dynastyName, race) {
     genealogy: [],
     siblingPool: [],
     pendingEvent: null,
+    pendingActionResult: null,
     pendingSuccession: null,
     pendingDiscoveries: [],
     pendingBirths: [],
@@ -991,9 +992,59 @@ function executeAction(actionId) {
   }
   hide('overlay-zone-actions');
   showDonutAnimation(action, null, () => {
-    const snap = snapshotNums();
+    // ── FASE COST: cost immediate + estat intern ──────────────────────────
+    const snapCost = snapshotNums();
     if (action.execute_cost) state.food = Math.max(0, state.food - action.execute_cost);
-    // Output resource
+    // Material universal — sempre immediat (moneda de compra)
+    const elderBonus = characterAge() >= 11 ? 1 : 0;
+    if (elderBonus && !(state.character.charState.loggedElder)) {
+      state.character.charState.loggedElder = 1;
+      addLog('Sàvia experiència: els ancians generen +1 token per acció');
+    }
+    const matMin = (action.material_min ?? 2) + elderBonus;
+    const matMax = (action.material_max ?? 3) + elderBonus;
+    const aprMatBonus = [...state.character.aprenentatges].reduce((s, aid) => {
+      const apr = APRENENTATGE_DEFS.find(a => a.id === aid);
+      return apr?.effect?.type === 'material_bonus' ? s + apr.effect.value : s;
+    }, 0);
+    state.material = Math.min(materialMax(), state.material + randInt(matMin, matMax) + aprMatBonus);
+    // Reducció upkeep i ampliació cap — immediats (efecte permanent)
+    if (action.food_upkeep_delta) {
+      const prevCount = state.character.actionUseCounts[actionId] || 0;
+      if (prevCount < (action.max_executions || 99)) {
+        state.foodUpkeepReduction = Math.min(FOOD_UPKEEP - 0.5, (state.foodUpkeepReduction || 0) + Math.abs(action.food_upkeep_delta));
+        addLog(`Conservació millorada: upkeep −${(state.foodUpkeepReduction).toFixed(1)}/torn`);
+      }
+    }
+    if (action.food_cap_delta) {
+      const prevCount = state.character.actionUseCounts[actionId] || 0;
+      if (prevCount < (action.max_executions || 99)) {
+        state.foodMax = Math.min(FOOD_MAX, (state.foodMax ?? FOOD_MAX_START) + action.food_cap_delta);
+        addLog(`Emmagatzematge ampliat: cap. → ${state.foodMax}`);
+      }
+    }
+    // Estat intern — inclinació, stats, efecte personatge, comptadors, destreses, zones
+    applyInclinationDeltas(action.inclination_deltas);
+    if (action.stat_key && action.stat_gain) {
+      state.character.stats[action.stat_key] = Math.min(STAT_MAX, state.character.stats[action.stat_key] + action.stat_gain);
+    }
+    applyCharacterEffect(action);
+    state.character.actionUseCounts[actionId] = (state.character.actionUseCounts[actionId] || 0) + 1;
+    checkDestresesAfterAction(actionId);
+    checkAprenentagesAfterAction(actionId);
+    if (action.unlocks_zone && !state.discoveredZoneIds.has(action.unlocks_zone)) {
+      state.discoveredZoneIds.add(action.unlocks_zone);
+      addLog(`Nova zona: ${action.unlocks_zone}!`);
+      state.pendingDiscoveries.push({
+        _isZone: true, icon: ZONE_ICONS[action.unlocks_zone] || '🗺️',
+        name: action.unlocks_zone, desc: `Has descobert ${action.unlocks_zone}. Ara apareix al teu mapa.`,
+      });
+    }
+    // Floaters de la fase cost (cost execute + material)
+    spawnResBalls(snapCost);
+    applyFxFloaters(snapCost);
+
+    // ── CÀLCUL OUTPUT (no aplicat encara) ────────────────────────────────
     const destresaBonus = (action.destresa_id && state.character.destreses.has(action.destresa_id)) ? DESTRESA_BONUS : 0;
     const outMinBonus = [...state.character.unlockedSkillIds].reduce((s, sid) => {
       const bt = SKILL_DEFS.find(t => t.id === sid);
@@ -1013,98 +1064,24 @@ function executeAction(actionId) {
       return apr?.effect?.type === 'bonus_action_output' && apr.effect.action_id === actionId
         ? s + (apr.effect.output_max_bonus || 0) : s;
     }, 0);
-    // Primary resource output (food/health) — not all actions have this
     const outRes = action.output_resource;
     let output = 0, outDef = null;
     if (outRes && action.output_min != null) {
       const _qualBonus = (state.character.purchasedActionIds.has('act_talla_avancada') && action.requires?.some(r => r.resource === 'eina')) ? 1.3 : 1.0;
       output = Math.round(randInt(action.output_min + outMinBonus, Math.round((action.output_max + outMaxBonus) * _qualBonus)) * getStatMultiplier(action)) + destresaBonus;
       outDef = RESOURCE_DEFS.find(r => r.id === outRes);
-      if (outDef) {
-        const newVal = (state[outRes] || 0) + output;
-        if (outRes === 'food') {
-          state[outRes] = Math.min(foodMax(), newVal);
-        } else {
-          state[outRes] = outDef.max != null ? Math.min(outDef.max, newVal) : newVal;
-        }
-      }
     }
-    // Universal material generation — ALL actions generate material (currency to buy new actions)
-    const elderBonus = characterAge() >= 11 ? 1 : 0;
-    if (elderBonus && !(state.character.charState.loggedElder)) {
-      state.character.charState.loggedElder = 1;
-      addLog('Sàvia experiència: els ancians generen +1 token per acció');
-    }
-    const matMin = (action.material_min ?? 2) + elderBonus;
-    const matMax = (action.material_max ?? 3) + elderBonus;
-    const aprMatBonus = [...state.character.aprenentatges].reduce((s, aid) => {
-      const apr = APRENENTATGE_DEFS.find(a => a.id === aid);
-      return apr?.effect?.type === 'material_bonus' ? s + apr.effect.value : s;
-    }, 0);
-    state.material = Math.min(materialMax(), state.material + randInt(matMin, matMax) + aprMatBonus);
-    // Side effects
-    if (action.side_effects) {
-      for (const se of action.side_effects) {
-        const resDef = RESOURCE_DEFS.find(r => r.id === se.resource);
-        if (!resDef) continue;
-        const newVal = (state[se.resource] || 0) + se.delta;
-        state[se.resource] = resDef.max != null
-          ? Math.max(0, Math.min(resDef.max, newVal))
-          : Math.max(0, newVal);
-      }
-    }
-    // Food upkeep reduction (assecar_provisions and similar)
-    if (action.food_upkeep_delta) {
-      const prevCount = state.character.actionUseCounts[actionId] || 0;
-      if (prevCount < (action.max_executions || 99)) {
-        state.foodUpkeepReduction = Math.min(FOOD_UPKEEP - 0.5, (state.foodUpkeepReduction || 0) + Math.abs(action.food_upkeep_delta));
-        addLog(`Conservació millorada: upkeep −${(state.foodUpkeepReduction).toFixed(1)}/torn`);
-      }
-    }
-    // Food capacity expansion
-    if (action.food_cap_delta) {
-      const prevCount = state.character.actionUseCounts[actionId] || 0;
-      if (prevCount < (action.max_executions || 99)) {
-        state.foodMax = Math.min(FOOD_MAX, (state.foodMax ?? FOOD_MAX_START) + action.food_cap_delta);
-        addLog(`Emmagatzematge ampliat: cap. → ${state.foodMax}`);
-      }
-    }
-    // Inclination
-    applyInclinationDeltas(action.inclination_deltas);
-    // Stat growth
-    if (action.stat_key && action.stat_gain) {
-      state.character.stats[action.stat_key] = Math.min(STAT_MAX, state.character.stats[action.stat_key] + action.stat_gain);
-    }
-    // Character state
-    applyCharacterEffect(action);
-    // Track action use counts (for DESTRESA_THRESHOLD gate)
-    state.character.actionUseCounts[actionId] = (state.character.actionUseCounts[actionId] || 0) + 1;
-    // Destresa + aprenentatge check
-    checkDestresesAfterAction(actionId);
-    checkAprenentagesAfterAction(actionId);
-    // Zone unlock
-    if (action.unlocks_zone && !state.discoveredZoneIds.has(action.unlocks_zone)) {
-      state.discoveredZoneIds.add(action.unlocks_zone);
-      addLog(`Nova zona: ${action.unlocks_zone}!`);
-      state.pendingDiscoveries.push({
-        _isZone: true, icon: ZONE_ICONS[action.unlocks_zone] || '🗺️',
-        name: action.unlocks_zone, desc: `Has descobert ${action.unlocks_zone}. Ara apareix al teu mapa.`,
-      });
-    }
-    // Action floaters
-    spawnResBalls(snap);
-    applyFxFloaters(snap);
-    // Log (cycle not yet incremented)
+    // Log (inclou output calculat fins i tot si es difereix)
     const actionLabel = output > 0 ? `${action.name}: +${output} ${outDef?.label || outRes}` : action.name;
     addLog(`[${state.cycle + 1}] ${actionLabel}`);
-    // Store action entry for turn history
     state._pendingTurnEntry = { cycle: state.cycle + 1, action: actionLabel, event: null, eventChoice: null, upkeep: null };
-    // Event (balanced selection)
+
+    // ── COMPROVACIÓ EVENT ─────────────────────────────────────────────────
     if (action.event_pool_id && EVENT_POOLS[action.event_pool_id] && Math.random() < EVENT_TRIGGER_CHANCE) {
       const eligible = getEligiblePoolEvents(EVENT_POOLS[action.event_pool_id]);
       if (eligible.length > 0) state.pendingEvent = selectBalancedEvent(eligible);
     }
-    // If action killed the character, go to succession (skip event + EOT)
+    // Mort per cost (execute_cost) — salta event i EOT
     if (state.health <= 0) {
       state._pendingTurnEntry = null;
       state.pendingEvent = null;
@@ -1113,14 +1090,40 @@ function executeAction(actionId) {
       saveGame();
       return;
     }
-    // If event pending, render and wait for player to resolve (EOT happens in dismiss/resolve)
     if (state.pendingEvent) {
+      // Diferim output + side_effects fins que el jugador faci OK a l'event
+      state.pendingActionResult = {
+        outRes, output, outDef,
+        side_effects: action.side_effects ? [...action.side_effects] : [],
+      };
+      // 200ms de pausa abans de mostrar l'event
+      setTimeout(() => { renderAll(); saveGame(); }, 200);
+      return;
+    }
+    // ── SENSE EVENT: apliquem output + side_effects immediatament ─────────
+    const snapOut = snapshotNums();
+    if (outDef && output > 0) {
+      const newVal = (state[outRes] || 0) + output;
+      state[outRes] = outRes === 'food' ? Math.min(foodMax(), newVal) : outDef.max != null ? Math.min(outDef.max, newVal) : newVal;
+    }
+    if (action.side_effects) {
+      for (const se of action.side_effects) {
+        const resDef = RESOURCE_DEFS.find(r => r.id === se.resource);
+        if (!resDef) continue;
+        const newVal = (state[se.resource] || 0) + se.delta;
+        state[se.resource] = resDef.max != null ? Math.max(0, Math.min(resDef.max, newVal)) : Math.max(0, newVal);
+      }
+    }
+    applyFxFloaters(snapOut);
+    if (state.health <= 0) {
+      state._pendingTurnEntry = null;
+      triggerSuccession();
       renderAll();
       saveGame();
       return;
     }
-    // No event: go directly to end-of-turn phase
-    beginEndOfTurnPhase();
+    // 200ms de pausa i llavors donut de final de torn
+    setTimeout(() => beginEndOfTurnPhase(), 200);
   });
 }
 
@@ -2018,6 +2021,24 @@ function applyEventEffects(fx) {
   }
 }
 
+function applyPendingActionResult() {
+  const res = state.pendingActionResult;
+  if (!res) return;
+  state.pendingActionResult = null;
+  if (res.outDef && res.output > 0) {
+    const newVal = (state[res.outRes] || 0) + res.output;
+    state[res.outRes] = res.outRes === 'food'
+      ? Math.min(foodMax(), newVal)
+      : res.outDef.max != null ? Math.min(res.outDef.max, newVal) : newVal;
+  }
+  for (const se of (res.side_effects || [])) {
+    const resDef = RESOURCE_DEFS.find(r => r.id === se.resource);
+    if (!resDef) continue;
+    const newVal = (state[se.resource] || 0) + se.delta;
+    state[se.resource] = resDef.max != null ? Math.max(0, Math.min(resDef.max, newVal)) : Math.max(0, newVal);
+  }
+}
+
 function dismissEvent() {
   const ev = state.pendingEvent;
   if (!ev) return;
@@ -2026,7 +2047,12 @@ function dismissEvent() {
     state.recentEventIds = [...(state.recentEventIds || []), ev.id].slice(-4);
   }
   trackEventFired(ev);
+  // Apliquem output diferit + efectes de l'event en un sol snap (floaters junts)
+  const snapDismiss = snapshotNums();
+  applyPendingActionResult();
   applyEventEffects(ev.effects);
+  spawnResBalls(snapDismiss);
+  applyFxFloaters(snapDismiss);
   if (state._pendingTurnEntry) {
     state._pendingTurnEntry.event = ev.text.slice(0, 50);
     state._pendingTurnEntry.eventChoice = '(continua)';
@@ -2039,15 +2065,22 @@ function dismissEvent() {
     saveGame();
     return;
   }
-  beginEndOfTurnPhase();
+  renderAll();
+  saveGame();
+  // 200ms de pausa abans del donut de final de torn
+  setTimeout(() => beginEndOfTurnPhase(), 200);
 }
 function resolveDiscoveryOption(optionIndex) {
   const ev = state.pendingEvent;
   if (!ev || !ev.options) return;
   const opt = ev.options[optionIndex];
 
+  const snapDisc = snapshotNums();
+  // Output diferit de l'acció + efectes de l'opció en un sol snap
+  applyPendingActionResult();
+
   // Direct resource deltas
-  if (opt.food_delta)      state.food      = Math.max(0, Math.min(foodMax(), state.food + opt.food_delta));
+  if (opt.food_delta) state.food = Math.max(0, Math.min(foodMax(), state.food + opt.food_delta));
 
   // Health (may be modified by skill_modifier)
   let healthDelta = opt.health_delta ?? 0;
@@ -2069,6 +2102,9 @@ function resolveDiscoveryOption(optionIndex) {
     const bt = SKILL_DEFS.find(t => t.id === ev.discovery_skill_id);
     if (bt) unlockSkill(bt);
   }
+  spawnResBalls(snapDisc);
+  applyFxFloaters(snapDisc);
+
   // Only consume single-use if the player accepted the discovery — declining lets it re-fire in future gens
   if (ev.is_single_use && opt.discovers !== false) state.firedSingleUseEventIds.add(ev.id);
   if (!ev.is_single_use) {
@@ -2087,7 +2123,10 @@ function resolveDiscoveryOption(optionIndex) {
     saveGame();
     return;
   }
-  beginEndOfTurnPhase();
+  renderAll();
+  saveGame();
+  // 200ms de pausa abans del donut de final de torn
+  setTimeout(() => beginEndOfTurnPhase(), 200);
 }
 
 // ═══════════════════════════════════════════════════════════ FULL-SCREEN OVERLAYS
