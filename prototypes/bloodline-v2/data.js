@@ -482,7 +482,7 @@ const SKILL_DEFS = [
   {
     id: "bt_calendari_natural", name: "Calendari Natural",
     inheritanceRate: 0.40,
-    universal_prereq: "ut_art",
+    universal_prereq: "ut_eines",
     inclination_conditions: { operator: "OR", conditions: [{ axis: "intel·lecte", min: 0.18 }, { axis: "espiritualitat", min: 0.20 }] },
     unlocks_action_ids: ["act_observar_cel", "act_transit_nocturn"],
     passive_effect: { type: "grant_material", amount: 2, desc: "+2 Provisions (previsió de cicles)" },
@@ -584,7 +584,7 @@ const ACTION_INCLINATION_REQUIREMENTS = {
   act_aguait_coordinat:        { impuls: { min: 0.10 } },           // upgrade espiar_ramat
 
   // ══ RECOL·LECTOR ═════════════════════════════════════════
-  act_recollir_branques:       { impuls: { max: 0.45 } },                              // base Bosc; Caçador pur (>45%) no recull fibres
+  // act_recollir_branques: sense restricció — recollir fibres és habilitat bàsica del Bosc, no exclusiva
   act_trenar_garbell:          { impuls: { max: 0.20 } },                              // creació garbell
   act_recollectar_garbell:     { impuls: { max: 0.25 } },                              // consum garbell
   act_molda_grans:             { impuls: { max: 0.30 } },
@@ -1321,7 +1321,7 @@ const ACTIONS = [
   {
     id: "act_tela_sagrada", name: "Tela Sagrada", is_base: false, zona: "Campament",
     description: "Treballes fils i fibres en patrons complexos que el clan reconeix com a símbols de protecció.",
-    purchase_cost: 3, execute_cost: 0, material_min: 1, material_max: 3,
+    purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 5, material_min: 1, material_max: 3,
     stat_key: "vincle", stat_gain: 0.10,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.04, sociabilitat: +0.03 },
     event_pool_id: "pool_ritual"
