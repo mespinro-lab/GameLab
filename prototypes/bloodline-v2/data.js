@@ -1470,6 +1470,7 @@ const ACTIONS = [
     description: "Apliques coneixement acumulat: zones, estació, plantes. Rendiment molt superior.",
     requires: [{ type: 'has_destresa', id: 'd_botanica' }],
     purchase_cost: 6, execute_cost: 0, output_resource: "food", output_min: 4, output_max: 7,
+    side_effects: [{ resource: 'branques', delta: +1 }],
     material_min: 1, material_max: 2,
     stat_key: "enginy", stat_gain: 0.10,
     inclination_deltas: { impuls: -0.02, "intel·lecte": +0.03, espiritualitat: +0.02, sociabilitat: +0.02 },
