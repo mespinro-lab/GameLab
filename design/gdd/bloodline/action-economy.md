@@ -444,9 +444,56 @@ Nova zona que apareix quan el personatge troba parella. Conté:
 
 ---
 
-## ⚠️ RETHINKING PENDENT — Disseny d'accions Era 1 (2026-06-17)
+## ⚠️ RETHINKING EN CURS — Disseny d'accions Era 1 (2026-06-17)
 
-**Estat**: Pendent de rethinking complet. Veure `production/backlog.md — DESIGN-01`.
+**Estat**: Decisions de Fase 1 aprovades (2026-06-19). Implementació en curs. Veure `production/backlog.md — DESIGN-01`.
+
+---
+
+### Decisions aprovades (Fase 1 — 2026-06-19)
+
+#### D1 — Perfil econòmic per branca
+
+Totes les branques tenen la mateixa dificultat global, amb perfils de risc diferenciats:
+
+| Branca | Menjar | Salut | Vida | Eina |
+|---|---|---|---|---|
+| Caçador | abundant però arriscat (grans lots, gran cost ❤️) | difícil (pèrdues altes per acció) | curta | llança |
+| Artesà | moderat + transformat (cuina/conservació multiplica el que tens) | moderat | llarga | estri |
+| Recol·lector | moderat + consistent (molts lots petits, sense pics ni abismes) | moderat | moderada | garbell |
+| Místic | escàs (via social/ritual, mai directe) | abundant (guariment especialitzat) | variable | talisman |
+
+#### D2 — Sistema d'eines per branca
+
+El recurs `eina` és únic a nivell de codi, però cada branca té la seva narrativa de creació i consum:
+
+| Branca | Nom narratiu | Acció creació | Acció consum → benefici |
+|---|---|---|---|
+| Caçador | **llança** | pedra → llança | llança → menys ❤️ en caça |
+| Artesà | **estri** | pedra → estri | estri → menys upkeep menjar/torn |
+| Recol·lector | **garbell** | pedra → garbell | garbell → +output recol·lecció |
+| Místic | **talisman** | pedra → talisman | talisman → menys ❤️ en accions perilloses |
+
+#### D3 — Matriu de transicions (completa, 12/12)
+
+Totes les branques han de tenir un camí directe cap a totes les altres via `inclination_deltas`:
+
+| De | Cap a | Via (acció pont) |
+|---|---|---|
+| Caçador | Místic | Marques espirituals/totems (`espiritualitat` ↑) |
+| Caçador | Recol·lector | Trampes passives (`impuls` baix, ja accessible) |
+| Caçador | Artesà | Polir/refinar eines de caça (`intel·lecte` ↑) |
+| Místic | Caçador | Ordeal físic nocturn (`impuls` ↑) |
+| Místic | Artesà | Observació astronòmica sistemàtica (`intel·lecte` ↑) |
+| Místic | Recol·lector | Narració/ritual comunal (`sociabilitat` ↑) |
+| Recol·lector | Místic | Coneixement de plantes medicinals (`espiritualitat` ↑) |
+| Recol·lector | Artesà | Tècnica de conservació/processament (`intel·lecte` ↑) |
+| Recol·lector | Caçador | Seguir rastres d'animals (`impuls` ↑) |
+| Artesà | Místic | Fabricar objectes rituals (`espiritualitat` ↑) |
+| Artesà | Recol·lector | Intercanvi/troc (`sociabilitat` ↑) |
+| Artesà | Caçador | Practicar amb les armes fabricades (`impuls` ↑) |
+
+---
 
 ### Problemes identificats al prototip actual
 
@@ -490,11 +537,9 @@ Això no vol dir que el jugador "deixi" el Místic — vol dir que, si fa prou s
 la seva inclinació d'impuls puja i li apareixen accions de Caçador mentre les Místic
 s'atenuen. La tensió entre identitat espiritual i comportament guerrer és la decisió del jugador.
 
-### Preguntes obertes (a resoldre al rethinking)
+### Preguntes obertes (resoltes 2026-06-19)
 
-1. Quines transicions son possibles per a cada branca? Cal una matriu de transicions.
-2. Totes les branques han de tenir accés a menjar i salut via accions pròpies, o algunes
-   depenen estructuralment d'altres branques per a un dels recursos?
-3. Quantes accions per branch tech son l'òptim? (actual: 2 per bt, podria ser 1 per a bts simples)
-4. Les accions base (visibles sense branch tech) son suficients per a tots els jugadors
-   independentment de la branca que eventualment prenguin?
+1. ✅ Matriu de transicions: totes 12 resoltes — veure D3 a dalt.
+2. ✅ Totes les branques han de poder generar tots els recursos, amb perfils diferenciats (D1).
+3. ⬜ Quantes accions per branch tech? (pendent, no bloqueja implementació)
+4. ⬜ Accions base suficients per a tothom? (revisar post-implementació)

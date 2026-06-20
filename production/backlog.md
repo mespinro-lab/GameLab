@@ -61,28 +61,33 @@
 
 ---
 
-## P2 DONE BALANCE — BL2-06 — Loop pedra-faonar: font de material sense cost real
+## P2 WONTFIX BALANCE — BL2-06 — Loop pedra-faonar: font de material sense cost real
 
 - **File**: `prototypes/bloodline-v2/data.js`
 - **Issue**: act_recollectar_pedra (gratuita) + act_faonar_eines (pedra -2, material +4/+7) genera 2x material que qualsevol altra accio sense cost d'inclinacio.
 - **Source**: Playtest 2026-06-14, D7 (optimizer)
-- **Options**:
-  - A) Afegir execute_cost: { material: 1 } a act_faonar_eines
-  - B) Reduir output de act_faonar_eines de +4/+7 a +3/+5
-- **Decision**: (pendent)
-- **Acceptance**: El material acumulat per hora de joc amb el loop pedra no supera en 2x la mitjana de les altres rutes.
+- **Decision (2026-06-19)**: WONTFIX — el loop no és un problema. `act_faonar_eines` ha de generar
+  recurs `eina` (eines), NO material. Les eines seran consumides per accions específiques de branca:
+  - **Caçador**: caça menys arriscada
+  - **Artesà**: obres millors + menys upkeep de menjar (conservació)
+  - **Recol·lector**: millor recollecció → més aliments
+  - **Místic**: per definir
+  Una mateixa acció de crear eines es desplega en 4 variants de benefici per branca.
+  Disseny complet pendent com a subtasca de DESIGN-01.
+- **Acceptance**: N/A (redesign, no fix)
 
 ---
 
-## P2 DONE DESIGN — BL2-07 — Scoring path Mistic/Social sense diferenciacio
+## P2 WONTFIX DESIGN — BL2-07 — Scoring path Mistic/Social sense diferenciacio
 
 - **File**: `prototypes/bloodline-v2/game.js` → calculateScore()
 - **Issue**: Jugadors Mistics i de pura supervivencia amb el mateix nombre de techs puntuen igual. El scoring no distingeix playstyle.
 - **Source**: Playtest 2026-06-14, D1
-- **Options**:
-  - A) Bonus per diversitat de branques desbloq.
-  - B) Titol especial per Mistics si >2 techs de la branca Mistic
-- **Decision**: (pendent)
+- **Decision (2026-06-19)**: WONTFIX — la diversitat de branques NO és un mèrit de scoring.
+  Passar per múltiples branques és una experiència diferent, no una estratègia superior.
+  El scoring ja recompensa profunditat (branch techs, coherència entre eres, branca dominant).
+  Títols de dinastia poden reconèixer combinacions específiques via `multi_branch_active`
+  però mai com a bonus de score directe. Reflectit a `scoring-system.md §3.3`.
 
 ---
 
@@ -105,14 +110,14 @@
 
 ---
 
-## P3 DONE CONTENT — C-02 — Titols de dinastia amb condicions verificables
+## P3 DEFERRED CONTENT — C-02 — Titols de dinastia amb condicions verificables
 
 - **File**: `prototypes/bloodline-v2/game.js` → calculateScore()
 - **Issue**: El scoring final te 5 titols basics sense condicions numeriques precises. No hi ha badges.
 - **Options**:
   - A) 3 narratius (branca dominant) + 3 mecanics (fites) + secrets
   - B) Titols per fites numeriques (X generacions, Y techs)
-- **Decision**: (pendent)
+- **Decision (2026-06-19)**: B — títols per fites numèriques. Prioritat baixa, implementació diferida.
 - **Acceptance**: >=6 titols amb condicions verificables; almenys 1 secret.
 
 ---

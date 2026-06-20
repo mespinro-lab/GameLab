@@ -147,7 +147,7 @@ function saveGame() {
     const d = {
       dynastyName: state.dynastyName, race: state.race, gender: state.gender,
       cycle: state.cycle, generation: state.generation,
-      food: state.food, health: state.health, material: state.material, pedra: state.pedra || 0, eina: state.eina || 0,
+      food: state.food, health: state.health, material: state.material, pedra: state.pedra || 0, eina: state.eina || 0, branques: state.branques || 0,
       character: {
         birthCycle: state.character.birthCycle, label: state.character.label,
         inclination: { ...state.character.inclination },
@@ -199,7 +199,7 @@ function loadGame() {
     state = {
       dynastyName: d.dynastyName, race: d.race, gender: d.gender,
       cycle: d.cycle, generation: d.generation,
-      food: d.food, health: d.health, material: d.material, pedra: d.pedra || 0, eina: d.eina || 0,
+      food: d.food, health: d.health, material: d.material, pedra: d.pedra || 0, eina: d.eina || 0, branques: d.branques || 0,
       character: {
         birthCycle: d.character.birthCycle, label: d.character.label,
         inclination: { ...d.character.inclination },
@@ -1653,7 +1653,7 @@ function updateCarouselInfo() {
   const vis      = getActionVisibility(action);
   const faded    = !tooYoung && vis === 'FADED';
   const blocked  = tooYoung || vis !== 'ACTIVE';
-  const outIcons = { food: '🌾', material: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️' };
+  const outIcons = { food: '🌾', material: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️', branques: '🌿' };
   const parts = [];
   const _resTri = (mag, pos) => { const n = mag >= 8 ? 3 : mag >= 4 ? 2 : 1; return (pos ? '▲' : '▼').repeat(n); };
   if ((action.execute_cost || 0) > 0) {
@@ -2536,7 +2536,7 @@ function buyAction(actionId) {
   state.material = mat - action.purchase_cost;
   state.character.purchasedActionIds.add(actionId);
   addLog(`Has comprat: ${action.name || action.id}`);
-  const outIcons = { food: '🌾', material: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️' };
+  const outIcons = { food: '🌾', material: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️', branques: '🌿' };
   const parts = [];
   if (action.output_resource && action.output_min != null) {
     parts.push(`${outIcons[action.output_resource] || '📦'} ${action.output_min}–${action.output_max}`);
@@ -2809,7 +2809,7 @@ function showActionInfo(action) {
   el('ai-icon').textContent = getActionIcon(action);
   el('ai-name').textContent = action.name;
   el('ai-desc').textContent = action.description || '';
-  const outIcons = { food: '🌾', material: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️' };
+  const outIcons = { food: '🌾', material: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️', branques: '🌿' };
   const parts = [];
   if (action.output_resource && action.output_min != null) {
     parts.push(`${outIcons[action.output_resource] || '📦'} ${action.output_min}–${action.output_max}`);
@@ -2825,7 +2825,7 @@ function showActionInfo(action) {
 
 // ═══════════════════════════════════════════════════════════ UPGRADE OVERLAY
 function actionStatSummary(action) {
-  const outIcons = { food: '🌾', material: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️' };
+  const outIcons = { food: '🌾', material: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️', branques: '🌿' };
   const parts = [];
   if (action.output_resource && action.output_min != null) {
     parts.push(`${outIcons[action.output_resource] || '📦'} ${action.output_min}–${action.output_max}`);
@@ -2865,7 +2865,7 @@ function doUpgrade(upgradeId) {
   state.material -= upgrade.purchase_cost;
   state.character.purchasedActionIds.add(upgradeId);
   addLog(`Upgrade: ${upgrade.name}`);
-  const outIcons = { food: '🌾', material: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️' };
+  const outIcons = { food: '🌾', material: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️', branques: '🌿' };
   const parts = [];
   if (upgrade.output_resource && upgrade.output_min != null) {
     parts.push(`${outIcons[upgrade.output_resource] || '📦'} ${upgrade.output_min}–${upgrade.output_max}`);
