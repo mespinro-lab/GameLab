@@ -709,7 +709,7 @@ const ACTIONS = [
   },
   {
     id: "act_vigilar_campament", name: "Vigilar el Campament", is_base: true, zona: "Campament",
-    description: "Protegeixes el campament i observes els voltants. Responsabilitat compartida.",
+    description: "Passes la nit en guàrdia. Saber que hi ha algú vetllant permet al clan descansar fondo sense por — i el descans és el que cura.",
     execute_cost: 0, output_resource: "health", output_min: 2, output_max: 4,
     stat_key: "vincle", stat_gain: 0.10,
     inclination_deltas: { impuls: +0.03, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.04 },
