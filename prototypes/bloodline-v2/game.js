@@ -1655,7 +1655,7 @@ function updateCarouselInfo() {
   const blocked  = tooYoung || vis !== 'ACTIVE';
   const outIcons = { food: '🌾', material: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️', branques: '🌿' };
   const parts = [];
-  const _resTri = (mag, pos) => { const n = mag >= 8 ? 3 : mag >= 4 ? 2 : 1; return (pos ? '▲' : '▼').repeat(n); };
+  const _resTri = (mag, pos) => { const n = mag >= 8 ? 3 : mag > 4 ? 2 : 1; return (pos ? '▲' : '▼').repeat(n); };
   if ((action.execute_cost || 0) > 0) {
     parts.push(`<span class="benefit-stat-badge neg">🌾<span class="bsb-tri neg">▼</span></span>`);
   }
@@ -1676,6 +1676,9 @@ function updateCarouselInfo() {
 
   if (action.food_cap_delta) {
     parts.push(`<span class="benefit-stat-badge">📦<span class="bsb-tri">+${action.food_cap_delta}</span></span>`);
+  }
+  if (action.character_effect?.type === 'explore_zone') {
+    parts.push(`<span class="benefit-stat-badge">🗺️<span class="bsb-tri">?</span></span>`);
   }
   if (state.character.purchasedActionIds.has('act_talla_avancada') && action.requires?.some(r => r.resource === 'eina')) {
     parts.push('⭐ eines qualitat');
@@ -1774,7 +1777,7 @@ function renderCharPanel() {
   const foodWarnEl  = el('vital-warn-food');
   const hlthWarnEl  = el('vital-warn-health');
   if (foodWarnEl)  foodWarnEl.classList.toggle('hidden', !foodDanger);
-  const healthCrit = willDie || (agingLoss > 0 && state.health <= agingLoss + 5);
+  const healthCrit = willDie;
   if (hlthWarnEl)  hlthWarnEl.classList.toggle('hidden', !healthCrit);
 
   // Branch badges + forming pill
