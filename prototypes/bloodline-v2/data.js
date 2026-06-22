@@ -113,7 +113,7 @@ const RESOURCE_DEFS = [
     startVal: 0, max: 3, upkeep: null, showMax: true, rateType: false,
     persistent: true, inheritDecay: 0.3,
     color: '#f59e0b', borderColor: 'rgba(245,158,11,0.3)',
-    glossaryDesc: "Eines fabricades. Cada branca crea la seva: llança (Caçador), estri (Artesà), garbell (Recol·lector), talisman (Místic). Cap: 3.",
+    glossaryDesc: "Eines fabricades. Cada branca crea la seva: llança (Caçador), estri (Artesà), garbell (Recol·lector), ungüent (Místic). Cap: 3.",
   },
   // Era 2+: descomenta per afegir nous recursos al top bar, estat i glossari
   // { id: 'happiness', emoji: '✨', label: 'Benestar', section: 'resources', startVal: 50, max: 100, upkeep: null, showMax: false, rateType: false, era: 2, color: 'var(--purple)', borderColor: 'rgba(168,85,247,0.3)', glossaryDesc: "Satisfacció general. Si cau molt baix, penalitza els resultats de les accions." },
@@ -319,7 +319,7 @@ const SKILL_DEFS = [
     inheritanceRate: 0.40,
     universal_prereq: "ut_eines",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.18 }, { axis: "sociabilitat", min: 0.15 }] },
-    unlocks_action_ids: ["act_ofrena_eines", "act_cerimonia_eines", "act_crear_talisman"],
+    unlocks_action_ids: ["act_ofrena_eines", "act_cerimonia_eines"],
     passive_effect: { type: "grant_material", amount: 2, desc: "+2 Material (les eines cerimonials reforcen l'estatus del clan)" },
     is_hidden: false
   },
@@ -612,8 +612,7 @@ const ACTION_INCLINATION_REQUIREMENTS = {
   act_edificar_cabana:         { "intel·lecte": { min: 0.10 } },
 
   // ══ MÍSTIC ════════════════════════════════════════════════
-  act_crear_talisman:          { espiritualitat: { min: 0.10 }, sociabilitat: { min: 0.08 } }, // creació talisman
-  act_ritual_talisman:         { espiritualitat: { min: 0.15 } },                             // consum talisman
+  act_ritual_talisman:         { espiritualitat: { min: 0.15 } },                             // consum ungüent/talisman
   act_curar_herbes:            { espiritualitat: { min: 0.10 } },
   act_pintar_parets:           { espiritualitat: { min: 0.20 }, sociabilitat: { min: 0.10 } },
   act_narrar_llegendes:        { espiritualitat: { min: 0.10 }, sociabilitat: { min: 0.10 } },
@@ -827,10 +826,11 @@ const ACTIONS = [
     description: "Troceges el sílex fins que la punta queda lleugera i esmolada. La llança que fabriques és més mortal que la que trobes.",
     purchase_cost: 3, execute_cost: 0,
     requires: [{ resource: 'pedra', min: 2 }, { resource: 'branques', min: 1 }],
-    output_resource: "eina", output_min: 2, output_max: 3,
+    output_resource: "eina", output_min: 1, output_max: 1,
     side_effects: [{ resource: 'pedra', delta: -2 }, { resource: 'branques', delta: -1 }],
     material_min: 1, material_max: 2,
     stat_key: "forca", stat_gain: 0.15,
+    is_tool_action: true, tool_branch: 'branch_hunter',
     inclination_deltas: { impuls: +0.05, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
   },
@@ -869,10 +869,11 @@ const ACTIONS = [
     description: "Entrellaçes fibres vegetals i una vora de pedra fins a crear un tamís. La bona llavor es separa sola de la terra i la palla.",
     purchase_cost: 3, execute_cost: 0,
     requires: [{ resource: 'branques', min: 2 }, { resource: 'pedra', min: 1 }],
-    output_resource: "eina", output_min: 1, output_max: 2,
+    output_resource: "eina", output_min: 1, output_max: 1,
     side_effects: [{ resource: 'branques', delta: -2 }, { resource: 'pedra', delta: -1 }],
     material_min: 1, material_max: 2,
     stat_key: "enginy", stat_gain: 0.15,
+    is_tool_action: true, tool_branch: 'branch_gatherer',
     inclination_deltas: { impuls: 0, "intel·lecte": +0.04, espiritualitat: +0.02, sociabilitat: 0 },
     event_pool_id: "pool_recollecta"
   },
@@ -953,10 +954,11 @@ const ACTIONS = [
     description: "Treballes el sílex fins a donar-li la forma exacta que cal. Els estris precisos fan possible el que les mans soles no podrien.",
     purchase_cost: 3, execute_cost: 0,
     requires: [{ resource: 'pedra', min: 2 }, { resource: 'branques', min: 1 }],
-    output_resource: "eina", output_min: 2, output_max: 3,
+    output_resource: "eina", output_min: 1, output_max: 1,
     side_effects: [{ resource: 'pedra', delta: -2 }, { resource: 'branques', delta: -1 }],
     material_min: 1, material_max: 2,
     stat_key: "enginy", stat_gain: 0.15,
+    is_tool_action: true, tool_branch: 'branch_craftsman',
     inclination_deltas: { impuls: 0, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
   },
@@ -1012,9 +1014,14 @@ const ACTIONS = [
   },
   {
     id: "act_preparar_ungüent", name: "Preparar un Ungüent", is_base: false, zona: "Campament",
-    description: "Recorres els marges del bosc collint resines, escorces i fibres que coneixes una a una. En tornes carregat de matèria que pocs sabrien trobar: la base de tot ungüent —i de tota corda i mànec.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "branques", output_min: 2, output_max: 3,
+    description: "Mols la pedra fins a pols fina, combines resines i fibres i cuus la pasta sobre les brases. L'ungüent que obtens guareix les ferides i protegeix la pell: és l'eina del curador, la que cap forjador no sap fer.",
+    purchase_cost: 3, execute_cost: 0,
+    requires: [{ resource: 'branques', min: 2 }, { resource: 'pedra', min: 1 }],
+    output_resource: "eina", output_min: 1, output_max: 1,
+    side_effects: [{ resource: 'branques', delta: -2 }, { resource: 'pedra', delta: -1 }],
+    material_min: 1, material_max: 2,
     stat_key: "enginy", stat_gain: 0.15,
+    is_tool_action: true, tool_branch: 'branch_mystic',
     inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: +0.03, sociabilitat: 0 },
     event_pool_id: "pool_ritual"
   },
@@ -1261,18 +1268,6 @@ const ACTIONS = [
     event_pool_id: "pool_ritual"
   },
   // MYSTIC branch — bt_eines_cerimonials (creació talisman)
-  {
-    id: "act_crear_talisman", name: "Tallar un Talisman", is_base: false, zona: "Campament",
-    description: "Passes hores gravant símbols en una pedra plana. Fibres i pedra s'uneixen en un objecte que el clan reconeix com a protecció.",
-    purchase_cost: 3, execute_cost: 0,
-    requires: [{ resource: 'branques', min: 2 }, { resource: 'pedra', min: 1 }],
-    output_resource: "eina", output_min: 1, output_max: 1,
-    side_effects: [{ resource: 'branques', delta: -2 }, { resource: 'pedra', delta: -1 }],
-    material_min: 1, material_max: 2,
-    stat_key: "vincle", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: +0.06, sociabilitat: +0.02 },
-    event_pool_id: "pool_ritual"
-  },
 
   // ── bt_eines_cerimonials (Les Eines — Místic) ────────────────────────────────
   {

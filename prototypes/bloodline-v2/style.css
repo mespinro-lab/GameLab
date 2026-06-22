@@ -445,6 +445,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   box-shadow: 0 3px 8px rgba(40,25,10,.4), inset 0 1px 0 rgba(255,255,255,.25);
   white-space: nowrap;
 }
+.pill-branch-secondary {
+  background: linear-gradient(180deg, #3a5a8a, #2a4468) !important;
+  opacity: 0.72;
+  font-weight: 600 !important;
+}
 .pill-skill {
   font-size: 9.5px;
   font-weight: 800;

@@ -362,6 +362,14 @@ function applyInclinationDeltas(deltas) {
 // ═══════════════════════════════════════════════════════════ ACTION VISIBILITY
 function getActionVisibility(action) {
   if (action.universal_prereq && !state.discoveredUniversalTechIds.has(action.universal_prereq)) return 'HIDDEN';
+  // Accions d'eina de branques secundàries — ocultes quan hi ha 2+ branques actives
+  if (action.is_tool_action && action.tool_branch) {
+    const active = getActiveBranches();
+    if (active.length > 1) {
+      const primary = getPrimaryBranch();
+      if (primary && action.tool_branch !== primary.id) return 'HIDDEN';
+    }
+  }
   const reqs = action.inclination_requirements || ACTION_INCLINATION_REQUIREMENTS[action.id];
   if (!reqs) return 'ACTIVE';
   for (const [axis, range] of Object.entries(reqs)) {
@@ -402,6 +410,16 @@ function getActiveBranches() {
   const maxPct = Math.max(...candidates.map(b => pct[BRANCH_AXIS[b.id]]));
   const tied = candidates.filter(b => pct[BRANCH_AXIS[b.id]] === maxPct);
   return [tied[Math.floor(Math.random() * tied.length)]];
+}
+
+function getPrimaryBranch() {
+  const active = getActiveBranches();
+  if (active.length === 0) return null;
+  if (active.length === 1) return active[0];
+  const pct = getBranchPct();
+  return active.reduce((a, b) =>
+    (pct[BRANCH_AXIS[a.id]] || 0) >= (pct[BRANCH_AXIS[b.id]] || 0) ? a : b
+  );
 }
 
 function getHealthCap(age) {
@@ -1787,10 +1805,13 @@ function renderCharPanel() {
   const branchEl = el('branch-badges');
   branchEl.innerHTML = '';
   const activeBranches = getActiveBranches();
+  const primaryBranch  = getPrimaryBranch();
   for (const b of activeBranches) {
+    const isPrimary = activeBranches.length === 1 || b.id === primaryBranch?.id;
     const pill = document.createElement('span');
-    pill.className   = 'pill-branch';
-    pill.textContent = b.name;
+    pill.className   = isPrimary ? 'pill-branch' : 'pill-branch pill-branch-secondary';
+    pill.textContent = isPrimary ? b.name : b.name + ' ✦';
+    pill.title       = isPrimary ? 'Branca principal — accions i eina' : 'Branca secundària — accions (sense eina)';
     pill.style.cursor = 'pointer';
     pill.addEventListener('click', () => showPillInfoTooltip(b.name, b.desc || ''));
     branchEl.appendChild(pill);
