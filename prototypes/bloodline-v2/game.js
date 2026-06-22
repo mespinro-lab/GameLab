@@ -499,7 +499,12 @@ function unlockSkill(bt) {
   state.pendingDiscoveries.push({
     _isSkill: true, icon: '🧩', name: bt.name,
     desc: bt.unlocks_action_ids?.length
-      ? `Desbloqueja: ${bt.unlocks_action_ids.map(id => ACTIONS.find(a => a.id === id)?.name || id).join(', ')}.`
+      ? `Desbloqueja: ${bt.unlocks_action_ids.map(id => {
+          const a = ACTIONS.find(x => x.id === id);
+          if (!a) return id;
+          const zoneOk = !a.zona || state.discoveredZoneIds.has(a.zona);
+          return zoneOk ? a.name : `${a.name} (${ZONE_ICONS[a.zona] || '📍'} ${a.zona} — zona pendent)`;
+        }).join(', ')}.`
       : 'Nova tècnica del llinatge.',
     effect: pe?.desc ? { desc: pe.desc } : null,
   });

@@ -671,7 +671,6 @@ const ACTIONS = [
     description: "Busques arrels i baies comestibles sense allunyar-te. Segur però rendiment moderat.",
     execute_cost: 0, output_resource: "food", output_min: 1, output_max: 3,
     material_min: 2, material_max: 3,
-    side_effects: [{ resource: 'branques', delta: +1 }],
     stat_key: "forca", stat_gain: 0.10,
     destresa_id: "d_botanica",
     inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.05 },
@@ -915,7 +914,7 @@ const ACTIONS = [
   {
     id: "act_recollida_bolets", name: "Recollida de Bolets", is_base: false, zona: "Bosc",
     description: "Coneixes quins bolets del bosc són comestibles i quins cal evitar. Provisions i salut.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 2, output_max: 5, side_effects: [{ resource: 'health', delta: +5 }, { resource: 'branques', delta: +1 }],
+    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 2, output_max: 5, side_effects: [{ resource: 'health', delta: +5 }],
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.03 },
     event_pool_id: "pool_recollecta"
@@ -1465,7 +1464,6 @@ const ACTIONS = [
     description: "Apliques coneixement acumulat: zones, estació, plantes. Rendiment molt superior.",
     requires: [{ type: 'has_destresa', id: 'd_botanica' }],
     purchase_cost: 6, execute_cost: 0, output_resource: "food", output_min: 4, output_max: 7,
-    side_effects: [{ resource: 'branques', delta: +1 }],
     material_min: 1, material_max: 2,
     stat_key: "enginy", stat_gain: 0.10,
     inclination_deltas: { impuls: -0.02, "intel·lecte": +0.03, espiritualitat: +0.02, sociabilitat: +0.02 },
