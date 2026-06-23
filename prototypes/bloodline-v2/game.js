@@ -334,6 +334,7 @@ function initState(dynastyName, race) {
     pendingSuccession: null,
     pendingDiscoveries: [],
     pendingBirths: [],
+    pendingEndOfTurn: false,
     pendingDeath: null,
     pendingNewGen: null,
     nextGenHealthMax: null,
@@ -362,13 +363,10 @@ function applyInclinationDeltas(deltas) {
 // ═══════════════════════════════════════════════════════════ ACTION VISIBILITY
 function getActionVisibility(action) {
   if (action.universal_prereq && !state.discoveredUniversalTechIds.has(action.universal_prereq)) return 'HIDDEN';
-  // Accions d'eina de branques secundàries — ocultes quan hi ha 2+ branques actives
+  // Accions d'eina: només es mostra la de la branca primària (substitució automàtica, D3)
   if (action.is_tool_action && action.tool_branch) {
-    const active = getActiveBranches();
-    if (active.length > 1) {
-      const primary = getPrimaryBranch();
-      if (primary && action.tool_branch !== primary.id) return 'HIDDEN';
-    }
+    const primaryToolId = getPrimaryToolActionId();
+    if (primaryToolId && action.id !== primaryToolId) return 'HIDDEN';
   }
   const reqs = action.inclination_requirements || ACTION_INCLINATION_REQUIREMENTS[action.id];
   if (!reqs) return 'ACTIVE';
@@ -420,6 +418,26 @@ function getPrimaryBranch() {
   return active.reduce((a, b) =>
     (pct[BRANCH_AXIS[a.id]] || 0) >= (pct[BRANCH_AXIS[b.id]] || 0) ? a : b
   );
+}
+
+// ── Rol d'eina de branca (D3, 2026-06-22): substitució automàtica en canviar de branca ──
+// L'acció d'eina visible/usable és sempre la de la branca primària. Posseir el rol d'eina
+// (haver comprat l'acció d'eina de qualsevol branca) el manté disponible en canviar de branca,
+// sense recomprar-lo.
+function getPrimaryToolActionId() {
+  const primary = getPrimaryBranch();
+  if (!primary) return null;
+  const a = ACTIONS.find(x => x.is_tool_action && x.tool_branch === primary.id);
+  return a ? a.id : null;
+}
+function ownsBranchToolRole() {
+  return ACTIONS.some(a => a.is_tool_action && state.character.purchasedActionIds.has(a.id));
+}
+function isActionOwned(action) {
+  if (!action) return false;
+  if (state.character.purchasedActionIds.has(action.id)) return true;
+  if (action.is_tool_action && ownsBranchToolRole()) return true;
+  return false;
 }
 
 function getHealthCap(age) {
@@ -488,7 +506,12 @@ function unlockSkill(bt) {
   state.character.unlockedSkillIds.add(bt.id);
   addLog(`Nova habilitat: ${bt.name}`);
   if (bt.unlocks_action_ids) {
-    for (const aid of bt.unlocks_action_ids) state.character.purchasedActionIds.add(aid);
+    // D4 (2026-06-22): les accions amb cost es compren al mercat un cop desbloquejada la tech;
+    // només les gratuïtes (sense purchase_cost) es concedeixen directament en desbloquejar-la.
+    for (const aid of bt.unlocks_action_ids) {
+      const act = ACTIONS.find(a => a.id === aid);
+      if (act && !act.purchase_cost) state.character.purchasedActionIds.add(aid);
+    }
   }
   const pe = bt.passive_effect;
   if (pe) {
@@ -932,6 +955,7 @@ function applyTurnUpkeep() {
 // Called after action effects (if no event) OR after event resolves.
 // Shows its own donut, then applies cycle/upkeep, then checks succession.
 function beginEndOfTurnPhase() {
+  clearFloaters(); // neteja floaters d'acció perquè no es barregin amb els d'upkeep (punt 2)
   const ring = el('exec-donut-ring');
   if (ring) ring.style.stroke = '#888';
   showDonutAnimation({ _icon: '🌙', id: '_eot', name: 'Fi de torn' }, null, () => {
@@ -977,11 +1001,36 @@ function beginEndOfTurnPhase() {
   });
 }
 
+// ── Gate de final de torn (punt 1, 2026-06-22) ──────────────────────────────
+// L'EOT espera que es resolguin TOTS els descobriments/events/naixements generats per
+// l'acció (p.ex. el resultat d'"Explorar els Voltants") abans de córrer (cycle++, upkeep).
+// No es desa en diferir: el torn és atòmic i només es desa quan l'EOT acaba.
+function proceedToEndOfTurn() {
+  if (state.pendingEvent || state.pendingDiscoveries.length > 0 || state.pendingBirths.length > 0) {
+    state.pendingEndOfTurn = true;
+    renderAll();
+    return;
+  }
+  state.pendingEndOfTurn = false;
+  beginEndOfTurnPhase();
+}
+function afterDismiss() {
+  if (state.pendingEndOfTurn &&
+      !state.pendingEvent &&
+      state.pendingDiscoveries.length === 0 &&
+      state.pendingBirths.length === 0) {
+    state.pendingEndOfTurn = false;
+    beginEndOfTurnPhase();
+  } else {
+    renderAll();
+  }
+}
+
 // ═══════════════════════════════════════════════════════════ ACTION EXECUTION
 function executeAction(actionId) {
   if (state.pendingEvent || state.pendingSuccession || state.gameOver) return;
   const action = ACTIONS.find(a => a.id === actionId);
-  if (!action || !state.character.purchasedActionIds.has(actionId)) return;
+  if (!action || !isActionOwned(action)) return;
   if (getActionVisibility(action) !== 'ACTIVE') return;
   const age = characterAge();
   if (isActionTooYoung(action)) return; // blocked — shown but not executable
@@ -1002,7 +1051,7 @@ function executeAction(actionId) {
       applyFxFloaters(snap);
       addLog(`[${state.cycle + 1}] ${action.name}`);
       state._pendingTurnEntry = { cycle: state.cycle + 1, action: action.name, event: null, eventChoice: null, upkeep: null };
-      beginEndOfTurnPhase();
+      proceedToEndOfTurn();
     });
     return;
   }
@@ -1146,7 +1195,7 @@ function executeAction(actionId) {
       return;
     }
     // 200ms de pausa i llavors donut de final de torn
-    setTimeout(() => beginEndOfTurnPhase(), 200);
+    setTimeout(() => proceedToEndOfTurn(), 200);
   });
 }
 
@@ -1197,6 +1246,11 @@ function applyFxFloaters(before) {
     document.body.appendChild(div);
     div.addEventListener('animationend', () => div.remove());
   }
+}
+
+// Elimina floaters de número que encara s'estiguin animant (separa fases visualment)
+function clearFloaters() {
+  document.querySelectorAll('.float-num').forEach(n => n.remove());
 }
 
 // Resource balls flying from donut to top bar
@@ -1532,7 +1586,7 @@ function getZoneActions(zoneId) {
   const age = characterAge();
   const base = ACTIONS.filter(a => {
     if (a.zona !== zoneId) return false;
-    if (!state.character.purchasedActionIds.has(a.id)) return false;
+    if (!isActionOwned(a)) return false;
     if (getActionVisibility(a) === 'HIDDEN') return false;
     if (a.maxAge !== undefined && age > a.maxAge) return false;
     // always_show_locked: include even when character requirements not met (shown as unavailable)
@@ -2026,11 +2080,11 @@ function showPane(paneId) {
 
 function dismissDiscovery() {
   state.pendingDiscoveries.shift();
-  renderAll();
+  afterDismiss();
 }
 function dismissBirth() {
   state.pendingBirths.shift();
-  renderAll();
+  afterDismiss();
 }
 function applyEventEffects(fx) {
   if (!fx) return;
@@ -2094,7 +2148,7 @@ function dismissEvent() {
   renderAll();
   saveGame();
   // 200ms de pausa abans del donut de final de torn
-  setTimeout(() => beginEndOfTurnPhase(), 200);
+  setTimeout(() => proceedToEndOfTurn(), 200);
 }
 function resolveDiscoveryOption(optionIndex) {
   const ev = state.pendingEvent;
@@ -2152,7 +2206,7 @@ function resolveDiscoveryOption(optionIndex) {
   renderAll();
   saveGame();
   // 200ms de pausa abans del donut de final de torn
-  setTimeout(() => beginEndOfTurnPhase(), 200);
+  setTimeout(() => proceedToEndOfTurn(), 200);
 }
 
 // ═══════════════════════════════════════════════════════════ FULL-SCREEN OVERLAYS
@@ -2528,16 +2582,17 @@ function renderAll() {
 
 // ═══════════════════════════════════════════════════════════ SHOP
 function getBuyableActions() {
-  const skillUnlockedIds = new Set(SKILL_DEFS.flatMap(bt => bt.unlocks_action_ids || []));
   return ACTIONS.filter(a => {
     if (!a.purchase_cost) return false;
     if (a.is_base) return false;
     if (a.is_discovery_action) return false;
     if (a.is_upgrade) return false;
-    if (state.character.purchasedActionIds.has(a.id)) return false;
+    if (isActionOwned(a)) return false;
     if (!state.discoveredZoneIds.has(a.zona)) return false;
     if (a.universal_prereq && !state.discoveredUniversalTechIds.has(a.universal_prereq)) return false;
-    if (skillUnlockedIds.has(a.id)) return false;
+    // D4: si una branch tech desbloqueja aquesta acció, cal tenir la tech desbloquejada per comprar-la
+    const unlockingSkill = SKILL_DEFS.find(bt => (bt.unlocks_action_ids || []).includes(a.id));
+    if (unlockingSkill && !state.character.unlockedSkillIds.has(unlockingSkill.id)) return false;
     return true;
   });
 }

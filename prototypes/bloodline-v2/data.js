@@ -113,7 +113,7 @@ const RESOURCE_DEFS = [
     startVal: 0, max: 3, upkeep: null, showMax: true, rateType: false,
     persistent: true, inheritDecay: 0.3,
     color: '#f59e0b', borderColor: 'rgba(245,158,11,0.3)',
-    glossaryDesc: "Eines fabricades. Cada branca crea la seva: llança (Caçador), estri (Artesà), garbell (Recol·lector), ungüent (Místic). Cap: 3.",
+    glossaryDesc: "Eines fabricades. Cada branca fabrica la seva (llança, estri, garbell o ungüent) i només pots fer la de la teva branca activa. Tenir-ne no fa res per si sol: es GASTEN en accions concretes (p.ex. Caça amb Llança o Recol·lectar amb Garbell) per obtenir un rendiment molt superior. Cap: 3.",
   },
   // Era 2+: descomenta per afegir nous recursos al top bar, estat i glossari
   // { id: 'happiness', emoji: '✨', label: 'Benestar', section: 'resources', startVal: 50, max: 100, upkeep: null, showMax: false, rateType: false, era: 2, color: 'var(--purple)', borderColor: 'rgba(168,85,247,0.3)', glossaryDesc: "Satisfacció general. Si cau molt baix, penalitza els resultats de les accions." },
@@ -677,11 +677,9 @@ const ACTIONS = [
     event_pool_id: "pool_recollecta"
   },
   {
-    id: "act_tallar_pedra", name: "Tallar Pedra", is_base: true, zona: "Campament",
-    description: "Talles sílex per fabricar eines bàsiques. Gasta pedra, produeix eines.",
+    id: "act_tallar_pedra", name: "Practicar la Talla", is_base: true, zona: "Campament",
+    description: "Practiques la talla del sílex: la mà aprèn l'angle i la força. Encara no en surten eines útils —cada branca fabrica la seva a la seva manera—, però hi guanyes enginy i destresa.",
     execute_cost: 0,
-    requires: [{ resource: 'pedra', min: 1 }],
-    side_effects: [{ resource: 'pedra', delta: -1 }, { resource: 'eina', delta: 1 }],
     material_min: 1, material_max: 2,
     stat_key: "enginy", stat_gain: 0.10,
     destresa_id: "d_talla_silex",
@@ -740,17 +738,7 @@ const ACTIONS = [
     inclination_deltas: { impuls: -0.02, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: +0.02 },
     event_pool_id: "pool_recollecta"
   },
-  {
-    id: "act_preparar_eina", name: "Preparar una Eina", is_base: true, universal_prereq: "ut_eines", zona: "Campament",
-    description: "Treballes la pedra amb precisió per crear una eina útil. Si l'enginy és baix, la pedra pot trencar-se.",
-    execute_cost: 0,
-    requires: [{ resource: 'pedra', min: 1 }],
-    character_effect: { type: 'make_tool', pedra_cost: 1 },
-    material_min: 1, material_max: 2,
-    stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: -0.02, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
-    event_pool_id: "pool_artesania"
-  },
+  // act_preparar_eina retirat (D1, 2026-06-22): fabricar eines és exclusiu de branca; cap acció base universal en fa
 
   // FAMILY — zona Campament (cercar parella) i Llar (tenir fills, ensenyar)
   {
@@ -1471,11 +1459,10 @@ const ACTIONS = [
   },
   {
     id: "act_talla_avancada", name: "Talla Avançada", is_upgrade: true, upgrades_action_id: "act_tallar_pedra", zona: "Campament",
-    description: "Eines de sílex de qualitat superior. Millora totes les accions que usen eines.",
+    description: "Domines la talla del sílex. No en surten eines, però millora el rendiment de totes les accions de la teva branca que gasten eines.",
     quality_tools: true,
-    requires: [{ type: 'has_destresa', id: 'd_talla_silex' }, { resource: 'pedra', min: 1 }],
+    requires: [{ type: 'has_destresa', id: 'd_talla_silex' }],
     purchase_cost: 8, execute_cost: 0,
-    side_effects: [{ resource: 'pedra', delta: -1 }, { resource: 'eina', delta: 2 }],
     material_min: 1, material_max: 2,
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: -0.02, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
