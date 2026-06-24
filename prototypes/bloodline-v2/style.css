@@ -996,6 +996,18 @@ body.donut-active * { pointer-events: none !important; }
 .ev-choice-name { font-weight: 700; font-size: 0.9rem; }
 .ev-choice-desc { font-size: 0.72rem; color: var(--text-dim); }
 .ev-choice-fx { display: block; font-size: 0.75rem; color: var(--text-dim); margin-top: 0.2rem; }
+/* EVT-01: impacte numèric per events de descartar i de "troballa" */
+#ev-impact-hint {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--gold);
+  text-align: center;
+  padding: 0.4rem 0.6rem;
+  background: rgba(245,166,35,0.1);
+  border-radius: 0.4rem;
+  border: 1px solid rgba(245,166,35,0.25);
+  margin-bottom: 0.3rem;
+}
 #btn-dismiss-event {
   margin-top: auto;
   padding: 0.7rem;
