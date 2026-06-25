@@ -85,6 +85,12 @@ Tot el feedback (punts 1-7) i les decisions (D1-D4) s'han implementat a
 `prototypes/bloodline-v2/`. Verificat amb checks de dades (Node) i amb el joc real
 en navegador headless (Playwright, 10/10 checks, 0 errors de runtime).
 
+> **⚠️ ACTUALITZACIÓ 2026-06-24:** els punts 1-2 (seqüència de torn) segueixen trencats segons
+> l'usuari (els efectes de l'acció es veuen al fi de torn, no al fi d'acció). El fix Clúster A
+> NO resol el problema de fons (timing de render + `clearFloaters`). **Reobert com a `SEQ-01` (P0)**
+> al backlog. Tasques noves derivades de feedback addicional: `EVT-01` (events amb impacte numèric),
+> `LOG-01` (log no desa events), `START-01` (branca inicial = Recol·lector).
+
 **Clúster A — seqüència/floaters (punts 1, 2):**
 - Nou gate `proceedToEndOfTurn()` / `afterDismiss()` (`game.js`): el final de torn (cycle++,
   upkeep) espera que es resolguin tots els descobriments/events/naixements generats per

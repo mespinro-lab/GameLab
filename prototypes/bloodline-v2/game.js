@@ -305,7 +305,12 @@ function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedS
 }
 
 function freshInclination() {
-  return Object.fromEntries(AXIS_DEFS.map(a => [a.id, 0.0]));
+  // START-01: dona a sociabilitat un valor inicial petit perquè Recol·lector
+  // sigui la branca activa des del torn 1 de manera determinista (Gen 1 només;
+  // els hereus hereten la inclinació del pare via createCharacter).
+  const inc = Object.fromEntries(AXIS_DEFS.map(a => [a.id, 0.0]));
+  inc['sociabilitat'] = 0.05;
+  return inc;
 }
 
 function initState(dynastyName, race) {
@@ -955,7 +960,9 @@ function applyTurnUpkeep() {
 // Called after action effects (if no event) OR after event resolves.
 // Shows its own donut, then applies cycle/upkeep, then checks succession.
 function beginEndOfTurnPhase() {
-  clearFloaters(); // neteja floaters d'acció perquè no es barregin amb els d'upkeep (punt 2)
+  // SEQ-01: NO fem clearFloaters() aquí — els floaters d'acció ja s'hauran extingit
+  // durant el donut (1.25s animació > 1.4s durada floater). Netejar aquí els esborrava
+  // abans que el jugador els veiés.
   const ring = el('exec-donut-ring');
   if (ring) ring.style.stroke = '#888';
   showDonutAnimation({ _icon: '🌙', id: '_eot', name: 'Fi de torn' }, null, () => {
@@ -1162,17 +1169,9 @@ function executeAction(actionId) {
       saveGame();
       return;
     }
-    if (state.pendingEvent) {
-      // Diferim output + side_effects fins que el jugador faci OK a l'event
-      state.pendingActionResult = {
-        outRes, output, outDef,
-        side_effects: action.side_effects ? [...action.side_effects] : [],
-      };
-      // 200ms de pausa abans de mostrar l'event
-      setTimeout(() => { renderAll(); saveGame(); }, 200);
-      return;
-    }
-    // ── SENSE EVENT: apliquem output + side_effects immediatament ─────────
+    // ── SEQ-01: apliquem output + side_effects SEMPRE aquí (al fi d'acció) ──
+    // Tant si vindrà event com si no, l'output de l'acció és visible en acabar
+    // el donut d'ACCIÓ. L'event és un beat separat posterior.
     const snapOut = snapshotNums();
     if (outDef && output > 0) {
       const newVal = (state[outRes] || 0) + output;
@@ -1187,11 +1186,20 @@ function executeAction(actionId) {
       }
     }
     applyFxFloaters(snapOut);
+    // renderAll perquè els comptadors del panell reflecteixin el canvi JA
+    renderAll();
     if (state.health <= 0) {
       state._pendingTurnEntry = null;
       triggerSuccession();
       renderAll();
       saveGame();
+      return;
+    }
+    if (state.pendingEvent) {
+      // SEQ-01: l'output ja s'ha aplicat; aquí NOMÉS esperem que el jugador
+      // resolgui l'event (beat separat). No hi ha pendingActionResult.
+      // 200ms de pausa abans de mostrar l'event
+      setTimeout(() => { renderAll(); saveGame(); }, 200);
       return;
     }
     // 200ms de pausa i llavors donut de final de torn
@@ -2037,6 +2045,19 @@ function renderInMapOverlay() {
     const choicesEl = el('ev-choices');
     choicesEl.innerHTML = '';
     const dismissBtn = el('btn-dismiss-event');
+
+    // EVT-01: helper per construir la línia d'impacte numèric d'un efecte
+    function buildImpactHint(fx) {
+      if (!fx) return '';
+      const parts = [];
+      if (fx.food   != null && fx.food   !== 0) parts.push(`${fx.food   > 0 ? '+' : ''}${fx.food}🌾`);
+      if (fx.health != null && fx.health !== 0) parts.push(`${fx.health > 0 ? '+' : ''}${fx.health}❤️`);
+      if (fx.material != null && fx.material !== 0) parts.push(`${fx.material > 0 ? '+' : ''}${fx.material}🔵`);
+      if (fx.pedra != null && fx.pedra !== 0) parts.push(`${fx.pedra > 0 ? '+' : ''}${fx.pedra}🪨`);
+      if (fx.eina  != null && fx.eina  !== 0) parts.push(`${fx.eina  > 0 ? '+' : ''}${fx.eina}⚒️`);
+      return parts.join('  ');
+    }
+
     if (ev.options && ev.options.length > 0) {
       dismissBtn.style.display = 'none';
       const hasChildren = (state.character.children?.length || 0) > 0;
@@ -2051,9 +2072,12 @@ function renderInMapOverlay() {
       visibleOptions.forEach(({ opt, i }) => {
         const btn = document.createElement('button');
         btn.className = 'ev-choice-btn';
+        // EVT-01: impacte numèric per opció (food_delta, health_delta)
         const fxParts = [];
-        if (opt.food_delta)     fxParts.push(`${opt.food_delta > 0 ? '+' : ''}${opt.food_delta}🌾`);
-        if (opt.health_delta)   fxParts.push(`${opt.health_delta > 0 ? '+' : ''}${opt.health_delta}❤️`);
+        if (opt.food_delta)   fxParts.push(`${opt.food_delta   > 0 ? '+' : ''}${opt.food_delta}🌾`);
+        if (opt.health_delta) fxParts.push(`${opt.health_delta > 0 ? '+' : ''}${opt.health_delta}❤️`);
+        // Si hi ha skill_modifier, indica que el resultat varia
+        if (opt.skill_modifier) fxParts.push('(varia per habilitat)');
         const fxHint = fxParts.length ? `<span class="ev-choice-fx">${fxParts.join('  ')}</span>` : '';
         btn.innerHTML = `<span class="ev-choice-name">${opt.text}</span>${fxHint}`;
         btn.dataset.idx = i;
@@ -2064,6 +2088,25 @@ function renderInMapOverlay() {
       if (visibleOptions.length === 0) dismissBtn.style.display = '';
     } else {
       dismissBtn.style.display = '';
+      // EVT-01: per events de descartar i "troballa", mostra l'impacte numèric
+      // directament a la targeta (sota el text de l'event)
+      const impactHint = buildImpactHint(ev.effects);
+      if (impactHint) {
+        // Afegeix o actualitza el div d'impacte dins pane-event
+        let impactEl = el('ev-impact-hint');
+        if (!impactEl) {
+          impactEl = document.createElement('div');
+          impactEl.id = 'ev-impact-hint';
+          impactEl.className = 'ev-impact-hint';
+          // Insereix just abans del botó de descartar
+          dismissBtn.insertAdjacentElement('beforebegin', impactEl);
+        }
+        impactEl.textContent = impactHint;
+        impactEl.style.display = '';
+      } else {
+        const existing = el('ev-impact-hint');
+        if (existing) existing.style.display = 'none';
+      }
     }
     showPane('pane-event');
     return;
@@ -2079,6 +2122,18 @@ function showPane(paneId) {
 }
 
 function dismissDiscovery() {
+  // LOG-01: registra el descobriment/event al torn history si és rellevant
+  const disc = state.pendingDiscoveries[0];
+  if (disc && state._pendingTurnEntry) {
+    if (disc._isEvent || disc._isSkill || disc._isTech || disc._isZone || disc._isDestresa || disc._isAprenentatge || disc._isPartner) {
+      const prevEvent = state._pendingTurnEntry.event;
+      const label = disc.name || disc.icon || 'Event';
+      if (!prevEvent) {
+        state._pendingTurnEntry.event = label.slice(0, 50);
+      }
+      // Si ja hi havia un event, afegim-lo com a nota addicional
+    }
+  }
   state.pendingDiscoveries.shift();
   afterDismiss();
 }
@@ -2127,12 +2182,13 @@ function dismissEvent() {
     state.recentEventIds = [...(state.recentEventIds || []), ev.id].slice(-4);
   }
   trackEventFired(ev);
-  // Apliquem output diferit + efectes de l'event en un sol snap (floaters junts)
+  // SEQ-01: l'output de l'acció JA s'ha aplicat al fi d'acció; aquí apliquem
+  // NOMÉS els efectes propis de l'event (beat separat).
   const snapDismiss = snapshotNums();
-  applyPendingActionResult();
   applyEventEffects(ev.effects);
   spawnResBalls(snapDismiss);
   applyFxFloaters(snapDismiss);
+  // LOG-01: registra l'event al torn
   if (state._pendingTurnEntry) {
     state._pendingTurnEntry.event = ev.text.slice(0, 50);
     state._pendingTurnEntry.eventChoice = '(continua)';
@@ -2156,8 +2212,8 @@ function resolveDiscoveryOption(optionIndex) {
   const opt = ev.options[optionIndex];
 
   const snapDisc = snapshotNums();
-  // Output diferit de l'acció + efectes de l'opció en un sol snap
-  applyPendingActionResult();
+  // SEQ-01: l'output de l'acció JA s'ha aplicat al fi d'acció (no hi ha pendingActionResult).
+  // Aquí apliquem NOMÉS els efectes propis de l'opció escollida.
 
   // Direct resource deltas
   if (opt.food_delta) state.food = Math.max(0, Math.min(foodMax(), state.food + opt.food_delta));
