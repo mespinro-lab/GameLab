@@ -4,305 +4,294 @@
 <!--                                                                                                  -->
 <!-- FORMAT DE CAPÇALERA: ## [PRIOR] [ESTAT] [TIPUS] — [ID] — Títol                                 -->
 <!--   PRIOR: P0 (aquesta sessió) | P1 (propera sessió) | P2 (pròximament) | P3 (backlog llunyà)     -->
-<!--   ESTAT: OPEN | IN-PROGRESS | DONE | BLOCKED | DEFERRED                                         -->
-<!--   TIPUS: BUG | FEAT | BALANCE | CONTENT | DESIGN | QA | DOCS                                    -->
+<!--   ESTAT: OPEN | IN-PROGRESS | DONE | BLOCKED | DEFERRED | WONTFIX                                -->
+<!--   TIPUS: BUG | FEAT | BALANCE | CONTENT | DESIGN | QA | DOCS | NETEJA                            -->
 <!--                                                                                                  -->
 <!-- TARGET: prototypes/bloodline-v2/ (game.js, data.js, index.html, style.css)                      -->
 <!-- prototypes/bloodline/ (sense -v2) ABANDONAT — no tocar                                          -->
 <!-- GODOT (src/bloodline/) ABANDONAT — no afegir tasques que apuntin a fitxers Godot                -->
+<!--                                                                                                  -->
+<!-- ÍNDEX: 🔴 Prioritari · 🎨 Decidir (disseny) · 🔧 Desenvolupar (codi) · ✅ Resolt · ⛔ Wontfix    -->
+<!-- Reorganitzat i deduplicat 2026-06-24. Tasques OBERTES amb cos complet; RESOLTES condensades.    -->
 
 ---
+<!-- ════════════════════════════ 🔴 PRIORITARI ════════════════════════════ -->
 
-## P1 DONE BUG — BL2-01 — Meta bar no mostra menjar ni salut
+## P0 DONE BUG — SEQ-01 — Els efectes de l'acció es veuen al fi de torn, no al fi d'acció
 
-- **File**: `prototypes/bloodline-v2/index.html`, `prototypes/bloodline-v2/game.js`
-- **Issue**: La barra superior no té indicadors visuals de menjar ni salut. El jugador no veu l'estat crític dels recursos principals sense obrir el panell de personatge.
-- **Source**: Playtest 2026-06-14, S1 CM (casual-mobile)
-- **Acceptance**: Menjar i salut visibles a la meta bar en tot moment, sense obrir cap overlay.
-
----
-
-## P1 DONE UX — BL2-02 — Ghost pill no tappable ni explicada
-
-- **File**: `prototypes/bloodline-v2/game.js`, `prototypes/bloodline-v2/style.css`
-- **Issue**: La ghost pill (branca en formació) és purament visual. No es pot tocar ni mostra cap explicació. El jugador no sap que es pot activar o com progressa.
-- **Source**: Playtest 2026-06-14, S5 CM (casual-mobile)
-- **Acceptance**: Tap a la ghost pill mostra info breu: nom de la branca en formació i progrés cap al llindar d'activació.
-
----
-
-## P1 DONE BALANCE — BL2-03 — act_emboscada_nocturna letal sense avis (-14 HP)
-
-- **File**: `prototypes/bloodline-v2/data.js`, `prototypes/bloodline-v2/game.js`
-- **Issue**: act_emboscada_nocturna costa -14 health per us. Tres usos = mort a Gen 2+ (STARTING_HEALTH=30). No hi ha avis de risc al carrusel.
-- **Source**: Playtest 2026-06-14, D6
-- **Decision**: Badge de risc visible al cost de l'accio al carrusel quan health_delta <= -10. Mante el balanco, avisa el jugador.
-- **Acceptance**: Jugador veu indicador de risc al card de l'accio quan el cost de salut es alt.
-
----
-
-## P1 DONE BALANCE — BL2-04 — Pacing late-game: ut_ceramica/ut_agricultura comprimits
-
-- **File**: `prototypes/bloodline-v2/data.js`
-- **Issue**: ut_ceramica (cicle 80) i ut_agricultura (cicle 92) deixen 20 cicles per explorar 4 techs noves. Si Gen 4 mor al cicle 77-78, Gen 5 no arriba al cicle 100.
-- **Source**: Playtest 2026-06-14, D4
-- **Decision**: Avançar ut_ceramica a cicle 70, ut_agricultura a cicle 85. Preserva ERA_CYCLES=100.
-- **Acceptance**: Un personatge que arrenqui al cicle 78 pot assolir i usar les techs finals.
-
----
-
-## P1 DONE BUG — BL2-05 — Constants zombie reputacio al codi
-
-- **File**: `prototypes/bloodline-v2/game.js`
-- **Issue**: Constants obsoletes del sistema de reputacio eliminat (FAMILY_REP_INHERITANCE i similars) sobreviuen al codi sense efecte.
-- **Source**: Playtest 2026-06-14, S4 (V2-09/10/11 tycoon)
-- **Acceptance**: Cap referencia a reputation, reputacio, FAMILY_REP_INHERITANCE al codi de game.js.
-- **Completada**: 2026-06-16 (grep confirmat — cap referencia trobada)
+- **✅ RESOLT 2026-06-25** (commit 73a9bac): output aplicat + `renderAll()` al fi d'acció; eliminat el
+  diferiment d'output en events; tret `clearFloaters()` de l'inici de l'EOT. Verificat amb Playwright al
+  RENDER VISIBLE (#hex-health mostra el +salut al fi d'acció amb el cicle sense avançar). 4t intent, ara sí.
+  Diagnòstic original conservat sota per història.
+- **Fitxers**: `prototypes/bloodline-v2/game.js` (`executeAction`, `beginEndOfTurnPhase`,
+  `proceedToEndOfTurn`, `clearFloaters`, `dismissEvent`, `applyFxFloaters`, `renderAll`)
+- **Queixa recurrent de l'usuari** (3a+ vegada; encara trencat després de BL2-09, BL2-13 i el fix Clúster A del 2026-06-23):
+  - **Repro A** — Triar "Contemplació" (output salut +3..6). El +6 de salut apareix quan acaba el
+    donut de **fi de torn** (🌙), quan hauria d'aparèixer en acabar el donut de **fi d'acció**.
+  - **Repro B** — "Recol·lectar Arrels" amb 1 de menjar → salta un event ("troballa inesperada") →
+    **no s'actualitza res** fins que acaba el torn.
+- **Diagnòstic (causa arrel)**:
+  1. El render visible dels comptadors només passa a `renderAll()`. En el flux acció→fi-de-torn
+     NO hi ha cap `renderAll()` entre aplicar l'output de l'acció i el donut de fi de torn → els
+     comptadors no s'actualitzen visualment fins al `renderAll()` final de l'EOT.
+  2. `clearFloaters()` a l'inici de `beginEndOfTurnPhase()` ESBORRA els floaters de l'acció (p.ex.
+     el +6 de Contemplació) ~200 ms després d'aparèixer, abans que l'usuari els registri. El fix
+     del 2026-06-23 va empitjorar això.
+  3. En accions amb event de pool, l'output es DIFEREIX (`pendingActionResult`) fins que es descarta
+     l'event (intencional, commit f5883e8). Combinat amb (1), l'usuari percep "res no s'actualitza".
+- **Direcció de fix (NO implementar fins que l'usuari ho demani)**:
+  - Afegir un "beat" visible al fi d'acció: `renderAll()` (actualització de comptadors) just després
+    d'aplicar output/side_effects, i deixar que els floaters de l'acció es reprodueixin SENCERS abans
+    del donut de fi de torn.
+  - NO esborrar amb `clearFloaters()` els efectes propis de l'acció; només garantir que els floaters
+    d'upkeep del donut 🌙 surten visualment separats.
+  - Reconsiderar el model d'output diferit en events: l'usuari espera veure el resultat de l'acció al
+    fi d'acció, DESPRÉS l'event (com a beat separat amb el seu impacte numèric — vegeu EVT-01),
+    i només l'upkeep al donut 🌙 final.
+- **Acceptance**:
+  - Contemplació: el +salut es veu (floater + comptador) en acabar el donut d'ACCIÓ.
+  - Acció amb event: el resultat de l'acció es veu al fi d'acció; l'event és un beat separat; l'upkeep
+    només es veu al donut 🌙.
+  - Cap efecte propi de l'acció "apareix" durant la fase d'upkeep.
+- **Història**: BL2-09 (2026-06-18, upkeep després de l'event), BL2-13 (3 donuts), Clúster A
+  (2026-06-23, gate `proceedToEndOfTurn` + `clearFloaters`) — tots insuficients. Aquest és el problema
+  de fons (timing de render), no la seqüència de fases.
 
 ---
+<!-- ════════════════════════════ 🎨 DECIDIR (disseny obert) ════════════════════════════ -->
 
-## P2 WONTFIX BALANCE — BL2-06 — Loop pedra-faonar: font de material sense cost real
+## P1 OPEN DESIGN — DESIGN-02 — Replantejament del model de progressió (branques × techs × habilitats × accions)
 
-- **File**: `prototypes/bloodline-v2/data.js`
-- **Issue**: act_recollectar_pedra (gratuita) + act_faonar_eines (pedra -2, material +4/+7) genera 2x material que qualsevol altra accio sense cost d'inclinacio.
-- **Source**: Playtest 2026-06-14, D7 (optimizer)
-- **Decision (2026-06-19)**: WONTFIX — el loop no és un problema. `act_faonar_eines` ha de generar
-  recurs `eina` (eines), NO material. Les eines seran consumides per accions específiques de branca:
-  - **Caçador**: caça menys arriscada
-  - **Artesà**: obres millors + menys upkeep de menjar (conservació)
-  - **Recol·lector**: millor recollecció → més aliments
-  - **Místic**: per definir
-  Una mateixa acció de crear eines es desplega en 4 variants de benefici per branca.
-  Disseny complet pendent com a subtasca de DESIGN-01.
-- **Acceptance**: N/A (redesign, no fix)
+- **Fitxers**: `prototypes/bloodline-v2/data.js`, `design/eras/prehistoria/`, `design/gdd/bloodline/`
+- **Origen (usuari 2026-06-24)**: ECON-01 i ECON-02 revelen que el problema de fons no és de tuning sinó
+  d'**arquitectura**. Cal replantejar de manera holística:
+  - Com funcionen les **4 branques** (Caçador, Recol·lector, Artesà, Místic) i la seva identitat.
+  - Com es relacionen **tecnologies → habilitats → accions** (habilitats lligades a techs; accions a habilitats)
+    i com es reparteixen al llarg de la línia de cicles de l'era (perquè cada generació tingui progressió real).
+  - Com d'**intercanviables/compartibles** són habilitats i accions entre branques (p.ex. eines com a
+    upgrades en canviar de branca — vegeu ECON-02).
+- **Assignació**: **agent especialitzat** — disseny de sistemes (`game-designer` / `systems-designer`)
+  per a l'arquitectura, amb `era-writer` + `era-historian` per al contingut. Possiblement via `/era-design`.
+- **Absorbeix / dona marc a**: ECON-01 (sostenibilitat inter-generacional), ECON-02 (eines com a upgrade),
+  i precedeix DESIGN-01 (justificació temàtica de les accions, passada posterior dins d'aquest marc).
+- **Acceptance**: un document de disseny que defineixi el model branques/techs/habilitats/accions i la seva
+  intercanviabilitat, ABANS de tocar `data.js`. Cap canvi de codi fins que el marc estigui aprovat.
+- **📄 PROPOSTES ESCRITES 2026-06-25** (per agents especialitzats; pendents de la teva revisió/decisió):
+  - **Part 1 — model de branques + intercanviabilitat** → `design/gdd/bloodline/branch-model-redesign.md`
+    (game-designer): identitat de cada branca (verb + risc), eines com a upgrade explícit (ECON-02),
+    3 accions-pont noves per al Místic. **Preguntes obertes**: (Q1) cost de retornar a l'eina d'una branca
+    anterior — pagar/gratis/reduït; (Q2) `narrar_llegendes`/`cants_grup` — reorientar a material/mantenir
+    com a pont/eliminar; (Q3) afegir més accions-pont (Caçador→Artesà, Recol·lector→Místic)?; (Q4) cadena
+    d'upgrades d'eines — lineal/lliure/independent; (Q5) nom de branca al UI — narratiu/eix/ocult.
+  - **Part 2 — distribució techs→habilitats→accions + sostenibilitat** → `design/gdd/bloodline/progression-distribution.md`
+    (systems-designer): regla "cada habilitat desbloqueja ≥1 acció lliure"; **3 dead zones detectades**
+    (Artesà c36-49 la pitjor; Caçador c10-15; `bt_coneixement_plantes` massa tard a c65); el material no és
+    tensió real (EV~60 vs cost branca~40, cap saturat). **Preguntes obertes**: (Q1) omplir dead zone Artesà;
+    (Q2) cap/flux de material — `{max:50,min:1}` o `{decay:0.5}` o sumidors d'execució; (Q3) avançar
+    `bt_coneixement_plantes`; (Q4) dead zone Caçador; (Q5) filosofia del material — tensió real o conveniència.
+  - **NOTA**: aquestes són PROPOSTES, no decisions. Cal que les revisis i responguis les 10 preguntes abans
+    de cap implementació. ECON-01 i ECON-02 queden coberts aquí.
 
----
+## P1 OPEN DESIGN — ECON-01 — Sostenibilitat de la progressió entre generacions (→ DESIGN-02)
 
-## P2 WONTFIX DESIGN — BL2-07 — Scoring path Mistic/Social sense diferenciacio
+- **Font**: Playtest 2026-06-23, "Decisió #1".
+- **Premissa del playtester**: el mercat queda buit a Gen 2 perquè l'hereu hereta totes les accions comprades.
+- **CORRECCIÓ (usuari + codi, 2026-06-24)**: premissa **INVALIDADA**. `continueSuccession` (game.js:877)
+  NO reinicia `state.cycle`; l'hereu neix amb `birthCycle = state.cycle` i el comptador és de tota l'era.
+  Les tecnologies es descobreixen per cicle (`autoDiscoverUniversalTechs`), així que Gen 2+ ARRIBA a
+  tecnologies → habilitats → accions noves que Gen 1 mai va assolir → el mercat NO està buit. Dir el
+  contrari implicaria que en ~15-20 cicles passen TOTES les techs i es descobreixen TOTES les habilitats.
+- **El que SÍ cal garantir**: que cada branca tingui accions repartides al llarg de la línia de tecnologies
+  (no totes concentrades a les techs primerenques), perquè el mercat es mantingui viu cada generació.
+- **Estat**: NO és una decisió A/B/C de tuning; és símptoma d'un problema d'arquitectura → **absorbit per DESIGN-02**.
 
-- **File**: `prototypes/bloodline-v2/game.js` → calculateScore()
-- **Issue**: Jugadors Mistics i de pura supervivencia amb el mateix nombre de techs puntuen igual. El scoring no distingeix playstyle.
-- **Source**: Playtest 2026-06-14, D1
-- **Decision (2026-06-19)**: WONTFIX — la diversitat de branques NO és un mèrit de scoring.
-  Passar per múltiples branques és una experiència diferent, no una estratègia superior.
-  El scoring ja recompensa profunditat (branch techs, coherència entre eres, branca dominant).
-  Títols de dinastia poden reconèixer combinacions específiques via `multi_branch_active`
-  però mai com a bonus de score directe. Reflectit a `scoring-system.md §3.3`.
+## P1 OPEN DESIGN — ECON-02 — Confirmar la força del rol d'eina (D3)
 
----
+- **Font**: Playtest 2026-06-23, Decisió #2 (convergència de 3 agents).
+- **Issue**: `ownsBranchToolRole()` fa que comprar 1 acció d'eina (cost 3) doni la fabricació de les 4
+  branques gratis i salti el gate de tech de les secundàries. És el comportament decidit a D3, però cal
+  confirmar si és la generositat desitjada.
+- **Exemple concret**: compres "Forjar Punta" (eina del Caçador, 3 material). Si després derives cap a
+  Artesà, pots usar "Façonar Estris" (eina d'Artesà) GRATIS, sense comprar-la ni desbloquejar la seva tech.
+  Pagues 1 eina i tens les 4 branques cobertes. ¿És el que vols, o cal que cada branca es pagui la seva?
+- **Direcció proposada (usuari 2026-06-24)**: tractar la substitució com una **acció d'UPGRADE**, no com
+  "totes gratis". Igual que pujar de "caça d'animals petits" a "caça d'animals grans" és un upgrade de
+  l'acció (no una acció nova), passar de fabricar llances (Caçador) a fabricar garbells (Recol·lector) és
+  un upgrade: l'acció nova surt **deshabilitada** al carrusel (cal adquirir-la) i l'antiga desapareix.
+  Reutilitza el sistema `is_upgrade`/`upgrades_action_id` existent.
+- **Relació**: la "intercanviabilitat entre branques" és el cor de DESIGN-02; ECON-02 n'és el cas concret de les eines.
+- **Acceptance**: la transició de l'eina d'una branca a l'altra es viu com un upgrade explícit (adquirible), no com una concessió gratuïta silenciosa.
 
-## P2 DONE FEAT — BL2-08 — Ghost pill sense avis de proximitat a condicions max
-
-- **File**: `prototypes/bloodline-v2/game.js` → getFormingBranch()
-- **Issue**: La pill no avisa quan s'acosta a violar una condicio max d'inclinacio (ex: sociabilitat > 0.40 bloquejarà el Caçador).
-- **Source**: Playtest 2026-06-14, D2
-- **Acceptance**: Quan l'inclinacio es a <0.05 d'una condicio max, la ghost pill canvia de color/estat.
-
----
-
-## P3 DONE CONTENT — C-01 — Passive effects de les branch techs sense efecte
-
-- **File**: `prototypes/bloodline-v2/data.js` → SKILL_DEFS passive_effects
-- **Issue**: Vuit de les 30 branch techs no tenen passive_effect tangible: bt_punta_llanca, bt_buri, bt_trampes, bt_guariment_plantes, bt_marques_territori, bt_ornaments, bt_coneixement_plantes, bt_llavor_selectiva.
-- **Source**: design/eras/prehistoria/03-skills.md §7
-- **Acceptance**: Totes les 30 branch techs amb passive_effect documentat i implementat.
-- **Completada**: 2026-06-17 (confirmada per grep — totes les 8 ja tenien efectes al codi)
-
----
-
-## P3 DEFERRED CONTENT — C-02 — Titols de dinastia amb condicions verificables
-
-- **File**: `prototypes/bloodline-v2/game.js` → calculateScore()
-- **Issue**: El scoring final te 5 titols basics sense condicions numeriques precises. No hi ha badges.
-- **Options**:
-  - A) 3 narratius (branca dominant) + 3 mecanics (fites) + secrets
-  - B) Titols per fites numeriques (X generacions, Y techs)
-- **Decision (2026-06-19)**: B — títols per fites numèriques. Prioritat baixa, implementació diferida.
-- **Acceptance**: >=6 titols amb condicions verificables; almenys 1 secret.
-
----
-
-## P3 DONE DESIGN — PT-16 — Incentiu per vides llargues
-
-- **File**: `prototypes/bloodline-v2/game.js`
-- **Issue**: No hi ha incentiu per viure fins al limit de LIFE_EXPECTANCY. L'optim es successio anticipada.
-- **Options**:
-  - A) Bonus puntuacio per cicles viscuts
-  - B) Tokens extra per edat avançada
-  - C) Herencia d'inclinacio proporcional a l'edat del difunt
-- **Decision**: (pendent)
-
----
-
----
-
-## P1 OPEN DESIGN — DESIGN-01 — Rethinking complet accions + habilitats Era 1
+## P1 OPEN DESIGN — DESIGN-01 — Rethinking complet d'accions + habilitats (Era 1)
 
 - **Fitxers**: `prototypes/bloodline-v2/data.js`, `design/gdd/bloodline/action-economy.md`,
   `design/eras/prehistoria/03-skills.md`
-- **Issue**: El disseny actual de les accions de la branca Místic (i potencialment totes les branques)
-  té tres problemes fonamentals:
-  1. **Justificació temàtica feble**: accions com `narrar_llegendes` i `cants_grup` generen menjar
-     sense que la narrativa ho justifiqui de manera creïble. La regla és: si no pots explicar en
-     una frase PER QUÈ una acció dona el recurs que dona, el disseny és incorrecte.
-  2. **Diferenciació risc/recompensa insuficient**: `narrar_llegendes` (🌾 1–3, sense risc) vs
-     `cants_grup` (🌾 2–4, sense risc) vs `transit_nocturn` (🌾 2–4, −5 salut) — el primer i el
-     segon son massa similars, el tercer s'hauria de diferenciar més que amb un simple −HP.
-  3. **Absència de transicions entre branques via accions**: cada acció hauria de poder empentar
-     la inclinació cap a la seva branca principal PERÒ algunes accions haurien d'actuar com a ponts
-     naturals cap a altres branques (vegeu la filosofia a `action-economy.md §RETHINKING`).
-- **Filosofia de disseny (nova)**: Una persona espiritual té accions espirituals, però el xamanisme
-  la pot aproximar a l'enginy (intel·lecte); el sacrifici ritual la pot aproximar al guerrer (impuls);
-  la cerimònia col·lectiva la pot aproximar al recol·lector social (sociabilitat). Les accions son el
-  mecanisme de transició entre branques, no la confirmació de la branca actual.
-- **Abast**: totes les accions de la branca Místic (16 accions + 8 branch techs) han de ser
-  revisades. Potencialment totes les branques si s'aplica el mateix criteri de coherència.
-- **Prerequisit**: decisió de disseny prèvia sobre quines transicions son possibles per branca
-  (veure `action-economy.md §RETHINKING` per les preguntes obertes).
-- **Acceptance**: cada acció té una justificació narrativa d'una frase per al seu output principal;
-  cap dues accions de la mateixa branca donen el mateix recurs amb el mateix perfil de risc;
-  almenys 2 accions per branca actuen com a ponts temàtics cap a altres branques.
+- **Issue**: el disseny d'accions (especialment branca Místic, potencialment totes) té 3 problemes:
+  1. **Justificació temàtica feble**: si no pots explicar en una frase PER QUÈ una acció dona el recurs
+     que dona, el disseny és incorrecte (p.ex. `narrar_llegendes`/`cants_grup` donen menjar sense raó creïble).
+  2. **Diferenciació risc/recompensa insuficient** entre accions similars de la mateixa branca.
+  3. **Falten accions-pont** que empentin la inclinació cap a ALTRES branques (les accions són el
+     mecanisme de transició entre branques, no la confirmació de la branca actual).
+- **Abast**: tota la branca Místic (16 accions + 8 habilitats); potencialment totes les branques.
+- **Subtasca absorbida**: el redisseny d'eines per branca de l'antic BL2-06 (benefici d'eina diferent
+  per Caçador/Artesà/Recol·lector/Místic) — parcialment fet via D1-D4; el matís per branca queda aquí.
+- **Acceptance**: cada acció té justificació narrativa d'una frase per al seu output; cap dues accions de
+  la mateixa branca donen el mateix recurs amb el mateix perfil de risc; ≥2 accions/branca són ponts temàtics.
+- **Assignació (2026-06-24)**: a executar per **agent especialitzat** (`era-writer` + `era-historian`,
+  via la skill `/era-design`), per indicació de l'usuari. No fer-ho manualment.
+- **Relació**: passada POSTERIOR dins de DESIGN-02 (la justificació temàtica ve un cop definit el marc
+  d'arquitectura branques/techs/habilitats/accions).
 
 ---
+<!-- ════════════════════════════ 🔧 DESENVOLUPAR (codi obert) ════════════════════════════ -->
 
----
+## P1 DONE BUG — START-01 — La branca inicial ha de ser sempre Recol·lector
 
-## P0 DONE BUG — BL2-09 — Upkeep s'aplica abans de l'event
+- **✅ RESOLT 2026-06-25** (commit 73a9bac): `freshInclination()` dona `sociabilitat: 0.05` → Recol·lector
+  actiu i determinista des del torn 1. Verificat (5/5 partides noves → branch_gatherer).
 
-- **Resolt**: 2026-06-18. `beginEndOfTurnPhase()` mou upkeep al 3r donut (🌙), sempre després de l'event.
+- **Fitxers**: `prototypes/bloodline-v2/game.js` (`freshInclination`, `initState`, `getActiveBranches`)
+- **Issue**: En començar partida, `freshInclination()` posa tots els eixos a 0.0 → totes les branques
+  empatades a 0% → `getActiveBranches()` cau al fallback i tria una branca **aleatòria**.
+- **DECIDIT (usuari 2026-06-24)**: la branca inicial ha de ser SEMPRE **Recol·lector** (eix `sociabilitat`,
+  confirmat a `BRANCH_AXIS`). Si cal desviar les inclinacions del centre absolut a l'inici, fer-ho. → llest per implementar.
+- **Direcció**: a l'inici de partida (Gen 1), donar a `sociabilitat` un valor positiu petit perquè
+  Recol·lector sigui la branca activa des del torn 1. (Els hereus per successió hereten inclinació, així
+  que això només afecta l'arrencada de Gen 1.)
+- **Acceptance**: nova partida → Recol·lector és la branca activa/primària des del primer torn, de manera determinista.
 
----
+## P1 DONE FEAT — EVT-01 — Els events han de mostrar l'impacte numèric real a la targeta
 
-## P0 DONE BUG — BL2-10 — Fases del torn no comproven mort
+- **✅ RESOLT 2026-06-25** (commit 73a9bac): les targetes d'event mostren l'impacte numèric
+  (food/health/material/pedra/eina) tant per opcions com per events de descartar/troballa. Verificat ("+3🌾").
 
-- **Resolt**: 2026-06-18. `beginEndOfTurnPhase()` fa succession check al final de tot; age-gate checks comproven `state.health > 0` primer.
+- **Fitxers**: `prototypes/bloodline-v2/game.js` (`renderInMapOverlay` pane-event), `index.html`
+- **Issue (usuari 2026-06-24)**: quan passa un event, la targeta no diu l'impacte real en números
+  (p.ex. +3 menjar, −5 salut). Els events amb opcions mostren un hint per opció, però els de descartar
+  i els de "troballa" no mostren el resultat concret.
+- **Acceptance**: tota targeta d'event mostra clarament l'impacte numèric que tindrà (o ha tingut) sobre els recursos.
+- **Relacionat**: SEQ-01 (timing del render de l'impacte).
 
----
+## P1 DONE BUG — LOG-01 — El log/historial no desa els events, només les accions
 
-## P1 DONE UX — BL2-11 — Menjar i salut sense upkeep ni límit visible
+- **✅ RESOLT 2026-06-25** (commit 73a9bac): `dismissDiscovery`/`dismissEvent` registren l'event a
+  `_pendingTurnEntry.event` → apareix al turn history. Verificat.
 
-- **Resolt**: 2026-06-18. Vital cells mostren `4/8` (valor/límit) i `↓2` (upkeep). Menjar i salut eliminats de la meta bar superior.
+- **Fitxers**: `prototypes/bloodline-v2/game.js` (`addLog`, `turnHistory`, `_pendingTurnEntry`,
+  `openTurnHistory`)
+- **Issue (usuari 2026-06-24)**: el log guarda les accions però no els esdeveniments. Verificar tant
+  el log d'accions (`addLog`) com l'historial de torns (`turnHistory`): els events de descobriment/
+  exploració (`pendingDiscoveries`) en particular no semblen quedar registrats a `_pendingTurnEntry.event`.
+- **Acceptance**: cada event que es dispara queda registrat al log/historial visible amb el seu nom i resultat.
 
----
+## P2 OPEN BALANCE — ECON-03 — No hi ha sumiders reals de material (`material_min ?? 2`)
 
-## P1 DONE BUG — BL2-12 — Capacitat menjar incorrecta al panell de debug
+- **Font**: Playtest 2026-06-23, S3-01 (optimizer MAT-10).
+- **Issue**: les accions sense `material_min/max` explícit generen 2-3 material per defecte
+  (`(action.material_min ?? 2)`). Accions pensades com a cost net (p.ex. `act_alimentar_foc`,
+  `act_parar_trampes`) en realitat generen material → cap sumider real tret de `material_min/max: 0` explícit.
+- **Direcció**: canviar el default a `?? 0`, o marcar explícitament quines accions generen material.
+- **Acceptance**: les accions que han de ser cost net de material no en generen; economia amb sumiders reals.
+- **Nota**: lligat a ECON-01/04 (decidir el paquet d'economia conjuntament).
 
-- **Resolt**: 2026-06-18. `showStatTooltip('food')` usa `foodMax()` en lloc de `FOOD_MAX`.
+## P2 OPEN BALANCE — ECON-04 — Cap de material (35) + decay 0.3 → riquesa plana entre generacions
 
----
+- **Font**: Playtest 2026-06-23, S3-02/03 (dynasty, optimizer).
+- **Issue**: `floor(35 × 0.3) = 10` tokens heretats fixos independentment de com jugui el jugador (sense
+  arc de riquesa de dinastia); a més el cap s'assoleix massa ràpid → poca tensió de pressupost a Gen 2+.
+- **Direcció**: escalar `purchase_cost` de late-tech (cicle ≥50) a 6-8, o abaixar el cap a 20-25, o
+  revisar `inheritDecay`. Decidir amb ECON-01.
+- **Acceptance**: el material és una decisió significativa més enllà de Gen 1; hi ha progressió de riquesa entre generacions.
 
-## P1 DONE UX — BL2-13 — Fases del torn invisibles
+## P2 OPEN DESIGN — PACE-01 — Dead zone pre-`ut_eines` (cicles ~6-16)
 
-- **Resolt**: 2026-06-18. 3 donuts separats: acció → event → 🌙 fi de torn. Cada fase té la seva animació i efectes diferenciats.
+- **Font**: Playtest 2026-06-23, S2-01 (speed-runner).
+- **Issue**: els perfils de branca d'eina (5 skills sota `ut_eines`, cicle 16) no tenen res nou a
+  desbloquejar ni comprar entre el cicle ~6 i 16; el material s'acumula sense destí. A Gen 1 la branca
+  només queda funcional ~cicle 18 de 20.
+- **Direcció**: acostar `ut_eines` a cicle 10-12, o donar skills de 1a capa que no depenguin de `ut_eines`.
+- **Acceptance**: cap tram llarg sense decisions/objectius de compra per a cap perfil de branca.
 
----
+## P2 OPEN UX — UX-01 — Sense distinció visual al mercat entre accions gated-per-branca i universals
 
-## P1 DONE UX — BL2-14 — Alertes crítiques sense explicació
+- **Font**: Playtest 2026-06-23, S2-02 (optimizer MAT-07 + claredat).
+- **Issue**: sota D4 el jugador veu al mercat accions que requerien desbloquejar una branch tech i altres
+  que apareixen en assolir una tech universal, sense distinció. Confusió: "he desbloquejat la tècnica però
+  l'acció no apareix fins comprar-la".
+- **Acceptance**: el mercat distingeix clarament "Disponible" vs "Requereix habilitat"; el flux desbloquejar→comprar és comprensible.
 
-- **Resolt**: 2026-06-18. `!` parpelleja DINS del requadre de menjar/salut quan hi ha perill. Clic → tooltip explicatiu amb desglossament complet i missatge de mort si toca.
+## P3 OPEN UX — UX-02 — Avís de mort sense hereu poc visible
 
----
+- **Font**: Playtest 2026-06-23, S3-04 (speed-runner).
+- **Issue**: la finestra `act_cercar_parella` (edat 5-14) vs l'avís a edat 12; un jugador centrat en
+  material pot perdre per extinció sense bloqueig clar.
+- **Acceptance**: l'avís de risc d'extinció és prou visible/urgent abans que la finestra es tanqui.
 
-## P1 DONE UX — BL2-15 — Naix un fill sense avís d'augment de consum
+## P3 OPEN BALANCE — BAL-01 — `act_coure_ceramica` costa 5 al mercat però té `material 0/0`
 
-- **Resolt**: 2026-06-18. `pane-birth` mostra el nou upkeep total de menjar per torn.
+- **Font**: Playtest 2026-06-23, S3-05 (optimizer MAT-04).
+- **Issue**: inversió de 5 tokens que no contribueix a l'economia de material; probable omissió.
+- **Acceptance**: `act_coure_ceramica` genera material coherent, o es documenta la zero-generació com a intencional.
 
----
+## P3 OPEN NETEJA — CLEAN-01 — `d_talla_silex` aplica DESTRESA_BONUS a una acció sense output
 
-## P1 DONE BALANCE — BL2-16 — Febre pot aparèixer dues vegades seguides
-
-- **Resolt**: 2026-06-18. `pe_malaltia` té `is_single_use: true`. Anti-repeat via `state.recentEventIds` (últims 4 events).
-
----
-
-## P1 DONE BUG — BL2-17 — Copy incorrecte destreses
-
-- **Resolt**: 2026-06-18. Missatge actualitzat a "Has despertat la capacitat innata de X. Es manifesta per la teva inclinació."
-
----
-
-## P1 DONE UX — BL2-18 — Selecció hereu sense destreses ni aprenentatges
-
-- **Resolt**: 2026-06-18. Botons d'hereu mostren ⭐ destreses i icones aprenentatges. Pantalla nou personatge mostra destreses inicials.
-
----
-
-## P2 DONE UX — BL2-19 — Recursos sense indicadors de tendència visual
-
-- **Resolt**: 2026-06-18. Carrusel d'accions usa `▲▼` per magnitud en tots els recursos (menjar, salut, pedra, eina, execute_cost, side_effects). Consistent amb les stats.
-
----
-
-## P2 DONE UX — BL2-20 — Historial de torns no accessible
-
-- **Resolt**: 2026-06-18. Log bar és clicable → overlay historial últims 10 torns (acció + event + upkeep per torn).
-
----
-
-## P2 DONE CSS — BL2-21 — Targeta cicles de vida solapa amb Planes
-
-- **Resolt**: 2026-06-18. `sun-cap` eliminat completament (era innecessari). Posicionament del logbar corregit.
-
----
-
-## P1 OPEN DESIGN — DESIGN-01 — Rethinking complet accions + habilitats Era 1
-
-- **Fitxers**: `prototypes/bloodline-v2/data.js`, `design/gdd/bloodline/action-economy.md`,
-  `design/eras/prehistoria/03-skills.md`
-- **Issue**: El disseny actual de les accions de la branca Místic (i potencialment totes les branques)
-  té tres problemes fonamentals:
-  1. **Justificació temàtica feble**: accions com `narrar_llegendes` i `cants_grup` generen menjar
-     sense que la narrativa ho justifiqui de manera creïble. La regla és: si no pots explicar en
-     una frase PER QUÈ una acció dona el recurs que dona, el disseny és incorrecte.
-  2. **Diferenciació risc/recompensa insuficient**: `narrar_llegendes` (🌾 1–3, sense risc) vs
-     `cants_grup` (🌾 2–4, sense risc) vs `transit_nocturn` (🌾 2–4, −5 salut) — el primer i el
-     segon son massa similars, el tercer s'hauria de diferenciar més que amb un simple −HP.
-  3. **Absència de transicions entre branques via accions**: cada acció hauria de poder empentar
-     la inclinació cap a la seva branca principal PERÒ algunes accions haurien d'actuar com a ponts
-     naturals cap a altres branques.
-- **Abast**: totes les accions de la branca Místic (16 accions + 8 branch techs) han de ser
-  revisades. Potencialment totes les branques si s'aplica el mateix criteri de coherència.
-- **Acceptance**: cada acció té una justificació narrativa d'una frase per al seu output principal;
-  cap dues accions de la mateixa branca donen el mateix recurs amb el mateix perfil de risc;
-  almenys 2 accions per branca actuen com a ponts temàtics cap a altres branques.
-
----
-
-## P2 DEFERRED BALANCE — BL2-06 — Loop pedra-faonar: font de material sense cost real
-
-- **Fitxers**: `prototypes/bloodline-v2/data.js`
-- **Issue**: `act_recollectar_pedra` (gratuïta) + `act_faonar_eines` (pedra -2, material +4/+7) genera 2x material que qualsevol altra acció sense cost d'inclinació.
-- **Decisió pendent**:
-  - A) Afegir `execute_cost: { material: 1 }` a `act_faonar_eines`
-  - B) Reduir output de `act_faonar_eines` de +4/+7 a +3/+5
-
----
-
-## P2 DEFERRED DESIGN — BL2-07 — Scoring Místic/Social sense diferenciació
-
-- **Fitxers**: `prototypes/bloodline-v2/game.js` → `calculateScore()`
-- **Issue**: Jugadors Místics i de pura supervivència amb el mateix nombre de techs puntuen igual.
-- **Decisió pendent**:
-  - A) Bonus per diversitat de branques desbloq.
-  - B) Títol especial Místic si >2 techs de la branca Místic
-
----
+- **Font**: Playtest 2026-06-23, S4-01 (auditoria) — conseqüència de D1.
+- **Issue**: amb D1, `act_tallar_pedra` ("Practicar la Talla") ja no té output, així que el DESTRESA_BONUS
+  de `d_talla_silex` hi és inert. La destresa SEGUEIX valent com a prerequisit de l'upgrade `act_talla_avancada`.
+- **Acceptance**: neteja del bonus inert o redirecció a un efecte útil; sense impacte funcional actual.
 
 ## P3 DEFERRED CONTENT — C-02 — Títols de dinastia amb condicions verificables
 
 - **Fitxers**: `prototypes/bloodline-v2/game.js` → `calculateScore()`
-- **Issue**: 5 títols bàsics sense condicions numèriques precises; no hi ha badges.
-- **Decisió pendent**:
-  - A) 3 narratius (branca dominant) + 3 mecànics (fites) + secrets
-  - B) Títols per fites numèriques (X generacions, Y techs)
+- **DECIDIT (2026-06-19)**: opció B — títols per fites numèriques (X generacions, Y techs). Falta NOMÉS
+  implementar (prioritat baixa). Ja no és una decisió pendent.
+- **Acceptance**: ≥6 títols amb condicions verificables; almenys 1 secret.
 
 ---
+<!-- ════════════════════════════ ✅ RESOLT ════════════════════════════ -->
 
-<!-- HISTORIAL (prototypes/bloodline/ ABANDONAT) -->
-<!-- DONE sessions 2026-06-06: PT-01..PT-13, D-01..D-03, SAVE, SCORE, BALANCE-EV, B-01 (20 tasques) -->
-<!-- DONE sessions 2026-06-14/16: aprenentatge, redesign pantalla, S3/S4 -->
-<!-- DONE sessió 2026-06-17: branques %normalitzats, tooltips, two-phase upkeep, material d'events -->
-<!-- DONE sessió 2026-06-18 (mati): 9 fixes playtest + 5 UI (zones, menjar barra, icones) -->
-<!-- DONE sessió 2026-06-18 (tarda): BL2-09..21, PT-16:A, assecar_provisions, 11 fixes UI -->
-<!-- OPEN: DESIGN-01, BL2-06 (dec.), BL2-07 (dec.), C-02 (dec.) -->
-<!-- STATS: actualitzat 2026-06-18 nit -->
+## ✅ RESOLT — Sessió 2026-06-23 (model d'eines + renaming)
+
+- **DONE DESIGN — D1** — Fabricació d'eines NOMÉS per branca (`act_tallar_pedra`→"Practicar la Talla" sense
+  eina; `act_preparar_eina` retirada; `act_talla_avancada` sense output d'eina). Commit 8770066.
+- **DONE DESIGN — D2** — Eines = consumible-porta + glossari aclarit (no bonus passiu).
+- **DONE DESIGN — D3** — Substitució automàtica de l'acció d'eina segons branca primària (helpers
+  `isActionOwned`/`ownsBranchToolRole`/`getPrimaryToolActionId`). ⚠️ Força a confirmar → ECON-02.
+- **DONE DESIGN — D4** — Accions de branca es compren al mercat (`unlockSkill` no les regala; `getBuyableActions`
+  les mostra un cop desbloquejada la tech). ⚠️ Sostenibilitat inter-generacional → ECON-01.
+- **DONE — Punt 5** — Renaming "Tallar Pedra" → "Practicar la Talla" amb descripció honesta.
+- **⚠️ REOBERT — Punts 1/2 (seqüència de torn)** — el fix Clúster A (gate + `clearFloaters`) NO resol el
+  problema de fons → vegeu **SEQ-01** (P0).
+- Detall: `production/playtests/2026-06-22-manual-feedback.md` + `2026-06-23-targeted-tool-economy.md`.
+
+## ✅ RESOLT — Sessions 2026-06-14 → 2026-06-18
+
+- **BL2-01** Meta bar mostra menjar i salut · **BL2-02** Ghost pill tappable amb info ·
+  **BL2-03** Badge de risc a accions amb cost de salut alt · **BL2-04** Pacing late-game
+  (`ut_ceramica` cicle 70, `ut_agricultura` 85) · **BL2-05** Constants zombie de reputació eliminades
+  (2026-06-16) · **BL2-08** Ghost pill avisa proximitat a condició max.
+- **BL2-09** Upkeep després de l'event · **BL2-10** Fases comproven mort · **BL2-11** Menjar/salut amb
+  upkeep i límit visibles · **BL2-12** Capacitat menjar al debug · **BL2-13** 3 donuts (acció/event/🌙) ·
+  **BL2-14** Alertes crítiques explicades · **BL2-15** Avís d'augment de consum en néixer fill ·
+  **BL2-16** Febre `is_single_use` + anti-repeat · **BL2-17** Copy destreses · **BL2-18** Hereu mostra
+  destreses/aprenentatges · **BL2-19** Indicadors de tendència al carrusel · **BL2-20** Historial de torns
+  accessible · **BL2-21** Targeta cicles de vida no solapa.
+- **C-01** Passive effects de les 30 branch techs (2026-06-17) · **PT-16** Incentiu vides llargues (opció A).
+- Sessions 2026-06-06 (PT-01..PT-13, D-01..D-03, SAVE, SCORE, BALANCE-EV, B-01) · 2026-06-17 (branques
+  %normalitzats, two-phase upkeep, material d'events).
+
+---
+<!-- ════════════════════════════ ⛔ WONTFIX / SUPERAT ════════════════════════════ -->
+
+## ⛔ WONTFIX DESIGN — BL2-07 — Scoring Místic/Social sense diferenciació
+
+- **Decisió (2026-06-19)**: la diversitat de branques NO és un mèrit de scoring. El scoring ja recompensa
+  profunditat (branch techs, coherència entre eres, branca dominant). Reflectit a `scoring-system.md §3.3`.
+
+## ⛔ SUPERAT — BL2-06 — Loop pedra-faonar: font de material sense cost real
+
+- **Estat**: l'antiga decisió (`act_faonar_eines` ha de generar `eina`, no material; eines consumides per
+  accions de branca) s'ha **implementat via D1-D4** (2026-06-23). El matís de benefici d'eina diferent per
+  branca queda absorbit a **DESIGN-01**. El residu d'economia de material es tracta a **ECON-03**.
+
+<!-- STATS: reorganitzat i deduplicat 2026-06-24 (SEQ-01, EVT-01, LOG-01, START-01 + playtest ECON/PACE/UX/BAL/CLEAN) -->
