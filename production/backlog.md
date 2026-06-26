@@ -30,10 +30,14 @@
   d'actuar en creixement. Decisió de disseny pendent (clawback de salut jove: sí/no).
   · **2b NO és bug**: Recol·lectar Arrels 0→4, event +2, upkeep −2 = 4 és correcte (output aplicat 1 sol cop,
   `game.js:1176-1188`; sense doble compte). La confusió ve de LOG-01 (números no separats).
-- **✅ RESOLT 2026-06-26 (working tree, pendent de commit/deploy)** — 2a: `applyTurnUpkeep` ja no retalla la
-  salut guanyada en fase de creixement (guard `health < cap` + clamp al pic excepte en declivi). Verificat
-  headless (Playwright): Contemplació 30→33 al fi d'acció i **es manté 33** al fi de torn (abans queia a 31).
-  Decisió 2a (2026-06-26) = "no clawback de la salut guanyada".
+- **⚠️ 1r fix 2a INCOMPLET (commit 4efb4d7)**: `applyTurnUpkeep` deixava de retallar al fi de torn, però la
+  salut guanyada per **events/tecnologies/habilitats** encara es retallava perquè `healthMax()` retornava el
+  cap rampat (test usuari: Contemplació + event "+3❤️" → 30→31, el +3 es perdia).
+- **✅ RESOLT 2026-06-26 (2n fix, complet)** — `healthMax()` redefinida: retorna el **pic** (40, o
+  `currentHealthMax`) durant creixement/estabilitat i només baixa en declivi; `getHealthCap(age)` (rampa
+  30→40) queda només com a deriva passiva de +1/torn. Ara totes les vies de guany (acció, event, tech,
+  habilitat, fi de torn) respecten "no clawback". Verificat headless multi-torn: event +3❤️ es manté; la
+  caiguda dels torns 3+ amb Contemplació-sol era **gana** (menjar a 0, −10), comportament correcte.
 - **Fitxers**: `prototypes/bloodline-v2/game.js` (`executeAction`, `beginEndOfTurnPhase`,
   `proceedToEndOfTurn`, `clearFloaters`, `dismissEvent`, `applyFxFloaters`, `renderAll`)
 - **Queixa recurrent de l'usuari** (3a+ vegada; encara trencat després de BL2-09, BL2-13 i el fix Clúster A del 2026-06-23):
@@ -242,6 +246,10 @@
   s'adjunten al fi de torn (resol el cas del foc, que es descobria després de buidar l'entrada). Render
   defensiu (compatible amb entrades antigues). Verificat headless: Contemplació → `action.delta "+3❤️"`,
   `events:[]`, `discoveries`/`skills` arrays, `upkeep "-2🌾"`.
+- **✅ VERIFICAT 2026-06-26 (headless multi-torn fins al cicle 10)**: el **foc** (`🔥 El Foc`, cicle 10) i les
+  **habilitats** (p.ex. `Rituals de la Flama`) es desen a l'historial com a entrades separades
+  (`discoveries`/`skills`), a més d'acció+delta i events+delta. Si l'usuari no ho veu: cache/deploy o no
+  haver arribat al foc (cicle 10) en aquella partida.
 
 - **Fitxers**: `prototypes/bloodline-v2/game.js` (`addLog`, `turnHistory`, `_pendingTurnEntry`,
   `openTurnHistory`)
@@ -291,6 +299,23 @@
   que apareixen en assolir una tech universal, sense distinció. Confusió: "he desbloquejat la tècnica però
   l'acció no apareix fins comprar-la".
 - **Acceptance**: el mercat distingeix clarament "Disponible" vs "Requereix habilitat"; el flux desbloquejar→comprar és comprensible.
+- **Relacionat #5 (2026-06-27)**: l'usuari no veu com s'obtenen les **habilitats de branca**. Mecanisme
+  actual: l'única acció de descobriment és **"Escoltar els Estrangers"** (Campament), que apareix només quan
+  hi ha habilitats elegibles (inclinació + tech universal complerta) i en desbloqueja la més madura → llavors
+  les seves accions es fan comprables al mercat. NO es "compren" habilitats; es descobreixen via aquesta
+  acció. Cal fer el flux molt més visible (o repensar-lo dins DESIGN-02-IMPL).
+
+## P3 OPEN BUG — SUCC-01 — pendingDeath/pendingSuccession no es desen (pèrdua en background-kill)
+
+- **Font**: investigació #4 (2026-06-26/27). El save object (`game.js:147-186`) NO inclou `pendingDeath` ni
+  `pendingSuccession`. Si l'app es tanca a la pantalla de mort/successió (abans de triar successor), en
+  recarregar es perd la successió i l'herència associada (inclinació/habilitats/aprenentatges del successor).
+- **#4 NO és bug de transmissió**: la re-transmissió d'aprenentatges heretats és CORRECTA — test headless
+  gen1→gen2→gen3 (`apr_cures_basiques` arriba a gen3) i "Ensenyar el Fill" surt ACTIVE amb només un
+  aprenentatge heretat. Si l'usuari ho va veure fallar: o gen2 no va completar "Ensenyar el Fill" (Llar,
+  cal fill), o aquest edge de save a la pantalla de successió.
+- **Acceptance**: una mort/successió pendent sobreviu un background-kill (desar pendingDeath/Succession, o
+  re-derivar-la en carregar).
 
 ## P3 OPEN UX — UX-02 — Avís de mort sense hereu poc visible
 
