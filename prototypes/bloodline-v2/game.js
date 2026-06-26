@@ -456,7 +456,14 @@ function getHealthCap(age) {
   const decay = HEALTH_DECAY_SCALE * Math.pow(age - stableEnd, HEALTH_DECAY_POWER);
   return Math.max(1, Math.round(peakCap - decay));
 }
-function healthMax() { return state ? getHealthCap(characterAge()) : HEALTH_MAX; }
+function healthMax() {
+  if (!state) return HEALTH_MAX;
+  // Decisió 2a (2026-06-26): el sostre de la salut GUANYADA (accions, events, tecnologies,
+  // habilitats) és el pic (40) durant creixement/estabilitat; només en declivi el sostre baixa.
+  // getHealthCap(age) (rampa 30→40) només marca la deriva passiva de +1/torn, no retalla.
+  const stableEnd = HEALTH_GROW_TURNS + HEALTH_STABLE_TURNS;
+  return characterAge() > stableEnd ? getHealthCap(characterAge()) : (state.currentHealthMax ?? HEALTH_MAX);
+}
 function materialMax() { return RESOURCE_DEFS.find(r => r.id === 'material')?.max ?? Infinity; }
 function foodMax()     { return state ? Math.min(FOOD_MAX, state.foodMax ?? FOOD_MAX_START) : FOOD_MAX_START; }
 
