@@ -19,10 +19,21 @@
 
 ## P0 DONE BUG — SEQ-01 — Els efectes de l'acció es veuen al fi de torn, no al fi d'acció
 
-- **✅ RESOLT 2026-06-25** (commit 73a9bac): output aplicat + `renderAll()` al fi d'acció; eliminat el
+- **✅ RESOLT 2026-06-25** (commit 17462e9): output aplicat + `renderAll()` al fi d'acció; eliminat el
   diferiment d'output en events; tret `clearFloaters()` de l'inici de l'EOT. Verificat amb Playwright al
   RENDER VISIBLE (#hex-health mostra el +salut al fi d'acció amb el cicle sense avançar). 4t intent, ara sí.
   Diagnòstic original conservat sota per història.
+- **🔴 REOBERT 2026-06-26 (test usuari a Pages)** — nova faceta de SALUT (2a): Contemplació mostra +6 (30→36)
+  al fi d'ACCIÓ, però al fi de torn cau a 31. CAUSA: `game.js:954` `Math.min(cap, state.health)` s'aplica
+  també en fase de CREIXEMENT (retalla la salut guanyada al cap jove ~31), mentre el fi d'acció clampa al max
+  estàtic 40 (`game.js:1178`, `outDef.max`). El comentari del codi diu "decline phase" → el clamp no hauria
+  d'actuar en creixement. Decisió de disseny pendent (clawback de salut jove: sí/no).
+  · **2b NO és bug**: Recol·lectar Arrels 0→4, event +2, upkeep −2 = 4 és correcte (output aplicat 1 sol cop,
+  `game.js:1176-1188`; sense doble compte). La confusió ve de LOG-01 (números no separats).
+- **✅ RESOLT 2026-06-26 (working tree, pendent de commit/deploy)** — 2a: `applyTurnUpkeep` ja no retalla la
+  salut guanyada en fase de creixement (guard `health < cap` + clamp al pic excepte en declivi). Verificat
+  headless (Playwright): Contemplació 30→33 al fi d'acció i **es manté 33** al fi de torn (abans queia a 31).
+  Decisió 2a (2026-06-26) = "no clawback de la salut guanyada".
 - **Fitxers**: `prototypes/bloodline-v2/game.js` (`executeAction`, `beginEndOfTurnPhase`,
   `proceedToEndOfTurn`, `clearFloaters`, `dismissEvent`, `applyFxFloaters`, `renderAll`)
 - **Queixa recurrent de l'usuari** (3a+ vegada; encara trencat després de BL2-09, BL2-13 i el fix Clúster A del 2026-06-23):
@@ -60,7 +71,7 @@
 ---
 <!-- ════════════════════════════ 🎨 DECIDIR (disseny obert) ════════════════════════════ -->
 
-## P1 OPEN DESIGN — DESIGN-02 — Replantejament del model de progressió (branques × techs × habilitats × accions)
+## P1 DONE DESIGN — DESIGN-02 — Replantejament del model de progressió (branques × techs × habilitats × accions)
 
 - **Fitxers**: `prototypes/bloodline-v2/data.js`, `design/eras/prehistoria/`, `design/gdd/bloodline/`
 - **Origen (usuari 2026-06-24)**: ECON-01 i ECON-02 revelen que el problema de fons no és de tuning sinó
@@ -76,23 +87,52 @@
   i precedeix DESIGN-01 (justificació temàtica de les accions, passada posterior dins d'aquest marc).
 - **Acceptance**: un document de disseny que defineixi el model branques/techs/habilitats/accions i la seva
   intercanviabilitat, ABANS de tocar `data.js`. Cap canvi de codi fins que el marc estigui aprovat.
-- **📄 PROPOSTES ESCRITES 2026-06-25** (per agents especialitzats; pendents de la teva revisió/decisió):
-  - **Part 1 — model de branques + intercanviabilitat** → `design/gdd/bloodline/branch-model-redesign.md`
-    (game-designer): identitat de cada branca (verb + risc), eines com a upgrade explícit (ECON-02),
-    3 accions-pont noves per al Místic. **Preguntes obertes**: (Q1) cost de retornar a l'eina d'una branca
-    anterior — pagar/gratis/reduït; (Q2) `narrar_llegendes`/`cants_grup` — reorientar a material/mantenir
-    com a pont/eliminar; (Q3) afegir més accions-pont (Caçador→Artesà, Recol·lector→Místic)?; (Q4) cadena
-    d'upgrades d'eines — lineal/lliure/independent; (Q5) nom de branca al UI — narratiu/eix/ocult.
-  - **Part 2 — distribució techs→habilitats→accions + sostenibilitat** → `design/gdd/bloodline/progression-distribution.md`
-    (systems-designer): regla "cada habilitat desbloqueja ≥1 acció lliure"; **3 dead zones detectades**
-    (Artesà c36-49 la pitjor; Caçador c10-15; `bt_coneixement_plantes` massa tard a c65); el material no és
-    tensió real (EV~60 vs cost branca~40, cap saturat). **Preguntes obertes**: (Q1) omplir dead zone Artesà;
-    (Q2) cap/flux de material — `{max:50,min:1}` o `{decay:0.5}` o sumidors d'execució; (Q3) avançar
-    `bt_coneixement_plantes`; (Q4) dead zone Caçador; (Q5) filosofia del material — tensió real o conveniència.
-  - **NOTA**: aquestes són PROPOSTES, no decisions. Cal que les revisis i responguis les 10 preguntes abans
-    de cap implementació. ECON-01 i ECON-02 queden coberts aquí.
+- **✅ DECISIONS PRESES 2026-06-25** (sessió de revisió amb l'usuari; les 10 preguntes resoltes):
+  - Doc 1 `branch-model-redesign.md` §7 i Doc 2 `progression-distribution.md` §9 contenen les
+    decisions completes. Resum:
+    - **Eines**: cadena **lliure** (1 eina activa, qualsevol eina upgrade de qualsevol altra);
+      retorn a una eina ja coneguda pel llinatge = **gratuït** (cal set "eines conegudes" heretat).
+    - **Místic**: **eliminar** `act_narrar_llegendes` + `act_cants_grup`; food del Místic via les
+      3 accions-pont noves.
+    - **Ponts**: afegir `Caçador→Artesà` i `Recol·lector→Místic` (roda completa).
+    - **UI branca**: indicació actual + panell d'identitat (frase/verb/risc) en **tocar** la branca.
+    - **Dead zones**: nova `bt_mapa_recursos` a `ut_art` (Artesà); família de foc del Caçador a
+      `ut_foc` (`bt_carn_al_foc` + caça amb foc); `bt_coneixement_plantes` → `ut_foc` (bàsica) /
+      `ut_corda` (expandida).
+    - **Material**: **sense canvis** de knobs (cap 35 / decay 0.3 / min 2). El material no és tensió
+      argumental: recurs de llinatge conservat + palanca de pacing futura via `purchase_cost`.
+    - **Foc = UT transversal**: cada branca l'aprofita al seu estil (documentat a Doc 1 §2.3).
+  - ECON-01 i ECON-02 queden **resolts** aquí. La feina de contingut/codi passa a **DESIGN-02-IMPL**.
 
-## P1 OPEN DESIGN — ECON-01 — Sostenibilitat de la progressió entre generacions (→ DESIGN-02)
+## P1 OPEN CONTENT — DESIGN-02-IMPL — Aplicar les decisions de DESIGN-02 al contingut
+
+- **Fitxers**: `prototypes/bloodline-v2/data.js` (contingut), `prototypes/bloodline-v2/game.js`
+  (eines/UI), `design/gdd/bloodline/`.
+- **Origen**: decisions de DESIGN-02 (2026-06-25). Vegeu `branch-model-redesign.md` §7.1 i
+  `progression-distribution.md` §9.2.
+- **Assignació**: contingut (accions/habilitats a `data.js`) via `era-writer` + `era-historian`
+  (`/era-design`); lògica d'eines i UI a `game.js` directament. Target = prototip JS (NO Godot).
+- **Checklist**:
+  1. [ ] **Eliminar** `act_narrar_llegendes` i `act_cants_grup` de `data.js` (Q2).
+  2. [ ] **3 accions-pont del Místic** (`act_sacrifici_ritual`, `act_curacio_col·lectiva`,
+     `act_narrar_territori`) com a substitut complet (Doc 1 §4.3).
+  3. [ ] **2 accions-pont noves**: `Caçador→Artesà` i `Recol·lector→Místic` (Q3).
+  4. [ ] **`bt_mapa_recursos`** a `ut_art` (Artesà): cartografia/comptatge/mesura + 1-2 accions (Doc 2 Q1).
+  5. [ ] **Reubicar `bt_coneixement_plantes`** → `ut_foc`, partint accions bàsiques (`ut_foc`) vs
+     expandides (`ut_corda`) (Doc 2 Q3).
+  6. [ ] **Família de foc del Caçador** a `ut_foc`: `bt_carn_al_foc` + caça amb foc (torxa/batuda,
+     endurir punta, fumar) (Doc 2 Q4).
+  7. [ ] **Cadena lliure d'eines** (Q4) + **registre "eines conegudes"** heretat per a retorn gratuït
+     (Q1) — `game.js` (`is_upgrade`/`upgrades_action_id` + nou set heretat al 100%).
+  8. [ ] **Panell d'identitat de branca** en tocar la branca (frase/verb/risc) — UI (Q5).
+  9. [ ] `act_recollir_branques`: ampliar threshold a `impuls max 0.50` (fix BRN-05, Doc 1 §6.3).
+- **NO canviar**: knobs de material (cap/decay/min) — Q2/Q5 = sense canvis.
+- **Acceptance**: les decisions de §7/§9 reflectides a `data.js`/`game.js`; cap dead zone d'Artesà
+  (c36-49) ni Caçador (c10-15); `narrar_llegendes`/`cants_grup` fora; eines amb cadena lliure i retorn
+  gratuït verificat; panell d'identitat accessible des de la branca.
+- **Relació**: precedeix/absorbeix DESIGN-01 (justificació temàtica fina de cada acció dins d'aquest marc).
+
+## P1 DONE DESIGN — ECON-01 — Sostenibilitat de la progressió entre generacions (→ DESIGN-02)
 
 - **Font**: Playtest 2026-06-23, "Decisió #1".
 - **Premissa del playtester**: el mercat queda buit a Gen 2 perquè l'hereu hereta totes les accions comprades.
@@ -103,9 +143,11 @@
   contrari implicaria que en ~15-20 cicles passen TOTES les techs i es descobreixen TOTES les habilitats.
 - **El que SÍ cal garantir**: que cada branca tingui accions repartides al llarg de la línia de tecnologies
   (no totes concentrades a les techs primerenques), perquè el mercat es mantingui viu cada generació.
-- **Estat**: NO és una decisió A/B/C de tuning; és símptoma d'un problema d'arquitectura → **absorbit per DESIGN-02**.
+- **✅ RESOLT 2026-06-25 (via DESIGN-02)**: les decisions de dead zones (Artesà a `ut_art`, Caçador a
+  `ut_foc`, `bt_coneixement_plantes` a `ut_foc`) garanteixen accions repartides al llarg de la línia de
+  techs per a cada branca → el mercat es manté viu cada generació. Implementació a DESIGN-02-IMPL.
 
-## P1 OPEN DESIGN — ECON-02 — Confirmar la força del rol d'eina (D3)
+## P1 DONE DESIGN — ECON-02 — Confirmar la força del rol d'eina (D3)
 
 - **Font**: Playtest 2026-06-23, Decisió #2 (convergència de 3 agents).
 - **Issue**: `ownsBranchToolRole()` fa que comprar 1 acció d'eina (cost 3) doni la fabricació de les 4
@@ -121,6 +163,9 @@
   Reutilitza el sistema `is_upgrade`/`upgrades_action_id` existent.
 - **Relació**: la "intercanviabilitat entre branques" és el cor de DESIGN-02; ECON-02 n'és el cas concret de les eines.
 - **Acceptance**: la transició de l'eina d'una branca a l'altra es viu com un upgrade explícit (adquirible), no com una concessió gratuïta silenciosa.
+- **✅ RESOLT 2026-06-25 (DESIGN-02 Q1+Q4)**: **cadena lliure** (1 eina activa; qualsevol eina és upgrade
+  de qualsevol altra) + **retorn gratuït** a una eina ja coneguda pel llinatge (set "eines conegudes"
+  heretat al 100%). Implementació a DESIGN-02-IMPL ítem 7.
 
 ## P1 OPEN DESIGN — DESIGN-01 — Rethinking complet d'accions + habilitats (Era 1)
 
@@ -147,8 +192,9 @@
 
 ## P1 DONE BUG — START-01 — La branca inicial ha de ser sempre Recol·lector
 
-- **✅ RESOLT 2026-06-25** (commit 73a9bac): `freshInclination()` dona `sociabilitat: 0.05` → Recol·lector
+- **✅ RESOLT 2026-06-25** (commit 17462e9): `freshInclination()` dona `sociabilitat: 0.05` → Recol·lector
   actiu i determinista des del torn 1. Verificat (5/5 partides noves → branch_gatherer).
+- **✅✅ VERIFICAT PER USUARI 2026-06-26 (Pages)**: sempre Recol·lector en partides noves. TANCAT.
 
 - **Fitxers**: `prototypes/bloodline-v2/game.js` (`freshInclination`, `initState`, `getActiveBranches`)
 - **Issue**: En començar partida, `freshInclination()` posa tots els eixos a 0.0 → totes les branques
@@ -162,8 +208,16 @@
 
 ## P1 DONE FEAT — EVT-01 — Els events han de mostrar l'impacte numèric real a la targeta
 
-- **✅ RESOLT 2026-06-25** (commit 73a9bac): les targetes d'event mostren l'impacte numèric
+- **✅ RESOLT 2026-06-25** (commit 17462e9): les targetes d'event mostren l'impacte numèric
   (food/health/material/pedra/eina) tant per opcions com per events de descartar/troballa. Verificat ("+3🌾").
+- **🔴 REOBERT 2026-06-26 (test usuari)**: en events AMB opcions, el div `ev-impact-hint` NO es neteja → es
+  queda un impacte ranci d'un event anterior SENSE opcions (p.ex. "+3❤️") imprès a la targeta del fong, aliè a
+  les 2 opcions, i que no s'aplica. CAUSA: `renderInMapOverlay` només amaga `ev-impact-hint` a la branca sense
+  opcions (`game.js:2107-2108`), mai a la branca amb opcions (`game.js:2061-2088`). Cal amagar-lo sempre que
+  l'event tingui opcions (o al principi del render d'event).
+- **✅ RESOLT 2026-06-26 (working tree, pendent de commit/deploy)**: `renderInMapOverlay` amaga `ev-impact-hint`
+  al principi del render d'event → cap impacte ranci en events amb opcions. Verificat headless (`display:none`
+  amb event d'opcions després d'un impacte previ).
 
 - **Fitxers**: `prototypes/bloodline-v2/game.js` (`renderInMapOverlay` pane-event), `index.html`
 - **Issue (usuari 2026-06-24)**: quan passa un event, la targeta no diu l'impacte real en números
@@ -174,8 +228,20 @@
 
 ## P1 DONE BUG — LOG-01 — El log/historial no desa els events, només les accions
 
-- **✅ RESOLT 2026-06-25** (commit 73a9bac): `dismissDiscovery`/`dismissEvent` registren l'event a
+- **✅ RESOLT 2026-06-25** (commit 17462e9): `dismissDiscovery`/`dismissEvent` registren l'event a
   `_pendingTurnEntry.event` → apareix al turn history. Verificat.
+- **🔴 REOBERT 2026-06-26 (test usuari)**: incomplet. (a) Barreja números: `action` i event comparteixen camps
+  i el "upkeep" suma el net del fi de torn (incloent el clamp de salut) → no es veu què ha donat l'acció vs
+  l'event per separat. (b) Descobriments NO es desen: el foc (`autoDiscoverUniversalTechs`, `game.js:972`) crea
+  un pendingDiscovery, però `_pendingTurnEntry` ja s'ha buidat (`game.js:998-1000`) abans que el jugador el
+  descarti → `dismissDiscovery` (`game.js:2127`) no té on escriure. (c) Habilitats igual (es claven al camp
+  `event`, first-wins). Cal esquema ric: `{action:{name,delta}, events:[{name,choice,delta}], discoveries:[], skills:[]}`.
+- **✅ RESOLT 2026-06-26 (working tree, pendent de commit/deploy)**: esquema ric implementat —
+  `action:{name,delta}`, `events:[{name,choice,delta}]`, `discoveries:[]`, `skills:[]`, `upkeep` separat.
+  Descobriments/habilitats es capturen en un bucket transitori del torn (`_turnDiscoveries`/`_turnSkills`) i
+  s'adjunten al fi de torn (resol el cas del foc, que es descobria després de buidar l'entrada). Render
+  defensiu (compatible amb entrades antigues). Verificat headless: Contemplació → `action.delta "+3❤️"`,
+  `events:[]`, `discoveries`/`skills` arrays, `upkeep "-2🌾"`.
 
 - **Fitxers**: `prototypes/bloodline-v2/game.js` (`addLog`, `turnHistory`, `_pendingTurnEntry`,
   `openTurnHistory`)
@@ -184,7 +250,7 @@
   exploració (`pendingDiscoveries`) en particular no semblen quedar registrats a `_pendingTurnEntry.event`.
 - **Acceptance**: cada event que es dispara queda registrat al log/historial visible amb el seu nom i resultat.
 
-## P2 OPEN BALANCE — ECON-03 — No hi ha sumiders reals de material (`material_min ?? 2`)
+## P2 DEFERRED BALANCE — ECON-03 — No hi ha sumiders reals de material (`material_min ?? 2`)
 
 - **Font**: Playtest 2026-06-23, S3-01 (optimizer MAT-10).
 - **Issue**: les accions sense `material_min/max` explícit generen 2-3 material per defecte
@@ -192,16 +258,20 @@
   `act_parar_trampes`) en realitat generen material → cap sumider real tret de `material_min/max: 0` explícit.
 - **Direcció**: canviar el default a `?? 0`, o marcar explícitament quines accions generen material.
 - **Acceptance**: les accions que han de ser cost net de material no en generen; economia amb sumiders reals.
-- **Nota**: lligat a ECON-01/04 (decidir el paquet d'economia conjuntament).
+- **DECISIÓ 2026-06-25 (DESIGN-02 Q2/Q5) — DIFERIT**: el material **no és una tensió** (recurs de
+  llinatge conservat + palanca de pacing via `purchase_cost`). El sumidor "per tensió" queda diferit.
+  Es manté com a opció el fix de *correctness* (accions pensades com a cost net no haurien de generar
+  material) si un playtest ho justifica.
 
-## P2 OPEN BALANCE — ECON-04 — Cap de material (35) + decay 0.3 → riquesa plana entre generacions
+## P2 DEFERRED BALANCE — ECON-04 — Cap de material (35) + decay 0.3 → riquesa plana entre generacions
 
 - **Font**: Playtest 2026-06-23, S3-02/03 (dynasty, optimizer).
 - **Issue**: `floor(35 × 0.3) = 10` tokens heretats fixos independentment de com jugui el jugador (sense
   arc de riquesa de dinastia); a més el cap s'assoleix massa ràpid → poca tensió de pressupost a Gen 2+.
-- **Direcció**: escalar `purchase_cost` de late-tech (cicle ≥50) a 6-8, o abaixar el cap a 20-25, o
-  revisar `inheritDecay`. Decidir amb ECON-01.
-- **Acceptance**: el material és una decisió significativa més enllà de Gen 1; hi ha progressió de riquesa entre generacions.
+- **DECISIÓ 2026-06-25 (DESIGN-02 Q2/Q5) — DIFERIT**: NO es toquen cap/decay/min ara. El material no és
+  un arc de riquesa dinàstica per disseny; la palanca de pacing de reserva per al futur és `purchase_cost`
+  (encarir late-tech), no el cap ni el decay. Aquesta tasca queda disponible si més endavant es vol
+  convertir el material en una decisió real.
 
 ## P2 OPEN DESIGN — PACE-01 — Dead zone pre-`ut_eines` (cicles ~6-16)
 
@@ -211,6 +281,8 @@
   només queda funcional ~cicle 18 de 20.
 - **Direcció**: acostar `ut_eines` a cicle 10-12, o donar skills de 1a capa que no depenguin de `ut_eines`.
 - **Acceptance**: cap tram llarg sense decisions/objectius de compra per a cap perfil de branca.
+- **Nota 2026-06-25**: DESIGN-02-IMPL mitiga parcialment el tram c10-16 (coneixement de plantes i família
+  de foc del Caçador passen a `ut_foc` c10). Reavaluar la resta de la dead zone després d'aplicar DESIGN-02-IMPL.
 
 ## P2 OPEN UX — UX-01 — Sense distinció visual al mercat entre accions gated-per-branca i universals
 
@@ -294,4 +366,4 @@
   accions de branca) s'ha **implementat via D1-D4** (2026-06-23). El matís de benefici d'eina diferent per
   branca queda absorbit a **DESIGN-01**. El residu d'economia de material es tracta a **ECON-03**.
 
-<!-- STATS: reorganitzat i deduplicat 2026-06-24 (SEQ-01, EVT-01, LOG-01, START-01 + playtest ECON/PACE/UX/BAL/CLEAN) -->
+<!-- STATS: 2026-06-25 DESIGN-02 decidit (10 preguntes) → DESIGN-02-IMPL obert; ECON-01/02 resolts; ECON-03/04 diferits. Reorganitzat 2026-06-24. -->

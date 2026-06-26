@@ -486,6 +486,7 @@ function autoDiscoverUniversalTechs() {
     addLog(`${tech.icon} Descoberta: ${tech.name}`);
     applyUniversalTechEffect(tech);
     state.pendingDiscoveries.push({ ...tech, _isTech: true });
+    if (state._turnDiscoveries) state._turnDiscoveries.push(`${tech.icon || '✦'} ${tech.name}`);
   }
 }
 
@@ -510,6 +511,7 @@ function unlockSkill(bt) {
   if (state.character.unlockedSkillIds.has(bt.id)) return;
   state.character.unlockedSkillIds.add(bt.id);
   addLog(`Nova habilitat: ${bt.name}`);
+  if (state._turnSkills) state._turnSkills.push(bt.name);
   if (bt.unlocks_action_ids) {
     // D4 (2026-06-22): les accions amb cost es compren al mercat un cop desbloquejada la tech;
     // només les gratuïtes (sense purchase_cost) es concedeixen directament en desbloquejar-la.
@@ -933,8 +935,9 @@ function getStatMultiplier(action) {
 function applyTurnUpkeep() {
   const age = characterAge();
   const cap = getHealthCap(age);
-  // Youth passive growth: during grow phase, health rises by 1 per turn (up to cap)
-  if (age <= HEALTH_GROW_TURNS) {
+  // Youth passive growth: durant el creixement la salut puja 1/torn cap al cap natural,
+  // però NO retallem la salut ja guanyada per accions si ja supera el cap jove (decisió 2a, 2026-06-26).
+  if (age <= HEALTH_GROW_TURNS && state.health < cap) {
     state.health = Math.min(cap, state.health + 1);
   }
   // Food upkeep
@@ -950,8 +953,11 @@ function applyTurnUpkeep() {
     state.health = Math.max(0, state.health - 10);
   }
   state.health = Math.max(0, state.health - getAgingLoss(age));
-  // Enforce health cap (decline phase)
-  state.health = Math.min(cap, state.health);
+  // Enforce health cap: en creixement/estabilitat permetem fins al pic (no clawback de la salut
+  // guanyada per accions, decisió 2a); només la fase de declivi retalla cap avall.
+  const peakCap = state.currentHealthMax ?? HEALTH_MAX;
+  const stableEnd = HEALTH_GROW_TURNS + HEALTH_STABLE_TURNS;
+  state.health = Math.min(age > stableEnd ? cap : peakCap, state.health);
   // Life progress (health-speed model — advances faster when ill or old)
   state.lifeProgress = Math.min(1, (state.lifeProgress || 0) + lifeIncPerTurn());
 }
@@ -995,9 +1001,14 @@ function beginEndOfTurnPhase() {
       if (foodDelta   !== 0) parts.push(`${foodDelta   > 0 ? '+' : ''}${foodDelta}🌾`);
       if (healthDelta !== 0) parts.push(`${healthDelta > 0 ? '+' : ''}${healthDelta}❤️`);
       state._pendingTurnEntry.upkeep = parts.join(' ') || '—';
+      // LOG-01: adjunta descobriments i habilitats acumulats durant el torn (bucket transitori)
+      state._pendingTurnEntry.discoveries = (state._turnDiscoveries || []).slice();
+      state._pendingTurnEntry.skills = (state._turnSkills || []).slice();
       state.turnHistory.unshift(state._pendingTurnEntry);
       if (state.turnHistory.length > 10) state.turnHistory.length = 10;
       state._pendingTurnEntry = null;
+      state._turnDiscoveries = [];
+      state._turnSkills = [];
     }
     // Succession / death check
     if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0 || state.lifeProgress >= 1) {
@@ -1044,6 +1055,11 @@ function executeAction(actionId) {
   if (action.maxAge !== undefined && age > action.maxAge) return;
   if (!evaluateCharacterRequires(action)) return;
 
+  // LOG-01 (2026-06-26): bucket transitori de descobriments/habilitats d'aquest torn;
+  // s'adjunta a l'entrada d'historial al fi de torn (timing-safe, independent del cicle de vida de l'entrada).
+  state._turnDiscoveries = [];
+  state._turnSkills = [];
+
   // Handle discovery action (learn a branch tech)
   if (action.is_discovery_action) {
     const eligible = getEligibleSkills();
@@ -1057,7 +1073,7 @@ function executeAction(actionId) {
       unlockSkill(chosen);
       applyFxFloaters(snap);
       addLog(`[${state.cycle + 1}] ${action.name}`);
-      state._pendingTurnEntry = { cycle: state.cycle + 1, action: action.name, event: null, eventChoice: null, upkeep: null };
+      state._pendingTurnEntry = { cycle: state.cycle + 1, action: { name: action.name, delta: '' }, events: [], upkeep: null };
       proceedToEndOfTurn();
     });
     return;
@@ -1114,6 +1130,7 @@ function executeAction(actionId) {
     if (action.unlocks_zone && !state.discoveredZoneIds.has(action.unlocks_zone)) {
       state.discoveredZoneIds.add(action.unlocks_zone);
       addLog(`Nova zona: ${action.unlocks_zone}!`);
+      if (state._turnDiscoveries) state._turnDiscoveries.push(`${ZONE_ICONS[action.unlocks_zone] || '🗺️'} ${action.unlocks_zone}`);
       state.pendingDiscoveries.push({
         _isZone: true, icon: ZONE_ICONS[action.unlocks_zone] || '🗺️',
         name: action.unlocks_zone, desc: `Has descobert ${action.unlocks_zone}. Ara apareix al teu mapa.`,
@@ -1153,7 +1170,11 @@ function executeAction(actionId) {
     // Log (inclou output calculat fins i tot si es difereix)
     const actionLabel = output > 0 ? `${action.name}: +${output} ${outDef?.label || outRes}` : action.name;
     addLog(`[${state.cycle + 1}] ${actionLabel}`);
-    state._pendingTurnEntry = { cycle: state.cycle + 1, action: actionLabel, event: null, eventChoice: null, upkeep: null };
+    // LOG-01: entrada estructurada — delta propi de l'acció (output + side_effects)
+    const actionDeltaPairs = [];
+    if (output > 0 && outRes) actionDeltaPairs.push([outRes, output]);
+    if (action.side_effects) for (const se of action.side_effects) actionDeltaPairs.push([se.resource, se.delta]);
+    state._pendingTurnEntry = { cycle: state.cycle + 1, action: { name: action.name, delta: fmtPairs(actionDeltaPairs) }, events: [], upkeep: null };
 
     // ── COMPROVACIÓ EVENT ─────────────────────────────────────────────────
     if (action.event_pool_id && EVENT_POOLS[action.event_pool_id] && Math.random() < EVENT_TRIGGER_CHANCE) {
@@ -1978,6 +1999,11 @@ function renderBottomPanel() {
 }
 
 // ═══════════════════════════════════════════════════════════ TURN HISTORY OVERLAY
+// LOG-01: format de deltes de recursos per a l'historial de torns.
+const RES_ICON = { food: '🌾', health: '❤️', material: '🔵', pedra: '🪨', eina: '⚒️' };
+function fmtPairs(pairs) {
+  return pairs.filter(([, d]) => d).map(([r, d]) => `${d > 0 ? '+' : ''}${d}${RES_ICON[r] || ''}`).join(' ');
+}
 function openTurnHistory() {
   const hist = state.turnHistory || [];
   const listEl = el('th-list');
@@ -1989,10 +2015,21 @@ function openTurnHistory() {
     for (const entry of hist) {
       const li = document.createElement('li');
       li.className = 'th-entry';
-      const evLine = entry.event
-        ? `<span class="th-event">⚡ ${entry.event}</span>${entry.eventChoice ? `<span class="th-choice">→ ${entry.eventChoice}</span>` : ''}`
-        : '';
-      li.innerHTML = `<span class="th-cycle">C${entry.cycle}</span><span class="th-action">${entry.action || '—'}</span>${evLine}<span class="th-upkeep">${entry.upkeep || ''}</span>`;
+      // Acció: nou esquema { name, delta } o llegat (string)
+      const actName  = typeof entry.action === 'object' ? (entry.action?.name || '—') : (entry.action || '—');
+      const actDelta = (typeof entry.action === 'object' && entry.action?.delta) ? ` <span class="th-delta">${entry.action.delta}</span>` : '';
+      // Events: nou (array) o llegat (entry.event / eventChoice)
+      const evs = Array.isArray(entry.events) ? entry.events
+                : entry.event ? [{ name: entry.event, choice: entry.eventChoice, delta: '' }] : [];
+      const evLine = evs.map(e =>
+        `<span class="th-event">⚡ ${e.name}</span>${e.choice ? `<span class="th-choice">→ ${e.choice}</span>` : ''}${e.delta ? ` <span class="th-delta">${e.delta}</span>` : ''}`
+      ).join('');
+      const discLine  = (entry.discoveries || []).map(d => `<span class="th-disc">✦ ${d}</span>`).join('');
+      const skillLine = (entry.skills || []).map(s => `<span class="th-skill">🧩 ${s}</span>`).join('');
+      li.innerHTML = `<span class="th-cycle">C${entry.cycle}</span>`
+        + `<span class="th-action">${actName}${actDelta}</span>`
+        + evLine + discLine + skillLine
+        + `<span class="th-upkeep">${entry.upkeep || ''}</span>`;
       listEl.appendChild(li);
     }
   }
@@ -2045,6 +2082,11 @@ function renderInMapOverlay() {
     const choicesEl = el('ev-choices');
     choicesEl.innerHTML = '';
     const dismissBtn = el('btn-dismiss-event');
+    // EVT-01 fix (2026-06-26): neteja qualsevol impacte ranci d'un event anterior abans de
+    // decidir si AQUEST event en mostra un. Sense això, un event amb opcions heretava el
+    // "+N" d'un event previ sense opcions (bug del fong: "+3❤️" fantasma).
+    const staleImpact = el('ev-impact-hint');
+    if (staleImpact) staleImpact.style.display = 'none';
 
     // EVT-01: helper per construir la línia d'impacte numèric d'un efecte
     function buildImpactHint(fx) {
@@ -2188,10 +2230,10 @@ function dismissEvent() {
   applyEventEffects(ev.effects);
   spawnResBalls(snapDismiss);
   applyFxFloaters(snapDismiss);
-  // LOG-01: registra l'event al torn
+  // LOG-01: registra l'event al torn (array, amb el seu delta propi)
   if (state._pendingTurnEntry) {
-    state._pendingTurnEntry.event = ev.text.slice(0, 50);
-    state._pendingTurnEntry.eventChoice = '(continua)';
+    if (!state._pendingTurnEntry.events) state._pendingTurnEntry.events = [];
+    state._pendingTurnEntry.events.push({ name: ev.text.slice(0, 50), choice: '(continua)', delta: fmtPairs(Object.entries(ev.effects || {})) });
   }
   state.pendingEvent = null;
   if (state.health <= 0 || state.lifeProgress >= 1) {
@@ -2248,8 +2290,11 @@ function resolveDiscoveryOption(optionIndex) {
   }
   trackEventFired(ev);
   if (state._pendingTurnEntry) {
-    state._pendingTurnEntry.event = ev.text.slice(0, 50);
-    state._pendingTurnEntry.eventChoice = opt.text.slice(0, 35);
+    if (!state._pendingTurnEntry.events) state._pendingTurnEntry.events = [];
+    const optPairs = [];
+    if (opt.food_delta) optPairs.push(['food', opt.food_delta]);
+    if (healthDelta)    optPairs.push(['health', healthDelta]);
+    state._pendingTurnEntry.events.push({ name: ev.text.slice(0, 50), choice: opt.text.slice(0, 35), delta: fmtPairs(optPairs) });
   }
   state.pendingEvent = null;
   if (state.health <= 0 || state.lifeProgress >= 1) {

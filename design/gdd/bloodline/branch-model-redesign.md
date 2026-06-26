@@ -1,7 +1,7 @@
 # DESIGN-02 — Branch Model Redesign (Part 1: Proposta)
 
-> **Estat**: PROPOSTA per revisar — no és una decisió final.
-> **Data**: 2026-06-24
+> **Estat**: DECISIONS PRESES — preguntes obertes resoltes el 2026-06-25 (vegeu §7).
+> **Data**: 2026-06-24 · **Decisions**: 2026-06-25
 > **Predecessor**: ECON-02 (eines com a upgrade), DESIGN-01 (identitat Místic)
 > **Encàrrec**: model de branques, intercanviabilitat, accions-pont, compatibilitat herència.
 
@@ -158,9 +158,27 @@ depenen de la meva feina invisible.
 
 **Problema actual identificat**: les accions `act_narrar_llegendes` i
 `act_cants_grup` generen food sense justificació narrativa clara (DESIGN-01).
-Proposta de resolució: reorientar-les a **material o salut** i afegir una
-font de food pròpia de branca accessible pre-cicle 36 via accions-pont.
-Veure Seccions 3.3 i 4.
+**DECISIÓ (2026-06-25, Q2 = eliminar)**: s'eliminen totes dues. La food pròpia
+del Místic passa a venir de les 3 accions-pont noves (§4.3), de les quals
+`act_sacrifici_ritual` cobreix la food pre-cicle 36. Veure §4 i §7.
+
+### 2.3 Les tecnologies universals són transversals (foc, eines, ...)
+
+Una tecnologia universal (UT) **no pertany a cap branca**: cada branca
+l'aprofita al seu estil. El foc n'és l'exemple canònic i el motiu d'aquesta
+nota (resolució de progressió Q4, 2026-06-25):
+
+| Branca | Com aprofita el foc |
+|--------|---------------------|
+| **Caçador** | Processar/coure la presa, endurir la punta de llança, batuda amb torxa |
+| **Recol·lector** | Conservar (assecar/fumar provisions), fer comestibles plantes crues tòxiques |
+| **Artesà** | Adhesius (quitrà), terrissa, tremp d'eines |
+| **Místic** | Foc ritual, fumigacions, guàrdia de la flama |
+
+**Implicació de disseny**: cada UT important hauria de desbloquejar contingut
+per a **totes** les branques actives en aquell tram de cicles, no només per a
+una o dues. Les *dead zones* per branca (Artesà a `ut_art`, Caçador a `ut_foc`)
+es resolen aplicant aquest principi (vegeu `progression-distribution.md` §3.5).
 
 ---
 
@@ -345,13 +363,13 @@ parcial de `act_narrar_llegendes`)
 
 ### 4.4 Accions-pont existents que necessiten revisió
 
-**`act_narrar_llegendes` i `act_cants_grup`** (DESIGN-01 pendent):
-- Avui donen food amb justificació feble.
-- Proposta: reorientar a material/salut i deixar que `act_sacrifici_ritual`
-  i `act_narrar_territori` (noves) cobreixin la necessitat de food Místic.
-- Alternativament, si l'usuari vol mantenir-les com a food: donar-los
-  un delta social fort i convertir-les en accions-pont Místic → Recol·lector
-  (la narració comunitària reforça el teixit social).
+**`act_narrar_llegendes` i `act_cants_grup`** — **DECISIÓ (2026-06-25, Q2 = eliminar)**:
+- S'**eliminen** totes dues del catàleg d'accions.
+- La seva funció (food + cohesió narrativa) queda coberta per les 3 accions-pont
+  noves de §4.3: `act_sacrifici_ritual` (food + impuls), `act_curacio_col·lectiva`
+  (salut + social) i `act_narrar_territori` (material + intel·lecte).
+- `act_narrar_territori` n'és el successor narratiu directe: la narració deixa
+  de donar food sense raó i passa a donar **material** (coneixement = recurs de grup).
 
 ---
 
@@ -399,112 +417,82 @@ Artesà i ara torna al Caçador té disponibles accions de les tres etapes.
 
 Una conseqüència del sistema d'upgrades és que un llinatge pot tenir
 `act_faonar_eines` activa però `act_forjar_punta` oculta, inclús si la
-inclinació ha tornat a Caçador. Per reactivar `act_forjar_punta` caldrà
-que el fill compri l'upgrade de tornada (un cost addicional de material).
+inclinació ha tornat a Caçador.
 
-Això es pot veure com:
-- **Problema**: el fill "paga dues vegades" per la mateixa eina.
-- **Oportunitat de disseny**: el cost de "tornar enrere" és un incentiu
-  natural per mantenir la identitat del llinatge. "El teu llinatge ja
-  va deixar enrere la llança."
+**DECISIÓ (2026-06-25, Q1 = retorn gratuït)**: reactivar una eina que el
+llinatge **ja va conèixer** no costa material. La substitució segueix essent
+1-sola-eina-activa, però tornar enrere és gratuït: el coneixement de l'eina
+no es perd mai (coherent amb la filosofia d'herència forta — la tecnologia
+del llinatge és permanent).
 
-Caldria decidir si el cost de retorn és correcte o si caldria un
-descnete o una via alternativa. Veure Secció 7 (Preguntes obertes).
+**Implicació d'implementació**: cal un registre de "eines ja conegudes pel
+llinatge" (un set heretat al 100%). Si l'eina hi és, l'upgrade de tornada
+té cost 0; si és la primera vegada que es fabrica, paga el cost normal.
+Vegeu §3.2 i la cadena lliure (§7, Q4).
 
 ---
 
-## 6. Resum de Canvis Proposats
+## 6. Resum de Canvis (decidits 2026-06-25)
 
 ### 6.1 Canvis al model d'eines (ECON-02)
 - Eines de les 4 branques son accions d'**upgrade explícit** (mecanisme
   `is_upgrade` / `upgrades_action_id`)
-- Una branca activa ofereix la seva eina com a upgrade de l'eina anterior
-- El jugador paga el cost de material de la nova eina
+- **Cadena lliure (Q4)**: 1 sola eina activa; qualsevol eina és upgrade de
+  qualsevol altra, sense ordre fix
+- La branca activa ofereix la seva eina com a upgrade de l'actual
+- La primera fabricació d'una eina paga el cost de material; **el retorn a una
+  eina ja coneguda pel llinatge és gratuït (Q1)**
 - L'eina anterior desapareix del carrusel (oculta)
-- Herència: l'estat d'upgrade es copia directe al fill
+- Herència: l'estat d'upgrade i el set d'"eines conegudes" es copien al fill
 
-### 6.2 Accions-pont noves (3)
+### 6.2 Accions-pont noves (5)
 - `act_sacrifici_ritual`: Místic → Caçador (+food escassa, +impuls)
 - `act_curacio_col·lectiva`: Místic/Social → Recol·lector/Artesà (+salut)
 - `act_narrar_territori`: Místic → Artesà (+material, +intel·lecte)
+- **(Q3)** nova acció-pont `Caçador → Artesà`
+- **(Q3)** nova acció-pont `Recol·lector → Místic`
 
 ### 6.3 Revisions d'accions existents
-- `act_narrar_llegendes`: reorientar output a material o salut (no food)
-- `act_cants_grup`: reorientar cap a pont Místic → Recol·lector (social)
+- `act_narrar_llegendes`: **eliminar (Q2)** — substituïda per les accions-pont noves
+- `act_cants_grup`: **eliminar (Q2)** — substituïda per les accions-pont noves
 - `act_recollir_branques`: ampliar threshold a `impuls max 0.50` (fix BRN-05)
 
 ### 6.4 Documentació d'identitat de branca
 - Cada branca té una **frase identitària**, un **verb** i un **risc** definits
 - Cada branca té una **taula d'equivalències d'eines** clara
+- El UI mostra la branca activa + **panell d'identitat en tocar-la (Q5)**
+- Les **UT són transversals**: cada branca aprofita el foc/eines al seu estil (§2.3)
 
 ---
 
-## 7. Preguntes Obertes / Decisions per a l'Usuari
+## 7. Decisions Preses (2026-06-25)
 
-Aquestes son les decisions de disseny que la proposta no pot prendre
-unilateralment i que l'usuari ha de validar:
+Les 5 preguntes obertes de la proposta es van resoldre en sessió de revisió
+amb l'usuari el 2026-06-25. Decisions:
 
----
+| Q | Tema | Decisió |
+|---|------|---------|
+| **Q1** | Cost de retorn d'eina | **Gratuït (B)** — reactivar una eina que el llinatge ja va conèixer no costa material. Cal un set "eines conegudes" heretat (vegeu §5.4). |
+| **Q2** | `narrar_llegendes` / `cants_grup` | **Eliminar (C)** — se substitueixen del tot per les 3 accions-pont noves (§4.3). |
+| **Q3** | Accions-pont addicionals | **Afegir les dues (A+B)** — `Caçador → Artesà` i `Recol·lector → Místic`, per tancar la roda de transicions. |
+| **Q4** | Cadena d'upgrades d'eines | **Cadena lliure (B)** — 1 sola eina activa; qualsevol eina és upgrade de qualsevol altra, sense ordre fix. La branca activa ofereix la seva eina com a upgrade de l'actual. |
+| **Q5** | Nom de branca al UI | **Híbrid** — es manté la indicació en pantalla actual; en **tocar la branca** s'obre el panell amb l'explicació d'identitat (frase / verb / risc). |
 
-**Q1 — Cost de retorn d'eina**
-En el model ECON-02, si un fill vol tornar a l'eina d'una branca anterior,
-ha de pagar el cost de material de l'upgrade de tornada. Això és:
-- **(A) Correcte** — el cost de tornada és la mecànica de "la identitat del
-  llinatge té pes". Un llinatge Artesà que intenta tornar al Caçador
-  ha d'esforçar-s'hi.
-- **(B) Massa punitiu** — el fill no hauria de pagar res per reactivar
-  una eina que el llinatge ja va tenir. El cost de la primera compra és
-  suficient; les tornades son gratuïtes.
-- **(C) Híbrid** — cost reduït de retorn (p.ex. 1🔵 en lloc de 3🔵).
+### 7.1 Feina de contingut que generen aquestes decisions
 
----
+Aplicació posterior (vegeu `production/backlog.md` → DESIGN-02-IMPL):
 
-**Q2 — `act_narrar_llegendes` i `act_cants_grup`: food o no food?**
-Avui donen food sense justificació clara (DESIGN-01). Les opcions son:
-- **(A) Reorientar** a material o salut i afegir les 3 accions-pont noves
-  com a via alternativa de food Místic.
-- **(B) Mantenir food** però convertir-les explícitament en accions-pont
-  Místic → Recol·lector (la narració comunitària genera cohesió i
-  cohesió dona recursos). Delta: afegir `sociabilitat +0.08` i
-  `espiritualitat +0.02`.
-- **(C) Eliminar-les** i substituir-les completament per les 3 accions
-  noves.
+1. **2 accions-pont noves**: `Caçador → Artesà` i `Recol·lector → Místic` (Q3).
+2. **3 accions-pont del Místic** (§4.3) confirmades com a **substitut complet**
+   de `narrar_llegendes` + `cants_grup` (Q2).
+3. **Eliminar** `act_narrar_llegendes` i `act_cants_grup` de `data.js` (Q2).
+4. **Cadena lliure d'eines** (Q4) + **registre d'eines conegudes** heretat per a
+   retorn gratuït (Q1) — nota d'implementació a `game.js`.
+5. **Panell d'identitat de branca** en tocar la branca al UI (Q5).
+6. Documentar el **foc com a tecnologia universal transversal** (§2.3).
 
 ---
 
-**Q3 — Quantes accions-pont son "suficients"?**
-La proposta afegeix 3 accions-pont noves per al Místic. Les altres branques
-ja en tenen (vegeu taula 4.2). Cal afegir accions-pont per a:
-- **(A) Caçador → Artesà** (avui no en té cap directe)
-- **(B) Recol·lector → Místic** (avui no en té cap directe)
-- **(C) Cap de les dues** — les existents son suficients, les branques
-  adjacents cobreixen la transició indirectament
-
----
-
-**Q4 — Llança de la cadena d'upgrades d'eines**
-El model proposa que les eines formen una cadena d'upgrades. Cal decidir:
-- **(A) Cadena lineal**: Caçador → Artesà → Recol·lector → Místic
-  (o qualsevol ordre). L'acció nova always upgrades l'anterior.
-- **(B) Cadena libre**: qualsevol eina pot ser upgrade de qualsevol altra.
-  El jugador no segueix una cadena predefinida; cada branck tech nova
-  que desbloqueja li ofereix l'upgrade de la seva eina actual.
-- **(C) No hi ha cadena** — les eines son independents. Tenir `act_forjar_punta`
-  no impedeix tenir `act_faonar_eines`. Senzillament el carrusel no les
-  agrupa com a upgrades. El jugador tria quina usar.
-
----
-
-**Q5 — Nom de les branques al UI**
-La proposta usa "Caçador", "Recol·lector", "Artesà", "Místic" com a
-identificadors narratius. Però el codi intern usa `branch_hunter`,
-`branch_gatherer`, etc. Quan la branca activa es mostra al jugador:
-- **(A) Nom narratiu** ("El teu personatge és un Caçador")
-- **(B) Eix dominant** ("Inclinació dominant: Impuls")
-- **(C) Cap dels dos** — no es mostra explícitament, el jugador ho
-  dedueix de les accions disponibles
-
----
-
-*Document de proposta completat. Pendent de revisió i aprovació de l'usuari.*
-*Versió: 1.0 — 2026-06-24*
+*Decisions preses i registrades el 2026-06-25. Substitueix la secció de*
+*preguntes obertes de la v1.0.*
+*Versió: 1.1 — 2026-06-25*

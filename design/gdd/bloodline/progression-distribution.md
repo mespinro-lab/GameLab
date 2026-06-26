@@ -1,8 +1,8 @@
 # Bloodline — Distribució de Progressió i Model Econòmic de l'Era 1
 
-> **ESTAT**: PROPOSTA — Revisió pendent d'aprovació. Basada en l'anàlisi del
-> prototip `prototypes/bloodline-v2/` + playtests 2026-06-17 i 2026-06-19.
-> Correspon a **DESIGN-02 (Part 2)**.
+> **ESTAT**: DECISIONS PRESES — preguntes obertes resoltes el 2026-06-25 (vegeu §9).
+> Basada en l'anàlisi del prototip `prototypes/bloodline-v2/` + playtests
+> 2026-06-17 i 2026-06-19. Correspon a **DESIGN-02 (Part 2)**.
 >
 > **Font de veritat del codi**: `prototypes/bloodline-v2/data.js` +
 > `prototypes/bloodline-v2/game.js`
@@ -267,13 +267,25 @@ Assumint un escenari model (branca única, inclinació ben establerta):
 **Conclusió**: el pressupost de material és generós. L'estrangulament **no existeix** — el jugador sempre té material suficient per comprar tot el que vol. Això té dues conseqüències:
 
 1. **Positiva**: no hi ha frustració per manca de material per comprar accions.
-2. **Negativa**: el material perd significat estratègic. La decisió de compra mai és real perquè sempre hi ha material de sobra. El joc es buida d'una palanca de tensió.
+2. **Negativa**: el material perd significat estratègic com a tensió moment-a-moment.
+
+**DECISIÓ (2026-06-25, Q5)**: s'accepta. El material **no és un element argumental
+ni una tensió de joc**: és un **recurs de llinatge que es conserva** i, sobretot,
+la **palanca de pacing de reserva** per al futur — quan calgui accelerar o
+alentir la partida, es farà **encarint o abaratint `purchase_cost`**, no fent
+escàs el material. Per això §Q2 = *sense canvis* als knobs de cap/flux/decay.
 
 #### 3.4.3 El cap de 35 és massa baix?
 
 El cap actual de 35 (`RESOURCE_DEFS` → `material.max: 35`) combinat amb un flux de 2.5–3.5/cicle significa que el personatge arriba al cap als cicles 10–14 de la seva vida i el mantindrà ple la resta. La compra d'accions el drena breument, però es recupera en 2–4 cicles.
 
 **Efecte del cap baix + decay 0.3**: el llinatge perd el 70% del material acumulat en cada successió. Combinat amb el flux ràpid de regeneració, el resultat és que cada generació "recomença" econòmicament, el que redueix la sensació de progrés dinàstic de l'acumulació de material.
+
+**DECISIÓ (2026-06-25, Q2 = sense canvis)**: es mantenen cap 35, decay 0.3 i
+material_min 2. El "recomençament econòmic" per generació és acceptable perquè
+el material no és l'eix de tensió (vegeu §3.4.2). Si en el futur volem que
+l'acumulació dinàstica pesi més, la via serà apujar `purchase_cost` de late-tech,
+no tocar el cap.
 
 ---
 
@@ -296,7 +308,12 @@ Les recomanacions següents son propostes en rang de valors, no implementació. 
 - Ja accessible amb impuls ≥ 0.15 — el Caçador a cicle 10 hauria de tenir impuls > 0.15 si ha executat `act_espiar_ramat` (+0.05/cop)
 - Si la dead zone persisteix, simplificar a `impuls ≥ 0.10`
 
-**Recomanació**: Opció B primer. Si no es suficient, considerar Opció A.
+**DECISIÓ (2026-06-25, Q4 = família de foc del Caçador)**: en lloc del mínim
+(abaixar un llindar), es crea contingut de foc propi del Caçador a `ut_foc`:
+`bt_carn_al_foc` (cuinar/fumar la presa → conservació) i caça amb foc (batuda
+amb torxa, endurir la punta de llança, fumar per espantar la presa). Tanca la
+dead zone *i* enriqueix el Caçador de Gen 1. Coherent amb el principi "el foc és
+una UT transversal" (`branch-model-redesign.md` §2.3).
 
 #### R2 — Cobrir la dead zone Artesà cicles 36–49 (ut_art)
 
@@ -312,7 +329,11 @@ Les recomanacions següents son propostes en rang de valors, no implementació. 
 - Canvi: `universal_prereq: "ut_art"` + condicions que incloguin intel·lecte
 - Risc: desplazar contingut de `ut_vestimenta` que ja cobreix adequadament Gen 3
 
-**Recomanació**: Opció A. `ut_art` com a era de l'expressió simbòlica hauria de tenir una branca artesanal (l'art de la mesura, el sistema de compte, la cartografia nascent).
+**DECISIÓ (2026-06-25, Q1 = Opció A)**: nova habilitat `bt_mapa_recursos` a
+`ut_art` per a l'Artesà (intel·lecte): l'art simbòlic inclou cartografia,
+comptatge i mesura. `ut_art` com a era de l'expressió simbòlica ha de tenir la
+seva branca artesanal (l'art de la mesura, el sistema de compte, la cartografia
+nascent).
 
 #### R3 — Avançar bt_coneixement_plantes
 
@@ -323,7 +344,12 @@ Les recomanacions següents son propostes en rang de valors, no implementació. 
 - Si a `ut_art`: disponible Gen 2; la narrativa és "el pensament simbòlic permet catalogar les plantes"
 - Riscos: desplaça contingut de `ut_corda`; cal redistribuir les accions actuals entre `ut_corda` i la nova UT
 
-**Recomanació**: moure a `ut_foc` (cicle 10). Retenir a `ut_corda` la versió expandida (bolets, pesca, etc.) i posar a `ut_foc` les accions bàsiques de plantes (arrels, infusions simples). Permet al Recol·lector tenir un arc narratiu coherent des de Gen 1.
+**DECISIÓ (2026-06-25, Q3 = moure a `ut_foc`)**: `bt_coneixement_plantes` passa
+a `ut_foc` (cicle 10), partint el contingut: la **versió bàsica** (arrels,
+plantes comestibles, infusions simples) a `ut_foc` amb justificació de la
+*hipòtesi de la cuina* (el foc fa comestibles plantes que crues són tòxiques o
+indigestes — tubercles, grans); la **versió expandida** (bolets, medicinals,
+pesca) es queda a `ut_corda`. Dona al Recol·lector arc narratiu des de Gen 1.
 
 #### R4 — Redistribuir el pes de Material: dels sumidors escassos a sumidors nous
 
@@ -345,10 +371,11 @@ Les recomanacions següents son propostes en rang de valors, no implementació. 
 
 **Opció C** (augmentar el cap de material): pujar de 35 a 50–60. Permet acumular més entre successions, donant valor al `inheritDecay: 0.3` (ara heredes ~6, amb cap 60 heredes ~18 si el pare mor ric).
 
-**Recomanació**: combinar Opció B (abaixar material_min base a 1) + Opció C (cap 50). Efecte net:
-- Flux menor: menys material perdut per cap
-- Cap més gran: l'acumulació inter-generacional té valor
-- El jugador sent que "estalviar" material per a la propera generació és una decisió real
+**DECISIÓ (2026-06-25, Q2 = sense canvis)**: NO s'apliquen aquests reajustos ara.
+El material no és l'eix de tensió (§3.4.2, Q5): es manté com a recurs de llinatge
+conservat, i la palanca de pacing de reserva per al futur serà `purchase_cost`,
+no el flux/cap de material. Aquesta recomanació R4 queda **arxivada** com a opció
+disponible si més endavant es vol convertir el material en una decisió real.
 
 #### R5 — Establir densitat d'habilitats per finestra temporal
 
@@ -529,53 +556,36 @@ Si el jugador canvia de branca (p.ex. de Caçador a Místic) a mig vida, les acc
 
 ---
 
-## 9. Preguntes Obertes — Decisions Pendents de l'Usuari
+## 9. Decisions Preses (2026-06-25)
 
-Les preguntes següents requereixen decisió de disseny i no han de ser resoltes autònomament:
+Les 5 preguntes obertes es van resoldre en sessió de revisió amb l'usuari el
+2026-06-25:
 
-### Q1 — Dead zone Artesà cicles 36–49 (PRIORITAT ALTA)
+| Q | Tema | Decisió |
+|---|------|---------|
+| **Q1** | Dead zone Artesà (c36–49) | **Opció A** — nova habilitat `bt_mapa_recursos` a `ut_art` (cartografia / comptatge / mesura). Vegeu §3.5 R2. |
+| **Q2** | Cap / flux de material | **Sense canvis (Opció D)** — es mantenen cap 35, decay 0.3, material_min 2. Vegeu §3.5 R4 i §3.4. |
+| **Q3** | `bt_coneixement_plantes` | **Opció A** — moure a `ut_foc` (c10), partint bàsica (`ut_foc`) / expandida (`ut_corda`). Vegeu §3.5 R3. |
+| **Q4** | Dead zone Caçador (c10–15) | **Família de foc del Caçador** a `ut_foc` (`bt_carn_al_foc` + caça amb foc), més ric que el mínim de l'Opció A/B. Vegeu §3.5 R1. |
+| **Q5** | Significat del material | El material **no és tensió argumental**: és un recurs de llinatge conservat i la **palanca de pacing de reserva** per al futur, via `purchase_cost`. Vegeu §3.4.2. |
 
-`ut_art` no dona cap habilitat al perfil Artesà (intel·lecte ≥ 0.20). Gen 2 d'Artesà va 16+ cicles sense contingut nou al Mercat.
+### 9.1 Conseqüència per a les acceptance criteria (§8)
 
-**Opció A**: nova habilitat `bt_mapa_recursos` a `ut_art` (narrativa: l'art simbòlic inclou cartografia i comptatge)
-**Opció B**: avançar `bt_adobament_pells` (ut_vestimenta → ut_art), mantenint una versió lleugera a ut_vestimenta
-**Opció C**: acceptar la dead zone com a característica — l'Artesà es consolida i usa el que té, sense novetat fins a ut_vestimenta (c50)
+Les fites de §8 segueixen vàlides EXCEPTE les que assumien re-balanç de material:
+els criteris sobre saturació del cap i cost total per branca queden **diferits**
+(no són objectius d'aquesta passada, perquè Q2 = sense canvis). Els criteris de
+cobertura de dead zones (Artesà `ut_art`, Caçador `ut_foc`, `bt_coneixement_plantes`
+≤ c36) **sí** són objectius actius, coberts per les decisions Q1/Q3/Q4.
 
-### Q2 — Nivell del cap de material i inheritDecay (PRIORITAT ALTA)
+### 9.2 Feina de contingut que generen aquestes decisions
 
-El sistema actual (cap 35, decay 0.3, material_min 2) genera material que es perd per saturació i herències de poc valor. Les opcions son:
-
-**Opció A**: `materialMax: 50, inheritDecay: 0.3, material_min base: 1` → acumulació més lenta, herències més valuoses
-**Opció B**: `materialMax: 35, inheritDecay: 0.5, material_min base: 2` → augmentar el que s'hereta, no canviar el flux
-**Opció C**: `materialMax: 35 (sense canvi), afegir sumidors d'execució` (accions que gasten material en executar-les)
-**Opció D**: mantenir l'estat actual — el material no és una tensió central; la tensió és la inclinació
-
-### Q3 — Avançar bt_coneixement_plantes (PRIORITAT MITJANA)
-
-`bt_coneixement_plantes` és la habilitat "coneixement de plantes" del Recol·lector però arriba al cicle 65. Narrativament és una competència paleolítica bàsica.
-
-**Opció A**: moure a `ut_foc` (cicle 10) — "el foc revela noves plantes comestibles"
-**Opció B**: moure a `ut_art` (cicle 36) — "el pensament simbòlic permet catalogar plantes"
-**Opció C**: deixar a `ut_corda` (cicle 65) — és acceptable; el Recol·lector ja té contingut adequat a Gen 1–2 via bt_rasclador_fi i bt_ornaments
-
-### Q4 — Dead zone Caçador cicles 10–15 (PRIORITAT BAIXA)
-
-`ut_foc` (cicle 10) no dona habilitats per al perfil Caçador pur. `bt_guardia_flama` ja té condicions OR accessibles, però la seva orientació és de suport (health), no de caça.
-
-**Opció A**: abaixar el llindar de `bt_guardia_flama` a `impuls ≥ 0.10`
-**Opció B**: nova habilitat mínima a `ut_foc` per al Caçador (p.ex. `bt_carn_al_foc`: cuinar/processar la caça amb el foc)
-**Opció C**: acceptar la dead zone — els cicles 10–15 el Caçador usa les accions base (espiar_ramat) i espera ut_eines
-
-### Q5 — Significat del material: tensió o conveniència? (PRIORITAT MITJANA)
-
-Cal decidir si el material ha de ser:
-
-**Opció A (tensió)**: el material és escàs, la compra d'accions és una decisió difícil, no totes les accions d'una branca son asequibles en una vida. Implica abaixar `material_min` i/o augmentar `purchase_cost`.
-
-**Opció B (conveniència)**: el material és abundant, la compra mai és una barrera, la tensió ve de la inclinació (visibilitat d'accions) i no del material. El sistema actual s'apropa a aquest model.
-
-**Opció C (hybrid)**: el material és abundant dins d'una generació, però l'inter-generacional és escàs (inheritDecay baix). La tensió no és "puc comprar?" sinó "quant puc deixar al fill?".
+Vegeu `production/backlog.md` → **DESIGN-02-IMPL**:
+1. `bt_mapa_recursos` a `ut_art` (Q1).
+2. Reubicar `bt_coneixement_plantes` → `ut_foc`, partint accions (Q3).
+3. Família de foc del Caçador a `ut_foc` (Q4).
+4. Cap canvi de knobs de material (Q2/Q5) — només documentat.
 
 ---
 
-*Document generat: 2026-06-24. Revisar i aprovar sections Q1–Q5 per avançar a DESIGN-02 Phase 3 (redistribució de contingut).*
+*Decisions preses i registrades el 2026-06-25. Substitueix la secció de*
+*preguntes obertes. Avança a DESIGN-02-IMPL (redistribució de contingut).*
