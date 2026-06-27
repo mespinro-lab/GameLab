@@ -196,7 +196,7 @@
 
 <!-- ▼▼▼ NIT 2026-06-27 — lot autoritzat per treball autònom ▼▼▼ -->
 
-## P1 OPEN FEAT — TEACH-01 — Ensenyament d'aprenentatges per-fill (random apr → fill random no-ensenyat)
+## P1 DONE FEAT — TEACH-01 — Ensenyament d'aprenentatges per-fill (random apr → fill random no-ensenyat)
 
 - **Origen**: feedback usuari 2026-06-27. Substitueix el model actual de flag `ensenyat` per personatge.
 - **Fitxers**: `game.js` (triggerSuccession/herència 846-854, executeAction, nova card/discovery, log),
@@ -214,6 +214,11 @@
 - **Acceptance**: ensenyes a cada fill un cop (random apr→fill random no-ensenyat); card + fila de log per
   ensenyament; acció deshabilitada+explicada quan tots han après; cada hereu neix amb el seu aprenentatge.
   Verificat headless (cadena gen→gen).
+- **✅ RESOLT 2026-06-27**: `child.taughtApr` per fill; req `has_untaught_child`; `character_effect: teach_child`
+  (random apr→fill no-ensenyat) + card `_isTeach` + fila de log (bucket `_turnTeachings`); `always_show_locked`
+  ja deshabilita l'acció quan tots han après; successió → cada fill hereta `new Set([taughtApr])`. Substitueix el
+  flag `ensenyat`. Verificat headless: avail before/mid=true, after-all=false; herència per-fill correcta;
+  render del log mostra la fila d'ensenyament.
 
 ## P1 OPEN FEAT — LOG-02 — Historial amb N registres per cicle (tots els tipus)
 
@@ -225,6 +230,10 @@
 - **Fitxers**: `game.js` (turnHistory schema + `openTurnHistory` render; punts de captura).
 - **Acceptance**: per a un cicle amb diverses coses, l'historial mostra una fila per cada una amb el seu
   impacte. Verificat headless.
+- **⏳ PARCIAL 2026-06-27**: ja es desen com a files separades: acció+delta, events+delta, descobriments,
+  habilitats, i **aprenentatge ensenyat a fill** (TEACH-01, bucket `_turnTeachings`). **Falta**: aprenentatge
+  DESCOBERT, **acció comprada** i **upgrade** (cal capturar als punts de compra/upgrade i de
+  `checkAprenentagesAfterAction`). Considerar refactor a un únic `entry.extras = [{icon,text}]`.
 
 ## P2 DONE BUG — FOOD-CAP-01 — "Assecar Provisions" no es deshabilita al cap màxim
 
