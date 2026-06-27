@@ -141,6 +141,25 @@ let state = null;
 // ═══════════════════════════════════════════════════════════ SAVE / LOAD
 const SAVE_KEY = 'bloodline_v2_save';
 
+// SUCC-01 (2026-06-27): (de)serialització de successors (Sets ↔ arrays) per desar la successió pendent.
+function serializeSuccessors(arr) {
+  return (arr || []).map(s => ({
+    ...s,
+    inheritedPurchased:     [...(s.inheritedPurchased     || [])],
+    inheritedSkills:        [...(s.inheritedSkills        || [])],
+    inheritedDestreses:     [...(s.inheritedDestreses     || [])],
+    inheritedAprenentatges: [...(s.inheritedAprenentatges || [])],
+  }));
+}
+function deserializeSuccessors(arr) {
+  return (arr || []).map(s => ({
+    ...s,
+    inheritedPurchased:     new Set(s.inheritedPurchased     || []),
+    inheritedSkills:        new Set(s.inheritedSkills        || []),
+    inheritedDestreses:     new Set(s.inheritedDestreses     || []),
+    inheritedAprenentatges: new Set(s.inheritedAprenentatges || []),
+  }));
+}
 function saveGame() {
   if (!state) return;
   try {
@@ -176,6 +195,16 @@ function saveGame() {
         inheritedDestreses:      [...(s.inheritedDestreses      || [])],
         inheritedAprenentatges:  [...(s.inheritedAprenentatges  || [])],
       })),
+      // SUCC-01: desar successió/mort pendent perquè sobrevisqui un background-kill mòbil
+      pendingSuccession: state.pendingSuccession
+        ? { ...state.pendingSuccession, successors: serializeSuccessors(state.pendingSuccession.successors) }
+        : null,
+      pendingDeath: state.pendingDeath
+        ? { ...state.pendingDeath, successionPayload: state.pendingDeath.successionPayload
+            ? { ...state.pendingDeath.successionPayload, successors: serializeSuccessors(state.pendingDeath.successionPayload.successors) }
+            : null }
+        : null,
+      pendingNewGen: state.pendingNewGen || null,
       nextGenHealthMax: state.nextGenHealthMax,
       currentHealthMax: state.currentHealthMax,
       explorationAttempts: state.explorationAttempts || 0,
@@ -235,7 +264,17 @@ function loadGame() {
       foodUpkeepReduction: d.foodUpkeepReduction || 0,
       foodMax: d.foodMax ?? FOOD_MAX_START,
       lifeProgress: d.lifeProgress || 0,
-      pendingEvent: null, pendingActionResult: null, pendingSuccession: null, pendingDeath: null, pendingNewGen: null,
+      pendingEvent: null, pendingActionResult: null,
+      // SUCC-01: restaura la successió/mort pendent desada
+      pendingSuccession: d.pendingSuccession
+        ? { ...d.pendingSuccession, successors: deserializeSuccessors(d.pendingSuccession.successors) }
+        : null,
+      pendingDeath: d.pendingDeath
+        ? { ...d.pendingDeath, successionPayload: d.pendingDeath.successionPayload
+            ? { ...d.pendingDeath.successionPayload, successors: deserializeSuccessors(d.pendingDeath.successionPayload.successors) }
+            : null }
+        : null,
+      pendingNewGen: d.pendingNewGen || null,
       pendingDiscoveries: [], pendingBirths: [],
       gameOver: d.gameOver || false, gameOverReason: d.gameOverReason || null,
     };
