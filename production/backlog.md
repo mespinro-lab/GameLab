@@ -220,7 +220,7 @@
   flag `ensenyat`. Verificat headless: avail before/mid=true, after-all=false; herència per-fill correcta;
   render del log mostra la fila d'ensenyament.
 
-## P1 OPEN FEAT — LOG-02 — Historial amb N registres per cicle (tots els tipus)
+## P1 DONE FEAT — LOG-02 — Historial amb N registres per cicle (tots els tipus)
 
 - **Origen**: feedback usuari 2026-06-27 (amplia LOG-01).
 - **Issue**: ara 1 entrada/torn amb subcamps; cal **N línies per cicle**, una per cada cosa: acció, event,
@@ -230,10 +230,12 @@
 - **Fitxers**: `game.js` (turnHistory schema + `openTurnHistory` render; punts de captura).
 - **Acceptance**: per a un cicle amb diverses coses, l'historial mostra una fila per cada una amb el seu
   impacte. Verificat headless.
-- **⏳ PARCIAL 2026-06-27**: ja es desen com a files separades: acció+delta, events+delta, descobriments,
-  habilitats, i **aprenentatge ensenyat a fill** (TEACH-01, bucket `_turnTeachings`). **Falta**: aprenentatge
-  DESCOBERT, **acció comprada** i **upgrade** (cal capturar als punts de compra/upgrade i de
-  `checkAprenentagesAfterAction`). Considerar refactor a un únic `entry.extras = [{icon,text}]`.
+- **✅ RESOLT 2026-06-27**: refactor a un únic `entry.extras = [{icon,text}]` (helper `pushExtra`), buidat al
+  **fi de torn** (no a l'inici), de manera que les **compres fetes entre torns** entren al cicle correcte.
+  Captura: descobriments (foc/zones), habilitats (🧩), **aprenentatge descobert** (📖 Après), **aprenentatge
+  ensenyat** (TEACH-01), **acció comprada** (🛒, `buyAction`), **upgrade** (⬆️, `doUpgrade`). Render amb
+  compat per a entrades antigues (discoveries/skills/teachings). Verificat headless: 🔥 foc + 📖 aprenentatges
+  + 🛒 compra apareixen a l'historial; render `th-extra` OK.
 
 ## P2 DONE BUG — FOOD-CAP-01 — "Assecar Provisions" no es deshabilita al cap màxim
 

@@ -538,7 +538,7 @@ function autoDiscoverUniversalTechs() {
     addLog(`${tech.icon} Descoberta: ${tech.name}`);
     applyUniversalTechEffect(tech);
     state.pendingDiscoveries.push({ ...tech, _isTech: true });
-    if (state._turnDiscoveries) state._turnDiscoveries.push(`${tech.icon || '✦'} ${tech.name}`);
+    pushExtra(tech.icon || '✦', tech.name);
   }
 }
 
@@ -563,7 +563,7 @@ function unlockSkill(bt) {
   if (state.character.unlockedSkillIds.has(bt.id)) return;
   state.character.unlockedSkillIds.add(bt.id);
   addLog(`Nova habilitat: ${bt.name}`);
-  if (state._turnSkills) state._turnSkills.push(bt.name);
+  pushExtra('🧩', bt.name);
   if (bt.unlocks_action_ids) {
     // D4 (2026-06-22): les accions amb cost es compren al mercat un cop desbloquejada la tech;
     // només les gratuïtes (sense purchase_cost) es concedeixen directament en desbloquejar-la.
@@ -629,6 +629,7 @@ function checkAprenentagesAfterAction(executedActionId) {
     if (Math.random() >= def.discoveryChance) continue;
     state.character.aprenentatges.add(def.id);
     addLog(`📖 Aprenentatge: ${def.name}`);
+    pushExtra('📖', `Après: ${def.name}`);
     state.pendingDiscoveries.push({
       _isAprenentatge: true, icon: def.icon, name: def.name,
       desc: `Has après "${def.name}". ${def.effect.desc}`,
@@ -687,7 +688,7 @@ function applyCharacterEffect(action) {
         _isTeach: true, icon: '📖', name: `Ensenyament a ${child.label}`,
         desc: `Has ensenyat "${aprName}" a ${child.label}. Quan ${child.label} sigui successor, naixerà sabent-ho.`,
       });
-      if (state._turnTeachings) state._turnTeachings.push(`${aprName} → ${child.label}`);
+      pushExtra('📖', `${aprName} → ${child.label}`);
     }
   }
   if (eff.type === 'find_partner') {
@@ -1067,15 +1068,11 @@ function beginEndOfTurnPhase() {
       if (healthDelta !== 0) parts.push(`${healthDelta > 0 ? '+' : ''}${healthDelta}❤️`);
       state._pendingTurnEntry.upkeep = parts.join(' ') || '—';
       // LOG-01: adjunta descobriments i habilitats acumulats durant el torn (bucket transitori)
-      state._pendingTurnEntry.discoveries = (state._turnDiscoveries || []).slice();
-      state._pendingTurnEntry.skills = (state._turnSkills || []).slice();
-      state._pendingTurnEntry.teachings = (state._turnTeachings || []).slice();
+      state._pendingTurnEntry.extras = (state._turnExtras || []).slice();
       state.turnHistory.unshift(state._pendingTurnEntry);
       if (state.turnHistory.length > 10) state.turnHistory.length = 10;
       state._pendingTurnEntry = null;
-      state._turnDiscoveries = [];
-      state._turnSkills = [];
-      state._turnTeachings = [];
+      state._turnExtras = [];
     }
     // Succession / death check
     if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0 || state.lifeProgress >= 1) {
@@ -1121,12 +1118,6 @@ function executeAction(actionId) {
   if (isActionTooYoung(action)) return; // blocked — shown but not executable
   if (action.maxAge !== undefined && age > action.maxAge) return;
   if (!evaluateCharacterRequires(action)) return;
-
-  // LOG-01 (2026-06-26): bucket transitori de descobriments/habilitats d'aquest torn;
-  // s'adjunta a l'entrada d'historial al fi de torn (timing-safe, independent del cicle de vida de l'entrada).
-  state._turnDiscoveries = [];
-  state._turnSkills = [];
-  state._turnTeachings = [];
 
   // Handle discovery action (learn a branch tech)
   if (action.is_discovery_action) {
@@ -1198,7 +1189,7 @@ function executeAction(actionId) {
     if (action.unlocks_zone && !state.discoveredZoneIds.has(action.unlocks_zone)) {
       state.discoveredZoneIds.add(action.unlocks_zone);
       addLog(`Nova zona: ${action.unlocks_zone}!`);
-      if (state._turnDiscoveries) state._turnDiscoveries.push(`${ZONE_ICONS[action.unlocks_zone] || '🗺️'} ${action.unlocks_zone}`);
+      pushExtra(ZONE_ICONS[action.unlocks_zone] || '🗺️', action.unlocks_zone);
       state.pendingDiscoveries.push({
         _isZone: true, icon: ZONE_ICONS[action.unlocks_zone] || '🗺️',
         name: action.unlocks_zone, desc: `Has descobert ${action.unlocks_zone}. Ara apareix al teu mapa.`,
@@ -2072,6 +2063,10 @@ const RES_ICON = { food: '🌾', health: '❤️', material: '🔵', pedra: '�
 function fmtPairs(pairs) {
   return pairs.filter(([, d]) => d).map(([r, d]) => `${d > 0 ? '+' : ''}${d}${RES_ICON[r] || ''}`).join(' ');
 }
+// LOG-02 (2026-06-27): registre unificat de "coses que han passat aquest cicle" (descobriments,
+// habilitats, aprenentatges, ensenyaments, compres, upgrades). S'acumula des de l'últim fi de torn
+// (per això les compres fetes ENTRE torns també hi entren). Es buida al fi de torn.
+function pushExtra(icon, text) { (state._turnExtras = state._turnExtras || []).push({ icon, text }); }
 function openTurnHistory() {
   const hist = state.turnHistory || [];
   const listEl = el('th-list');
@@ -2092,12 +2087,17 @@ function openTurnHistory() {
       const evLine = evs.map(e =>
         `<span class="th-event">⚡ ${e.name}</span>${e.choice ? `<span class="th-choice">→ ${e.choice}</span>` : ''}${e.delta ? ` <span class="th-delta">${e.delta}</span>` : ''}`
       ).join('');
-      const discLine  = (entry.discoveries || []).map(d => `<span class="th-disc">✦ ${d}</span>`).join('');
-      const skillLine = (entry.skills || []).map(s => `<span class="th-skill">🧩 ${s}</span>`).join('');
-      const teachLine = (entry.teachings || []).map(t => `<span class="th-teach">📖 ${t}</span>`).join('');
+      // LOG-02: registres extres unificats (amb compat per a entrades antigues discoveries/skills/teachings)
+      const legacyExtras = [
+        ...(entry.discoveries || []).map(d => ({ icon: '✦', text: d })),
+        ...(entry.skills || []).map(s => ({ icon: '🧩', text: s })),
+        ...(entry.teachings || []).map(t => ({ icon: '📖', text: t })),
+      ];
+      const extras = Array.isArray(entry.extras) ? entry.extras : legacyExtras;
+      const extraLine = extras.map(x => `<span class="th-extra">${x.icon || '•'} ${x.text}</span>`).join('');
       li.innerHTML = `<span class="th-cycle">C${entry.cycle}</span>`
         + `<span class="th-action">${actName}${actDelta}</span>`
-        + evLine + discLine + skillLine + teachLine
+        + evLine + extraLine
         + `<span class="th-upkeep">${entry.upkeep || ''}</span>`;
       listEl.appendChild(li);
     }
@@ -2836,6 +2836,7 @@ function buyAction(actionId) {
   state.material = mat - action.purchase_cost;
   state.character.purchasedActionIds.add(actionId);
   addLog(`Has comprat: ${action.name || action.id}`);
+  pushExtra('🛒', `Comprat: ${action.name || action.id}`);
   const outIcons = { food: '🌾', material: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️', branques: '🌿' };
   const parts = [];
   if (action.output_resource && action.output_min != null) {
@@ -3165,6 +3166,7 @@ function doUpgrade(upgradeId) {
   state.material -= upgrade.purchase_cost;
   state.character.purchasedActionIds.add(upgradeId);
   addLog(`Upgrade: ${upgrade.name}`);
+  pushExtra('⬆️', `Upgrade: ${upgrade.name}`);
   const outIcons = { food: '🌾', material: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️', branques: '🌿' };
   const parts = [];
   if (upgrade.output_resource && upgrade.output_min != null) {
