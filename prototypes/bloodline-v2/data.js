@@ -1357,7 +1357,7 @@ const ACTIONS = [
     id: "act_coure_ceramica", name: "Coure Vasos d'Argila", is_base: false, zona: "Campament",
     description: "Cous els vasos a la fossa del foc tota la nit. El que abans es feia malbé ara espera, tranquil, dins l'argila.",
     purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 2, output_max: 4,
-    material_min: 0, material_max: 0,
+    material_min: 2, material_max: 3,
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: -0.02, "intel·lecte": +0.04, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
