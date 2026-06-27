@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "test:unit": "node --test tests/unit/**/*.js",
+    "test:headless": "node tests/headless/run.cjs",
     "test:visual": "playwright test tests/visual-qa/",
     "test:visual:headed": "playwright test tests/visual-qa/ --headed",
     "serve:life-tycoon": "serve src/life-tycoon -p 3000"
