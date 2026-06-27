@@ -194,6 +194,84 @@
 ---
 <!-- ════════════════════════════ 🔧 DESENVOLUPAR (codi obert) ════════════════════════════ -->
 
+<!-- ▼▼▼ NIT 2026-06-27 — lot autoritzat per treball autònom ▼▼▼ -->
+
+## P1 OPEN FEAT — TEACH-01 — Ensenyament d'aprenentatges per-fill (random apr → fill random no-ensenyat)
+
+- **Origen**: feedback usuari 2026-06-27. Substitueix el model actual de flag `ensenyat` per personatge.
+- **Fitxers**: `game.js` (triggerSuccession/herència 846-854, executeAction, nova card/discovery, log),
+  `data.js` (`act_ensenyar` requires/effect 767-772), estructura `children` (afegir `taughtApr` per fill).
+- **Model nou**:
+  - Cada fill pot aprendre **1** aprenentatge → camp per-fill `child.taughtApr`.
+  - "Ensenyar el Fill" ensenya **1 aprenentatge random** (dels que sap el pare) a **1 fill random** d'entre
+    els fills que **encara no han après** cap aprenentatge.
+  - Mentre quedi ≥1 fill no-ensenyat → acció ACTIVE. Quan no en quedi cap → **DESHABILITADA** amb indicació
+    a la descripció ("Tots els fills ja han après").
+  - Després d'ensenyar: **card** "Has ensenyat [aprenentatge] a [nom del fill]".
+  - **Log**: fila del torn (tipus "aprenentatge ensenyat") — lligat a LOG-02.
+  - Successió: cada fill-successor hereta **el seu** `taughtApr` (no un set compartit).
+- **Tanca**: la confusió #4 (la transmissió ja funcionava; el flag d'1-cop despistava).
+- **Acceptance**: ensenyes a cada fill un cop (random apr→fill random no-ensenyat); card + fila de log per
+  ensenyament; acció deshabilitada+explicada quan tots han après; cada hereu neix amb el seu aprenentatge.
+  Verificat headless (cadena gen→gen).
+
+## P1 OPEN FEAT — LOG-02 — Historial amb N registres per cicle (tots els tipus)
+
+- **Origen**: feedback usuari 2026-06-27 (amplia LOG-01).
+- **Issue**: ara 1 entrada/torn amb subcamps; cal **N línies per cicle**, una per cada cosa: acció, event,
+  descobriment, habilitat apresa, **aprenentatge** (descobert i ensenyat-a-fill TEACH-01), **acció comprada**,
+  **upgrade**.
+- **Falta capturar**: aprenentatges (`checkAprenentagesAfterAction`), compres al mercat, upgrades, ensenyar.
+- **Fitxers**: `game.js` (turnHistory schema + `openTurnHistory` render; punts de captura).
+- **Acceptance**: per a un cicle amb diverses coses, l'historial mostra una fila per cada una amb el seu
+  impacte. Verificat headless.
+
+## P2 OPEN BUG — FOOD-CAP-01 — "Assecar Provisions" no es deshabilita al cap màxim
+
+- **Origen**: feedback usuari 2026-06-27.
+- **Issue**: `act_assecar_provisions` puja el cap de magatzem (`food_cap_delta`). Amb `foodMax == FOOD_MAX`
+  (20) ja no aporta res però segueix oferint-se → ha d'aparèixer **deshabilitada**.
+- **Fitxers**: `game.js` (gate de visibilitat/disponibilitat; check `foodMax >= FOOD_MAX` o `max_executions`).
+- **Acceptance**: amb foodMax al màxim, "Assecar Provisions" surt deshabilitada i explicada.
+
+## P2 DONE BUG — EVT-OPT-MAT — Opcions d'event amb material_delta no apliquen material
+
+- **Origen**: revisió EVT-01 (2026-06-26).
+- **Issue**: `resolveDiscoveryOption` aplicava food/health_delta però **no** material_delta (ni pedra/eina).
+- **✅ RESOLT 2026-06-27**: `resolveDiscoveryOption` aplica ara material/pedra/eina_delta (amb clamp) i ho
+  registra al delta de l'event a l'historial. Verificat headless: material 10→6 (−4), log `+3🌾 -4🔵`.
+
+## P1 OPEN QA — TEST-HARNESS — Suite de tests headless reproduïble (tests/)
+
+- **Origen**: petició usuari 2026-06-27 ("tests autònoms").
+- **Objectiu**: convertir els scripts headless throwaway (verify-bl*.cjs) en un `tests/` real + runner.
+  Cobertura: lògica pura (inclinació, cap de salut/no-clawback, herència aprenentatges, scoring) +
+  integració headless (torn complet, log, successió). Servidor estàtic + Playwright.
+- **Fitxers**: `tests/headless/*.cjs`, `tests/unit/*.js`, npm scripts existents (`test:unit`, `test:visual`).
+- **Acceptance**: un comando executa la suite i passa; inclou casos dels fixos recents (2a, EVT-01, LOG-01/02,
+  TEACH-01).
+
+## P1 OPEN DOCS — DOCS-SYNC — Actualitzar docu + resoldre incoherència Godot↔JS
+
+- **Origen**: petició usuari 2026-06-27.
+- **Tasques**: README bloodline-v2 (recomptes reals); systems-index + DESIGN-02 propagats; **incoherència
+  engine**: CLAUDE.md/technical-preferences diuen **Godot 4.6** però el joc viu és el **prototip JS** (Godot
+  abandonat — memòria). Reflectir-ho amb una nota d'estat clara sense perdre el context Godot.
+- **Acceptance**: docu coherent amb la realitat (prototip JS actiu); recomptes correctes.
+
+## P1 OPEN QA — TEST-PLAN — Pla de proves manual per a l'usuari
+
+- **Origen**: petició usuari 2026-06-27.
+- **Acceptance**: checklist manual per sistemes (inclinació/branques, eines, successió/herència, aprenentatges,
+  log, economia, events) + verificació dels fixos recents. A `production/qa/`.
+
+## P2 OPEN DOCS — NEXT-STEPS — Roadmap/next-steps prioritzat
+
+- **Origen**: petició usuari 2026-06-27.
+- **Acceptance**: document amb els propers passos prioritzats (post-fixos, DESIGN-02-IMPL, polish).
+
+<!-- ▲▲▲ NIT 2026-06-27 ▲▲▲ -->
+
 ## P1 DONE BUG — START-01 — La branca inicial ha de ser sempre Recol·lector
 
 - **✅ RESOLT 2026-06-25** (commit 17462e9): `freshInclination()` dona `sociabilitat: 0.05` → Recol·lector

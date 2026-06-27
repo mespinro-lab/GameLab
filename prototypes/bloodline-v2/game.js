@@ -2266,6 +2266,10 @@ function resolveDiscoveryOption(optionIndex) {
 
   // Direct resource deltas
   if (opt.food_delta) state.food = Math.max(0, Math.min(foodMax(), state.food + opt.food_delta));
+  // EVT-OPT-MAT (2026-06-27): les opcions també poden moure material/pedra/eina
+  if (opt.material_delta) state.material = Math.max(0, Math.min(materialMax(), state.material + opt.material_delta));
+  if (opt.pedra_delta) { const md = RESOURCE_DEFS.find(r => r.id === 'pedra'); state.pedra = Math.max(0, md?.max != null ? Math.min(md.max, (state.pedra || 0) + opt.pedra_delta) : (state.pedra || 0) + opt.pedra_delta); }
+  if (opt.eina_delta)  { const md = RESOURCE_DEFS.find(r => r.id === 'eina');  state.eina  = Math.max(0, md?.max != null ? Math.min(md.max, (state.eina  || 0) + opt.eina_delta)  : (state.eina  || 0) + opt.eina_delta); }
 
   // Health (may be modified by skill_modifier)
   let healthDelta = opt.health_delta ?? 0;
@@ -2301,6 +2305,9 @@ function resolveDiscoveryOption(optionIndex) {
     const optPairs = [];
     if (opt.food_delta) optPairs.push(['food', opt.food_delta]);
     if (healthDelta)    optPairs.push(['health', healthDelta]);
+    if (opt.material_delta) optPairs.push(['material', opt.material_delta]);
+    if (opt.pedra_delta)    optPairs.push(['pedra', opt.pedra_delta]);
+    if (opt.eina_delta)     optPairs.push(['eina', opt.eina_delta]);
     state._pendingTurnEntry.events.push({ name: ev.text.slice(0, 50), choice: opt.text.slice(0, 35), delta: fmtPairs(optPairs) });
   }
   state.pendingEvent = null;
