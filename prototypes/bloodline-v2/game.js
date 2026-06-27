@@ -373,6 +373,12 @@ function getActionVisibility(action) {
     const primaryToolId = getPrimaryToolActionId();
     if (primaryToolId && action.id !== primaryToolId) return 'HIDDEN';
   }
+  // FOOD-CAP-01 (2026-06-27): accions que amplien el cap de magatzem (food_cap_delta) es deshabiliten
+  // (FADED, no executable) quan el benefici s'esgota: usos esgotats o cap de menjar ja al màxim absolut.
+  if (action.food_cap_delta) {
+    const used = state.character.actionUseCounts[action.id] || 0;
+    if (used >= (action.max_executions || 99) || (state.foodMax ?? FOOD_MAX_START) >= FOOD_MAX) return 'FADED';
+  }
   const reqs = action.inclination_requirements || ACTION_INCLINATION_REQUIREMENTS[action.id];
   if (!reqs) return 'ACTIVE';
   for (const [axis, range] of Object.entries(reqs)) {

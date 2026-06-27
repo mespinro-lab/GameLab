@@ -226,13 +226,16 @@
 - **Acceptance**: per a un cicle amb diverses coses, l'historial mostra una fila per cada una amb el seu
   impacte. Verificat headless.
 
-## P2 OPEN BUG — FOOD-CAP-01 — "Assecar Provisions" no es deshabilita al cap màxim
+## P2 DONE BUG — FOOD-CAP-01 — "Assecar Provisions" no es deshabilita al cap màxim
 
 - **Origen**: feedback usuari 2026-06-27.
 - **Issue**: `act_assecar_provisions` puja el cap de magatzem (`food_cap_delta`). Amb `foodMax == FOOD_MAX`
   (20) ja no aporta res però segueix oferint-se → ha d'aparèixer **deshabilitada**.
 - **Fitxers**: `game.js` (gate de visibilitat/disponibilitat; check `foodMax >= FOOD_MAX` o `max_executions`).
 - **Acceptance**: amb foodMax al màxim, "Assecar Provisions" surt deshabilitada i explicada.
+- **✅ RESOLT 2026-06-27**: `getActionVisibility` retorna FADED (no executable) per a accions amb
+  `food_cap_delta` quan els usos s'esgoten (`>= max_executions`) o `foodMax >= FOOD_MAX`. Verificat headless:
+  baseline ACTIVE, cap-màxim→FADED, usos-esgotats→FADED.
 
 ## P2 DONE BUG — EVT-OPT-MAT — Opcions d'event amb material_delta no apliquen material
 
@@ -402,18 +405,21 @@
   material pot perdre per extinció sense bloqueig clar.
 - **Acceptance**: l'avís de risc d'extinció és prou visible/urgent abans que la finestra es tanqui.
 
-## P3 OPEN BALANCE — BAL-01 — `act_coure_ceramica` costa 5 al mercat però té `material 0/0`
+## P3 DONE BALANCE — BAL-01 — `act_coure_ceramica` costa 5 al mercat però té `material 0/0`
 
 - **Font**: Playtest 2026-06-23, S3-05 (optimizer MAT-04).
 - **Issue**: inversió de 5 tokens que no contribueix a l'economia de material; probable omissió.
-- **Acceptance**: `act_coure_ceramica` genera material coherent, o es documenta la zero-generació com a intencional.
+- **✅ RESOLT 2026-06-27**: `material_min/max` 0/0 → **2/3** (coherent amb "totes les accions donen
+  material"). L'acció ja donava food 2-4; ara també material com la resta. Verificat.
 
-## P3 OPEN NETEJA — CLEAN-01 — `d_talla_silex` aplica DESTRESA_BONUS a una acció sense output
+## P3 DONE NETEJA — CLEAN-01 — `d_talla_silex` aplica DESTRESA_BONUS a una acció sense output
 
 - **Font**: Playtest 2026-06-23, S4-01 (auditoria) — conseqüència de D1.
 - **Issue**: amb D1, `act_tallar_pedra` ("Practicar la Talla") ja no té output, així que el DESTRESA_BONUS
   de `d_talla_silex` hi és inert. La destresa SEGUEIX valent com a prerequisit de l'upgrade `act_talla_avancada`.
-- **Acceptance**: neteja del bonus inert o redirecció a un efecte útil; sense impacte funcional actual.
+- **✅ RESOLT 2026-06-27 (no-op)**: el `DESTRESA_BONUS` ja és **naturalment inert** — només s'aplica dins del
+  bloc `if (outRes && action.output_min != null)` (game.js ~1150) i `act_tallar_pedra` no té output. Sense
+  impacte funcional; cap canvi de codi necessari. La destresa segueix valent com a prereq de `act_talla_avancada`.
 
 ## P3 DEFERRED CONTENT — C-02 — Títols de dinastia amb condicions verificables
 
