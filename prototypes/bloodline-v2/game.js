@@ -604,6 +604,7 @@ function evaluateCharacterRequires(action) {
   return action.requires.every(req => {
     if (req.type === 'has_any_skill')        return state.character.unlockedSkillIds.size > 0;
     if (req.type === 'has_any_aprenentatge') return state.character.aprenentatges.size > 0;
+    if (req.type === 'has_untaught_child')   return state.character.children.some(c => !c.taughtApr);
     if (req.type === 'has_destresa')     return state.character.destreses.has(req.id);
     if (req.type === 'has_aprenentatge') return state.character.aprenentatges.has(req.id);
     if (req.resource !== undefined) {
@@ -632,6 +633,23 @@ function applyCharacterEffect(action) {
     state.character.charState[eff.state] = def?.max != null
       ? Math.min(def.max, Math.max(0, newVal))
       : newVal;
+  }
+  if (eff.type === 'teach_child') {
+    // TEACH-01 (2026-06-27): 1 aprenentatge a l'atzar → 1 fill a l'atzar d'entre els no-ensenyats.
+    const untaught = state.character.children.filter(c => !c.taughtApr);
+    const aprs = [...state.character.aprenentatges];
+    if (untaught.length && aprs.length) {
+      const child = untaught[Math.floor(Math.random() * untaught.length)];
+      const aprId = aprs[Math.floor(Math.random() * aprs.length)];
+      child.taughtApr = aprId;
+      const aprName = APRENENTATGE_DEFS.find(a => a.id === aprId)?.name || aprId;
+      addLog(`📖 Has ensenyat "${aprName}" a ${child.label}`);
+      state.pendingDiscoveries.push({
+        _isTeach: true, icon: '📖', name: `Ensenyament a ${child.label}`,
+        desc: `Has ensenyat "${aprName}" a ${child.label}. Quan ${child.label} sigui successor, naixerà sabent-ho.`,
+      });
+      if (state._turnTeachings) state._turnTeachings.push(`${aprName} → ${child.label}`);
+    }
   }
   if (eff.type === 'find_partner') {
     const failureChance = eff.failure_chance ?? 0.05;
@@ -855,16 +873,11 @@ function triggerSuccession() {
   const inheritedSkills       = new Set(state.character.unlockedSkillIds);
   // Destreses: 1 del pare (tirada aleatòria entre les seves) + 1 aleatòria del pool global
   const inheritedDestreses    = pickInitialDestreses(state.character.destreses);
-  // Aprenentatges: el fill rep UN del pare si va executar act_ensenyar (tirada aleatòria entre els del pare)
-  const hasEnsenyat            = state.character.charState.ensenyat === 1;
-  const inheritedAprenentatges = new Set();
-  if (hasEnsenyat && state.character.aprenentatges.size > 0) {
-    const aprArr = [...state.character.aprenentatges];
-    inheritedAprenentatges.add(aprArr[Math.floor(Math.random() * aprArr.length)]);
-  }
+  // Aprenentatges (TEACH-01, 2026-06-27): cada fill hereta NOMÉS el que se li va ensenyar (c.taughtApr), per-fill.
   const childSuccessors = children.map(c => ({
     ...c, is_sibling: false,
-    inheritedInclination, inheritedStats, inheritedPurchased, inheritedSkills, inheritedDestreses, inheritedAprenentatges, hasEnsenyat,
+    inheritedInclination, inheritedStats, inheritedPurchased, inheritedSkills, inheritedDestreses,
+    inheritedAprenentatges: c.taughtApr ? new Set([c.taughtApr]) : new Set(),
   }));
   const siblingSuccessors = siblings.map(s => ({ ...s, is_sibling: true }));
   // Siblings only offered if the character leaves no children (PT-10)
@@ -1017,11 +1030,13 @@ function beginEndOfTurnPhase() {
       // LOG-01: adjunta descobriments i habilitats acumulats durant el torn (bucket transitori)
       state._pendingTurnEntry.discoveries = (state._turnDiscoveries || []).slice();
       state._pendingTurnEntry.skills = (state._turnSkills || []).slice();
+      state._pendingTurnEntry.teachings = (state._turnTeachings || []).slice();
       state.turnHistory.unshift(state._pendingTurnEntry);
       if (state.turnHistory.length > 10) state.turnHistory.length = 10;
       state._pendingTurnEntry = null;
       state._turnDiscoveries = [];
       state._turnSkills = [];
+      state._turnTeachings = [];
     }
     // Succession / death check
     if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0 || state.lifeProgress >= 1) {
@@ -1072,6 +1087,7 @@ function executeAction(actionId) {
   // s'adjunta a l'entrada d'historial al fi de torn (timing-safe, independent del cicle de vida de l'entrada).
   state._turnDiscoveries = [];
   state._turnSkills = [];
+  state._turnTeachings = [];
 
   // Handle discovery action (learn a branch tech)
   if (action.is_discovery_action) {
@@ -2039,9 +2055,10 @@ function openTurnHistory() {
       ).join('');
       const discLine  = (entry.discoveries || []).map(d => `<span class="th-disc">✦ ${d}</span>`).join('');
       const skillLine = (entry.skills || []).map(s => `<span class="th-skill">🧩 ${s}</span>`).join('');
+      const teachLine = (entry.teachings || []).map(t => `<span class="th-teach">📖 ${t}</span>`).join('');
       li.innerHTML = `<span class="th-cycle">C${entry.cycle}</span>`
         + `<span class="th-action">${actName}${actDelta}</span>`
-        + evLine + discLine + skillLine
+        + evLine + discLine + skillLine + teachLine
         + `<span class="th-upkeep">${entry.upkeep || ''}</span>`;
       listEl.appendChild(li);
     }
@@ -2056,7 +2073,7 @@ function renderInMapOverlay() {
     const disc = state.pendingDiscoveries[0];
     el('disc-icon').textContent  = disc.icon;
     el('disc-name').textContent  = disc.name;
-    el('disc-badge').textContent = disc._isPartner ? '💑 Nova parella' : disc._isSkill ? '🧩 Nova tècnica' : disc._isDestresa ? '⭐ Nova destresa' : disc._isZone ? '🗺️ Zona descoberta' : disc._isTech ? '✦ DESCOBRIMENT ✦' : disc._isAction ? '🛒 Nova acció' : '✨ Nou descobriment';
+    el('disc-badge').textContent = disc._isPartner ? '💑 Nova parella' : disc._isTeach ? '📖 Ensenyament' : disc._isAprenentatge ? '📖 Aprenentatge' : disc._isSkill ? '🧩 Nova tècnica' : disc._isDestresa ? '⭐ Nova destresa' : disc._isZone ? '🗺️ Zona descoberta' : disc._isTech ? '✦ DESCOBRIMENT ✦' : disc._isAction ? '🛒 Nova acció' : '✨ Nou descobriment';
     el('disc-desc').textContent  = disc.description || disc.desc || '';
     if (disc.effect?.desc) {
       el('disc-effects').textContent = disc.effect.desc;
