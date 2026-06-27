@@ -297,6 +297,72 @@
 
 <!-- ▲▲▲ NIT 2026-06-27 ▲▲▲ -->
 
+<!-- ▼▼▼ PLAYTEST 2026-06-27 (matí) — 15 punts de l'usuari, agrupats en 10 ▼▼▼ -->
+
+## P1 OPEN BUG — HEALTH-02 — Mort amb salut suficient (#5)
+- **Origen**: usuari 2026-06-27. Tenia 18 salut, baixava ~7, menjar suficient pel torn → hauria de quedar a 11,
+  però ha mort. Hi ha una via de pèrdua de salut/mort no comptabilitzada (revisar `applyTurnUpkeep`, penalització
+  de gana −10, aging, lifeProgress, ordre de clamps).
+- **Acceptance**: amb 18 salut, pèrdua coneguda 7 i menjar cobert → queda 11; no mor sense causa explicable.
+
+## P1 OPEN BUG — FIBER-01 — "Recollir fibres" no fa res (#6)
+- **Origen**: usuari 2026-06-27. L'acció de recollir fibres no té efecte visible (sense output? sense recurs?).
+- **Acceptance**: recollir fibres dona el recurs/efecte esperat i es veu.
+
+## P1 OPEN BUG — SKILL-DISC-01 — No es poden descobrir les habilitats de branca (#2) [escala UX-01]
+- **Origen**: usuari 2026-06-27 (recurrent). "Escoltar els Estrangers" segueix sense funcionar; cal una via clara
+  per descobrir habilitats/descobriments de branca. Investigar: apareix l'acció? (getEligibleSkills) executar-la
+  desbloqueja? El flux és inexistent/trencat per al jugador.
+- **Acceptance**: hi ha una via funcional i comprensible per descobrir habilitats de branca i desbloquejar-ne accions.
+
+## P1 OPEN UX — DISABLE-MSG-01 — Motius de deshabilitació contextuals (#3, #11)
+- **Origen**: usuari 2026-06-27. Una acció FADED mostra sempre "t'allunyes de la branca". Cal el motiu REAL:
+  (a) Assecar Provisions al màxim → "el magatzem ja no es pot ampliar més (caldrà un upgrade)"; (b) Ensenyar el
+  Fill desactivat → "tots els fills ja han après". Generalitzar: cada deshabilitació explica la seva causa.
+- **Relació**: construeix sobre FOOD-CAP-01 i TEACH-01 (tots dos fets).
+
+## P1 OPEN FEAT — FOOD-02 — Economia de menjar: cap, progressió i overflow (#13, #14)
+- **Origen**: usuari 2026-06-27.
+- **#13 progressió del cap**: començar la partida amb cap **6** (no 8); l'assecat bàsic puja fins a **~10** (no 20);
+  ampliacions majors només via **upgrade d'acció** o **habilitat nova** (encara no previst). Descripció correcta al màxim.
+- **#14 overflow temporal**: generar menjar per sobre del cap s'ha de **permetre durant el torn** (per poder gastar-lo);
+  només al **fi de torn** es retalla fins al cap. (Mateix principi que la salut 2a: no clampar abans d'hora.)
+- **Acceptance**: cap inicial 6; assecat bàsic ≤10; menjar pot superar el cap dins del torn i es retalla a l'EOT.
+
+## P1 OPEN UX — LOG-03 — Layout del log en 3 columnes (#4, #12)
+- **Origen**: usuari 2026-06-27. Estructura: **col 1 = cicle** (fusionada si el cicle té diverses files, es veu un
+  cop); **col 2 = tipus** (acció / descoberta / esdeveniment / compra / upgrade / aprenentatge / habilitat…);
+  **col 3 = el fet** amb recompensa i cost si té sentit. #12: categories (branca/destresa/aprenentatge) cada una a
+  la seva línia — *confirmar si és el log o el panell de personatge*.
+- **Relació**: refà la presentació de LOG-02 (dades ja capturades a `entry.extras`).
+
+## P1 OPEN BUG — APR-01 — Botànica/plantes medicinals: outputs i categoria (#8, #9, #10)
+- **Origen**: usuari 2026-06-27. (#8) botànica i plantes medicinals donen el mateix → diferenciar. (#9) "botànica"
+  és un **aprenentatge** però es mostra com a **destresa** (hi ha `d_botanica` destresa I un aprenentatge?). (#10)
+  recollectar arrels va donar **6 menjar** (1-3 base + bonus botànica + bonus plantes medicinals): el **stacking
+  de bonus d'output** és excessiu/incoherent.
+- **Acceptance**: botànica i plantes medicinals tenen efectes diferenciats; la categoria es mostra correctament;
+  el stacking de bonus és coherent (no dona 6 de menjar a una acció base).
+
+## P2 OPEN DESIGN — ACT-DIFF-01 — Vetlla al Foc vs Contemplació competeixen (#1) [→ DESIGN-02-IMPL]
+- **Origen**: usuari 2026-06-27. Totes dues donen salut sense diferenciació real → no té sentit que competeixin.
+  Diferenciar (perfil de risc/recompensa, recurs, branca) o fusionar.
+
+## P1 OPEN DESIGN/CONTENT — TOOLS-01 — Acció de crear eines (#7) [→ DESIGN-02-IMPL eines]
+- **Origen**: usuari 2026-06-27. "Practicar la Talla" no té sentit (sense output des de D1). Cal una acció de
+  **crear eines** amb requisits per branca: **2 pedres + 1 fibra** o **2 fibres + 1 pedra**. Ara no es pot comprar,
+  no apareix, ni cap habilitat la desbloqueja. Lligar amb el model d'eines de DESIGN-02 (cadena lliure) i SKILL-DISC-01.
+- **Acceptance**: existeix una acció de fabricació d'eines accessible (per habilitat/compra), amb requisits de
+  recursos per branca; substitueix "Practicar la Talla".
+
+## P2 OPEN FEEL — FLOATER-01 — Animació de floaters per recurs (#15)
+- **Origen**: usuari 2026-06-27. Des de la imatge del donut d'execució han de sortir **tantes icones petites com
+  recursos generats**, volant cap al seu comptador (p.ex. +2 menjar = 2 icones verdes cap al dipòsit; −1 salut =
+  1 cor vermell cap a l'indicador). En arribar, un **+2 verd**/**−1 vermell** clar que vola des del comptador i
+  s'esvaeix. **Relació**: SEQ-01 (sistema de floaters existent `applyFxFloaters`).
+
+<!-- ▲▲▲ PLAYTEST 2026-06-27 (matí) ▲▲▲ -->
+
 ## P1 DONE BUG — START-01 — La branca inicial ha de ser sempre Recol·lector
 
 - **✅ RESOLT 2026-06-25** (commit 17462e9): `freshInclination()` dona `sociabilitat: 0.05` → Recol·lector
