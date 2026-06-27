@@ -270,17 +270,21 @@
   engine**: CLAUDE.md/technical-preferences diuen **Godot 4.6** però el joc viu és el **prototip JS** (Godot
   abandonat — memòria). Reflectir-ho amb una nota d'estat clara sense perdre el context Godot.
 - **Acceptance**: docu coherent amb la realitat (prototip JS actiu); recomptes correctes.
+- **⏳ PARCIAL 2026-06-27**: afegida nota d'estat d'engine a `CLAUDE.md` (prototip JS actiu, Godot en pausa) +
+  decisió formal escalada a `next-steps.md` §P3. **Falta**: actualitzar recomptes del README bloodline-v2
+  (~104 accions / 48 branch-techs reals vs 79/30 declarats) i systems-index.
 
-## P1 OPEN QA — TEST-PLAN — Pla de proves manual per a l'usuari
-
-- **Origen**: petició usuari 2026-06-27.
-- **Acceptance**: checklist manual per sistemes (inclinació/branques, eines, successió/herència, aprenentatges,
-  log, economia, events) + verificació dels fixos recents. A `production/qa/`.
-
-## P2 OPEN DOCS — NEXT-STEPS — Roadmap/next-steps prioritzat
+## P1 DONE QA — TEST-PLAN — Pla de proves manual per a l'usuari
 
 - **Origen**: petició usuari 2026-06-27.
-- **Acceptance**: document amb els propers passos prioritzats (post-fixos, DESIGN-02-IMPL, polish).
+- **✅ RESOLT 2026-06-27**: `production/qa/test-plan.md` — checklist per 9 sistemes + taula de fixos recents
+  amb commits + secció de pendents.
+
+## P2 DONE DOCS — NEXT-STEPS — Roadmap/next-steps prioritzat
+
+- **Origen**: petició usuari 2026-06-27.
+- **✅ RESOLT 2026-06-27**: `production/next-steps.md` — roadmap P0→P4 (qualitat, DESIGN-02-IMPL, UX, docs,
+  decisió d'engine, mitjà termini) + recomanació d'ordre.
 
 <!-- ▲▲▲ NIT 2026-06-27 ▲▲▲ -->
 

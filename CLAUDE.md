@@ -3,8 +3,12 @@
 Indie game development managed through 48 coordinated Claude Code subagents.
 Each agent owns a specific domain, enforcing separation of concerns and quality.
 
-> **Joc actiu**: **Bloodline** — dynasty tycoon, iOS+Android, Godot 4.6.
-> Codi intern: `bloodline`. Directori: `src/bloodline/`.
+> **Joc actiu**: **Bloodline** — dynasty tycoon (Paleolític), mòbil.
+> ⚠️ **Estat real (2026-06-27)**: el desenvolupament actiu és al **prototip JS** a
+> `prototypes/bloodline-v2/` (jugable, desplegat a GitHub Pages). El **port a Godot**
+> (`src/bloodline/`) està **EN PAUSA**. La resta d'aquest fitxer descriu la configuració
+> Godot prevista per al port; per al treball actual, el target és el prototip JS.
+> Decisió formal d'engine pendent — vegeu `production/next-steps.md` §P3.
 
 ## Technology Stack
 
