@@ -114,6 +114,10 @@
   (eines/UI), `design/gdd/bloodline/`.
 - **Origen**: decisions de DESIGN-02 (2026-06-25). Vegeu `branch-model-redesign.md` §7.1 i
   `progression-distribution.md` §9.2.
+- **📄 DRAFT DE CONTINGUT 2026-06-27** (per revisar, NO implementat): `design/gdd/bloodline/design-02-impl-content-draft.md`
+  — specs concretes (ids, output, deltes, narrativa) de les 3 accions-pont Místic, 2 ponts nous,
+  `bt_mapa_recursos`, família de foc del Caçador, reubicació de plantes. Revisa/ajusta valors i aprova abans
+  de tocar `data.js`. Opcional: polir veu narrativa amb `era-writer`/`era-historian`.
 - **Assignació**: contingut (accions/habilitats a `data.js`) via `era-writer` + `era-historian`
   (`/era-design`); lògica d'eines i UI a `game.js` directament. Target = prototip JS (NO Godot).
 - **Checklist**:
