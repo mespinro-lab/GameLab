@@ -255,7 +255,7 @@
 - **✅ RESOLT 2026-06-27**: `resolveDiscoveryOption` aplica ara material/pedra/eina_delta (amb clamp) i ho
   registra al delta de l'event a l'historial. Verificat headless: material 10→6 (−4), log `+3🌾 -4🔵`.
 
-## P1 OPEN QA — TEST-HARNESS — Suite de tests headless reproduïble (tests/)
+## P1 DONE QA — TEST-HARNESS — Suite de tests headless reproduïble (tests/)
 
 - **Origen**: petició usuari 2026-06-27 ("tests autònoms").
 - **Objectiu**: convertir els scripts headless throwaway (verify-bl*.cjs) en un `tests/` real + runner.
@@ -264,6 +264,9 @@
 - **Fitxers**: `tests/headless/*.cjs`, `tests/unit/*.js`, npm scripts existents (`test:unit`, `test:visual`).
 - **Acceptance**: un comando executa la suite i passa; inclou casos dels fixos recents (2a, EVT-01, LOG-01/02,
   TEACH-01).
+- **✅ RESOLT 2026-06-27**: `tests/headless/run.cjs` (+ `npm run test:headless`, + README). Arrenca servidor
+  intern + Chromium, crida funcions internes (determinista, ràpid), surt ≠0 si falla (apte CI). 9 checks:
+  START-01, 2a, EVT-OPT-MAT, FOOD-CAP-01, BAL-01, LOG-02, TEACH-01, SUCC-01, sense errors. **9/9 passats.**
 
 ## P1 OPEN DOCS — DOCS-SYNC — Actualitzar docu + resoldre incoherència Godot↔JS
 
