@@ -399,7 +399,7 @@
   les seves accions es fan comprables al mercat. NO es "compren" habilitats; es descobreixen via aquesta
   acció. Cal fer el flux molt més visible (o repensar-lo dins DESIGN-02-IMPL).
 
-## P3 OPEN BUG — SUCC-01 — pendingDeath/pendingSuccession no es desen (pèrdua en background-kill)
+## P3 DONE BUG — SUCC-01 — pendingDeath/pendingSuccession no es desen (pèrdua en background-kill)
 
 - **Font**: investigació #4 (2026-06-26/27). El save object (`game.js:147-186`) NO inclou `pendingDeath` ni
   `pendingSuccession`. Si l'app es tanca a la pantalla de mort/successió (abans de triar successor), en
@@ -410,6 +410,9 @@
   cal fill), o aquest edge de save a la pantalla de successió.
 - **Acceptance**: una mort/successió pendent sobreviu un background-kill (desar pendingDeath/Succession, o
   re-derivar-la en carregar).
+- **✅ RESOLT 2026-06-27**: save/load serialitzen `pendingSuccession` i `pendingDeath` (helpers
+  `serialize/deserializeSuccessors` per als Sets dels successors) + `pendingNewGen`. Verificat headless:
+  després de save→load la successió pendent es manté i `inheritedAprenentatges` torna a ser un Set correcte.
 
 ## P3 OPEN UX — UX-02 — Avís de mort sense hereu poc visible
 
