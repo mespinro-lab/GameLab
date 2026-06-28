@@ -346,13 +346,17 @@
   la seva línia — *confirmar si és el log o el panell de personatge*.
 - **Relació**: refà la presentació de LOG-02 (dades ja capturades a `entry.extras`).
 
-## P1 OPEN BUG — APR-01 — Botànica/plantes medicinals: outputs i categoria (#8, #9, #10)
-- **Origen**: usuari 2026-06-27. (#8) botànica i plantes medicinals donen el mateix → diferenciar. (#9) "botànica"
-  és un **aprenentatge** però es mostra com a **destresa** (hi ha `d_botanica` destresa I un aprenentatge?). (#10)
-  recollectar arrels va donar **6 menjar** (1-3 base + bonus botànica + bonus plantes medicinals): el **stacking
-  de bonus d'output** és excessiu/incoherent.
-- **Acceptance**: botànica i plantes medicinals tenen efectes diferenciats; la categoria es mostra correctament;
-  el stacking de bonus és coherent (no dona 6 de menjar a una acció base).
+## P1 DONE BUG — APR-01 — Botànica/plantes medicinals: outputs i categoria (#8, #9, #10)
+- **Origen**: usuari 2026-06-27.
+- **DIAGNÒSTIC**: `d_botanica` (DESTRESA "Botànica", +1 DESTRESA_BONUS) i `apr_plantes_medicinals` (APRENENTATGE)
+  bufaven **tots dos** `act_recollectar_arrels` → "donen el mateix" (#8) i s'apilaven: 1-3 base +1 destresa +1/+2
+  apr = fins a 6 menjar a una acció base (#10).
+- **✅ RESOLT 2026-06-28 (#8, #10)**: `apr_plantes_medicinals` reorientat a buffar `act_recollida_bolets`
+  (recollida medicinal, food+salut), **no** arrels. Ara: Botànica (destresa) = +food a arrels (màx ~4);
+  Plantes Medicinals (aprenentatge) = +recollida de bolets. Rols distints, sense doble stacking. Verificat headless.
+- **#9 (clarificat, no era bug)**: "Botànica" ÉS una destresa (correcte); les destreses també s'aprenen jugant.
+  La confusió ve de no distingir destresa vs aprenentatge a la UI. → la separació visual clara (destresa /
+  aprenentatge cada un a la seva línia) es fa a **LOG-03** (#12).
 
 ## P2 OPEN DESIGN — ACT-DIFF-01 — Vetlla al Foc vs Contemplació competeixen (#1) [→ DESIGN-02-IMPL]
 - **Origen**: usuari 2026-06-27. Totes dues donen salut sense diferenciació real → no té sentit que competeixin.

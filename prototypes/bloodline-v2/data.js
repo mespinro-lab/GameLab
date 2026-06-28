@@ -174,10 +174,12 @@ const APRENENTATGE_DEFS = [
   },
   {
     id: "apr_plantes_medicinals", name: "Plantes Medicinals", icon: "🌿",
-    description: "Saps quines arrels curen, nodreixen i calmen. Cada recol·lecta dona una mica més.",
+    description: "Saps quines plantes i bolets curen, nodreixen i calmen. La recollida del bosc rendeix més i és més sana.",
     discoveryChance: 0.30,
     discovery_action_ids: ["act_recollectar_arrels", "act_assecament_plantes", "act_preparar_ungüent"],
-    effect: { type: "bonus_action_output", action_id: "act_recollectar_arrels", output_min_bonus: 1, output_max_bonus: 2, desc: "+1/+2 aliment en recol·lectar arrels" }
+    // APR-01 (2026-06-28): diferenciat de la destresa Botànica (que dona +food a arrels). Aquí, medicinal →
+    // buffa la recollida de bolets (food + salut), no arrels: evita el doble stacking i el rol és distint.
+    effect: { type: "bonus_action_output", action_id: "act_recollida_bolets", output_min_bonus: 1, output_max_bonus: 1, desc: "+1 recol·lecció de bolets (plantes que nodreixen i curen)" }
   },
   {
     id: "apr_veu_clan", name: "La Veu del Clan", icon: "🗣️",
