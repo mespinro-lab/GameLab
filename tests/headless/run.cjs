@@ -87,6 +87,13 @@ async function gotoRetry(page, n = 24) {
     });
     check('SUCC-01: successió pendent sobreviu save/load', succ.hasPD && succ.isSet && succ.n === 1, succ);
 
+    const lifespan = await page.evaluate(() => {
+      initState('T', 'MED'); let age = 0;
+      for (let i = 0; i < 30; i++) { state.cycle++; state.food = 50; state.health = 38; applyTurnUpkeep(); age = characterAge(); if (age >= LIFE_EXPECTANCY || state.health <= 0 || state.lifeProgress >= 1) break; }
+      return age;
+    });
+    check('HEALTH-02: personatge sa viu ~LIFE_EXPECTANCY (≥18)', lifespan >= 18, lifespan);
+
     check('Sense errors de pàgina al carregar/executar', pageErrors.length === 0, pageErrors);
   } catch (e) {
     failed++; console.log('  ✗ HARNESS ERROR — ' + e.message);

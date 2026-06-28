@@ -299,11 +299,17 @@
 
 <!-- ▼▼▼ PLAYTEST 2026-06-27 (matí) — 15 punts de l'usuari, agrupats en 10 ▼▼▼ -->
 
-## P1 OPEN BUG — HEALTH-02 — Mort amb salut suficient (#5)
-- **Origen**: usuari 2026-06-27. Tenia 18 salut, baixava ~7, menjar suficient pel torn → hauria de quedar a 11,
-  però ha mort. Hi ha una via de pèrdua de salut/mort no comptabilitzada (revisar `applyTurnUpkeep`, penalització
-  de gana −10, aging, lifeProgress, ordre de clamps).
-- **Acceptance**: amb 18 salut, pèrdua coneguda 7 i menjar cobert → queda 11; no mor sense causa explicable.
+## P1 DONE BUG — HEALTH-02 — Mort amb salut suficient (#5)
+- **Origen**: usuari 2026-06-27. Tenia 18 salut, baixava ~7, menjar suficient → quedava 11, però ha mort.
+- **DIAGNÒSTIC (simulació headless)**: NO és un bug de salut. La mort ve de `lifeProgress≥1` (pressupost de
+  vida), no de salut≤0. La matemàtica 18→11 és correcta. PERÒ `agingFactor` inflava `lifeProgress` → fins i
+  tot un personatge sa moria a edat ~15 (no 20), trencant el ritme de ~5 generacions/era.
+- **✅ RESOLT 2026-06-28**: recalibrat `BASE_LIFE_INC = 1/(LIFE_EXPECTANCY * AGING_FACTOR_MEAN(1.3))` per
+  compensar la mitjana d'agingFactor. Ara: **sa→~19-20**, malalt→~15, crític→~13 (la penalització per salut
+  baixa es manté). Verificat headless (harness: personatge sa ≥18). 
+- **⏳ Follow-up recomanat (no urgent)**: **visibilitat** — mostrar el `lifeProgress` (barra de vida/edat) i
+  una causa de mort clara ("Vida complerta" vs "Salut esgotada") perquè la mort per edat no sorprengui. La
+  causa ja es distingeix al codi; falta destacar-la i fer visible el progrés de vida. → veure DISABLE-MSG-01/UI.
 
 ## P1 OPEN BUG — FIBER-01 — "Recollir fibres" no fa res (#6)
 - **Origen**: usuari 2026-06-27. L'acció de recollir fibres no té efecte visible (sense output? sense recurs?).
