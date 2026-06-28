@@ -87,6 +87,13 @@ async function gotoRetry(page, n = 24) {
     });
     check('SUCC-01: successió pendent sobreviu save/load', succ.hasPD && succ.isSet && succ.n === 1, succ);
 
+    const fiber = await page.evaluate(() => {
+      initState('T', 'MED'); state.discoveredZoneIds.add('Bosc'); state.branques = 3; renderAll();
+      const a = ACTIONS.find(x => x.id === 'act_recollir_branques');
+      return { gives: a.output_resource === 'branques' && a.output_min > 0, chip: document.body.innerHTML.includes('🌿 3') };
+    });
+    check('FIBER-01: Recollir Fibres dona branques i es mostra (🌿)', fiber.gives && fiber.chip, fiber);
+
     const lifespan = await page.evaluate(() => {
       initState('T', 'MED'); let age = 0;
       for (let i = 0; i < 30; i++) { state.cycle++; state.food = 50; state.health = 38; applyTurnUpkeep(); age = characterAge(); if (age >= LIFE_EXPECTANCY || state.health <= 0 || state.lifeProgress >= 1) break; }

@@ -311,9 +311,13 @@
   una causa de mort clara ("Vida complerta" vs "Salut esgotada") perquè la mort per edat no sorprengui. La
   causa ja es distingeix al codi; falta destacar-la i fer visible el progrés de vida. → veure DISABLE-MSG-01/UI.
 
-## P1 OPEN BUG — FIBER-01 — "Recollir fibres" no fa res (#6)
-- **Origen**: usuari 2026-06-27. L'acció de recollir fibres no té efecte visible (sense output? sense recurs?).
-- **Acceptance**: recollir fibres dona el recurs/efecte esperat i es veu.
+## P1 DONE BUG — FIBER-01 — "Recollir fibres" no fa res (#6)
+- **Origen**: usuari 2026-06-27. L'acció de recollir fibres no té efecte visible.
+- **DIAGNÒSTIC**: `act_recollir_branques` SÍ dona el recurs `branques` (Fibres 🌿, 2-4), però aquest recurs
+  **no es mostrava enlloc** a la UI (pedra/eina sí, com a chips al Campament; fibres no) → "no passa res".
+- **✅ RESOLT 2026-06-28**: afegit el chip de fibres (🌿) al Campament (amb pedra/eina) i al **Bosc** (on es
+  recullen), perquè l'acció tingui feedback visible. Verificat headless (chip 🌿 al DOM + output a `branques`).
+- **Nota**: una visualització unificada de recursos secundaris (pedra/fibres/eina) seria una millora futura.
 
 ## P1 OPEN BUG — SKILL-DISC-01 — No es poden descobrir les habilitats de branca (#2) [escala UX-01]
 - **Origen**: usuari 2026-06-27 (recurrent). "Escoltar els Estrangers" segueix sense funcionar; cal una via clara
