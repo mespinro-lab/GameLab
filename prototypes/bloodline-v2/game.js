@@ -4,7 +4,12 @@
 
 // ═══════════════════════════════════════════════════════════ ENGINE CONSTANTS
 const INERTIA_FACTOR   = 2.0;
-const BASE_LIFE_INC    = 1 / LIFE_EXPECTANCY; // per turn at healthy/young baseline
+// HEALTH-02 (2026-06-28): compensa la mitjana d'agingFactor (~1.3 sobre una vida) perquè un personatge
+// SA visqui ~LIFE_EXPECTANCY cicles. Sense això, l'agingFactor inflava lifeProgress i la vida efectiva
+// era ~14 (no 20), trencant el ritme de ~5 generacions/era. La penalització per salut baixa segueix
+// fent morir abans els personatges malalts.
+const AGING_FACTOR_MEAN = 1.3;
+const BASE_LIFE_INC    = 1 / (LIFE_EXPECTANCY * AGING_FACTOR_MEAN);
 // FADE_MARGIN is defined in data.js
 
 function agingFactor(age) {
