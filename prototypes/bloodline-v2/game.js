@@ -1601,10 +1601,17 @@ function renderZoneNodes() {
     node.style.top    = pos.top  + '%';
     // Zone info chips
     let chipHtml = '';
-    if (zoneDef.id === 'Campament' && ((state.pedra || 0) > 0 || (state.eina || 0) > 0)) {
+    if (zoneDef.id === 'Campament' && ((state.pedra || 0) > 0 || (state.eina || 0) > 0 || (state.branques || 0) > 0)) {
       const pedraChip = (state.pedra || 0) > 0 ? `<span>🪨 ${state.pedra}</span>` : '';
+      const fibraChip = (state.branques || 0) > 0 ? `<span>🌿 ${state.branques}</span>` : '';
       const einaChip  = (state.eina  || 0) > 0 ? `<span>⚒️ ${state.eina}</span>` : '';
-      chipHtml = `<div class="zone-chip">${pedraChip}${einaChip}</div>`;
+      chipHtml = `<div class="zone-chip">${pedraChip}${fibraChip}${einaChip}</div>`;
+    }
+    // FIBER-01 (2026-06-28): mostrar les fibres (i pedra) al Bosc, on es recullen, perquè "Recollir Fibres" tingui feedback visible
+    if (zoneDef.id === 'Bosc' && ((state.branques || 0) > 0 || (state.pedra || 0) > 0)) {
+      const fibraChip = (state.branques || 0) > 0 ? `<span>🌿 ${state.branques}</span>` : '';
+      const pedraChip = (state.pedra || 0) > 0 ? `<span>🪨 ${state.pedra}</span>` : '';
+      chipHtml = `<div class="zone-chip">${fibraChip}${pedraChip}</div>`;
     }
     if (zoneDef.id === 'Llar' && state.character.partnerName) {
       const fills = state.character.children.length;
