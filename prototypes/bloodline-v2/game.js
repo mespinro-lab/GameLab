@@ -1127,7 +1127,7 @@ function executeAction(actionId) {
   // Handle discovery action (learn a branch tech)
   if (action.is_discovery_action) {
     const eligible = getEligibleSkills();
-    if (eligible.length === 0) { addLog('No hi ha tècniques noves ara.'); renderAll(); return; }
+    if (eligible.length === 0) { addLog('Cap tècnica nova ara: apuja una inclinació cap a una branca (fes-ne accions) perquè se\'n facin d\'elegibles.'); renderAll(); return; }
     const maxScore = Math.max(...eligible.map(bt => getSkillMaturity(bt)));
     const top = eligible.filter(bt => getSkillMaturity(bt) === maxScore);
     const chosen = top[Math.floor(Math.random() * top.length)];
@@ -1695,9 +1695,11 @@ function getZoneActions(zoneId) {
     if (ACTIONS.some(u => u.is_upgrade && u.upgrades_action_id === a.id && state.character.purchasedActionIds.has(u.id))) return false;
     return true; // include even if minAge not met — shown as tooYoung
   });
-  // Show discovery action if eligible skills exist
+  // SKILL-DISC-01 (2026-06-28): mostrar l'acció de descobriment sempre que hi hagi una tecnologia descoberta
+  // (no només quan ja hi ha habilitats elegibles), perquè el jugador vegi la via per aprendre habilitats.
+  // Si encara no n'hi ha cap d'elegible, en executar-la rep un missatge guia i NO gasta torn.
   const disc = ACTIONS.find(a => a.is_discovery_action && a.zona === zoneId);
-  if (disc && getEligibleSkills().length > 0) base.unshift(disc);
+  if (disc && state.discoveredUniversalTechIds.size > 0) base.unshift(disc);
   return base;
 }
 

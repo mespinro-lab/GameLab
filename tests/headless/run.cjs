@@ -97,6 +97,12 @@ async function gotoRetry(page, n = 24) {
     const apr01 = await page.evaluate(() => APRENENTATGE_DEFS.find(a => a.id === 'apr_plantes_medicinals').effect.action_id);
     check('APR-01: Plantes Medicinals diferenciat de Botànica (bolets, no arrels)', apr01 === 'act_recollida_bolets', apr01);
 
+    const skilldisc = await page.evaluate(() => {
+      initState('T', 'MED'); state.discoveredUniversalTechIds.add('ut_foc');
+      return { eligible: getEligibleSkills().length, shown: getZoneActions('Campament').some(a => a.is_discovery_action) };
+    });
+    check('SKILL-DISC-01: descobriment visible amb tech (encara sense elegibles)', skilldisc.eligible === 0 && skilldisc.shown === true, skilldisc);
+
     const lifespan = await page.evaluate(() => {
       initState('T', 'MED'); let age = 0;
       for (let i = 0; i < 30; i++) { state.cycle++; state.food = 50; state.health = 38; applyTurnUpkeep(); age = characterAge(); if (age >= LIFE_EXPECTANCY || state.health <= 0 || state.lifeProgress >= 1) break; }

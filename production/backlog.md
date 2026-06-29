@@ -319,11 +319,14 @@
   recullen), perquè l'acció tingui feedback visible. Verificat headless (chip 🌿 al DOM + output a `branques`).
 - **Nota**: una visualització unificada de recursos secundaris (pedra/fibres/eina) seria una millora futura.
 
-## P1 OPEN BUG — SKILL-DISC-01 — No es poden descobrir les habilitats de branca (#2) [escala UX-01]
-- **Origen**: usuari 2026-06-27 (recurrent). "Escoltar els Estrangers" segueix sense funcionar; cal una via clara
-  per descobrir habilitats/descobriments de branca. Investigar: apareix l'acció? (getEligibleSkills) executar-la
-  desbloqueja? El flux és inexistent/trencat per al jugador.
-- **Acceptance**: hi ha una via funcional i comprensible per descobrir habilitats de branca i desbloquejar-ne accions.
+## P1 DONE BUG — SKILL-DISC-01 — No es poden descobrir les habilitats de branca (#2) [escala UX-01]
+- **Origen**: usuari 2026-06-27 (recurrent).
+- **DIAGNÒSTIC (headless)**: el mecanisme funciona (executar "Escoltar els Estrangers" desbloqueja la habilitat
+  més madura elegible). PERÒ l'acció **només es mostrava si ja hi havia habilitats elegibles** (game.js:1700) →
+  amb inclinació inicial ~0.05 cap n'és elegible → l'acció quedava OCULTA i el jugador no veia la via.
+- **✅ RESOLT 2026-06-28**: l'acció es mostra ara **sempre que hi hagi ≥1 tecnologia descoberta**; si encara no
+  hi ha cap habilitat elegible, en executar-la rep un missatge guia ("apuja una inclinació…") i NO gasta torn.
+  Descripció reescrita ("aquí es desbloquegen les habilitats; cal una inclinació marcada"). Verificat headless.
 
 ## P1 OPEN UX — DISABLE-MSG-01 — Motius de deshabilitació contextuals (#3, #11)
 - **Origen**: usuari 2026-06-27. Una acció FADED mostra sempre "t'allunyes de la branca". Cal el motiu REAL:
