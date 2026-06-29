@@ -399,6 +399,20 @@
 
 <!-- ▲▲▲ PLAYTEST 2026-06-27 (matí) ▲▲▲ -->
 
+<!-- ▼▼▼ FEEDBACK 2026-06-29 (revisió del mapa de contingut) ▼▼▼ -->
+## ✅ DONE — Feedback 2026-06-29 (5 punts, tots verificats harness 20/20)
+- **F1**: "Espiar el Ramat" → **"Abatre una Presa"** (nom que implica caça).
+- **F2 (revisa TOOLS-01)**: les eines NO es fan amb una acció base. "Tallar una Eina" revertida a **"Practicar la
+  Talla"** (pràctica, sense output — guanya enginy/destresa). Les eines vénen de les **habilitats per-branca**
+  sota `ut_eines` (Forjar Punta, etc.), com volies.
+- **F3**: nou mecanisme **assist** — tenir **pedra** ajuda a caçar (**−3 salut en lloc de −5**) abans de saber fer eines.
+- **F4**: tenir **fibres** ajuda a recol·lectar arrels (**+1 output**, cistell improvisat).
+- **F5**: **Contemplació** penalitzada vs Vigilar — cura més (3-6) però **0 material**; Vigilar cura menys (2-4)
+  però rendeix material + cohesió social. Diferenciades.
+- **Mecanisme assist** (`game.js executeAction`): `action.assist = { resource, min, output_delta?, health_delta?, desc }`
+  — si tens el recurs, modifica output/side_effect i ho registra. Reutilitzable.
+<!-- ▲▲▲ FEEDBACK 2026-06-29 ▲▲▲ -->
+
 ## P1 DONE BUG — START-01 — La branca inicial ha de ser sempre Recol·lector
 
 - **✅ RESOLT 2026-06-25** (commit 17462e9): `freshInclination()` dona `sociabilitat: 0.05` → Recol·lector
