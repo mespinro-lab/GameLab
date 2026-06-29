@@ -347,7 +347,12 @@
   només al **fi de torn** es retalla fins al cap. (Mateix principi que la salut 2a: no clampar abans d'hora.)
 - **Acceptance**: cap inicial 6; assecat bàsic ≤10; menjar pot superar el cap dins del torn i es retalla a l'EOT.
 
-## P1 OPEN UX — LOG-03 — Layout del log en 3 columnes (#4, #12)
+## P1 DONE UX — LOG-03 — Layout del log en 3 columnes (#4, #12)
+- **✅ RESOLT 2026-06-28**: render reescrit a **3 columnes** — cicle (esquerra, **un sol cop** per cicle) +
+  graella `tipus | fet+delta`. Cada cosa del cicle (acció, event, descoberta, habilitat, aprenentatge, compra,
+  upgrade, ensenyament, upkeep) és **una fila pròpia** amb la seva etiqueta de tipus. Layout flex + sub-grid
+  (`.th-rows`). Verificat headless (4 files, cicle un cop). #12 (categories a línies separades) queda cobert
+  per al log; si es vol també al panell de personatge, és un retoc menor a part.
 - **Origen**: usuari 2026-06-27. Estructura: **col 1 = cicle** (fusionada si el cicle té diverses files, es veu un
   cop); **col 2 = tipus** (acció / descoberta / esdeveniment / compra / upgrade / aprenentatge / habilitat…);
   **col 3 = el fet** amb recompensa i cost si té sentit. #12: categories (branca/destresa/aprenentatge) cada una a

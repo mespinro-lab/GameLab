@@ -125,6 +125,15 @@ async function gotoRetry(page, n = 24) {
     });
     check('DISABLE-MSG-01: motius contextuals (magatzem / fills ensenyats)', /[Mm]agatzem/.test(dmsg.assecarMsg) && /han après/.test(dmsg.ensMsg), dmsg);
 
+    const log03 = await page.evaluate(() => {
+      initState('T', 'MED');
+      state.turnHistory = [{ cycle: 5, action: { name: 'Contemplació', delta: '+5❤️' }, events: [{ name: 'Event X', choice: 'A', delta: '+2🌾' }], extras: [{ icon: '🛒', text: 'Comprat: Y' }], upkeep: '-2🌾' }];
+      openTurnHistory();
+      const html = el('th-list').innerHTML;
+      return { hasRows: html.includes('th-rows'), types: (html.match(/th-type/g) || []).length, cycles: (html.match(/C5/g) || []).length };
+    });
+    check('LOG-03: 3 columnes (cicle un cop, files tipus|fet)', log03.hasRows && log03.types === 4 && log03.cycles === 1, log03);
+
     const lifespan = await page.evaluate(() => {
       initState('T', 'MED'); let age = 0;
       for (let i = 0; i < 30; i++) { state.cycle++; state.food = 50; state.health = 38; applyTurnUpkeep(); age = characterAge(); if (age >= LIFE_EXPECTANCY || state.health <= 0 || state.lifeProgress >= 1) break; }

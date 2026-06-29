@@ -1848,17 +1848,20 @@ body.donut-active * { pointer-events: none !important; }
   flex: 1;
 }
 .th-empty { color: var(--text-dim); font-size: 0.8rem; padding: 12px 16px; }
+/* LOG-03: cicle (un cop, esquerra) + graella tipus|fet */
 .th-entry {
-  display: grid;
-  grid-template-columns: 2.5rem 1fr;
-  gap: 2px 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   padding: 8px 16px;
   border-bottom: 1px solid rgba(200,160,80,.08);
   font-size: 0.75rem;
 }
-.th-cycle { grid-row: 1 / -1; color: var(--gold); font-weight: 700; font-size: 0.7rem; align-self: center; }
-.th-action { color: var(--text); }
-.th-event  { color: #fcd34d; font-size: 0.7rem; }
+.th-cycle { flex: 0 0 2.2rem; color: var(--gold); font-weight: 700; font-size: 0.7rem; padding-top: 1px; }
+.th-rows  { flex: 1; display: grid; grid-template-columns: 5.6rem 1fr; gap: 2px 8px; align-items: baseline; }
+.th-type  { color: var(--text-dim); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.th-fact  { color: var(--text); font-size: 0.72rem; }
+.th-event  { color: #fcd34d; }
 .th-choice { color: var(--text-dim); font-size: 0.68rem; }
 .th-upkeep { color: #f87171; font-size: 0.68rem; }
 .th-delta  { color: #86efac; font-size: 0.68rem; }
