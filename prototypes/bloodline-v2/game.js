@@ -1020,6 +1020,7 @@ function applyTurnUpkeep() {
   const totalUpkeep = Math.max(0.5, FOOD_UPKEEP - (state.foodUpkeepReduction || 0) - aprUpkeepReduction) + childUpkeep;
   const prevFood = state.food;
   state.food = Math.max(0, state.food - totalUpkeep);
+  state.food = Math.min(foodMax(), state.food); // FOOD-02: l'overflow de menjar es retalla al cap NOMÉS al fi de torn
   if (prevFood < totalUpkeep) {
     state.health = Math.max(0, state.health - 10);
   }
@@ -1260,7 +1261,7 @@ function executeAction(actionId) {
     const snapOut = snapshotNums();
     if (outDef && output > 0) {
       const newVal = (state[outRes] || 0) + output;
-      state[outRes] = outRes === 'food' ? Math.min(foodMax(), newVal) : outDef.max != null ? Math.min(outDef.max, newVal) : newVal;
+      state[outRes] = outRes === 'food' ? newVal : outDef.max != null ? Math.min(outDef.max, newVal) : newVal; // FOOD-02: overflow de menjar permès durant el torn
     }
     if (action.side_effects) {
       for (const se of action.side_effects) {
@@ -2268,7 +2269,7 @@ function dismissBirth() {
 }
 function applyEventEffects(fx) {
   if (!fx) return;
-  if (fx.food)      state.food      = Math.max(0, Math.min(foodMax(), state.food + fx.food));
+  if (fx.food)      state.food      = Math.max(0, state.food + fx.food); // FOOD-02: overflow permès (retall a l'EOT)
   if (fx.health)    state.health    = Math.max(0, Math.min(healthMax(), state.health + fx.health));
   if (fx.material)  state.material  = Math.max(0, Math.min(materialMax(), state.material + fx.material));
   if (fx.pedra !== undefined) {
@@ -2288,7 +2289,7 @@ function applyPendingActionResult() {
   if (res.outDef && res.output > 0) {
     const newVal = (state[res.outRes] || 0) + res.output;
     state[res.outRes] = res.outRes === 'food'
-      ? Math.min(foodMax(), newVal)
+      ? newVal  // FOOD-02: overflow permès (retall a l'EOT)
       : res.outDef.max != null ? Math.min(res.outDef.max, newVal) : newVal;
   }
   for (const se of (res.side_effects || [])) {
@@ -2341,7 +2342,7 @@ function resolveDiscoveryOption(optionIndex) {
   // Aquí apliquem NOMÉS els efectes propis de l'opció escollida.
 
   // Direct resource deltas
-  if (opt.food_delta) state.food = Math.max(0, Math.min(foodMax(), state.food + opt.food_delta));
+  if (opt.food_delta) state.food = Math.max(0, state.food + opt.food_delta); // FOOD-02: overflow permès (retall a l'EOT)
   // EVT-OPT-MAT (2026-06-27): les opcions també poden moure material/pedra/eina
   if (opt.material_delta) state.material = Math.max(0, Math.min(materialMax(), state.material + opt.material_delta));
   if (opt.pedra_delta) { const md = RESOURCE_DEFS.find(r => r.id === 'pedra'); state.pedra = Math.max(0, md?.max != null ? Math.min(md.max, (state.pedra || 0) + opt.pedra_delta) : (state.pedra || 0) + opt.pedra_delta); }

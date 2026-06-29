@@ -103,6 +103,15 @@ async function gotoRetry(page, n = 24) {
     });
     check('SKILL-DISC-01: descobriment visible amb tech (encara sense elegibles)', skilldisc.eligible === 0 && skilldisc.shown === true, skilldisc);
 
+    const food02 = await page.evaluate(() => {
+      initState('T', 'MED');
+      const cap0 = FOOD_MAX_START;
+      const assecarMax = ACTIONS.find(a => a.id === 'act_assecar_provisions').max_executions;
+      state.foodMax = 6; state.food = 14; state.cycle++; applyTurnUpkeep(); // overflow → retall a l'EOT
+      return { cap0, assecarMax, afterEOT: Math.round(state.food) };
+    });
+    check('FOOD-02: cap inicial 6, assecat max 2, overflow retallat a l\'EOT', food02.cap0 === 6 && food02.assecarMax === 2 && food02.afterEOT <= 6, food02);
+
     const lifespan = await page.evaluate(() => {
       initState('T', 'MED'); let age = 0;
       for (let i = 0; i < 30; i++) { state.cycle++; state.food = 50; state.health = 38; applyTurnUpkeep(); age = characterAge(); if (age >= LIFE_EXPECTANCY || state.health <= 0 || state.lifeProgress >= 1) break; }
