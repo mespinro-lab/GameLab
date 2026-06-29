@@ -328,11 +328,12 @@
   hi ha cap habilitat elegible, en executar-la rep un missatge guia ("apuja una inclinació…") i NO gasta torn.
   Descripció reescrita ("aquí es desbloquegen les habilitats; cal una inclinació marcada"). Verificat headless.
 
-## P1 OPEN UX — DISABLE-MSG-01 — Motius de deshabilitació contextuals (#3, #11)
-- **Origen**: usuari 2026-06-27. Una acció FADED mostra sempre "t'allunyes de la branca". Cal el motiu REAL:
-  (a) Assecar Provisions al màxim → "el magatzem ja no es pot ampliar més (caldrà un upgrade)"; (b) Ensenyar el
-  Fill desactivat → "tots els fills ja han après". Generalitzar: cada deshabilitació explica la seva causa.
-- **Relació**: construeix sobre FOOD-CAP-01 i TEACH-01 (tots dos fets).
+## P1 DONE UX — DISABLE-MSG-01 — Motius de deshabilitació contextuals (#3, #11)
+- **Origen**: usuari 2026-06-27. Una acció FADED mostrava sempre "t'allunyes de la branca".
+- **✅ RESOLT 2026-06-28**: nova funció `disableReason(action)` que dona el motiu REAL segons la causa:
+  magatzem al màxim (assecat), "tots els fills ja han après" (ensenyar), edat insuficient, inclinació
+  insuficient/al límit, requisits de recurs/destresa/aprenentatge/parella/fill. Substitueix el ternari genèric
+  de `updateCarouselInfo`. Verificat headless (magatzem + fills ensenyats).
 
 ## P1 DONE FEAT — FOOD-02 — Economia de menjar: cap, progressió i overflow (#13, #14)
 - **✅ RESOLT 2026-06-28**: (#13) `FOOD_MAX_START` 8→**6**; `act_assecar_provisions` `max_executions` 3→**2**

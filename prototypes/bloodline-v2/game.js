@@ -1823,6 +1823,39 @@ function carouselNavigate(newIdx) {
   springEffect(dir);
 }
 
+// DISABLE-MSG-01 (2026-06-28): motiu contextual pel qual una acció no és executable (en lloc del genèric
+// "la branca s'allunya" per a tot). Cada causa explica el seu perquè.
+function disableReason(action) {
+  if (isActionTooYoung(action)) return `🔒 Encara no tens edat (cal edat ${action.minAge})`;
+  const vis = getActionVisibility(action);
+  if (vis === 'FADED' && action.food_cap_delta) {
+    const used = state.character.actionUseCounts[action.id] || 0;
+    if ((state.foodMax ?? FOOD_MAX_START) >= FOOD_MAX) return '📦 Magatzem ja al màxim absolut';
+    if (used >= (action.max_executions || 99)) return '📦 Magatzem ja ampliat al màxim per ara (caldrà un upgrade)';
+    return '📦 Magatzem ja al màxim';
+  }
+  if (vis === 'FADED') return '〰 La branca s\'allunya — acció al límit de la inclinació';
+  if (vis !== 'ACTIVE') return '🔒 Inclinació insuficient';
+  if (!evaluateCharacterRequires(action)) {
+    const reqs = action.requires || [];
+    if (reqs.some(r => r.type === 'has_untaught_child')) return '📖 Tots els fills ja han après';
+    if (reqs.some(r => r.type === 'has_any_aprenentatge')) return '📖 Encara no tens cap aprenentatge per ensenyar';
+    if (reqs.some(r => r.type === 'has_any_skill')) return '🔒 Encara no tens cap habilitat';
+    if (reqs.some(r => r.type === 'has_destresa')) return '🔒 Et falta una destresa requerida';
+    if (reqs.some(r => r.type === 'has_aprenentatge')) return '🔒 Et falta un aprenentatge requerit';
+    const stateReq = reqs.find(r => r.state && (r.min !== undefined || r.max !== undefined));
+    if (stateReq) {
+      if (stateReq.state === 'fills') return '👶 Necessites tenir un fill primer';
+      if (stateReq.state === 'parella') return '💑 Necessites una parella';
+    }
+    const RES = { food: '🌾', material: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️', branques: '🌿' };
+    const unmet = reqs.filter(r => r.resource && (state[r.resource] || 0) < r.min);
+    if (unmet.length) return unmet.map(r => `⛔ Necessites ${r.min} ${RES[r.resource] || r.resource}`).join(' · ');
+    return 'Acció no disponible ara';
+  }
+  return action.description || '';
+}
+
 function updateCarouselInfo() {
   const { actions, idx } = CAROUSEL;
   if (!actions.length) {
@@ -1878,18 +1911,7 @@ function updateCarouselInfo() {
   const resourceReqMet = evaluateCharacterRequires(action);
   el('zc-name').textContent = action.name;
   el('zc-benefits').innerHTML = parts.join('  ');
-  el('zc-desc').textContent     = tooYoung
-    ? 'No tens edat per a això'
-    : faded
-    ? '〰 La branca s\'allunya — acció al límit de la inclinació'
-    : blocked
-    ? '🔒 Inclinació insuficient'
-    : !resourceReqMet
-    ? (() => {
-        const unmet = (action.requires || []).filter(r => r.resource && (state[r.resource] || 0) < r.min);
-        return unmet.map(r => `⛔ Necessites ${r.min} ${outIcons[r.resource] || r.resource}`).join(' · ');
-      })()
-    : (action.description || '');
+  el('zc-desc').textContent = disableReason(action);
 }
 
 function carouselOpenCurrent() {
