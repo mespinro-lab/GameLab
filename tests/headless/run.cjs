@@ -99,18 +99,20 @@ async function gotoRetry(page, n = 24) {
 
     const skilldisc = await page.evaluate(() => {
       initState('T', 'MED'); state.discoveredUniversalTechIds.add('ut_foc');
-      return { eligible: getEligibleSkills().length, shown: getZoneActions('Campament').some(a => a.is_discovery_action) };
+      const shown = getZoneActions('Campament').some(a => a.is_discovery_action);
+      state.character.inclination.impuls = 0.12; // jugador modest amb un eix lleugerament marcat
+      return { shown, eligibleModest: getEligibleSkills().map(s => s.id) };
     });
-    check('SKILL-DISC-01: descobriment visible amb tech (encara sense elegibles)', skilldisc.eligible === 0 && skilldisc.shown === true, skilldisc);
+    check('SKILL-DISC-01: visible + habilitat elegible amb inclinació modesta (≥0.10)', skilldisc.shown && skilldisc.eligibleModest.includes('bt_guardia_flama'), skilldisc);
 
     const food02 = await page.evaluate(() => {
       initState('T', 'MED');
       const cap0 = FOOD_MAX_START;
       const assecarMax = ACTIONS.find(a => a.id === 'act_assecar_provisions').max_executions;
       state.foodMax = 6; state.food = 14; state.cycle++; applyTurnUpkeep(); // overflow → retall a l'EOT
-      return { cap0, assecarMax, afterEOT: Math.round(state.food) };
+      return { cap0, assecarMax, afterEOT: Math.round(state.food), basic: FOOD_MAX_BASIC };
     });
-    check('FOOD-02: cap inicial 6, assecat max 2, overflow retallat a l\'EOT', food02.cap0 === 6 && food02.assecarMax === 2 && food02.afterEOT <= 6, food02);
+    check('FOOD-02: cap inicial 6, assecat → 10, overflow retallat a l\'EOT', food02.cap0 === 6 && food02.assecarMax === 2 && food02.afterEOT <= 6 && food02.basic === 10, food02);
 
     const dmsg = await page.evaluate(() => {
       initState('T', 'MED');
