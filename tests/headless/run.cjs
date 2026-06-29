@@ -134,6 +134,13 @@ async function gotoRetry(page, n = 24) {
     });
     check('LOG-03: 3 columnes (cicle un cop, files tipus|fet)', log03.hasRows && log03.types === 4 && log03.cycles === 1, log03);
 
+    const actdiff = await page.evaluate(() => {
+      const v = ACTIONS.find(a => a.id === 'act_ritual_foc');
+      const c = ACTIONS.find(a => a.id === 'act_contemplacio');
+      return { vMax: v.output_max, vSoc: v.inclination_deltas.sociabilitat, cMax: c.output_max, cEsp: c.inclination_deltas.espiritualitat };
+    });
+    check('ACT-DIFF-01: Vetlla (5-8, social) ≠ Contemplació (3-6, espiritual)', actdiff.vMax === 8 && actdiff.vSoc >= 0.08 && actdiff.cMax === 6 && actdiff.cEsp >= 0.08, actdiff);
+
     const lifespan = await page.evaluate(() => {
       initState('T', 'MED'); let age = 0;
       for (let i = 0; i < 30; i++) { state.cycle++; state.food = 50; state.health = 38; applyTurnUpkeep(); age = characterAge(); if (age >= LIFE_EXPECTANCY || state.health <= 0 || state.lifeProgress >= 1) break; }

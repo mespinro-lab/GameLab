@@ -690,11 +690,13 @@ const ACTIONS = [
   },
   {
     id: "act_ritual_foc", name: "Vetlla al Foc", is_base: false, universal_prereq: "ut_foc", zona: "Campament",
-    description: "El clan es reuneix al voltant del foc. El caliu compartit enforteix els llaços i els cants travessen la nit.",
-    purchase_cost: 4, execute_cost: 0, side_effects: [{ resource: 'health', delta: +5 }],
+    description: "El clan es reuneix al voltant del foc. El caliu compartit cura TOT el grup (més que la contemplació en solitari) i enforteix els llaços; els cants travessen la nit.",
+    purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 5, output_max: 8,
     stat_key: "vincle", stat_gain: 0.12,
     destresa_id: "d_custodi_foc",
-    inclination_deltas: { impuls: 0, "intel·lecte": -0.01, espiritualitat: +0.02, sociabilitat: +0.06 },
+    // ACT-DIFF-01 (2026-06-28): acció SOCIAL (Recol·lector) que cura més però requereix foc + compra,
+    // a diferència de Contemplació (lliure, petita, espiritual/Místic).
+    inclination_deltas: { impuls: 0, "intel·lecte": -0.01, espiritualitat: 0, sociabilitat: +0.08 },
     event_pool_id: "pool_ritual"
   },
   {
