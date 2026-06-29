@@ -11,6 +11,7 @@ const MAX_CHILDREN    = 3;
 
 const STARTING_FOOD = 4;
 const FOOD_MAX      = 20;
+const FOOD_MAX_BASIC = 10;  // FOOD-02 (#1, 2026-06-29): cap que assoleix l'assecat bàsic; més enllà = upgrades futurs (fins FOOD_MAX)
 const FOOD_MAX_START = 6;   // FOOD-02 (2026-06-28): cap inicial 6; assecat bàsic puja fins ~10; més via upgrades
 const FOOD_UPKEEP   = 2;
 
@@ -366,7 +367,7 @@ const SKILL_DEFS = [
     id: "bt_guardia_flama", name: "Guàrdia de la Flama",
     inheritanceRate: 0.40,
     universal_prereq: "ut_foc",
-    inclination_conditions: { operator: "OR", conditions: [{ axis: "impuls", min: 0.15 }, { axis: "intel·lecte", min: 0.15 }, { axis: "sociabilitat", min: 0.15 }] },
+    inclination_conditions: { operator: "OR", conditions: [{ axis: "impuls", min: 0.10 }, { axis: "intel·lecte", min: 0.10 }, { axis: "espiritualitat", min: 0.10 }, { axis: "sociabilitat", min: 0.10 }] },
     unlocks_action_ids: ["act_alimentar_foc", "act_torxa_escolta"],
     passive_effect: { type: "grant_health", amount: 5, desc: "+5 Salut (el foc protegeix el campament a la nit)" },
     is_hidden: false

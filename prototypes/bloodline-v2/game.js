@@ -421,7 +421,7 @@ function getActionVisibility(action) {
   // (FADED, no executable) quan el benefici s'esgota: usos esgotats o cap de menjar ja al màxim absolut.
   if (action.food_cap_delta) {
     const used = state.character.actionUseCounts[action.id] || 0;
-    if (used >= (action.max_executions || 99) || (state.foodMax ?? FOOD_MAX_START) >= FOOD_MAX) return 'FADED';
+    if (used >= (action.max_executions || 99) || (state.foodMax ?? FOOD_MAX_START) >= FOOD_MAX_BASIC) return 'FADED';
   }
   const reqs = action.inclination_requirements || ACTION_INCLINATION_REQUIREMENTS[action.id];
   if (!reqs) return 'ACTIVE';
@@ -1179,7 +1179,7 @@ function executeAction(actionId) {
     if (action.food_cap_delta) {
       const prevCount = state.character.actionUseCounts[actionId] || 0;
       if (prevCount < (action.max_executions || 99)) {
-        state.foodMax = Math.min(FOOD_MAX, (state.foodMax ?? FOOD_MAX_START) + action.food_cap_delta);
+        state.foodMax = Math.min(FOOD_MAX_BASIC, (state.foodMax ?? FOOD_MAX_START) + action.food_cap_delta);
         addLog(`Emmagatzematge ampliat: cap. → ${state.foodMax}`);
       }
     }
@@ -1834,7 +1834,7 @@ function disableReason(action) {
   const vis = getActionVisibility(action);
   if (vis === 'FADED' && action.food_cap_delta) {
     const used = state.character.actionUseCounts[action.id] || 0;
-    if ((state.foodMax ?? FOOD_MAX_START) >= FOOD_MAX) return '📦 Magatzem ja al màxim absolut';
+    if ((state.foodMax ?? FOOD_MAX_START) >= FOOD_MAX_BASIC) return '📦 Magatzem ja al màxim bàsic (l\'ampliació vindrà amb un upgrade)';
     if (used >= (action.max_executions || 99)) return '📦 Magatzem ja ampliat al màxim per ara (caldrà un upgrade)';
     return '📦 Magatzem ja al màxim';
   }
@@ -2157,7 +2157,7 @@ function renderInMapOverlay() {
     const disc = state.pendingDiscoveries[0];
     el('disc-icon').textContent  = disc.icon;
     el('disc-name').textContent  = disc.name;
-    el('disc-badge').textContent = disc._isPartner ? '💑 Nova parella' : disc._isTeach ? '📖 Ensenyament' : disc._isAprenentatge ? '📖 Aprenentatge' : disc._isSkill ? '🧩 Nova tècnica' : disc._isDestresa ? '⭐ Nova destresa' : disc._isZone ? '🗺️ Zona descoberta' : disc._isTech ? '✦ DESCOBRIMENT ✦' : disc._isAction ? '🛒 Nova acció' : '✨ Nou descobriment';
+    el('disc-badge').textContent = disc._isPartner ? '💑 Nova parella' : disc._isTeach ? '📖 Ensenyament' : disc._isAprenentatge ? '📖 Aprenentatge' : disc._isSkill ? '🧩 Nova habilitat' : disc._isDestresa ? '⭐ Nova destresa' : disc._isZone ? '🗺️ Zona descoberta' : disc._isTech ? '✦ DESCOBRIMENT ✦' : disc._isAction ? '🛒 Nova acció' : '✨ Nou descobriment';
     el('disc-desc').textContent  = disc.description || disc.desc || '';
     if (disc.effect?.desc) {
       el('disc-effects').textContent = disc.effect.desc;
