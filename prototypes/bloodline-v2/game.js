@@ -1349,9 +1349,13 @@ function clearFloaters() {
 
 // Resource balls flying from donut to top bar
 function spawnResBalls(before) {
+  // FLOATER-01 (2026-06-28): tantes icones petites com unitats generades/perdudes, volant del donut al seu
+  // comptador. Verd (drop-shadow) per a guanys, vermell per a pèrdues. El +N/−N al comptador el fa applyFxFloaters.
   const cur = snapshotNums();
   const resConfig = [
-    { key: 'material', targetId: 'tok-material', valId: 'tok-material-val' },
+    { key: 'food',     targetId: 'hex-food',     emoji: '🌾' },
+    { key: 'health',   targetId: 'hex-health',   emoji: '❤️' },
+    { key: 'material', targetId: 'tok-material',  emoji: '🔵' },
   ];
   const sourceEl = el('exec-donut-wrap');
   if (!sourceEl) return;
@@ -1359,24 +1363,23 @@ function spawnResBalls(before) {
   const srcCX = srcRect.left + srcRect.width / 2;
   const srcCY = srcRect.top  + srcRect.height / 2;
 
-  resConfig.forEach(({ key, targetId, valId }) => {
+  resConfig.forEach(({ key, targetId, emoji }) => {
     const delta = Math.round((cur[key] || 0) - (before[key] || 0));
-    if (delta <= 0) return;
+    if (delta === 0) return;
     const targetEl = el(targetId);
-    const valEl    = el(valId);
-    if (!targetEl || !valEl) return;
+    if (!targetEl) return;
     const tRect = targetEl.getBoundingClientRect();
     const tCX = tRect.left + tRect.width / 2;
     const tCY = tRect.top  + tRect.height / 2;
-    const count  = Math.min(delta, 5);
-    const perBall = Math.floor(delta / count);
+    const pos = delta > 0;
+    const count = Math.min(Math.abs(delta), 5);
     for (let i = 0; i < count; i++) {
-      const amount = i === count - 1 ? delta - perBall * (count - 1) : perBall;
       setTimeout(() => {
         const ball = document.createElement('div');
-        ball.className = `res-ball res-ball-${key}`;
-        ball.style.left = srcCX + 'px';
-        ball.style.top  = srcCY + 'px';
+        ball.className = `res-ball ${pos ? 'res-ball-pos' : 'res-ball-neg'}`;
+        ball.textContent = emoji;
+        ball.style.left = (srcCX + (Math.random() * 24 - 12)) + 'px';
+        ball.style.top  = (srcCY + (Math.random() * 24 - 12)) + 'px';
         document.body.appendChild(ball);
         requestAnimationFrame(() => requestAnimationFrame(() => {
           ball.style.transition = 'left 0.5s cubic-bezier(0.2,0.8,0.4,1), top 0.5s cubic-bezier(0.2,0.8,0.4,1), opacity 0.2s ease 0.35s';

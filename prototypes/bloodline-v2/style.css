@@ -687,19 +687,18 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 }
 
 /* Resource balls flying animation */
+/* FLOATER-01: icones de recurs (emoji) volant del donut al comptador, amb glow per signe */
 .res-ball {
   position: fixed;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
+  font-size: 13px;
+  line-height: 1;
   z-index: 200;
   pointer-events: none;
   transform: translate(-50%, -50%);
   opacity: 1;
 }
-.res-ball-material  { background: var(--blue);  box-shadow: 0 0 7px rgba(40,120,200,.8); }
-.res-ball-food      { background: #f39c12;       box-shadow: 0 0 7px rgba(243,156,18,.8); }
-.res-ball-health    { background: #e74c3c;       box-shadow: 0 0 7px rgba(231,76,60,.8); }
+.res-ball-pos { filter: drop-shadow(0 0 6px rgba(80,220,120,.95)); }
+.res-ball-neg { filter: drop-shadow(0 0 6px rgba(231,76,60,.95)); }
 
 /* tok-bump animation */
 .tok-bump { animation: tok-bump-anim 0.28s ease-out; }
