@@ -371,9 +371,12 @@
   La confusió ve de no distingir destresa vs aprenentatge a la UI. → la separació visual clara (destresa /
   aprenentatge cada un a la seva línia) es fa a **LOG-03** (#12).
 
-## P2 OPEN DESIGN — ACT-DIFF-01 — Vetlla al Foc vs Contemplació competeixen (#1) [→ DESIGN-02-IMPL]
-- **Origen**: usuari 2026-06-27. Totes dues donen salut sense diferenciació real → no té sentit que competeixin.
-  Diferenciar (perfil de risc/recompensa, recurs, branca) o fusionar.
+## P2 DONE DESIGN — ACT-DIFF-01 — Vetlla al Foc vs Contemplació competeixen (#1)
+- **Origen**: usuari 2026-06-27. Totes dues donaven ~+5 salut sense diferència.
+- **✅ RESOLT 2026-06-28**: diferenciades per rol/perfil. **Contemplació**: lliure, base, salut 3-6, espiritualitat
+  +0.08 (Místic), individual/introspectiva. **Vetlla al Foc**: de pagament (4) + requereix foc, salut **5-8**
+  (cura tot el grup, més), sociabilitat +0.08 (Recol·lector/social), construeix vincle. Spiritual-petit-lliure
+  vs social-gran-gated. Verificat headless.
 
 ## P1 OPEN DESIGN/CONTENT — TOOLS-01 — Acció de crear eines (#7) [→ DESIGN-02-IMPL eines]
 - **Origen**: usuari 2026-06-27. "Practicar la Talla" no té sentit (sense output des de D1). Cal una acció de
