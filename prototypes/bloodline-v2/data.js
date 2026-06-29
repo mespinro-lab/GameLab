@@ -679,9 +679,14 @@ const ACTIONS = [
     event_pool_id: "pool_recollecta"
   },
   {
-    id: "act_tallar_pedra", name: "Practicar la Talla", is_base: true, zona: "Campament",
-    description: "Practiques la talla del sílex: la mà aprèn l'angle i la força. Encara no en surten eines útils —cada branca fabrica la seva a la seva manera—, però hi guanyes enginy i destresa.",
+    id: "act_tallar_pedra", name: "Tallar una Eina", is_base: true, zona: "Campament",
+    description: "Treballes el sílex amb 2 pedres i 1 fibra fins a obtenir una eina bàsica. Cada branca en refina després la seva pròpia, però aquesta és la base universal de tota fabricació.",
     execute_cost: 0,
+    // TOOLS-01 (2026-06-28): acció de crear eines accessible amb recepta (substitueix la "Practicar la Talla"
+    // sense output). Les eines per-branca (Forjar Punta, etc.) queden com les especialitzades.
+    requires: [{ resource: 'pedra', min: 2 }, { resource: 'branques', min: 1 }],
+    output_resource: "eina", output_min: 1, output_max: 1,
+    side_effects: [{ resource: 'pedra', delta: -2 }, { resource: 'branques', delta: -1 }],
     material_min: 1, material_max: 2,
     stat_key: "enginy", stat_gain: 0.10,
     destresa_id: "d_talla_silex",
