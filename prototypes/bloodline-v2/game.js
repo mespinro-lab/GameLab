@@ -2112,30 +2112,34 @@ function openTurnHistory() {
   if (hist.length === 0) {
     listEl.innerHTML = '<li class="th-empty">Cap torn registrat encara.</li>';
   } else {
+    // LOG-03 (2026-06-28): 3 columnes — cicle (un cop) | tipus | fet+recompensa/cost. Una fila per cada cosa.
+    const typeFor = (ic) => ic === '🛒' ? 'Compra' : ic === '⬆️' ? 'Upgrade' : ic === '🧩' ? 'Habilitat'
+      : ic === '📖' ? 'Aprenentatge' : ic === '🗺️' ? 'Zona' : 'Descoberta';
     for (const entry of hist) {
       const li = document.createElement('li');
       li.className = 'th-entry';
-      // Acció: nou esquema { name, delta } o llegat (string)
+      const rows = [];
+      // Acció
       const actName  = typeof entry.action === 'object' ? (entry.action?.name || '—') : (entry.action || '—');
       const actDelta = (typeof entry.action === 'object' && entry.action?.delta) ? ` <span class="th-delta">${entry.action.delta}</span>` : '';
-      // Events: nou (array) o llegat (entry.event / eventChoice)
+      rows.push({ type: 'Acció', detail: `${actName}${actDelta}` });
+      // Events (nou array o llegat)
       const evs = Array.isArray(entry.events) ? entry.events
                 : entry.event ? [{ name: entry.event, choice: entry.eventChoice, delta: '' }] : [];
-      const evLine = evs.map(e =>
-        `<span class="th-event">⚡ ${e.name}</span>${e.choice ? `<span class="th-choice">→ ${e.choice}</span>` : ''}${e.delta ? ` <span class="th-delta">${e.delta}</span>` : ''}`
-      ).join('');
-      // LOG-02: registres extres unificats (amb compat per a entrades antigues discoveries/skills/teachings)
+      for (const e of evs) rows.push({ type: 'Event', detail: `⚡ ${e.name}${e.choice ? ` <span class="th-choice">→ ${e.choice}</span>` : ''}${e.delta ? ` <span class="th-delta">${e.delta}</span>` : ''}` });
+      // Extres (compat amb entrades antigues discoveries/skills/teachings)
       const legacyExtras = [
         ...(entry.discoveries || []).map(d => ({ icon: '✦', text: d })),
         ...(entry.skills || []).map(s => ({ icon: '🧩', text: s })),
         ...(entry.teachings || []).map(t => ({ icon: '📖', text: t })),
       ];
       const extras = Array.isArray(entry.extras) ? entry.extras : legacyExtras;
-      const extraLine = extras.map(x => `<span class="th-extra">${x.icon || '•'} ${x.text}</span>`).join('');
-      li.innerHTML = `<span class="th-cycle">C${entry.cycle}</span>`
-        + `<span class="th-action">${actName}${actDelta}</span>`
-        + evLine + extraLine
-        + `<span class="th-upkeep">${entry.upkeep || ''}</span>`;
+      for (const x of extras) rows.push({ type: typeFor(x.icon), detail: `${x.icon || '•'} ${x.text}` });
+      // Manteniment (upkeep) — només si hi ha delta
+      if (entry.upkeep && entry.upkeep !== '—') rows.push({ type: 'Upkeep', detail: `<span class="th-upkeep">${entry.upkeep}</span>` });
+
+      const rowsHtml = rows.map(r => `<span class="th-type">${r.type}</span><span class="th-fact">${r.detail}</span>`).join('');
+      li.innerHTML = `<span class="th-cycle">C${entry.cycle}</span><div class="th-rows">${rowsHtml}</div>`;
       listEl.appendChild(li);
     }
   }
