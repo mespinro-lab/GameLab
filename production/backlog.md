@@ -378,12 +378,15 @@
   (cura tot el grup, més), sociabilitat +0.08 (Recol·lector/social), construeix vincle. Spiritual-petit-lliure
   vs social-gran-gated. Verificat headless.
 
-## P1 OPEN DESIGN/CONTENT — TOOLS-01 — Acció de crear eines (#7) [→ DESIGN-02-IMPL eines]
-- **Origen**: usuari 2026-06-27. "Practicar la Talla" no té sentit (sense output des de D1). Cal una acció de
-  **crear eines** amb requisits per branca: **2 pedres + 1 fibra** o **2 fibres + 1 pedra**. Ara no es pot comprar,
-  no apareix, ni cap habilitat la desbloqueja. Lligar amb el model d'eines de DESIGN-02 (cadena lliure) i SKILL-DISC-01.
-- **Acceptance**: existeix una acció de fabricació d'eines accessible (per habilitat/compra), amb requisits de
-  recursos per branca; substitueix "Practicar la Talla".
+## P1 DONE DESIGN/CONTENT — TOOLS-01 — Acció de crear eines (#7) [→ DESIGN-02-IMPL eines]
+- **Origen**: usuari 2026-06-27. "Practicar la Talla" sense output (D1) → inútil; calia una acció de crear eines.
+- **✅ RESOLT 2026-06-28**: "Practicar la Talla" → **"Tallar una Eina"** (base, accessible): recepta **2 pedra +
+  1 fibra** → crea **eina** (consumeix els recursos). Les accions per-branca (Forjar Punta, etc.) ja existien amb
+  receptes 2pedra+1fibra / 2fibra+1pedra i ara són **descobribles** (gràcies a SKILL-DISC-01) → queden com les
+  eines especialitzades. Bonus: `d_talla_silex` (CLEAN-01) ja no és inert (l'acció torna a tenir output → la
+  destresa dona +1 eina). Verificat headless.
+- **Nota**: el model complet "cadena lliure + retorn gratuït" segueix al draft **DESIGN-02-IMPL** (pendent
+  d'aprovació); això n'és la part accessible/bàsica.
 
 ## P2 OPEN FEEL — FLOATER-01 — Animació de floaters per recurs (#15)
 - **Origen**: usuari 2026-06-27. Des de la imatge del donut d'execució han de sortir **tantes icones petites com

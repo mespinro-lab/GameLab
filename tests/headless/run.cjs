@@ -141,6 +141,14 @@ async function gotoRetry(page, n = 24) {
     });
     check('ACT-DIFF-01: Vetlla (5-8, social) ≠ Contemplació (3-6, espiritual)', actdiff.vMax === 8 && actdiff.vSoc >= 0.08 && actdiff.cMax === 6 && actdiff.cEsp >= 0.08, actdiff);
 
+    const tools01 = await page.evaluate(() => {
+      const t = ACTIONS.find(a => a.id === 'act_tallar_pedra');
+      const rp = (t.requires || []).find(r => r.resource === 'pedra');
+      const rf = (t.requires || []).find(r => r.resource === 'branques');
+      return { out: t.output_resource, rp: rp && rp.min, rf: rf && rf.min };
+    });
+    check('TOOLS-01: Tallar una Eina crea eina amb recepta (2 pedra + 1 fibra)', tools01.out === 'eina' && tools01.rp === 2 && tools01.rf === 1, tools01);
+
     const lifespan = await page.evaluate(() => {
       initState('T', 'MED'); let age = 0;
       for (let i = 0; i < 30; i++) { state.cycle++; state.food = 50; state.health = 38; applyTurnUpkeep(); age = characterAge(); if (age >= LIFE_EXPECTANCY || state.health <= 0 || state.lifeProgress >= 1) break; }
