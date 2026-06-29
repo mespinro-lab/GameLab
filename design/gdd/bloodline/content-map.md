@@ -10,9 +10,9 @@
 
 | Acció | Zona | Output | Recepta/efecte |
 |---|---|---|---|
-| Espiar el Ramat | Planes | 3-8 food | -5 health |
+| Abatre una Presa | Planes | 3-8 food | -5 health |
 | Recol·lectar Arrels | Planes | 1-3 food | — |
-| Tallar una Eina | Campament | 1-1 eina | 2 pedra + 1 branques · -2 pedra, -1 branques |
+| Practicar la Talla | Campament | — | — |
 | Contemplació | Campament | 3-6 health | — |
 | Vigilar el Campament | Campament | 2-4 health | — |
 | Explorar els Voltants | Planes | — | — |
