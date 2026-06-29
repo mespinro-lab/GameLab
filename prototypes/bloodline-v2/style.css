@@ -418,8 +418,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   left: 12px; right: 12px;
   z-index: 5;
   display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
+  flex-direction: column; /* #12 (2026-06-29): cada categoria (branques / destreses / aprenentatges) a la seva línia */
+  gap: 4px;
   align-items: flex-start;
   min-height: var(--know-h);
   max-height: none;

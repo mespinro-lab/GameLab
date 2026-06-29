@@ -1271,6 +1271,7 @@ function executeAction(actionId) {
         state[se.resource] = resDef.max != null ? Math.max(0, Math.min(resDef.max, newVal)) : Math.max(0, newVal);
       }
     }
+    spawnResBalls(snapOut); // FLOATER-01: icones del menjar/salut/material de l'OUTPUT volant al comptador
     applyFxFloaters(snapOut);
     // renderAll perquè els comptadors del panell reflecteixin el canvi JA
     renderAll();
