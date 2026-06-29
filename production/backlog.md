@@ -388,11 +388,14 @@
 - **Nota**: el model complet "cadena lliure + retorn gratuït" segueix al draft **DESIGN-02-IMPL** (pendent
   d'aprovació); això n'és la part accessible/bàsica.
 
-## P2 OPEN FEEL — FLOATER-01 — Animació de floaters per recurs (#15)
-- **Origen**: usuari 2026-06-27. Des de la imatge del donut d'execució han de sortir **tantes icones petites com
-  recursos generats**, volant cap al seu comptador (p.ex. +2 menjar = 2 icones verdes cap al dipòsit; −1 salut =
-  1 cor vermell cap a l'indicador). En arribar, un **+2 verd**/**−1 vermell** clar que vola des del comptador i
-  s'esvaeix. **Relació**: SEQ-01 (sistema de floaters existent `applyFxFloaters`).
+## P2 DONE FEEL — FLOATER-01 — Animació de floaters per recurs (#15)
+- **Origen**: usuari 2026-06-27.
+- **✅ RESOLT 2026-06-28**: `spawnResBalls` estès de només-material a **menjar/salut/material**: spawna tantes
+  icones (emoji del recurs) com unitats generades/perdudes, volant del donut al seu comptador, amb **glow verd**
+  (guany) o **vermell** (pèrdua). El popup **+N/−N** al comptador el segueix fent `applyFxFloaters`. Verificat
+  headless (res-ball + res-ball-pos creats).
+- **Follow-up menor**: pedra/eina/fibres encara no tenen icones volant (es mostren com a chips de mapa, sense
+  comptador fix d'ancoratge); i el +N podria sincronitzar-se a l'arribada de les icones (ara surt alhora).
 
 <!-- ▲▲▲ PLAYTEST 2026-06-27 (matí) ▲▲▲ -->
 

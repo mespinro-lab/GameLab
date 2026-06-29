@@ -149,6 +149,16 @@ async function gotoRetry(page, n = 24) {
     });
     check('TOOLS-01: Tallar una Eina crea eina amb recepta (2 pedra + 1 fibra)', tools01.out === 'eina' && tools01.rp === 2 && tools01.rf === 1, tools01);
 
+    const floater = await page.evaluate(async () => {
+      initState('T', 'MED'); renderAll();
+      const before = snapshotNums();
+      state.food = (state.food || 0) + 3;
+      spawnResBalls(before);
+      await new Promise(r => setTimeout(r, 260));
+      return { balls: document.querySelectorAll('.res-ball').length, pos: document.querySelectorAll('.res-ball-pos').length, donut: !!document.getElementById('exec-donut-wrap') };
+    });
+    check('FLOATER-01: icones de recurs volen al comptador (res-ball + glow)', floater.balls >= 1 && floater.pos >= 1, floater);
+
     const lifespan = await page.evaluate(() => {
       initState('T', 'MED'); let age = 0;
       for (let i = 0; i < 30; i++) { state.cycle++; state.food = 50; state.health = 38; applyTurnUpkeep(); age = characterAge(); if (age >= LIFE_EXPECTANCY || state.health <= 0 || state.lifeProgress >= 1) break; }
