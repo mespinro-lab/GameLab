@@ -11,7 +11,7 @@ const MAX_CHILDREN    = 3;
 
 const STARTING_FOOD = 4;
 const FOOD_MAX      = 20;
-const FOOD_MAX_START = 8;   // Capacitat inicial; creix amb assecar_provisions
+const FOOD_MAX_START = 6;   // FOOD-02 (2026-06-28): cap inicial 6; assecat bàsic puja fins ~10; més via upgrades
 const FOOD_UPKEEP   = 2;
 
 const STARTING_HEALTH      = 30;
@@ -1126,7 +1126,7 @@ const ACTIONS = [
     description: "Poses a assecar carn i arrels sobre la calor del foc. Les provisions aguanten molt més temps: el magatzem s'amplia en +2.",
     universal_prereq: "ut_foc",
     purchase_cost: 5, execute_cost: 0,
-    food_cap_delta: 2, max_executions: 3,
+    food_cap_delta: 2, max_executions: 2,
     material_min: 1, material_max: 2,
     stat_key: "enginy", stat_gain: 0.08,
     inclination_deltas: { impuls: -0.01, "intel·lecte": +0.02, espiritualitat: +0.01, sociabilitat: 0 },

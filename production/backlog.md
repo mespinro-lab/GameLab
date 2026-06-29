@@ -334,7 +334,11 @@
   Fill desactivat → "tots els fills ja han après". Generalitzar: cada deshabilitació explica la seva causa.
 - **Relació**: construeix sobre FOOD-CAP-01 i TEACH-01 (tots dos fets).
 
-## P1 OPEN FEAT — FOOD-02 — Economia de menjar: cap, progressió i overflow (#13, #14)
+## P1 DONE FEAT — FOOD-02 — Economia de menjar: cap, progressió i overflow (#13, #14)
+- **✅ RESOLT 2026-06-28**: (#13) `FOOD_MAX_START` 8→**6**; `act_assecar_provisions` `max_executions` 3→**2**
+  (assecat bàsic puja 6→8→10, després deshabilitat via FOOD-CAP-01; més ampliació = upgrades futurs).
+  (#14) **Overflow temporal**: el menjar generat (acció/event/opció) pot **superar el cap durant el torn**
+  (no es clampa al moment) i només es retalla al cap **al fi de torn** (després de l'upkeep). Verificat headless.
 - **Origen**: usuari 2026-06-27.
 - **#13 progressió del cap**: començar la partida amb cap **6** (no 8); l'assecat bàsic puja fins a **~10** (no 20);
   ampliacions majors només via **upgrade d'acció** o **habilitat nova** (encara no previst). Descripció correcta al màxim.
