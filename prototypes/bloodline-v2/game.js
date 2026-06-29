@@ -1232,13 +1232,17 @@ function executeAction(actionId) {
       output = Math.round(randInt(action.output_min + outMinBonus, Math.round((action.output_max + outMaxBonus) * _qualBonus)) * getStatMultiplier(action)) + destresaBonus;
       outDef = RESOURCE_DEFS.find(r => r.id === outRes);
     }
+    // FEEDBACK (2026-06-29): "assist" de matèria primera — tenir pedra/fibres ajuda accions base abans de fer eines.
+    const assistOk = !!(action.assist && (state[action.assist.resource] || 0) >= (action.assist.min || 1));
+    if (assistOk && action.assist.output_delta) output += action.assist.output_delta;
+    const seAssist = (se) => (assistOk && action.assist.health_delta && se.resource === 'health') ? se.delta + action.assist.health_delta : se.delta;
     // Log (inclou output calculat fins i tot si es difereix)
     const actionLabel = output > 0 ? `${action.name}: +${output} ${outDef?.label || outRes}` : action.name;
     addLog(`[${state.cycle + 1}] ${actionLabel}`);
     // LOG-01: entrada estructurada — delta propi de l'acció (output + side_effects)
     const actionDeltaPairs = [];
     if (output > 0 && outRes) actionDeltaPairs.push([outRes, output]);
-    if (action.side_effects) for (const se of action.side_effects) actionDeltaPairs.push([se.resource, se.delta]);
+    if (action.side_effects) for (const se of action.side_effects) actionDeltaPairs.push([se.resource, seAssist(se)]);
     state._pendingTurnEntry = { cycle: state.cycle + 1, action: { name: action.name, delta: fmtPairs(actionDeltaPairs) }, events: [], upkeep: null };
 
     // ── COMPROVACIÓ EVENT ─────────────────────────────────────────────────
@@ -1267,10 +1271,11 @@ function executeAction(actionId) {
       for (const se of action.side_effects) {
         const resDef = RESOURCE_DEFS.find(r => r.id === se.resource);
         if (!resDef) continue;
-        const newVal = (state[se.resource] || 0) + se.delta;
+        const newVal = (state[se.resource] || 0) + seAssist(se);
         state[se.resource] = resDef.max != null ? Math.max(0, Math.min(resDef.max, newVal)) : Math.max(0, newVal);
       }
     }
+    if (assistOk && action.assist.desc) addLog(action.assist.desc);
     spawnResBalls(snapOut); // FLOATER-01: icones del menjar/salut/material de l'OUTPUT volant al comptador
     applyFxFloaters(snapOut);
     // renderAll perquè els comptadors del panell reflecteixin el canvi JA

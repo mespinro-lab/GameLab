@@ -659,11 +659,12 @@ const ACTION_INCLINATION_REQUIREMENTS = {
 const ACTIONS = [
   // BASE
   {
-    id: "act_espiar_ramat", name: "Espiar el Ramat", is_base: true, zona: "Planes",
-    description: "Segueixes el ramat de prop i tries el moment de caçar. Molt menjar, però hi ha risc de ferides.",
+    id: "act_espiar_ramat", name: "Abatre una Presa", is_base: true, zona: "Planes",
+    description: "Segueixes el ramat, esculls el moment i abats una presa a mans nues. Molt menjar, però risc de ferides — una pedra a la mà ho fa menys perillós.",
     execute_cost: 0, output_resource: "food", output_min: 3, output_max: 8,
     material_min: 2, material_max: 4,
     side_effects: [{ resource: 'health', delta: -5 }],
+    assist: { resource: 'pedra', min: 1, health_delta: 2, desc: '🪨 Una pedra fa d\'arma: menys risc a la caça (−3 en lloc de −5).' },
     stat_key: "forca", stat_gain: 0.10,
     destresa_id: "d_rastreig",
     inclination_deltas: { impuls: +0.05, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
@@ -671,23 +672,19 @@ const ACTIONS = [
   },
   {
     id: "act_recollectar_arrels", name: "Recol·lectar Arrels", is_base: true, zona: "Planes",
-    description: "Busques arrels i baies comestibles sense allunyar-te. Segur però rendiment moderat.",
+    description: "Busques arrels i baies comestibles sense allunyar-te. Segur però rendiment moderat — amb fibres pots fer un cistell improvisat i recollir-ne més.",
     execute_cost: 0, output_resource: "food", output_min: 1, output_max: 3,
     material_min: 2, material_max: 3,
+    assist: { resource: 'branques', min: 1, output_delta: 1, desc: '🌿 Les fibres fan de cistell: recollida més abundant (+1).' },
     stat_key: "forca", stat_gain: 0.10,
     destresa_id: "d_botanica",
     inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.05 },
     event_pool_id: "pool_recollecta"
   },
   {
-    id: "act_tallar_pedra", name: "Tallar una Eina", is_base: true, zona: "Campament",
-    description: "Treballes el sílex amb 2 pedres i 1 fibra fins a obtenir una eina bàsica. Cada branca en refina després la seva pròpia, però aquesta és la base universal de tota fabricació.",
+    id: "act_tallar_pedra", name: "Practicar la Talla", is_base: true, zona: "Campament",
+    description: "Practiques la talla del sílex: la mà aprèn l'angle i la força. Encara NO en surten eines (les eines arriben amb una habilitat, després de descobrir les Eines), però hi guanyes enginy i destresa per a quan en sàpigues fer.",
     execute_cost: 0,
-    // TOOLS-01 (2026-06-28): acció de crear eines accessible amb recepta (substitueix la "Practicar la Talla"
-    // sense output). Les eines per-branca (Forjar Punta, etc.) queden com les especialitzades.
-    requires: [{ resource: 'pedra', min: 2 }, { resource: 'branques', min: 1 }],
-    output_resource: "eina", output_min: 1, output_max: 1,
-    side_effects: [{ resource: 'pedra', delta: -2 }, { resource: 'branques', delta: -1 }],
     material_min: 1, material_max: 2,
     stat_key: "enginy", stat_gain: 0.10,
     destresa_id: "d_talla_silex",
@@ -707,8 +704,9 @@ const ACTIONS = [
   },
   {
     id: "act_contemplacio", name: "Contemplació", is_base: true, zona: "Campament",
-    description: "T'asseus en silenci i observes el món. La quietud obre la ment a allò invisible.",
+    description: "T'asseus en silenci i observes el món. La quietud cura més (3-6 salut) però NO produeixes res: cap material. (Vigilar el Campament cura menys, però rendeix material i cohesió.)",
     execute_cost: 0, output_resource: "health", output_min: 3, output_max: 6,
+    material_min: 0, material_max: 0,
     stat_key: "vincle", stat_gain: 0.05,
     inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: +0.08, sociabilitat: +0.04 },
     event_pool_id: "pool_ritual"

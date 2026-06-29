@@ -145,11 +145,18 @@ async function gotoRetry(page, n = 24) {
 
     const tools01 = await page.evaluate(() => {
       const t = ACTIONS.find(a => a.id === 'act_tallar_pedra');
-      const rp = (t.requires || []).find(r => r.resource === 'pedra');
-      const rf = (t.requires || []).find(r => r.resource === 'branques');
-      return { out: t.output_resource, rp: rp && rp.min, rf: rf && rf.min };
+      const forja = ACTIONS.find(a => a.id === 'act_forjar_punta');
+      return { tallaNoOut: !t.output_resource, forjaRecipe: (forja.requires || []).some(r => r.resource === 'pedra') && (forja.requires || []).some(r => r.resource === 'branques'), forjaOut: forja.output_resource, forjaPrereq: forja.universal_prereq || (SKILL_DEFS.find(s => (s.unlocks_action_ids || []).includes('act_forjar_punta')) || {}).id };
     });
-    check('TOOLS-01: Tallar una Eina crea eina amb recepta (2 pedra + 1 fibra)', tools01.out === 'eina' && tools01.rp === 2 && tools01.rf === 1, tools01);
+    check('TOOLS-01 (revisat): eines per habilitat — talla=pràctica (sense output), forjar_punta=recepta→eina', tools01.tallaNoOut && tools01.forjaRecipe && tools01.forjaOut === 'eina', tools01);
+
+    const fb = await page.evaluate(() => {
+      const hunt = ACTIONS.find(a => a.id === 'act_espiar_ramat');
+      const arr = ACTIONS.find(a => a.id === 'act_recollectar_arrels');
+      const cont = ACTIONS.find(a => a.id === 'act_contemplacio');
+      return { huntName: hunt.name, huntAssist: !!(hunt.assist && hunt.assist.resource === 'pedra' && hunt.assist.health_delta === 2), arrAssist: !!(arr.assist && arr.assist.resource === 'branques' && arr.assist.output_delta === 1), contMat: cont.material_max };
+    });
+    check('FEEDBACK 0629: caça renom + assist pedra/fibres + contemplació 0 material', fb.huntName === 'Abatre una Presa' && fb.huntAssist && fb.arrAssist && fb.contMat === 0, fb);
 
     const floater = await page.evaluate(async () => {
       initState('T', 'MED'); renderAll();
