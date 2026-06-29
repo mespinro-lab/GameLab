@@ -112,6 +112,19 @@ async function gotoRetry(page, n = 24) {
     });
     check('FOOD-02: cap inicial 6, assecat max 2, overflow retallat a l\'EOT', food02.cap0 === 6 && food02.assecarMax === 2 && food02.afterEOT <= 6, food02);
 
+    const dmsg = await page.evaluate(() => {
+      initState('T', 'MED');
+      state.discoveredUniversalTechIds.add('ut_foc'); state.character.purchasedActionIds.add('act_assecar_provisions');
+      state.foodMax = 10; state.character.actionUseCounts['act_assecar_provisions'] = 2;
+      const assecarMsg = disableReason(ACTIONS.find(a => a.id === 'act_assecar_provisions'));
+      state.cycle = 10; // edat ≥ minAge(8) de "Ensenyar el Fill"
+      state.character.children = [{ id: 'c', label: 'A', taughtApr: 'apr_cures_basiques' }];
+      state.character.aprenentatges = new Set(['apr_cures_basiques']);
+      const ensMsg = disableReason(ACTIONS.find(a => a.id === 'act_ensenyar'));
+      return { assecarMsg, ensMsg };
+    });
+    check('DISABLE-MSG-01: motius contextuals (magatzem / fills ensenyats)', /[Mm]agatzem/.test(dmsg.assecarMsg) && /han après/.test(dmsg.ensMsg), dmsg);
+
     const lifespan = await page.evaluate(() => {
       initState('T', 'MED'); let age = 0;
       for (let i = 0; i < 30; i++) { state.cycle++; state.food = 50; state.health = 38; applyTurnUpkeep(); age = characterAge(); if (age >= LIFE_EXPECTANCY || state.health <= 0 || state.lifeProgress >= 1) break; }
