@@ -141,7 +141,7 @@ async function gotoRetry(page, n = 24) {
       const c = ACTIONS.find(a => a.id === 'act_contemplacio');
       return { vMax: v.output_max, vSoc: v.inclination_deltas.sociabilitat, cMax: c.output_max, cEsp: c.inclination_deltas.espiritualitat };
     });
-    check('ACT-DIFF-01: Vetlla (5-8, social) ≠ Contemplació (3-6, espiritual)', actdiff.vMax === 8 && actdiff.vSoc >= 0.08 && actdiff.cMax === 6 && actdiff.cEsp >= 0.08, actdiff);
+    check('ACT-DIFF-01: Vetlla (5-8, social) ≠ Contemplació (2-4, espiritual)', actdiff.vMax === 8 && actdiff.vSoc >= 0.08 && actdiff.cMax === 4 && actdiff.cEsp >= 0.08, actdiff);
 
     const tools01 = await page.evaluate(() => {
       const t = ACTIONS.find(a => a.id === 'act_tallar_pedra');
@@ -154,9 +154,9 @@ async function gotoRetry(page, n = 24) {
       const hunt = ACTIONS.find(a => a.id === 'act_espiar_ramat');
       const arr = ACTIONS.find(a => a.id === 'act_recollectar_arrels');
       const cont = ACTIONS.find(a => a.id === 'act_contemplacio');
-      return { huntName: hunt.name, huntAssist: !!(hunt.assist && hunt.assist.resource === 'pedra' && hunt.assist.health_delta === 2), arrAssist: !!(arr.assist && arr.assist.resource === 'branques' && arr.assist.output_delta === 1), contMat: cont.material_max };
+      return { huntName: hunt.name, huntAssist: !!(hunt.assist && hunt.assist.health_delta === 1 && hunt.assist.consume === 1), arrAssist: !!(arr.assist && arr.assist.output_delta === 1 && arr.assist.consume === 1), contMax: cont.output_max };
     });
-    check('FEEDBACK 0629: caça renom + assist pedra/fibres + contemplació 0 material', fb.huntName === 'Abatre una Presa' && fb.huntAssist && fb.arrAssist && fb.contMat === 0, fb);
+    check('FEEDBACK 0630: caça renom + assist (−4, gasta 1 recurs) + contemplació 2-4', fb.huntName === 'Abatre una Presa' && fb.huntAssist && fb.arrAssist && fb.contMax === 4, fb);
 
     const floater = await page.evaluate(async () => {
       initState('T', 'MED'); renderAll();

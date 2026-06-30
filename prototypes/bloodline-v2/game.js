@@ -1243,6 +1243,7 @@ function executeAction(actionId) {
     const actionDeltaPairs = [];
     if (output > 0 && outRes) actionDeltaPairs.push([outRes, output]);
     if (action.side_effects) for (const se of action.side_effects) actionDeltaPairs.push([se.resource, seAssist(se)]);
+    if (assistOk && action.assist.consume) actionDeltaPairs.push([action.assist.resource, -action.assist.consume]);
     state._pendingTurnEntry = { cycle: state.cycle + 1, action: { name: action.name, delta: fmtPairs(actionDeltaPairs) }, events: [], upkeep: null };
 
     // ── COMPROVACIÓ EVENT ─────────────────────────────────────────────────
@@ -1275,6 +1276,7 @@ function executeAction(actionId) {
         state[se.resource] = resDef.max != null ? Math.max(0, Math.min(resDef.max, newVal)) : Math.max(0, newVal);
       }
     }
+    if (assistOk && action.assist.consume) state[action.assist.resource] = Math.max(0, (state[action.assist.resource] || 0) - action.assist.consume);
     if (assistOk && action.assist.desc) addLog(action.assist.desc);
     spawnResBalls(snapOut); // FLOATER-01: icones del menjar/salut/material de l'OUTPUT volant al comptador
     applyFxFloaters(snapOut);
