@@ -851,7 +851,7 @@ const ACTIONS = [
     id: "act_parar_trampes", name: "Parar Trampes", is_base: false, zona: "Planes",
     description: "Col·loques llaços i trampes en llocs de pas. La caça passiva allibera temps per a altres tasques.",
     purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 2, output_max: 6,
-    requires: [{ resource: 'token', min: 1 }], side_effects: [{ resource: 'token', delta: -1 }],
+    requires: [{ resource: 'branques', min: 1 }], side_effects: [{ resource: 'branques', delta: -1 }],
     stat_key: "forca", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.03 },
     event_pool_id: "pool_caca"
@@ -892,7 +892,6 @@ const ACTIONS = [
     id: "act_assecament_plantes", name: "Assecament de Plantes", is_base: false, zona: "Campament",
     description: "Asseques les plantes recol·lectades per conservar-les. Reserves que aguanten setmanes.",
     purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 1, output_max: 3,
-    side_effects: [{ resource: 'token', delta: -1 }],
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: -0.01, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.03 },
     event_pool_id: "pool_recollecta"
@@ -1151,7 +1150,7 @@ const ACTIONS = [
     id: "act_alimentar_foc", name: "Alimentar el Foc", is_base: false, zona: "Campament",
     description: "Mantens el foc viu tota la nit amb fusta seca i cendra. El campament dorm segur i sa.",
     purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 5,
-    side_effects: [{ resource: 'token', delta: -1 }],
+    side_effects: [{ resource: 'branques', delta: -1 }],
     stat_key: "vincle", stat_gain: 0.10,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.03, sociabilitat: +0.03 },
     event_pool_id: "pool_ritual"
@@ -1160,7 +1159,7 @@ const ACTIONS = [
     id: "act_torxa_escolta", name: "Torxa d'Escolta", is_base: false, zona: "Campament",
     description: "Fabriques una torxa i recorres el perímetre del campament a la nit. La foscor no és del clan, és del que l'amenaça.",
     purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 2, output_max: 5,
-    requires: [{ resource: 'token', min: 1 }], side_effects: [{ resource: "health", delta: -3 }, { resource: 'token', delta: -1 }],
+    requires: [{ resource: 'branques', min: 1 }], side_effects: [{ resource: "health", delta: -3 }, { resource: 'branques', delta: -1 }],
     stat_key: "forca", stat_gain: 0.10,
     inclination_deltas: { impuls: +0.04, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.02 },
     event_pool_id: "pool_social"
@@ -1178,7 +1177,7 @@ const ACTIONS = [
     id: "act_roba_hivern", name: "Roba d'Hivern", is_base: false, zona: "Campament",
     description: "Cousis diverses pells adobades formant una capa gruixuda. El fred ja no penetra com abir.",
     purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 4, output_max: 8,
-    requires: [{ resource: 'token', min: 2 }], side_effects: [{ resource: 'token', delta: -2 }],
+    requires: [{ resource: 'branques', min: 2 }], side_effects: [{ resource: 'branques', delta: -2 }],
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: -0.02, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
@@ -1320,7 +1319,6 @@ const ACTIONS = [
     id: "act_ceramica_regalada", name: "Ceràmica Regalada", is_base: false, zona: "Planes",
     description: "Offereixes una peça de ceràmica decorada a un grup veí com a gest d'aliança. La bellesa és la primera moneda.",
     purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 2, output_max: 4,
-    side_effects: [{ resource: "token", delta: -1 }],
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.02, sociabilitat: +0.05 },
     event_pool_id: "pool_social"
@@ -1383,7 +1381,7 @@ const ACTIONS = [
     id: "act_edificar_cabana", name: "Edificar una Cabana", is_base: false, zona: "Campament",
     description: "Construeixes una cabana de pals i fulles per al clan. Quatre parets que valen per totes les nits que vindran.",
     purchase_cost: 5, execute_cost: 0, output_resource: "health", output_min: 5, output_max: 10,
-    requires: [{ resource: 'token', min: 2 }], side_effects: [{ resource: 'token', delta: -2 }],
+    requires: [{ resource: 'branques', min: 2 }], side_effects: [{ resource: 'branques', delta: -2 }],
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: +0.02 },
     event_pool_id: "pool_artesania"
@@ -1392,7 +1390,7 @@ const ACTIONS = [
     id: "act_reforçar_palissada", name: "Reforçar la Palissada", is_base: false, zona: "Campament",
     description: "Claveu estacades afilades al voltant del campament. El que és de fora sap que aquí hi ha clan.",
     purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 6,
-    requires: [{ resource: 'token', min: 1 }], side_effects: [{ resource: 'token', delta: -1 }],
+    requires: [{ resource: 'branques', min: 1 }], side_effects: [{ resource: 'branques', delta: -1 }],
     stat_key: "forca", stat_gain: 0.15,
     inclination_deltas: { impuls: +0.03, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.02 },
     event_pool_id: "pool_artesania"

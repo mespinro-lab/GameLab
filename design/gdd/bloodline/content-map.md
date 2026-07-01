@@ -3,7 +3,7 @@
 > **Generat automàticament del codi** (2026-07-01) — `prototypes/bloodline-v2/data.js`.
 > Cadena: **Descobriment** (tec. universal, per cicle) → **Habilitat** (branch tech, descoberta amb "Escoltar els Estrangers" quan l'inclinació compleix les condicions) → **Accions** (que la habilitat desbloqueja; les que tenen cost es compren al mercat).
 > Branques: impuls→Caçador · intel·lecte→Artesà · espiritualitat→Místic · sociabilitat→Recol·lector.
-> Tokens (🔵) = premi genèric per executar qualsevol acció; només serveixen per pagar accions al Mercat.
+> Tokens (🔵) = premi genèric per executar qualsevol acció; només serveixen per pagar accions al Mercat (cap acció ni event els consumeix).
 
 **Totals**: 7 descobriments · 30 habilitats · 82 accions.
 
@@ -37,8 +37,8 @@ Condició d'inclinació: `OR [impuls≥0.1, intel·lecte≥0.1, espiritualitat�
 
 | Acció desbloquejada | Zona | Cost | Output | Recepta/efecte |
 |---|---|---|---|---|
-| Alimentar el Foc | Campament | 🔵3 | 3-5 health | -1 token |
-| Torxa d'Escolta | Campament | 🔵3 | 2-5 health | 1 token · -3 health, -1 token |
+| Alimentar el Foc | Campament | 🔵3 | 3-5 health | -1 branques |
+| Torxa d'Escolta | Campament | 🔵3 | 2-5 health | 1 branques · -3 health, -1 branques |
 
 ### Habilitat: **Rituals de la Flama** — _Místic / Artesà_ `(bt_guariment_plantes)`
 Condició d'inclinació: `AND [espiritualitat≥0.2, intel·lecte≥0.1]`
@@ -159,7 +159,7 @@ Condició d'inclinació: `OR [impuls≥0.15, intel·lecte≥0.2]`
 | Acció desbloquejada | Zona | Cost | Output | Recepta/efecte |
 |---|---|---|---|---|
 | Preparar Cuiro | Campament | 🔵3 | — | — |
-| Roba d'Hivern | Campament | 🔵4 | 4-8 health | 2 token · -2 token |
+| Roba d'Hivern | Campament | 🔵4 | 4-8 health | 2 branques · -2 branques |
 
 ### Habilitat: **Pigments i Tintures** — _Místic / Recol·lector_ `(bt_pigments_tintures)`
 Condició d'inclinació: `OR [espiritualitat≥0.18, sociabilitat≥0.18]`
@@ -176,7 +176,7 @@ Condició d'inclinació: `AND [sociabilitat≥0.1]`
 
 | Acció desbloquejada | Zona | Cost | Output | Recepta/efecte |
 |---|---|---|---|---|
-| Parar Trampes | Planes | 🔵3 | 2-6 food | 1 token · -1 token |
+| Parar Trampes | Planes | 🔵3 | 2-6 food | 1 branques · -1 branques |
 | Revisar les Trampes | Bosc | 🔵3 | 1-4 food | -3 health |
 
 ### Habilitat: **Arc i Fletxes** — _Caçador / Artesà_ `(bt_arc_fletxes)`
@@ -193,7 +193,7 @@ Condició d'inclinació: `AND [sociabilitat≥0.1]`
 | Acció desbloquejada | Zona | Cost | Output | Recepta/efecte |
 |---|---|---|---|---|
 | Recollida de Bolets | Bosc | 🔵3 | 2-5 food | +5 health |
-| Assecament de Plantes | Campament | 🔵3 | 1-3 food | -1 token |
+| Assecament de Plantes | Campament | 🔵3 | 1-3 food | — |
 | Trenar un Garbell | Campament | 🔵3 | 1-1 eina | 2 branques + 1 pedra · -2 branques, -1 pedra |
 
 ### Habilitat: **Nusos Sagrats** — _Místic / Recol·lector_ `(bt_nusos_sagrats)`
@@ -237,7 +237,7 @@ Condició d'inclinació: `AND [sociabilitat≥0.2]`
 | Acció desbloquejada | Zona | Cost | Output | Recepta/efecte |
 |---|---|---|---|---|
 | Fira d'Intercanvi | Planes | 🔵4 | — | — |
-| Ceràmica Regalada | Planes | 🔵3 | 2-4 food | -1 token |
+| Ceràmica Regalada | Planes | 🔵3 | 2-4 food | — |
 
 ### Habilitat: **Terrissa** — _Artesà_ `(bt_terrissa)`
 Condició d'inclinació: `AND [intel·lecte≥0.22, impuls≤0.2]`
@@ -270,8 +270,8 @@ Condició d'inclinació: `OR [intel·lecte≥0.2, impuls≥0.2]`
 
 | Acció desbloquejada | Zona | Cost | Output | Recepta/efecte |
 |---|---|---|---|---|
-| Edificar una Cabana | Campament | 🔵5 | 5-10 health | 2 token · -2 token |
-| Reforçar la Palissada | Campament | 🔵4 | 3-6 health | 1 token · -1 token |
+| Edificar una Cabana | Campament | 🔵5 | 5-10 health | 2 branques · -2 branques |
+| Reforçar la Palissada | Campament | 🔵4 | 3-6 health | 1 branques · -1 branques |
 
 ### Habilitat: **Ritus de la Sembra** — _Místic / Recol·lector_ `(bt_ritus_sembra)`
 Condició d'inclinació: `AND [espiritualitat≥0.25, sociabilitat≥0.15]`
