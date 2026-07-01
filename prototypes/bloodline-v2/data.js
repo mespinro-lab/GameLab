@@ -316,7 +316,6 @@ const SKILL_DEFS = [
     universal_prereq: "ut_eines",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.18 }, { axis: "sociabilitat", min: 0.15 }] },
     unlocks_action_ids: ["act_ofrena_eines", "act_cerimonia_eines"],
-    passive_effect: { type: "grant_token", amount: 2, desc: "+2 Token (les eines cerimonials reforcen l'estatus del clan)" },
     is_hidden: false
   },
   {
@@ -353,7 +352,6 @@ const SKILL_DEFS = [
     universal_prereq: "ut_foc",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.15 }, { axis: "impuls", max: 0.20 }] },
     unlocks_action_ids: ["act_cocinar_arrels", "act_ahumar_carn"],
-    passive_effect: { type: "grant_token", amount: 2, desc: "+2 Token (la cuina millora el rendiment dels recursos)" },
     is_hidden: false
   },
   {
@@ -380,7 +378,6 @@ const SKILL_DEFS = [
     universal_prereq: "ut_foc",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.20 }, { axis: "impuls", max: 0.20 }] },
     unlocks_action_ids: ["act_destillar_quitra", "act_emmanegar_eines"],
-    passive_effect: { type: "grant_token", amount: 2, desc: "+2 Token (les eines compostes duren més)" },
     is_hidden: false
   },
   {
@@ -389,7 +386,6 @@ const SKILL_DEFS = [
     universal_prereq: "ut_art",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.30 }, { axis: "sociabilitat", min: 0.20 }] },
     unlocks_action_ids: ["act_pintar_parets", "act_narrar_llegendes"],
-    passive_effect: { type: "grant_token", amount: 2, desc: "+2 Provisions (les pintures enforteixen la identitat del clan)" },
     is_hidden: false
   },
   {
@@ -407,7 +403,6 @@ const SKILL_DEFS = [
     universal_prereq: "ut_art",
     inclination_conditions: { operator: "OR", conditions: [{ axis: "espiritualitat", min: 0.20 }, { axis: "sociabilitat", min: 0.25 }] },
     unlocks_action_ids: ["act_ornamentar_se", "act_consagrar_ornaments", "act_ritual_talisman"],
-    passive_effect: { type: "grant_token", amount: 3, desc: "+3 Provisions (els ornaments reforcen la identitat del clan)" },
     is_hidden: false
   },
   {
@@ -416,7 +411,6 @@ const SKILL_DEFS = [
     universal_prereq: "ut_art",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "sociabilitat", min: 0.20 }] },
     unlocks_action_ids: ["act_explicar_orígens", "act_cants_grup"],
-    passive_effect: { type: "grant_token", amount: 2, desc: "+2 Token (la narració transmet coneixement entre generacions)" },
     is_hidden: false
   },
   // ── La Vestimenta ────────────────────────────────────────────────────────────
@@ -435,7 +429,6 @@ const SKILL_DEFS = [
     universal_prereq: "ut_vestimenta",
     inclination_conditions: { operator: "OR", conditions: [{ axis: "espiritualitat", min: 0.18 }, { axis: "sociabilitat", min: 0.18 }] },
     unlocks_action_ids: ["act_decorar_cos", "act_tenyir_pells"],
-    passive_effect: { type: "grant_token", amount: 2, desc: "+2 Token (els pigments reforcen la identitat del clan)" },
     is_hidden: false
   },
   // ── La Corda ─────────────────────────────────────────────────────────────────
@@ -481,7 +474,6 @@ const SKILL_DEFS = [
     universal_prereq: "ut_eines",
     inclination_conditions: { operator: "OR", conditions: [{ axis: "intel·lecte", min: 0.18 }, { axis: "espiritualitat", min: 0.20 }] },
     unlocks_action_ids: ["act_observar_cel", "act_transit_nocturn"],
-    passive_effect: { type: "grant_token", amount: 2, desc: "+2 Provisions (previsió de cicles)" },
     is_hidden: false
   },
   {
@@ -508,7 +500,6 @@ const SKILL_DEFS = [
     universal_prereq: "ut_ceramica",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "sociabilitat", min: 0.20 }] },
     unlocks_action_ids: ["act_fira_intercanvi", "act_ceramica_regalada"],
-    passive_effect: { type: "grant_token", amount: 3, desc: "+3 Token (la ceràmica és moneda d'intercanvi)" },
     is_hidden: false
   },
   {
@@ -517,7 +508,6 @@ const SKILL_DEFS = [
     universal_prereq: "ut_ceramica",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.22 }, { axis: "impuls", max: 0.20 }] },
     unlocks_action_ids: ["act_modelar_argila", "act_coure_ceramica"],
-    passive_effect: { type: "grant_token", amount: 3, desc: "+3 Token (els vasos conserven el que abans es perdia)" },
     is_hidden: false
   },
   // ── L'Agricultura ────────────────────────────────────────────────────────────
@@ -554,7 +544,6 @@ const SKILL_DEFS = [
     universal_prereq: "ut_agricultura",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.25 }, { axis: "sociabilitat", min: 0.15 }] },
     unlocks_action_ids: ["act_ofrena_terra", "act_danses_fertilitat"],
-    passive_effect: { type: "grant_token", amount: 3, desc: "+3 Token (els ritus col·lectius enforteixen la cohesió del clan)" },
     is_hidden: false
   }
 ];
