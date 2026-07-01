@@ -175,9 +175,10 @@ async function gotoRetry(page, n = 24) {
       noMaterialWord: !/material/i.test(JSON.stringify(RESOURCE_DEFS)),
       tokenLabel: (RESOURCE_DEFS.find(r => r.id === 'token') || {}).label,
       noGrantToken: !SKILL_DEFS.some(s => s.passive_effect && s.passive_effect.type === 'grant_token'),
+      noTokenSink: !ACTIONS.some(a => (a.requires || []).some(r => r.resource === 'token') || (a.side_effects || []).some(s => s.resource === 'token')),
     }));
-    check('TOKEN-RENAME: id=token/label=Tokens, cap "material", cap grant_token en habilitats',
-      notok.hasToken && !notok.hasMaterialId && notok.noMaterialWord && notok.tokenLabel === 'Tokens' && notok.noGrantToken, notok);
+    check('TOKEN-RENAME: id=token/label=Tokens, cap "material", cap grant_token, cap consum de token en accions',
+      notok.hasToken && !notok.hasMaterialId && notok.noMaterialWord && notok.tokenLabel === 'Tokens' && notok.noGrantToken && notok.noTokenSink, notok);
 
     const floater = await page.evaluate(async () => {
       initState('T', 'MED'); renderAll();
