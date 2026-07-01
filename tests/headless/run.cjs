@@ -37,12 +37,13 @@ async function gotoRetry(page, n = 24) {
     check('2a: healthMax = pic (40) en creixement (no clawback)', hm === 40, hm);
 
     const evt = await page.evaluate(() => {
-      initState('T', 'MED'); state.material = 10;
+      initState('T', 'MED'); state.token = 10;
       state._pendingTurnEntry = { cycle: 1, action: { name: 'X', delta: '' }, events: [], upkeep: null };
-      state.pendingEvent = { id: 'e', text: 'Test', options: [{ text: 'O', material_delta: -4, food_delta: 3 }] };
-      resolveDiscoveryOption(0); return state.material;
+      // Els events MAI toquen tokens: encara que una opció porti token_delta, s'ha d'ignorar.
+      state.pendingEvent = { id: 'e', text: 'Test', options: [{ text: 'O', token_delta: -4, food_delta: 3 }] };
+      resolveDiscoveryOption(0); return state.token;
     });
-    check('EVT-OPT-MAT: material_delta d\'opció aplicat (10→6)', evt === 6, evt);
+    check('EVT-NO-TOKEN: els events no modifiquen tokens (10→10)', evt === 10, evt);
 
     const fc = await page.evaluate(() => {
       initState('T', 'MED'); state.discoveredUniversalTechIds.add('ut_foc');
@@ -54,11 +55,11 @@ async function gotoRetry(page, n = 24) {
     });
     check('FOOD-CAP-01: Assecar deshabilitada (FADED) al cap màxim', fc.maxed === 'FADED' && fc.ok === 'ACTIVE', fc);
 
-    const bal = await page.evaluate(() => { const c = ACTIONS.find(x => x.id === 'act_coure_ceramica'); return [c.material_min, c.material_max]; });
-    check('BAL-01: coure_ceramica genera material (2/3)', bal[0] === 2 && bal[1] === 3, bal);
+    const bal = await page.evaluate(() => { const c = ACTIONS.find(x => x.id === 'act_coure_ceramica'); return [c.token_min, c.token_max]; });
+    check('BAL-01: coure_ceramica genera token (2/3)', bal[0] === 2 && bal[1] === 3, bal);
 
     const log2 = await page.evaluate(() => {
-      initState('T', 'MED'); state.material = 20; state._turnExtras = [];
+      initState('T', 'MED'); state.token = 20; state._turnExtras = [];
       buyAction('act_ritual_foc'); return state._turnExtras.map(x => x.text);
     });
     check('LOG-02: compra capturada a _turnExtras', log2.some(t => /Comprat/.test(t)), log2);
@@ -157,6 +158,24 @@ async function gotoRetry(page, n = 24) {
       return { huntName: hunt.name, huntAssist: !!(hunt.assist && hunt.assist.health_delta === 1 && hunt.assist.consume === 1), arrAssist: !!(arr.assist && arr.assist.output_delta === 1 && arr.assist.consume === 1), contMax: cont.output_max };
     });
     check('FEEDBACK 0630: caça renom + assist (−4, gasta 1 recurs) + contemplació 2-4', fb.huntName === 'Abatre una Presa' && fb.huntAssist && fb.arrAssist && fb.contMax === 4, fb);
+
+    const vig = await page.evaluate(() => ({
+      vigGone: !ACTIONS.find(a => a.id === 'act_vigilar_campament'),
+      defGone: !ACTIONS.find(a => a.id === 'act_defensa_activa'),
+      guardGone: !APRENENTATGE_DEFS.find(a => a.id === 'apr_guardia'),
+      contEsp: (ACTIONS.find(a => a.id === 'act_contemplacio') || {}).inclination_deltas?.espiritualitat || 0,
+      baseEsp: ACTIONS.filter(a => a.is_base && a.inclination_deltas && a.inclination_deltas.espiritualitat > 0).map(a => a.id),
+    }));
+    check('OVERLAP-01: Vigilar+subarbre eliminats; Contemplació roman via base d\'espiritualitat',
+      vig.vigGone && vig.defGone && vig.guardGone && vig.contEsp >= 0.08 && vig.baseEsp.includes('act_contemplacio'), vig);
+
+    const notok = await page.evaluate(() => ({
+      hasToken: !!RESOURCE_DEFS.find(r => r.id === 'token'),
+      hasMaterialId: !!RESOURCE_DEFS.find(r => r.id === 'material'),
+      noMaterialWord: !/material/i.test(JSON.stringify(RESOURCE_DEFS)),
+      tokenLabel: (RESOURCE_DEFS.find(r => r.id === 'token') || {}).label,
+    }));
+    check('TOKEN-RENAME: recurs id=token, label=Tokens, cap "material" al def', notok.hasToken && !notok.hasMaterialId && notok.noMaterialWord && notok.tokenLabel === 'Tokens', notok);
 
     const floater = await page.evaluate(async () => {
       initState('T', 'MED'); renderAll();
