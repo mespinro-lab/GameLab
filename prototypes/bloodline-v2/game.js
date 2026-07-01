@@ -579,7 +579,6 @@ function unlockSkill(bt) {
   const pe = bt.passive_effect;
   if (pe) {
     if (pe.type === 'grant_health')   state.health    = Math.min(healthMax(), state.health + pe.amount);
-    if (pe.type === 'grant_token') state.token = Math.min(tokenMax(), state.token + pe.amount);
     if (pe.type === 'unlock_zone')    state.discoveredZoneIds.add(pe.unlocks_zone);
   }
   state.pendingDiscoveries.push({
