@@ -82,7 +82,6 @@ const ACTION_ICONS = {
   act_ritual_foc:           '🔥',
   act_assecar_provisions:   '🥩',
   act_contemplacio:       '🌙',
-  act_vigilar_campament:  '🛡️',
   act_explorar_voltants:  '🧭',
   act_recollectar_pedra:  '🗿',
   act_preparar_eina:      '⚒️',
@@ -131,7 +130,7 @@ function statGainTriangles(gain) {
 }
 function getActionIcon(action) {
   return ACTION_ICONS[action.id] ||
-    (action.output_resource === 'material' ? '🔵' :
+    (action.output_resource === 'token' ? '🔵' :
      action.output_resource === 'health'   ? '💊' : '🌾');
 }
 
@@ -171,7 +170,7 @@ function saveGame() {
     const d = {
       dynastyName: state.dynastyName, race: state.race, gender: state.gender,
       cycle: state.cycle, generation: state.generation,
-      food: state.food, health: state.health, material: state.material, pedra: state.pedra || 0, eina: state.eina || 0, branques: state.branques || 0,
+      food: state.food, health: state.health, token: state.token, pedra: state.pedra || 0, eina: state.eina || 0, branques: state.branques || 0,
       character: {
         birthCycle: state.character.birthCycle, label: state.character.label,
         inclination: { ...state.character.inclination },
@@ -233,7 +232,7 @@ function loadGame() {
     state = {
       dynastyName: d.dynastyName, race: d.race, gender: d.gender,
       cycle: d.cycle, generation: d.generation,
-      food: d.food, health: d.health, material: d.material, pedra: d.pedra || 0, eina: d.eina || 0, branques: d.branques || 0,
+      food: d.food, health: d.health, token: d.token, pedra: d.pedra || 0, eina: d.eina || 0, branques: d.branques || 0,
       character: {
         birthCycle: d.character.birthCycle, label: d.character.label,
         inclination: { ...d.character.inclination },
@@ -514,7 +513,7 @@ function healthMax() {
   const stableEnd = HEALTH_GROW_TURNS + HEALTH_STABLE_TURNS;
   return characterAge() > stableEnd ? getHealthCap(characterAge()) : (state.currentHealthMax ?? HEALTH_MAX);
 }
-function materialMax() { return RESOURCE_DEFS.find(r => r.id === 'material')?.max ?? Infinity; }
+function tokenMax() { return RESOURCE_DEFS.find(r => r.id === 'token')?.max ?? Infinity; }
 function foodMax()     { return state ? Math.min(FOOD_MAX, state.foodMax ?? FOOD_MAX_START) : FOOD_MAX_START; }
 
 // ═══════════════════════════════════════════════════════════ TECH DISCOVERY
@@ -580,7 +579,7 @@ function unlockSkill(bt) {
   const pe = bt.passive_effect;
   if (pe) {
     if (pe.type === 'grant_health')   state.health    = Math.min(healthMax(), state.health + pe.amount);
-    if (pe.type === 'grant_material') state.material = Math.min(materialMax(), state.material + pe.amount);
+    if (pe.type === 'grant_token') state.token = Math.min(tokenMax(), state.token + pe.amount);
     if (pe.type === 'unlock_zone')    state.discoveredZoneIds.add(pe.unlocks_zone);
   }
   state.pendingDiscoveries.push({
@@ -801,7 +800,7 @@ function classifyEvent(ev) {
   if (ev.is_discovery_event) return 'positive';
   if (ev.options) return 'neutral'; // player-choice events: neutral for balancing
   const fx = ev.effects || {};
-  const score = (fx.food || 0) + (fx.health || 0) * 0.5 + (fx.material || 0) * 0.5;
+  const score = (fx.food || 0) + (fx.health || 0) * 0.5 + (fx.token || 0) * 0.5;
   return score > 0 ? 'positive' : score < 0 ? 'negative' : 'neutral';
 }
 
@@ -1155,19 +1154,19 @@ function executeAction(actionId) {
     // ── FASE COST: cost immediate + estat intern ──────────────────────────
     const snapCost = snapshotNums();
     if (action.execute_cost) state.food = Math.max(0, state.food - action.execute_cost);
-    // Material universal — sempre immediat (moneda de compra)
+    // Token universal — sempre immediat (moneda de compra)
     const elderBonus = characterAge() >= 11 ? 1 : 0;
     if (elderBonus && !(state.character.charState.loggedElder)) {
       state.character.charState.loggedElder = 1;
       addLog('Sàvia experiència: els ancians generen +1 token per acció');
     }
-    const matMin = (action.material_min ?? 2) + elderBonus;
-    const matMax = (action.material_max ?? 3) + elderBonus;
+    const matMin = (action.token_min ?? 2) + elderBonus;
+    const matMax = (action.token_max ?? 3) + elderBonus;
     const aprMatBonus = [...state.character.aprenentatges].reduce((s, aid) => {
       const apr = APRENENTATGE_DEFS.find(a => a.id === aid);
-      return apr?.effect?.type === 'material_bonus' ? s + apr.effect.value : s;
+      return apr?.effect?.type === 'token_bonus' ? s + apr.effect.value : s;
     }, 0);
-    state.material = Math.min(materialMax(), state.material + randInt(matMin, matMax) + aprMatBonus);
+    state.token = Math.min(tokenMax(), state.token + randInt(matMin, matMax) + aprMatBonus);
     // Reducció upkeep i ampliació cap — immediats (efecte permanent)
     if (action.food_upkeep_delta) {
       const prevCount = state.character.actionUseCounts[actionId] || 0;
@@ -1201,7 +1200,7 @@ function executeAction(actionId) {
         name: action.unlocks_zone, desc: `Has descobert ${action.unlocks_zone}. Ara apareix al teu mapa.`,
       });
     }
-    // Floaters de la fase cost (cost execute + material)
+    // Floaters de la fase cost (cost execute + token)
     spawnResBalls(snapCost);
     applyFxFloaters(snapCost);
 
@@ -1278,7 +1277,7 @@ function executeAction(actionId) {
     }
     if (assistOk && action.assist.consume) state[action.assist.resource] = Math.max(0, (state[action.assist.resource] || 0) - action.assist.consume);
     if (assistOk && action.assist.desc) addLog(action.assist.desc);
-    spawnResBalls(snapOut); // FLOATER-01: icones del menjar/salut/material de l'OUTPUT volant al comptador
+    spawnResBalls(snapOut); // FLOATER-01: icones del menjar/salut/token de l'OUTPUT volant al comptador
     applyFxFloaters(snapOut);
     // renderAll perquè els comptadors del panell reflecteixin el canvi JA
     renderAll();
@@ -1308,7 +1307,7 @@ function snapshotNums() {
   return {
     food:     state.food,
     health:   state.health,
-    material: state.material,
+    token: state.token,
     forca:    state.character.stats['forca'],
     enginy:   state.character.stats['enginy'],
     vincle:   state.character.stats['vincle'],
@@ -1321,7 +1320,7 @@ function applyFxFloaters(before) {
   const anchorMap = {
     food:    'hex-food',
     health:  'hex-health',
-    material:'tok-material-val',
+    token:'tok-token-val',
     forca:   'hex-forca',
     enginy:  'hex-enginy',
     vincle:  'hex-vincle',
@@ -1363,7 +1362,7 @@ function spawnResBalls(before) {
   const resConfig = [
     { key: 'food',     targetId: 'hex-food',     emoji: '🌾' },
     { key: 'health',   targetId: 'hex-health',   emoji: '❤️' },
-    { key: 'material', targetId: 'tok-material',  emoji: '🔵' },
+    { key: 'token', targetId: 'tok-token',  emoji: '🔵' },
   ];
   const sourceEl = el('exec-donut-wrap');
   if (!sourceEl) return;
@@ -1859,7 +1858,7 @@ function disableReason(action) {
       if (stateReq.state === 'fills') return '👶 Necessites tenir un fill primer';
       if (stateReq.state === 'parella') return '💑 Necessites una parella';
     }
-    const RES = { food: '🌾', material: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️', branques: '🌿' };
+    const RES = { food: '🌾', token: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️', branques: '🌿' };
     const unmet = reqs.filter(r => r.resource && (state[r.resource] || 0) < r.min);
     if (unmet.length) return unmet.map(r => `⛔ Necessites ${r.min} ${RES[r.resource] || r.resource}`).join(' · ');
     return 'Acció no disponible ara';
@@ -1880,7 +1879,7 @@ function updateCarouselInfo() {
   const vis      = getActionVisibility(action);
   const faded    = !tooYoung && vis === 'FADED';
   const blocked  = tooYoung || vis !== 'ACTIVE';
-  const outIcons = { food: '🌾', material: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️', branques: '🌿' };
+  const outIcons = { food: '🌾', token: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️', branques: '🌿' };
   const parts = [];
   const _resTri = (mag, pos) => { const n = mag >= 8 ? 3 : mag > 4 ? 2 : 1; return (pos ? '▲' : '▼').repeat(n); };
   if ((action.execute_cost || 0) > 0) {
@@ -2088,9 +2087,9 @@ function renderCharPanel() {
 
 // ═══════════════════════════════════════════════════════════ TOP BAR
 function renderTopBar() {
-  const matDef = RESOURCE_DEFS.find(r => r.id === 'material');
+  const matDef = RESOURCE_DEFS.find(r => r.id === 'token');
   const matMax = matDef?.max;
-  el('tok-material-val').textContent = matMax ? `${Math.round(state.material || 0)}/${matMax}` : Math.round(state.material || 0);
+  el('tok-token-val').textContent = matMax ? `${Math.round(state.token || 0)}/${matMax}` : Math.round(state.token || 0);
 }
 
 // ═══════════════════════════════════════════════════════════ BOTTOM PANEL
@@ -2107,7 +2106,7 @@ function renderBottomPanel() {
 
 // ═══════════════════════════════════════════════════════════ TURN HISTORY OVERLAY
 // LOG-01: format de deltes de recursos per a l'historial de torns.
-const RES_ICON = { food: '🌾', health: '❤️', material: '🔵', pedra: '🪨', eina: '⚒️' };
+const RES_ICON = { food: '🌾', health: '❤️', token: '🔵', pedra: '🪨', eina: '⚒️' };
 function fmtPairs(pairs) {
   return pairs.filter(([, d]) => d).map(([r, d]) => `${d > 0 ? '+' : ''}${d}${RES_ICON[r] || ''}`).join(' ');
 }
@@ -2215,7 +2214,7 @@ function renderInMapOverlay() {
       const parts = [];
       if (fx.food   != null && fx.food   !== 0) parts.push(`${fx.food   > 0 ? '+' : ''}${fx.food}🌾`);
       if (fx.health != null && fx.health !== 0) parts.push(`${fx.health > 0 ? '+' : ''}${fx.health}❤️`);
-      if (fx.material != null && fx.material !== 0) parts.push(`${fx.material > 0 ? '+' : ''}${fx.material}🔵`);
+      if (fx.token != null && fx.token !== 0) parts.push(`${fx.token > 0 ? '+' : ''}${fx.token}🔵`);
       if (fx.pedra != null && fx.pedra !== 0) parts.push(`${fx.pedra > 0 ? '+' : ''}${fx.pedra}🪨`);
       if (fx.eina  != null && fx.eina  !== 0) parts.push(`${fx.eina  > 0 ? '+' : ''}${fx.eina}⚒️`);
       return parts.join('  ');
@@ -2308,7 +2307,7 @@ function applyEventEffects(fx) {
   if (!fx) return;
   if (fx.food)      state.food      = Math.max(0, state.food + fx.food); // FOOD-02: overflow permès (retall a l'EOT)
   if (fx.health)    state.health    = Math.max(0, Math.min(healthMax(), state.health + fx.health));
-  if (fx.material)  state.material  = Math.max(0, Math.min(materialMax(), state.material + fx.material));
+  if (fx.token)  state.token  = Math.max(0, Math.min(tokenMax(), state.token + fx.token));
   if (fx.pedra !== undefined) {
     const def = RESOURCE_DEFS.find(r => r.id === 'pedra');
     state.pedra = Math.max(0, Math.min(def?.max ?? 10, (state.pedra || 0) + fx.pedra));
@@ -2380,8 +2379,8 @@ function resolveDiscoveryOption(optionIndex) {
 
   // Direct resource deltas
   if (opt.food_delta) state.food = Math.max(0, state.food + opt.food_delta); // FOOD-02: overflow permès (retall a l'EOT)
-  // EVT-OPT-MAT (2026-06-27): les opcions també poden moure material/pedra/eina
-  if (opt.material_delta) state.material = Math.max(0, Math.min(materialMax(), state.material + opt.material_delta));
+  // Les opcions d'event poden moure pedra/eina. MAI tokens: els tokens només
+  // s'obtenen executant accions (els events no en donen ni en treuen).
   if (opt.pedra_delta) { const md = RESOURCE_DEFS.find(r => r.id === 'pedra'); state.pedra = Math.max(0, md?.max != null ? Math.min(md.max, (state.pedra || 0) + opt.pedra_delta) : (state.pedra || 0) + opt.pedra_delta); }
   if (opt.eina_delta)  { const md = RESOURCE_DEFS.find(r => r.id === 'eina');  state.eina  = Math.max(0, md?.max != null ? Math.min(md.max, (state.eina  || 0) + opt.eina_delta)  : (state.eina  || 0) + opt.eina_delta); }
 
@@ -2419,7 +2418,6 @@ function resolveDiscoveryOption(optionIndex) {
     const optPairs = [];
     if (opt.food_delta) optPairs.push(['food', opt.food_delta]);
     if (healthDelta)    optPairs.push(['health', healthDelta]);
-    if (opt.material_delta) optPairs.push(['material', opt.material_delta]);
     if (opt.pedra_delta)    optPairs.push(['pedra', opt.pedra_delta]);
     if (opt.eina_delta)     optPairs.push(['eina', opt.eina_delta]);
     state._pendingTurnEntry.events.push({ name: ev.text.slice(0, 50), choice: opt.text.slice(0, 35), delta: fmtPairs(optPairs) });
@@ -2834,7 +2832,7 @@ function openShop() {
 function renderShop() {
   const list = el('shop-list');
   list.innerHTML = '';
-  const mat = state.material ?? 0;
+  const mat = state.token ?? 0;
   const buyable = getBuyableActions();
 
   if (buyable.length === 0) {
@@ -2883,13 +2881,13 @@ function renderShop() {
 function buyAction(actionId) {
   const action = ACTIONS.find(a => a.id === actionId);
   if (!action || !action.purchase_cost) return;
-  const mat = state.material ?? 0;
+  const mat = state.token ?? 0;
   if (mat < action.purchase_cost) return;
-  state.material = mat - action.purchase_cost;
+  state.token = mat - action.purchase_cost;
   state.character.purchasedActionIds.add(actionId);
   addLog(`Has comprat: ${action.name || action.id}`);
   pushExtra('🛒', `Comprat: ${action.name || action.id}`);
-  const outIcons = { food: '🌾', material: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️', branques: '🌿' };
+  const outIcons = { food: '🌾', token: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️', branques: '🌿' };
   const parts = [];
   if (action.output_resource && action.output_min != null) {
     parts.push(`${outIcons[action.output_resource] || '📦'} ${action.output_min}–${action.output_max}`);
@@ -3162,7 +3160,7 @@ function showActionInfo(action) {
   el('ai-icon').textContent = getActionIcon(action);
   el('ai-name').textContent = action.name;
   el('ai-desc').textContent = action.description || '';
-  const outIcons = { food: '🌾', material: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️', branques: '🌿' };
+  const outIcons = { food: '🌾', token: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️', branques: '🌿' };
   const parts = [];
   if (action.output_resource && action.output_min != null) {
     parts.push(`${outIcons[action.output_resource] || '📦'} ${action.output_min}–${action.output_max}`);
@@ -3178,7 +3176,7 @@ function showActionInfo(action) {
 
 // ═══════════════════════════════════════════════════════════ UPGRADE OVERLAY
 function actionStatSummary(action) {
-  const outIcons = { food: '🌾', material: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️', branques: '🌿' };
+  const outIcons = { food: '🌾', token: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️', branques: '🌿' };
   const parts = [];
   if (action.output_resource && action.output_min != null) {
     parts.push(`${outIcons[action.output_resource] || '📦'} ${action.output_min}–${action.output_max}`);
@@ -3202,7 +3200,7 @@ function openUpgradeOverlay(baseActionId) {
   el('upg-upg-icon').textContent   = getActionIcon(upgrade);
   el('upg-upg-name').textContent   = upgrade.name;
   el('upg-upg-stats').textContent  = actionStatSummary(upgrade);
-  const mat = state.material ?? 0;
+  const mat = state.token ?? 0;
   const canAfford = mat >= upgrade.purchase_cost;
   el('upg-cost').textContent = `🔵 ${upgrade.purchase_cost}`;
   el('btn-do-upgrade').disabled = !canAfford;
@@ -3214,12 +3212,12 @@ function openUpgradeOverlay(baseActionId) {
 function doUpgrade(upgradeId) {
   const upgrade = ACTIONS.find(a => a.id === upgradeId);
   if (!upgrade || !upgrade.purchase_cost) return;
-  if ((state.material ?? 0) < upgrade.purchase_cost) return;
-  state.material -= upgrade.purchase_cost;
+  if ((state.token ?? 0) < upgrade.purchase_cost) return;
+  state.token -= upgrade.purchase_cost;
   state.character.purchasedActionIds.add(upgradeId);
   addLog(`Upgrade: ${upgrade.name}`);
   pushExtra('⬆️', `Upgrade: ${upgrade.name}`);
-  const outIcons = { food: '🌾', material: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️', branques: '🌿' };
+  const outIcons = { food: '🌾', token: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️', branques: '🌿' };
   const parts = [];
   if (upgrade.output_resource && upgrade.output_min != null) {
     parts.push(`${outIcons[upgrade.output_resource] || '📦'} ${upgrade.output_min}–${upgrade.output_max}`);

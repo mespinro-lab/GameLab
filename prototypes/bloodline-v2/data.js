@@ -89,7 +89,7 @@ const RESOURCE_DEFS = [
     glossaryDesc: `Estat físic. Neix amb ${STARTING_HEALTH}, creix fins a ${HEALTH_MAX} en ${HEALTH_GROW_TURNS} torns, estable ${HEALTH_STABLE_TURNS} torns, llavors decau. A 0 el personatge mor.`,
   },
   {
-    id: 'material', emoji: '🔵', label: 'Tokens', section: 'resources',
+    id: 'token', emoji: '🔵', label: 'Tokens', section: 'resources',
     startVal: 0, max: 35, upkeep: null, showMax: true, rateType: false,
     persistent: true, inheritDecay: 0.3,
     color: 'var(--blue)', borderColor: 'rgba(96,165,250,0.3)',
@@ -136,7 +136,7 @@ const DESTRESA_DEFS = [
 // Un cop adquirit, l'aprenentatge pertany al personatge (no al llinatge) — no s'hereta automàticament.
 // El fill rep UN aprenentatge ensenyat (si el pare va executar act_ensenyar) i pot descobrir el segon durant la seva vida.
 // discoveryChance: probabilitat per tirada (quan s'han fet >= APRENENTATGE_THRESHOLD usos d'una discovery_action_id)
-// effect.type: "bonus_action_output" (bonus a una acció concreta) | "food_upkeep_reduction" | "material_bonus" (global, totes les accions)
+// effect.type: "bonus_action_output" (bonus a una acció concreta) | "food_upkeep_reduction" | "token_bonus" (global, totes les accions)
 const APRENENTATGE_DEFS = [
   {
     id: "apr_cures_basiques", name: "Cures Bàsiques", icon: "🩹",
@@ -157,7 +157,7 @@ const APRENENTATGE_DEFS = [
     description: "Llegeixes el terreny i les estrelles amb naturalitat. Explorar rendeix molt més.",
     discoveryChance: 0.25,
     discovery_action_ids: ["act_explorar_voltants", "act_rastreig_rutes", "act_transit_nocturn"],
-    effect: { type: "bonus_action_output", action_id: "act_explorar_voltants", output_min_bonus: 1, output_max_bonus: 2, desc: "+1/+2 material en explorar" }
+    effect: { type: "bonus_action_output", action_id: "act_explorar_voltants", output_min_bonus: 1, output_max_bonus: 2, desc: "+1/+2 token en explorar" }
   },
   {
     id: "apr_treball_pedra", name: "Treball de la Pedra", icon: "🪨",
@@ -187,14 +187,7 @@ const APRENENTATGE_DEFS = [
     description: "Saps transmetre, inspirar i mediar. Les teves paraules generen recursos allà on les llances no arriben.",
     discoveryChance: 0.20,
     discovery_action_ids: ["act_narrar_llegendes", "act_explicar_orígens", "act_cants_grup"],
-    effect: { type: "material_bonus", value: 1, desc: "+1 material a totes les accions" }
-  },
-  {
-    id: "apr_guardia", name: "Guàrdia", icon: "🛡️",
-    description: "Has après a coordinar torns de vigilància i distribuir rols de defensa. El campament es manté segur i el grup rendeix millor.",
-    discoveryChance: 0.30,
-    discovery_action_ids: ["act_vigilar_campament"],
-    effect: { type: "bonus_action_output", action_id: "act_vigilar_campament", output_min_bonus: 1, output_max_bonus: 2, desc: "+1/+2 salut en vigilar el campament" }
+    effect: { type: "token_bonus", value: 1, desc: "+1 token a totes les accions" }
   },
 ];
 
@@ -323,7 +316,7 @@ const SKILL_DEFS = [
     universal_prereq: "ut_eines",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.18 }, { axis: "sociabilitat", min: 0.15 }] },
     unlocks_action_ids: ["act_ofrena_eines", "act_cerimonia_eines"],
-    passive_effect: { type: "grant_material", amount: 2, desc: "+2 Material (les eines cerimonials reforcen l'estatus del clan)" },
+    passive_effect: { type: "grant_token", amount: 2, desc: "+2 Token (les eines cerimonials reforcen l'estatus del clan)" },
     is_hidden: false
   },
   {
@@ -360,7 +353,7 @@ const SKILL_DEFS = [
     universal_prereq: "ut_foc",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.15 }, { axis: "impuls", max: 0.20 }] },
     unlocks_action_ids: ["act_cocinar_arrels", "act_ahumar_carn"],
-    passive_effect: { type: "grant_material", amount: 2, desc: "+2 Material (la cuina millora el rendiment dels recursos)" },
+    passive_effect: { type: "grant_token", amount: 2, desc: "+2 Token (la cuina millora el rendiment dels recursos)" },
     is_hidden: false
   },
   {
@@ -387,7 +380,7 @@ const SKILL_DEFS = [
     universal_prereq: "ut_foc",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.20 }, { axis: "impuls", max: 0.20 }] },
     unlocks_action_ids: ["act_destillar_quitra", "act_emmanegar_eines"],
-    passive_effect: { type: "grant_material", amount: 2, desc: "+2 Material (les eines compostes duren més)" },
+    passive_effect: { type: "grant_token", amount: 2, desc: "+2 Token (les eines compostes duren més)" },
     is_hidden: false
   },
   {
@@ -396,7 +389,7 @@ const SKILL_DEFS = [
     universal_prereq: "ut_art",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.30 }, { axis: "sociabilitat", min: 0.20 }] },
     unlocks_action_ids: ["act_pintar_parets", "act_narrar_llegendes"],
-    passive_effect: { type: "grant_material", amount: 2, desc: "+2 Provisions (les pintures enforteixen la identitat del clan)" },
+    passive_effect: { type: "grant_token", amount: 2, desc: "+2 Provisions (les pintures enforteixen la identitat del clan)" },
     is_hidden: false
   },
   {
@@ -414,7 +407,7 @@ const SKILL_DEFS = [
     universal_prereq: "ut_art",
     inclination_conditions: { operator: "OR", conditions: [{ axis: "espiritualitat", min: 0.20 }, { axis: "sociabilitat", min: 0.25 }] },
     unlocks_action_ids: ["act_ornamentar_se", "act_consagrar_ornaments", "act_ritual_talisman"],
-    passive_effect: { type: "grant_material", amount: 3, desc: "+3 Provisions (els ornaments reforcen la identitat del clan)" },
+    passive_effect: { type: "grant_token", amount: 3, desc: "+3 Provisions (els ornaments reforcen la identitat del clan)" },
     is_hidden: false
   },
   {
@@ -423,7 +416,7 @@ const SKILL_DEFS = [
     universal_prereq: "ut_art",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "sociabilitat", min: 0.20 }] },
     unlocks_action_ids: ["act_explicar_orígens", "act_cants_grup"],
-    passive_effect: { type: "grant_material", amount: 2, desc: "+2 Material (la narració transmet coneixement entre generacions)" },
+    passive_effect: { type: "grant_token", amount: 2, desc: "+2 Token (la narració transmet coneixement entre generacions)" },
     is_hidden: false
   },
   // ── La Vestimenta ────────────────────────────────────────────────────────────
@@ -442,7 +435,7 @@ const SKILL_DEFS = [
     universal_prereq: "ut_vestimenta",
     inclination_conditions: { operator: "OR", conditions: [{ axis: "espiritualitat", min: 0.18 }, { axis: "sociabilitat", min: 0.18 }] },
     unlocks_action_ids: ["act_decorar_cos", "act_tenyir_pells"],
-    passive_effect: { type: "grant_material", amount: 2, desc: "+2 Material (els pigments reforcen la identitat del clan)" },
+    passive_effect: { type: "grant_token", amount: 2, desc: "+2 Token (els pigments reforcen la identitat del clan)" },
     is_hidden: false
   },
   // ── La Corda ─────────────────────────────────────────────────────────────────
@@ -488,7 +481,7 @@ const SKILL_DEFS = [
     universal_prereq: "ut_eines",
     inclination_conditions: { operator: "OR", conditions: [{ axis: "intel·lecte", min: 0.18 }, { axis: "espiritualitat", min: 0.20 }] },
     unlocks_action_ids: ["act_observar_cel", "act_transit_nocturn"],
-    passive_effect: { type: "grant_material", amount: 2, desc: "+2 Provisions (previsió de cicles)" },
+    passive_effect: { type: "grant_token", amount: 2, desc: "+2 Provisions (previsió de cicles)" },
     is_hidden: false
   },
   {
@@ -515,7 +508,7 @@ const SKILL_DEFS = [
     universal_prereq: "ut_ceramica",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "sociabilitat", min: 0.20 }] },
     unlocks_action_ids: ["act_fira_intercanvi", "act_ceramica_regalada"],
-    passive_effect: { type: "grant_material", amount: 3, desc: "+3 Material (la ceràmica és moneda d'intercanvi)" },
+    passive_effect: { type: "grant_token", amount: 3, desc: "+3 Token (la ceràmica és moneda d'intercanvi)" },
     is_hidden: false
   },
   {
@@ -524,7 +517,7 @@ const SKILL_DEFS = [
     universal_prereq: "ut_ceramica",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.22 }, { axis: "impuls", max: 0.20 }] },
     unlocks_action_ids: ["act_modelar_argila", "act_coure_ceramica"],
-    passive_effect: { type: "grant_material", amount: 3, desc: "+3 Material (els vasos conserven el que abans es perdia)" },
+    passive_effect: { type: "grant_token", amount: 3, desc: "+3 Token (els vasos conserven el que abans es perdia)" },
     is_hidden: false
   },
   // ── L'Agricultura ────────────────────────────────────────────────────────────
@@ -561,7 +554,7 @@ const SKILL_DEFS = [
     universal_prereq: "ut_agricultura",
     inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.25 }, { axis: "sociabilitat", min: 0.15 }] },
     unlocks_action_ids: ["act_ofrena_terra", "act_danses_fertilitat"],
-    passive_effect: { type: "grant_material", amount: 3, desc: "+3 Material (els ritus col·lectius enforteixen la cohesió del clan)" },
+    passive_effect: { type: "grant_token", amount: 3, desc: "+3 Token (els ritus col·lectius enforteixen la cohesió del clan)" },
     is_hidden: false
   }
 ];
@@ -649,7 +642,7 @@ const ACTION_INCLINATION_REQUIREMENTS = {
   act_defensa_activa:          { sociabilitat: { min: 0.05 } },     // upgrade vigilar_campament
 };
 
-// output_resource: "food" (default) | "material" | "health"  — ha de coincidir amb id de RESOURCE_DEFS
+// output_resource: "food" (default) | "token" | "health"  — ha de coincidir amb id de RESOURCE_DEFS
 // side_effects: array de side-effects [{ resource: 'health'|'food'|..., delta: N }] — s'apliquen genèricament
 // stat_key: "forca" | "enginy" | "vincle" — which stat multiplies output + grows on use
 // stat_gain: how much the stat grows per execution
@@ -662,7 +655,7 @@ const ACTIONS = [
     id: "act_espiar_ramat", name: "Abatre una Presa", is_base: true, zona: "Planes",
     description: "Segueixes el ramat, esculls el moment i abats una presa a mans nues. Molt menjar, però risc de ferides — una pedra a la mà ho fa menys perillós.",
     execute_cost: 0, output_resource: "food", output_min: 3, output_max: 8,
-    material_min: 2, material_max: 4,
+    token_min: 2, token_max: 4,
     side_effects: [{ resource: 'health', delta: -5 }],
     assist: { resource: 'pedra', min: 1, consume: 1, health_delta: 1, desc: '🪨 Gastes una pedra com a arma: menys risc (−4 en lloc de −5).' },
     stat_key: "forca", stat_gain: 0.10,
@@ -674,7 +667,7 @@ const ACTIONS = [
     id: "act_recollectar_arrels", name: "Recol·lectar Arrels", is_base: true, zona: "Planes",
     description: "Busques arrels i baies comestibles sense allunyar-te. Segur però rendiment moderat — amb fibres pots fer un cistell improvisat i recollir-ne més.",
     execute_cost: 0, output_resource: "food", output_min: 1, output_max: 3,
-    material_min: 2, material_max: 3,
+    token_min: 2, token_max: 3,
     assist: { resource: 'branques', min: 1, consume: 1, output_delta: 1, desc: '🌿 Gastes fibres per fer un cistell: +1 de recollida.' },
     stat_key: "forca", stat_gain: 0.10,
     destresa_id: "d_botanica",
@@ -685,7 +678,7 @@ const ACTIONS = [
     id: "act_tallar_pedra", name: "Practicar la Talla", is_base: true, zona: "Campament",
     description: "Practiques la talla del sílex: la mà aprèn l'angle i la força. Encara NO en surten eines (les eines arriben amb una habilitat, després de descobrir les Eines), però hi guanyes enginy i destresa per a quan en sàpigues fer.",
     execute_cost: 0,
-    material_min: 1, material_max: 2,
+    token_min: 1, token_max: 2,
     stat_key: "enginy", stat_gain: 0.10,
     destresa_id: "d_talla_silex",
     inclination_deltas: { impuls: -0.03, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
@@ -711,19 +704,11 @@ const ACTIONS = [
     event_pool_id: "pool_ritual"
   },
   {
-    id: "act_vigilar_campament", name: "Vigilar el Campament", is_base: true, zona: "Campament",
-    description: "Passes la nit en guàrdia. Saber que hi ha algú vetllant permet al clan descansar fondo sense por — i el descans és el que cura.",
-    execute_cost: 0, output_resource: "health", output_min: 2, output_max: 4,
-    stat_key: "vincle", stat_gain: 0.10,
-    inclination_deltas: { impuls: +0.03, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.04 },
-    event_pool_id: "pool_social"
-  },
-  {
     id: "act_explorar_voltants", name: "Explorar els Voltants", is_base: true, zona: "Planes",
     description: "T'aventures més lluny del campament. Cada intent augmenta la probabilitat de descobrir zones noves.",
     execute_cost: 1,
     character_effect: { type: 'explore_zone' },
-    material_min: 2, material_max: 4,
+    token_min: 2, token_max: 4,
     inclination_deltas: { impuls: +0.04, "intel·lecte": -0.02, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: null
   },
@@ -731,7 +716,7 @@ const ACTIONS = [
     id: "act_recollectar_pedra", name: "Recollir Pedra", is_base: true, zona: "Planes",
     description: "Recolliu sílex i pedra calcària per als vostres estris. La pedra és el fonament de tot.",
     execute_cost: 0, output_resource: "pedra", output_min: 1, output_max: 3,
-    material_min: 1, material_max: 2,
+    token_min: 1, token_max: 2,
     stat_key: "forca", stat_gain: 0.05,
     inclination_deltas: { impuls: +0.01, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: null
@@ -740,7 +725,7 @@ const ACTIONS = [
     id: "act_recollir_branques", name: "Recollir Fibres", is_base: true, zona: "Bosc",
     description: "Al bosc trobes escorces, branques flexibles i fibres que al camp escassegen. La base de tot cordill, mànec i cistell.",
     execute_cost: 0, output_resource: "branques", output_min: 2, output_max: 4,
-    material_min: 1, material_max: 2,
+    token_min: 1, token_max: 2,
     stat_key: "enginy", stat_gain: 0.05,
     inclination_deltas: { impuls: -0.02, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: +0.02 },
     event_pool_id: "pool_recollecta"
@@ -754,7 +739,7 @@ const ACTIONS = [
     minAge: 5, maxAge: 14,
     requires: [{ state: 'parella', max: 0 }],
     character_effect: { type: 'find_partner', failure_chance: 0.05 },
-    material_min: 1, material_max: 2,
+    token_min: 1, token_max: 2,
     stat_key: "vincle", stat_gain: 0.20,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_social"
@@ -765,7 +750,7 @@ const ACTIONS = [
     maxAge: 15,
     requires: [{ state: 'parella', min: 1 }, { state: 'fills', lt_max: true }],
     character_effect: { type: 'add_child_with_risk' },
-    material_min: 1, material_max: 3,
+    token_min: 1, token_max: 3,
     stat_key: "vincle", stat_gain: 0.10,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_social"
@@ -777,7 +762,7 @@ const ACTIONS = [
     minAge: 8,
     requires: [{ type: 'has_untaught_child' }, { type: 'has_any_aprenentatge' }],
     character_effect: { type: 'teach_child' },
-    material_min: 1, material_max: 2,
+    token_min: 1, token_max: 2,
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: +0.03, sociabilitat: +0.05 },
     event_pool_id: "pool_familia"
@@ -822,7 +807,7 @@ const ACTIONS = [
     requires: [{ resource: 'pedra', min: 2 }, { resource: 'branques', min: 1 }],
     output_resource: "eina", output_min: 1, output_max: 1,
     side_effects: [{ resource: 'pedra', delta: -2 }, { resource: 'branques', delta: -1 }],
-    material_min: 1, material_max: 2,
+    token_min: 1, token_max: 2,
     stat_key: "forca", stat_gain: 0.15,
     is_tool_action: true, tool_branch: 'branch_hunter',
     inclination_deltas: { impuls: +0.05, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
@@ -865,7 +850,7 @@ const ACTIONS = [
     requires: [{ resource: 'branques', min: 2 }, { resource: 'pedra', min: 1 }],
     output_resource: "eina", output_min: 1, output_max: 1,
     side_effects: [{ resource: 'branques', delta: -2 }, { resource: 'pedra', delta: -1 }],
-    material_min: 1, material_max: 2,
+    token_min: 1, token_max: 2,
     stat_key: "enginy", stat_gain: 0.15,
     is_tool_action: true, tool_branch: 'branch_gatherer',
     inclination_deltas: { impuls: 0, "intel·lecte": +0.04, espiritualitat: +0.02, sociabilitat: 0 },
@@ -877,7 +862,7 @@ const ACTIONS = [
     id: "act_parar_trampes", name: "Parar Trampes", is_base: false, zona: "Planes",
     description: "Col·loques llaços i trampes en llocs de pas. La caça passiva allibera temps per a altres tasques.",
     purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 2, output_max: 6,
-    requires: [{ resource: 'material', min: 1 }], side_effects: [{ resource: 'material', delta: -1 }],
+    requires: [{ resource: 'token', min: 1 }], side_effects: [{ resource: 'token', delta: -1 }],
     stat_key: "forca", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.03 },
     event_pool_id: "pool_caca"
@@ -899,7 +884,7 @@ const ACTIONS = [
     requires: [{ resource: 'eina', min: 1 }],
     output_resource: "food", output_min: 4, output_max: 8,
     side_effects: [{ resource: 'eina', delta: -1 }],
-    material_min: 1, material_max: 2,
+    token_min: 1, token_max: 2,
     stat_key: "forca", stat_gain: 0.10,
     inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.04 },
     event_pool_id: "pool_recollecta"
@@ -918,7 +903,7 @@ const ACTIONS = [
     id: "act_assecament_plantes", name: "Assecament de Plantes", is_base: false, zona: "Campament",
     description: "Asseques les plantes recol·lectades per conservar-les. Reserves que aguanten setmanes.",
     purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 1, output_max: 3,
-    side_effects: [{ resource: 'material', delta: -1 }],
+    side_effects: [{ resource: 'token', delta: -1 }],
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: -0.01, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.03 },
     event_pool_id: "pool_recollecta"
@@ -950,7 +935,7 @@ const ACTIONS = [
     requires: [{ resource: 'pedra', min: 2 }, { resource: 'branques', min: 1 }],
     output_resource: "eina", output_min: 1, output_max: 1,
     side_effects: [{ resource: 'pedra', delta: -2 }, { resource: 'branques', delta: -1 }],
-    material_min: 1, material_max: 2,
+    token_min: 1, token_max: 2,
     stat_key: "enginy", stat_gain: 0.15,
     is_tool_action: true, tool_branch: 'branch_craftsman',
     inclination_deltas: { impuls: 0, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
@@ -961,7 +946,7 @@ const ACTIONS = [
   {
     id: "act_gravar_os", name: "Gravar Os i Ivori", is_base: false, zona: "Campament",
     description: "El burí permet gravar formes en os i ivori. Art i eina, alhora. Millora enginy i espiritualitat.",
-    purchase_cost: 4, execute_cost: 0, material_min: 2, material_max: 3,
+    purchase_cost: 4, execute_cost: 0, token_min: 2, token_max: 3,
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: +0.02, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
@@ -971,7 +956,7 @@ const ACTIONS = [
     description: "Intercanvies eines de qualitat per provisions i aliances. Sociabilitat i menjar a canvi de feina artesanal.",
     purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 2, output_max: 4,
     requires: [{ resource: 'eina', min: 1 }], side_effects: [{ resource: 'eina', delta: -1 }],
-    material_min: 1, material_max: 2,
+    token_min: 1, token_max: 2,
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.05 },
     event_pool_id: "pool_social"
@@ -982,7 +967,7 @@ const ACTIONS = [
     id: "act_cosir_pells", name: "Cosir Pells", is_base: false, zona: "Campament",
     description: "Cosius pells amb agulles d'os. La roba que protegeixes millora la salut de tot el clan.",
     purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 6,
-    material_min: 1, material_max: 2,
+    token_min: 1, token_max: 2,
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
@@ -991,7 +976,7 @@ const ACTIONS = [
     id: "act_construir_refugi", name: "Construir Refugi", is_base: false, zona: "Campament",
     description: "Construcció d'un aixopluc millor. El grup descansa protegit i recupera salut.",
     purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 4, output_max: 8,
-    material_min: 1, material_max: 3,
+    token_min: 1, token_max: 3,
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: +0.02 },
     event_pool_id: "pool_artesania"
@@ -1013,7 +998,7 @@ const ACTIONS = [
     requires: [{ resource: 'branques', min: 2 }, { resource: 'pedra', min: 1 }],
     output_resource: "eina", output_min: 1, output_max: 1,
     side_effects: [{ resource: 'branques', delta: -2 }, { resource: 'pedra', delta: -1 }],
-    material_min: 1, material_max: 2,
+    token_min: 1, token_max: 2,
     stat_key: "enginy", stat_gain: 0.15,
     is_tool_action: true, tool_branch: 'branch_mystic',
     inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: +0.03, sociabilitat: 0 },
@@ -1033,7 +1018,7 @@ const ACTIONS = [
     id: "act_narrar_llegendes", name: "Narrar les Llegendes", is_base: false, zona: "Campament",
     description: "La veu pren força davant del foc. Dins de cada llegenda hi ha un mapa: on beure a l'estiu, quin arbust dona cordell, on creix la fibra que no es trenca. El clan escolta, i demà surt a trobar-la.",
     purchase_cost: 3, execute_cost: 0, output_resource: "branques", output_min: 2, output_max: 3,
-    material_min: 1, material_max: 2,
+    token_min: 1, token_max: 2,
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: +0.05 },
     event_pool_id: "pool_social"
@@ -1047,7 +1032,7 @@ const ACTIONS = [
     requires: [{ resource: 'eina', min: 1 }],
     output_resource: "health", output_min: 8, output_max: 14,
     side_effects: [{ resource: 'eina', delta: -1 }],
-    material_min: 1, material_max: 2,
+    token_min: 1, token_max: 2,
     stat_key: "vincle", stat_gain: 0.20,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.08, sociabilitat: +0.03 },
     event_pool_id: "pool_ritual"
@@ -1132,7 +1117,7 @@ const ACTIONS = [
     universal_prereq: "ut_foc",
     purchase_cost: 5, execute_cost: 0,
     food_cap_delta: 2, max_executions: 2,
-    material_min: 1, material_max: 2,
+    token_min: 1, token_max: 2,
     stat_key: "enginy", stat_gain: 0.08,
     inclination_deltas: { impuls: -0.01, "intel·lecte": +0.02, espiritualitat: +0.01, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
@@ -1145,7 +1130,7 @@ const ACTIONS = [
     requires: [{ resource: 'eina', min: 1 }],
     output_resource: "food", output_min: 4, output_max: 8,
     side_effects: [{ resource: 'eina', delta: -1 }],
-    material_min: 1, material_max: 2,
+    token_min: 1, token_max: 2,
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: -0.02, "intel·lecte": +0.04, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
@@ -1155,7 +1140,7 @@ const ACTIONS = [
   {
     id: "act_destillar_quitra", name: "Destil·lar Quitrà", is_base: false, zona: "Campament",
     description: "Cous escorça de bedoll sota brases tapades fins que en regalima una pasta negra i enganxosa. El que s'enganxa, no es perd.",
-    purchase_cost: 4, execute_cost: 0, material_min: 2, material_max: 4,
+    purchase_cost: 4, execute_cost: 0, token_min: 2, token_max: 4,
     side_effects: [{ resource: 'health', delta: -2 }],
     stat_key: "enginy", stat_gain: 0.20,
     inclination_deltas: { impuls: -0.02, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
@@ -1167,7 +1152,7 @@ const ACTIONS = [
     purchase_cost: 4, execute_cost: 0,
     requires: [{ resource: 'pedra', min: 1 }],
     character_effect: { type: 'make_tool', pedra_cost: 1 },
-    material_min: 2, material_max: 3,
+    token_min: 2, token_max: 3,
     stat_key: "enginy", stat_gain: 0.20,
     inclination_deltas: { impuls: 0, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
@@ -1177,7 +1162,7 @@ const ACTIONS = [
     id: "act_alimentar_foc", name: "Alimentar el Foc", is_base: false, zona: "Campament",
     description: "Mantens el foc viu tota la nit amb fusta seca i cendra. El campament dorm segur i sa.",
     purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 5,
-    side_effects: [{ resource: 'material', delta: -1 }],
+    side_effects: [{ resource: 'token', delta: -1 }],
     stat_key: "vincle", stat_gain: 0.10,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.03, sociabilitat: +0.03 },
     event_pool_id: "pool_ritual"
@@ -1186,7 +1171,7 @@ const ACTIONS = [
     id: "act_torxa_escolta", name: "Torxa d'Escolta", is_base: false, zona: "Campament",
     description: "Fabriques una torxa i recorres el perímetre del campament a la nit. La foscor no és del clan, és del que l'amenaça.",
     purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 2, output_max: 5,
-    requires: [{ resource: 'material', min: 1 }], side_effects: [{ resource: "health", delta: -3 }, { resource: 'material', delta: -1 }],
+    requires: [{ resource: 'token', min: 1 }], side_effects: [{ resource: "health", delta: -3 }, { resource: 'token', delta: -1 }],
     stat_key: "forca", stat_gain: 0.10,
     inclination_deltas: { impuls: +0.04, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.02 },
     event_pool_id: "pool_social"
@@ -1194,8 +1179,8 @@ const ACTIONS = [
   // ── bt_adobament_pells (La Vestimenta — Caçador/Artesà/Recol·lector) ─────────
   {
     id: "act_preparar_cuiro", name: "Preparar Cuiro", is_base: false, zona: "Campament",
-    description: "Estires i asseques la pell fins que queda rígida i dura. Material resistent per a roba i estris.",
-    purchase_cost: 3, execute_cost: 0, material_min: 2, material_max: 4,
+    description: "Estires i asseques la pell fins que queda rígida i dura. Token resistent per a roba i estris.",
+    purchase_cost: 3, execute_cost: 0, token_min: 2, token_max: 4,
     stat_key: "forca", stat_gain: 0.10,
     inclination_deltas: { impuls: +0.02, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
@@ -1204,7 +1189,7 @@ const ACTIONS = [
     id: "act_roba_hivern", name: "Roba d'Hivern", is_base: false, zona: "Campament",
     description: "Cousis diverses pells adobades formant una capa gruixuda. El fred ja no penetra com abir.",
     purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 4, output_max: 8,
-    requires: [{ resource: 'material', min: 2 }], side_effects: [{ resource: 'material', delta: -2 }],
+    requires: [{ resource: 'token', min: 2 }], side_effects: [{ resource: 'token', delta: -2 }],
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: -0.02, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
@@ -1221,7 +1206,7 @@ const ACTIONS = [
   {
     id: "act_tenyir_pells", name: "Tenyir Pells", is_base: false, zona: "Campament",
     description: "Immergeixes les pells en una solució de plantes i argila fins que agafen color. Símbol d'identitat del clan.",
-    purchase_cost: 3, execute_cost: 0, material_min: 1, material_max: 3,
+    purchase_cost: 3, execute_cost: 0, token_min: 1, token_max: 3,
     stat_key: "enginy", stat_gain: 0.10,
     inclination_deltas: { impuls: 0, "intel·lecte": +0.02, espiritualitat: +0.03, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
@@ -1239,7 +1224,7 @@ const ACTIONS = [
   {
     id: "act_practicar_tir", name: "Practicar el Tir", is_base: false, zona: "Planes",
     description: "Practiques la tècnica de tir fins que el moviment es torna automàtic. La repetició és el mestre invisible.",
-    purchase_cost: 3, execute_cost: 0, material_min: 1, material_max: 2,
+    purchase_cost: 3, execute_cost: 0, token_min: 1, token_max: 2,
     stat_key: "enginy", stat_gain: 0.20,
     inclination_deltas: { impuls: +0.05, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
@@ -1285,7 +1270,7 @@ const ACTIONS = [
   {
     id: "act_tallar_flauta", name: "Tallar una Flauta d'Os", is_base: false, zona: "Campament",
     description: "Forades un os d'ala de voltor amb el burí, forat a forat. Quan hi bufes, en surt una veu que no és de ningú.",
-    purchase_cost: 4, execute_cost: 0, material_min: 1, material_max: 2,
+    purchase_cost: 4, execute_cost: 0, token_min: 1, token_max: 2,
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: +0.03, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
@@ -1310,7 +1295,7 @@ const ACTIONS = [
   {
     id: "act_tela_sagrada", name: "Tela Sagrada", is_base: false, zona: "Campament",
     description: "Treballes fils i fibres en patrons complexos que el clan reconeix com a símbols de protecció.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 5, material_min: 1, material_max: 3,
+    purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 5, token_min: 1, token_max: 3,
     stat_key: "vincle", stat_gain: 0.10,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.04, sociabilitat: +0.03 },
     event_pool_id: "pool_ritual"
@@ -1337,7 +1322,7 @@ const ACTIONS = [
   {
     id: "act_fira_intercanvi", name: "Fira d'Intercanvi", is_base: false, zona: "Planes",
     description: "Organitzes una trobada on diversos clans intercanvien ceràmica, pells i provisions. Tothom torna amb alguna cosa.",
-    purchase_cost: 4, execute_cost: 1, material_min: 3, material_max: 6,
+    purchase_cost: 4, execute_cost: 1, token_min: 3, token_max: 6,
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.06 },
     event_pool_id: "pool_social"
@@ -1346,7 +1331,7 @@ const ACTIONS = [
     id: "act_ceramica_regalada", name: "Ceràmica Regalada", is_base: false, zona: "Planes",
     description: "Offereixes una peça de ceràmica decorada a un grup veí com a gest d'aliança. La bellesa és la primera moneda.",
     purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 2, output_max: 4,
-    side_effects: [{ resource: "material", delta: -1 }],
+    side_effects: [{ resource: "token", delta: -1 }],
     stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.02, sociabilitat: +0.05 },
     event_pool_id: "pool_social"
@@ -1355,7 +1340,7 @@ const ACTIONS = [
   {
     id: "act_modelar_argila", name: "Modelar Argila", is_base: false, zona: "Campament",
     description: "Pastes argila humida i en surten formes: una dona, un bisó, un ós. Quan passen pel foc, es tornen pedra.",
-    purchase_cost: 4, execute_cost: 0, material_min: 2, material_max: 4,
+    purchase_cost: 4, execute_cost: 0, token_min: 2, token_max: 4,
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": +0.04, espiritualitat: +0.02, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
@@ -1364,7 +1349,7 @@ const ACTIONS = [
     id: "act_coure_ceramica", name: "Coure Vasos d'Argila", is_base: false, zona: "Campament",
     description: "Cous els vasos a la fossa del foc tota la nit. El que abans es feia malbé ara espera, tranquil, dins l'argila.",
     purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 2, output_max: 4,
-    material_min: 2, material_max: 3,
+    token_min: 2, token_max: 3,
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: -0.02, "intel·lecte": +0.04, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
@@ -1409,7 +1394,7 @@ const ACTIONS = [
     id: "act_edificar_cabana", name: "Edificar una Cabana", is_base: false, zona: "Campament",
     description: "Construeixes una cabana de pals i fulles per al clan. Quatre parets que valen per totes les nits que vindran.",
     purchase_cost: 5, execute_cost: 0, output_resource: "health", output_min: 5, output_max: 10,
-    requires: [{ resource: 'material', min: 2 }], side_effects: [{ resource: 'material', delta: -2 }],
+    requires: [{ resource: 'token', min: 2 }], side_effects: [{ resource: 'token', delta: -2 }],
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: +0.02 },
     event_pool_id: "pool_artesania"
@@ -1418,7 +1403,7 @@ const ACTIONS = [
     id: "act_reforçar_palissada", name: "Reforçar la Palissada", is_base: false, zona: "Campament",
     description: "Claveu estacades afilades al voltant del campament. El que és de fora sap que aquí hi ha clan.",
     purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 6,
-    requires: [{ resource: 'material', min: 1 }], side_effects: [{ resource: 'material', delta: -1 }],
+    requires: [{ resource: 'token', min: 1 }], side_effects: [{ resource: 'token', delta: -1 }],
     stat_key: "forca", stat_gain: 0.15,
     inclination_deltas: { impuls: +0.03, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.02 },
     event_pool_id: "pool_artesania"
@@ -1449,7 +1434,7 @@ const ACTIONS = [
     description: "Senyal coordinat amb el grup. La presa no pot fugir. Rendiment molt superior.",
     requires: [{ type: 'has_destresa', id: 'd_rastreig' }],
     purchase_cost: 8, execute_cost: 0, output_resource: "food", output_min: 5, output_max: 10,
-    material_min: 1, material_max: 2,
+    token_min: 1, token_max: 2,
     stat_key: "forca", stat_gain: 0.10,
     inclination_deltas: { impuls: +0.05, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: +0.03 },
     event_pool_id: "pool_caca"
@@ -1459,7 +1444,7 @@ const ACTIONS = [
     description: "Apliques coneixement acumulat: zones, estació, plantes. Rendiment molt superior.",
     requires: [{ type: 'has_destresa', id: 'd_botanica' }],
     purchase_cost: 6, execute_cost: 0, output_resource: "food", output_min: 4, output_max: 7,
-    material_min: 1, material_max: 2,
+    token_min: 1, token_max: 2,
     stat_key: "enginy", stat_gain: 0.10,
     inclination_deltas: { impuls: -0.02, "intel·lecte": +0.03, espiritualitat: +0.02, sociabilitat: +0.02 },
     event_pool_id: "pool_recollecta"
@@ -1470,7 +1455,7 @@ const ACTIONS = [
     quality_tools: true,
     requires: [{ type: 'has_destresa', id: 'd_talla_silex' }],
     purchase_cost: 8, execute_cost: 0,
-    material_min: 1, material_max: 2,
+    token_min: 1, token_max: 2,
     stat_key: "enginy", stat_gain: 0.15,
     inclination_deltas: { impuls: -0.02, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
@@ -1483,15 +1468,6 @@ const ACTIONS = [
     stat_key: "vincle", stat_gain: 0.10,
     inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: +0.06, sociabilitat: +0.05 },
     event_pool_id: "pool_ritual"
-  },
-  {
-    id: "act_defensa_activa", name: "Defensa Activa", is_upgrade: true, upgrades_action_id: "act_vigilar_campament", zona: "Campament",
-    description: "Distribuïu rols i torns de guàrdia. El campament queda segur i el grup rendeix més.",
-    requires: [{ type: 'has_aprenentatge', id: 'apr_guardia' }],
-    purchase_cost: 8, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 6,
-    stat_key: "vincle", stat_gain: 0.10,
-    inclination_deltas: { impuls: +0.02, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: +0.03 },
-    event_pool_id: "pool_social"
   }
 ];
 
@@ -1635,7 +1611,7 @@ const EVENT_POOLS = {
       id: "ev_arbust_espinos",
       text: "Les baies son gruixudes i morades, perfectament madures. Però l'esbarzer les tanca per tots costats. Demà potser ja no hi seran — els ocells ho saben.",
       options: [
-        { text: "Endinsar-m'hi directe, cos endavant",       food_delta: +3, health_delta: -1, material_delta: -1, discovers: false },
+        { text: "Endinsar-m'hi directe, cos endavant",       food_delta: +3, health_delta: -1, discovers: false },
         { text: "Agafar una branca llarga i sacsejar",        food_delta: +1, discovers: false },
         { text: "Voltar fins a trobar un pas entre branques", food_delta: +2, health_delta: +1, discovers: false }
       ]
@@ -1643,7 +1619,7 @@ const EVENT_POOLS = {
   ],
   pool_artesania: [
     { id: "ev_eina_trencada", text: "L'eina es trenca durant la feina. Cal refer-la.", effects: { eina: -1 }, blocked_if: [{ type: "stat_min", stat: "enginy", min: 3.5 }] },
-    { id: "ev_eina_trencada_material", text: "L'eina es trenca i arrossega part del material. La pedra també s'ha perdut.", effects: { eina: -1, pedra: -1 }, blocked_if: [{ type: "stat_min", stat: "enginy", min: 4.0 }] },
+    { id: "ev_eina_trencada", text: "L'eina es trenca en plena feina i, en saltar, s'endú la pedra que treballaves.", effects: { eina: -1, pedra: -1 }, blocked_if: [{ type: "stat_min", stat: "enginy", min: 4.0 }] },
     { id: "ev_tecnica_nova",     text: "Un descobriment accidental millora la tècnica.",               effects: { food: +1 } },
     { id: "ev_intercanvi_eines", text: "Un grup veí demana eines a canvi de provisions.",              effects: { food: +2 } },
     {
@@ -1668,26 +1644,26 @@ const EVENT_POOLS = {
       id: "ev_fissura_pedra",
       text: "El cop de percussor ha obert una fissura que no havia vist. La pedra cruix lleugerament sota els dits. La línia corre en diagonal, cap a la part que volia conservar. Puc seguir tallant per aquí, adaptar el tall a on la roca vol anar, o llençar-ho i buscar un altre bloc.",
       options: [
-        { text: "Forçar l'angle: aprofitar la fissura com a guia natural.", material_delta: -4, discovers: false },
+        { text: "Forçar l'angle: aprofitar la fissura com a guia natural.", discovers: false },
         { text: "Canviar el tall: deixo que la pedra decideixi la forma.",  discovers: false },
-        { text: "Descartar. Camino fins al jaç de sílex a cercar un bloc millor.", food_delta: -1, material_delta: -1, discovers: false }
+        { text: "Descartar. Camino fins al jaç de sílex a cercar un bloc millor.", food_delta: -1, discovers: false }
       ]
     },
     {
       id: "ev_aprenent_observa",
       text: "Un infant s'ha aturat darrere meu i mira com treballo la pedra. No fa soroll. Observa on cau el rebuig i segueix el moviment de la meva mà. Podria deixar-lo quedar i anar explicant en veu baixa, fer-lo marxar ara i ensenyar-lo quan tingui temps, o donar-li els fragments petits perquè s'hi entreni.",
       options: [
-        { text: "Deixar-lo quedar. Parlo mentre treballo, sense aturar-me.", material_delta: -1, discovers: false },
+        { text: "Deixar-lo quedar. Parlo mentre treballo, sense aturar-me.", discovers: false },
         { text: "Fer-lo marxar. Li diré que torni quan acabi aquesta peça.",  discovers: false },
-        { text: "Donar-li el rebuig. Que aprengui amb els fragments que jo no vull.", health_delta: +1, material_delta: -1, discovers: false }
+        { text: "Donar-li el rebuig. Que aprengui amb els fragments que jo no vull.", health_delta: +1, discovers: false }
       ]
     },
     {
       id: "ev_fulla_prestada",
       text: "El company s'atura al costat meu i mostra la seva presa. Ha anat bé, però la seva fulla ha quedat embotida dins la bèstia i l'ha perduda. M'allarga la mà. La meva fulla és bona, però no en tinc cap altra avui. Decideixo ràpidament.",
       options: [
-        { text: "Donar-li la meva fulla. Ell torna amb menjar per als dos.", food_delta: +2, material_delta: -2, discovers: false },
-        { text: "Donar-li un fragment de rebuig. Serveix per netejar, si va amb compte.", food_delta: +1, material_delta: -1, discovers: false },
+        { text: "Donar-li la meva fulla. Ell torna amb menjar per als dos.", food_delta: +2, discovers: false },
+        { text: "Donar-li un fragment de rebuig. Serveix per netejar, si va amb compte.", food_delta: +1, discovers: false },
         { text: "Dir-li que no. Avui la necessito.", food_delta: -1, discovers: false }
       ]
     },
@@ -1752,18 +1728,18 @@ const EVENT_POOLS = {
       id: "ev_dol_enterrament",
       text: "Un membre del clan ha mort al matí. Hi ha ocre vermell al sac, i un cargol marí que ningú no ha volgut tocar. El cos és allà. Ningú no sap ben bé quant de temps podem esperar.",
       options: [
-        { text: "Enterrar-lo fondo. Posar-hi l'ocre i el cargol.", food_delta: 0, health_delta: +2, material_delta: -2, discovers: false },
-        { text: "Cavar just el que cal. Cobrir-lo i continuar.",   food_delta: 0, health_delta:  0, material_delta:  0, discovers: false },
-        { text: "Deixar-lo a l'aire. El vent i les bèsties fan la seva feina.", food_delta: 0, health_delta: -1, material_delta: 0, discovers: false }
+        { text: "Enterrar-lo fondo. Posar-hi l'ocre i el cargol.", food_delta: 0, health_delta: +2, discovers: false },
+        { text: "Cavar just el que cal. Cobrir-lo i continuar.",   food_delta: 0, health_delta:  0, discovers: false },
+        { text: "Deixar-lo a l'aire. El vent i les bèsties fan la seva feina.", food_delta: 0, health_delta: -1, discovers: false }
       ]
     },
     {
       id: "ev_figura_venus",
       text: "Tens un tros d'ivori a les mans. La forma surt sola — corbes, volum, pes. El clan s'ha aturat a mirar. No sé si és jo qui la faig o ella que es deixa fer.",
       options: [
-        { text: "Acabar-la i posar-la al centre del campament.", food_delta: 0, health_delta: +1, material_delta: -1, discovers: false },
-        { text: "Acabar-la i guardar-la. Aquesta és meva.",       food_delta: 0, health_delta: +2, material_delta: -1, discovers: false },
-        { text: "Colpejar el bloc fins que es trenqui.",          food_delta: 0, health_delta:  0, material_delta:  0, discovers: false }
+        { text: "Acabar-la i posar-la al centre del campament.", food_delta: 0, health_delta: +1, discovers: false },
+        { text: "Acabar-la i guardar-la. Aquesta és meva.",       food_delta: 0, health_delta: +2, discovers: false },
+        { text: "Colpejar el bloc fins que es trenqui.",          food_delta: 0, health_delta:  0, discovers: false }
       ]
     },
     {
@@ -1789,7 +1765,7 @@ const EVENT_POOLS = {
           }
         },
         { text: "Continuar amb el que conec. Carn bullida, caliu, repòs.", food_delta: -1, health_delta: +1, discovers: false },
-        { text: "Deixar que ho faci el vell. Donar-li una ofrena.",        food_delta:  0, health_delta: +2, material_delta: -1, discovers: false }
+        { text: "Deixar que ho faci el vell. Donar-li una ofrena.",        food_delta:  0, health_delta: +2, discovers: false }
       ]
     }
   ],
@@ -1820,7 +1796,7 @@ const EVENT_POOLS = {
       blocked_if: [{ type: "resource_below", resource: "food", value: 3 }],
       text: "Una dona del clan s'acosta amb dos infants agafats a la seva roba. El seu home no ha tornat de la darrera cacera. Em mira sense dir res, però l'enteneixo. El clan observa des de lluny com reacciono.",
       options: [
-        { text: "Els acollim: dormen sota el meu sostre i mengen a la meva taula.", food_delta: -2, material_delta: -1, discovers: false },
+        { text: "Els acollim: dormen sota el meu sostre i mengen a la meva taula.", food_delta: -2, discovers: false },
         { text: "Proposo que el clan reparteixi la càrrega entre tots.",            food_delta: -1, discovers: false },
         { text: "Faig veure que no he vist res i continuo amb el meu treball.",     discovers: false }
       ]
@@ -1830,7 +1806,7 @@ const EVENT_POOLS = {
       text: "Dos dels homes vells del clan s'han encarar a crits davant tothom. La disputa és per la queixalada millor d'un cérvol abatut ahir. Ningú s'atreveix a intervenir, però tots m'estan mirant.",
       options: [
         { text: "Prenc part pel que crec que té raó i li cedeixo el que li toca.", health_delta: +2, discovers: false },
-        { text: "Proposo dividir la peça de manera que cap dels dos surti guanyador.", material_delta: -1, discovers: false },
+        { text: "Proposo dividir la peça de manera que cap dels dos surti guanyador.", discovers: false },
         { text: "M'allunyo. Que ho resolguin ells.", discovers: false }
       ]
     },
@@ -1848,8 +1824,8 @@ const EVENT_POOLS = {
       id: "ev_criatura_dificil",
       text: "Un infant del clan fa mesos que hauria d'haver parlat i no ho fa. La mare cada nit li posa la mà al pit i espera. Alguns volen cridar el vell que fa els rituals; d'altres diuen que és qüestió d'alimentar-lo millor.",
       options: [
-        { text: "Contribueixo als materials del ritual i m'assec prop de la família.", food_delta: -1, health_delta: +1, material_delta: -1, requires_children: true, discovers: false },
-        { text: "Deixo una part de les meves provisions per ajudar a cobrir el ritual.", food_delta: -1, material_delta: -1, requires_no_children: true, discovers: false },
+        { text: "Contribueixo amb les meves provisions al ritual i m'assec prop de la família.", food_delta: -1, health_delta: +1, requires_children: true, discovers: false },
+        { text: "Deixo una part de les meves provisions per ajudar a cobrir el ritual.", food_delta: -1, requires_no_children: true, discovers: false },
         { text: "Porto menjar a la família i dic a la mare que els infants a vegades triguen.", food_delta: -2, health_delta: +1, requires_children: true, discovers: false },
         { text: "Porto el que puc de menjar i els dic que l'infant trobarà la veu quan estigui llest.", food_delta: -1, health_delta: +1, requires_no_children: true, discovers: false },
         { text: "No és assumpte meu. Cada família resol les seves coses.", discovers: false }
@@ -1894,7 +1870,7 @@ const EVENT_POOLS = {
           skill_modifier: { skill_id: "bt_guariment_plantes", present_health_delta: +4, absent_health_delta: +1 }
         },
         { text: "Repòs, caliu i carn bullida fins que millori.", food_delta: -2, health_delta: +2, discovers: false },
-        { text: "Crido l'ancià del ritual. Que ell s'en faci càrrec.", food_delta: 0, health_delta: +1, material_delta: -1, discovers: false }
+        { text: "Crido l'ancià del ritual. Que ell s'en faci càrrec.", food_delta: 0, health_delta: +1, discovers: false }
       ]
     },
     {

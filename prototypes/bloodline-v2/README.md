@@ -25,7 +25,7 @@ Obre `index.html` directament al navegador (no cal servidor).
 | Tecnologies universals | 7 |
 | Zones del mapa | 5 (Campament, Planes, Bosc, Mercat, Llar) |
 | Destreses | 5 |
-| Recursos actius | 5 (menjar, salut, material, pedra, eines) |
+| Recursos actius | 5 (menjar, salut, token, pedra, eines) |
 
 ### Sistemes implementats
 
@@ -37,7 +37,7 @@ Obre `index.html` directament al navegador (no cal servidor).
 - **5 destreses**: aptituds desbloq. per repetició (llindar configurable)
 - **Cadena d'eines**: Recollir Pedra → Tallar Pedra (🪨→⚒️) → Talla Avançada (+30% output eines)
 - **Menjar dinàmic**: cap inicial 8, creix fins a 20 amb Assecar Provisions (×3); consum reduïble
-- **Recursos persistents**: material (30%), pedra (100%), eines (30%) hereten entre generacions
+- **Recursos persistents**: token (30%), pedra (100%), eines (30%) hereten entre generacions
 - **Successió generacional**: fills hereten inclinació (85%) i stats (50%)
 - **Sistema d'events** balancejat dinàmicament (positius/negatius per historial)
 - **Zona Llar**: apareix en trobar parella; indicador família visible al panell
@@ -65,7 +65,7 @@ Obre `index.html` directament al navegador (no cal servidor).
 
 ### Token de compra
 
-El **material (🔵)** és la moneda universal generada per TOTES les accions (quantitat variable per intensitat). No és el menjar — és el token per comprar noves accions (estil Game Dev Tycoon). Persists entre generacions (30% de retenció).
+El **token (🔵)** és la moneda universal generada per TOTES les accions (quantitat variable per intensitat). No és el menjar — és el token per comprar noves accions (estil Game Dev Tycoon). Persists entre generacions (30% de retenció).
 
 ### Explorar els Voltants
 
@@ -78,7 +78,7 @@ Veure `production/backlog.md`.
 ## Findings (en curs)
 
 - El core loop inclinació → branca funciona; thresholds ajustats −25% en sessions anteriors
-- Material universal millora molt la sensació de progrés per acció
+- Token universal millora molt la sensació de progrés per acció
 - Cadena pedra→eines aporta decisió real (quant gasto vs acumulo)
 - Menjar escàs des del principi (4 inicial) crea tensió autèntica als primers torns
 - Assecar Provisions és l'acció que transforma la supervivència → viabilitat

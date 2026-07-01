@@ -1078,8 +1078,8 @@ function renderActionForm(item) {
         ${fieldHtml('Recurs output', selectHtml('output_resource', resourceOptions(true), item.output_resource))}
         ${fieldHtml('Output mínim', numInput('output_min', item.output_min ?? ''))}
         ${fieldHtml('Output màxim', numInput('output_max', item.output_max ?? ''))}
-        ${fieldHtml('Material mínim', numInput('material_min', item.material_min ?? ''))}
-        ${fieldHtml('Material màxim', numInput('material_max', item.material_max ?? ''))}
+        ${fieldHtml('Token mínim', numInput('token_min', item.token_min ?? ''))}
+        ${fieldHtml('Token màxim', numInput('token_max', item.token_max ?? ''))}
         ${fieldHtml('Guany reputació', numInput('reputation_gain', item.reputation_gain ?? ''))}
       </div>
     </div>
@@ -1224,7 +1224,7 @@ function renderSkillForm(item) {
           [{value:'',label:'— cap —'},
            {value:'bonus_action_output',label:'bonus_action_output'},
            {value:'grant_health',label:'grant_health'},
-           {value:'grant_material',label:'grant_material'},
+           {value:'grant_token',label:'grant_token'},
            {value:'unlock_zone',label:'unlock_zone'}],
           item.passive_effect?.type ?? ''))}
         ${fieldHtml('Paràmetres (JSON)', textareaHtml('passive_params', item.passive_effect ? JSON.stringify(item.passive_effect) : '', 3))}
@@ -1328,7 +1328,7 @@ function renderEventForm(item) {
       <div class="section-body cols-3">
         ${fieldHtml('food', numInput('eff_food', item.effects?.food ?? '', 1))}
         ${fieldHtml('health', numInput('eff_health', item.effects?.health ?? '', 1))}
-        ${fieldHtml('material', numInput('eff_material', item.effects?.material ?? '', 1))}
+        ${fieldHtml('token', numInput('eff_token', item.effects?.token ?? '', 1))}
         ${fieldHtml('reputacio', numInput('eff_reputacio', item.effects?.reputacio ?? '', 1))}
         ${fieldHtml('pedra', numInput('eff_pedra', item.effects?.pedra ?? '', 1))}
         ${fieldHtml('eina', numInput('eff_eina', item.effects?.eina ?? '', 1))}
@@ -1374,7 +1374,7 @@ function eventOptionRow(o, i) {
       <button type="button" class="btn-rm" onclick="removeListRow(this,'option-list')">&#x2715;</button>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
-      ${['food','health','material','reputacio','pedra','eina'].map(r =>
+      ${['food','health','token','reputacio','pedra','eina'].map(r =>
         `<label style="font-size:10px;color:var(--text2)">${r}</label>
          <input type="number" name="eo_${r}_${i}" value="${o[r+'_delta']??''}" step="1" style="width:55px">`
       ).join('')}
@@ -1703,8 +1703,8 @@ function readFormIntoItem(cat, form, item) {
     item.output_resource = getStr('output_resource');
     item.output_min = getNum('output_min');
     item.output_max = getNum('output_max');
-    item.material_min = getNum('material_min');
-    item.material_max = getNum('material_max');
+    item.token_min = getNum('token_min');
+    item.token_max = getNum('token_max');
     item.reputation_gain = getNum('reputation_gain');
     item.stat_key = getStr('stat_key');
     item.stat_gain = getNum('stat_gain');
@@ -1808,7 +1808,7 @@ function readFormIntoItem(cat, form, item) {
     item.is_single_use = getBool('is_single_use') || undefined;
     item.is_discovery_event = getBool('is_discovery_event') || undefined;
     item.discovery_skill_id = getStr('discovery_skill_id');
-    const effKeys = ['food','health','material','reputacio','pedra','eina'];
+    const effKeys = ['food','health','token','reputacio','pedra','eina'];
     const effects = {};
     for (const k of effKeys) {
       const v = getNum(`eff_${k}`);
@@ -1835,7 +1835,7 @@ function readFormIntoItem(cat, form, item) {
     if (!item.blocked_if.length) delete item.blocked_if;
     const optEls = form.querySelectorAll('[data-type="ev-option"]');
     item.options = [];
-    const effResources = ['food','health','material','reputacio','pedra','eina'];
+    const effResources = ['food','health','token','reputacio','pedra','eina'];
     optEls.forEach(el => {
       const i = el.dataset.idx;
       const text = (d[`eo_text_${i}`] || '').trim();
