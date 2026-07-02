@@ -1703,8 +1703,11 @@ function getZoneActions(zoneId) {
     if (a.maxAge !== undefined && age > a.maxAge) return false;
     // always_show_locked: include even when character requirements not met (shown as unavailable)
     if (!evaluateCharacterRequires(a) && !a.always_show_locked) return false;
-    // Hide base action when a purchased upgrade supersedes it
-    if (ACTIONS.some(u => u.is_upgrade && u.upgrades_action_id === a.id && state.character.purchasedActionIds.has(u.id))) return false;
+    // Hide base action when a purchased upgrade or obsoleting action supersedes it
+    if (ACTIONS.some(u => (
+      (u.is_upgrade && u.upgrades_action_id === a.id) ||
+      u.obsoletes_action_id === a.id
+    ) && state.character.purchasedActionIds.has(u.id))) return false;
     return true; // include even if minAge not met — shown as tooYoung
   });
   // SKILL-DISC-01 (2026-06-28): mostrar l'acció de descobriment sempre que hi hagi una tecnologia descoberta
@@ -2817,6 +2820,7 @@ function getBuyableActions() {
     if (a.is_base) return false;
     if (a.is_discovery_action) return false;
     if (a.is_upgrade) return false;
+    if (ACTIONS.some(u => u.obsoletes_action_id === a.id && state.character.purchasedActionIds.has(u.id))) return false;
     if (isActionOwned(a)) return false;
     if (!state.discoveredZoneIds.has(a.zona)) return false;
     if (a.universal_prereq && !state.discoveredUniversalTechIds.has(a.universal_prereq)) return false;
@@ -2861,13 +2865,19 @@ function renderShop() {
       const upgradeNote = upgradeBase
         ? `<span class="shop-upgrade-note">↑ Substitueix: ${upgradeBase.name}</span>`
         : '';
+      const obsoletesBase = action.obsoletes_action_id
+        ? ACTIONS.find(a => a.id === action.obsoletes_action_id)
+        : null;
+      const obsoletesNote = obsoletesBase
+        ? `<span class="shop-upgrade-note">⚠️ Fa obsoleta: ${obsoletesBase.name}</span>`
+        : '';
       const row = document.createElement('div');
       row.className = 'shop-row' + (canAfford ? '' : ' shop-row-disabled');
       row.innerHTML = `
         <span class="shop-icon">${getActionIcon(action)}</span>
         <div class="shop-info">
           <span class="shop-name">${action.name || action.id}</span>
-          <span class="shop-desc">${action.description || ''}${upgradeNote}</span>
+          <span class="shop-desc">${action.description || ''}${upgradeNote}${obsoletesNote}</span>
         </div>
         <button class="shop-buy-btn" ${canAfford ? '' : 'disabled'} data-id="${action.id}">
           🔵${action.purchase_cost}
@@ -2903,9 +2913,13 @@ function buyAction(actionId) {
   const upgradeBase = action.upgrades_action_id
     ? ACTIONS.find(a => a.id === action.upgrades_action_id)
     : null;
+  const obsoletesBase = action.obsoletes_action_id
+    ? ACTIONS.find(a => a.id === action.obsoletes_action_id)
+    : null;
   const effectDesc = [
     parts.join('  '),
     upgradeBase ? `Substitueix: "${upgradeBase.name}"` : null,
+    obsoletesBase ? `Fa obsoleta: "${obsoletesBase.name}"` : null,
   ].filter(Boolean).join(' · ');
   state.pendingDiscoveries.push({
     _isAction: true, icon: getActionIcon(action), name: action.name,

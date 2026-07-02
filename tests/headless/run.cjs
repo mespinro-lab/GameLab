@@ -55,8 +55,8 @@ async function gotoRetry(page, n = 24) {
     });
     check('FOOD-CAP-01: Assecar deshabilitada (FADED) al cap màxim', fc.maxed === 'FADED' && fc.ok === 'ACTIVE', fc);
 
-    const bal = await page.evaluate(() => { const c = ACTIONS.find(x => x.id === 'act_coure_ceramica'); return [c.token_min, c.token_max]; });
-    check('BAL-01: coure_ceramica genera token (2/3)', bal[0] === 2 && bal[1] === 3, bal);
+    const bal = await page.evaluate(() => { const c = ACTIONS.find(x => x.id === 'act_modelar_vasos'); return [c?.token_min ?? -1, c?.token_max ?? -1, c?.output_resource]; });
+    check('BAL-01: modelar_vasos = output token (TdB 13 Artesà)', bal[2] === 'token' && bal[0] === 0 && bal[1] === 0, bal);
 
     const log2 = await page.evaluate(() => {
       initState('T', 'MED'); state.token = 20; state._turnExtras = [];
@@ -104,7 +104,7 @@ async function gotoRetry(page, n = 24) {
       state.character.inclination.impuls = 0.12; // jugador modest amb un eix lleugerament marcat
       return { shown, eligibleModest: getEligibleSkills().map(s => s.id) };
     });
-    check('SKILL-DISC-01: visible + habilitat elegible amb inclinació modesta (≥0.10)', skilldisc.shown && skilldisc.eligibleModest.includes('bt_guardia_flama'), skilldisc);
+    check('SKILL-DISC-01: visible + habilitat elegible amb inclinació modesta (≥0.10)', skilldisc.shown && skilldisc.eligibleModest.includes('tdb_01'), skilldisc);
 
     const food02 = await page.evaluate(() => {
       initState('T', 'MED');
@@ -146,10 +146,11 @@ async function gotoRetry(page, n = 24) {
 
     const tools01 = await page.evaluate(() => {
       const tallaPedra = ACTIONS.find(a => a.id === 'act_tallar_pedra');
-      const forja = ACTIONS.find(a => a.id === 'act_forjar_punta');
-      return { tallaEliminada: !tallaPedra, forjaRecipe: (forja.requires || []).some(r => r.resource === 'pedra') && (forja.requires || []).some(r => r.resource === 'branques'), forjaOut: forja.output_resource };
+      const ascles = ACTIONS.find(a => a.id === 'act_tallar_ascles'); // TdB 2 Artesà: eina output
+      const punta  = ACTIONS.find(a => a.id === 'act_punta_crua');    // TdB 2 Caçador: eina output
+      return { tallaEliminada: !tallaPedra, asclesOut: ascles?.output_resource, puntaOut: punta?.output_resource };
     });
-    check('TOOLS-01: act_tallar_pedra eliminada; forjar_punta=recepta→eina', tools01.tallaEliminada && tools01.forjaRecipe && tools01.forjaOut === 'eina', tools01);
+    check('TOOLS-01: act_tallar_pedra eliminada; TdB2 dona eines (ascles+punta_crua)', tools01.tallaEliminada && tools01.asclesOut === 'eina' && tools01.puntaOut === 'eina', tools01);
 
     const fb = await page.evaluate(() => {
       const hunt = ACTIONS.find(a => a.id === 'act_espiar_ramat');

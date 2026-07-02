@@ -149,7 +149,7 @@ const APRENENTATGE_DEFS = [
     id: "apr_conservar_provisions", name: "Conservació", icon: "🧂",
     description: "Saps assecar i preservar. L'aliment del clan es malgasta menys cada dia.",
     discoveryChance: 0.30,
-    discovery_action_ids: ["act_assecament_plantes", "act_ahumar_carn", "act_assecar_provisions"],
+    discovery_action_ids: ["act_torrar_llavors", "act_ahumar_carn", "act_assecar_provisions"],
     effect: { type: "food_upkeep_reduction", value: 0.5, desc: "−0.5 aliment/torn en upkeep" }
   },
   {
@@ -284,269 +284,167 @@ const UNIVERSAL_TECHS = [
 // inheritanceRate: camp llegat, no utilitzat. Les habilitats s'hereten sempre al 100% (pertanyen al llinatge, no al personatge).
 const SKILL_DEFS = [
   {
-    id: "bt_punta_llanca", name: "Punta de Llança",
-    inheritanceRate: 0.45,
-    universal_prereq: "ut_eines",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "impuls", min: 0.25 }, { axis: "sociabilitat", max: 0.30 }] },
-    unlocks_action_ids: ["act_caca_llanca", "act_emboscada_nocturna", "act_forjar_punta"],
-    passive_effect: { type: "bonus_action_output", action_id: "act_espiar_ramat", output_min_bonus: 1, desc: "+1 mínim espiar ramat (la punta millora la caça base)" },
-    is_hidden: false
+    id: "tdb_01", name: "Els Rastres del Món", emoji: "👣",
+    universal_prereq: null,
+    inclination_conditions: { operator: "OR", conditions: [
+      { axis: "impuls", min: 0.12 }, { axis: "intel·lecte", min: 0.12 },
+      { axis: "espiritualitat", min: 0.12 }, { axis: "sociabilitat", min: 0.12 }
+    ]},
+    narrative: "El món parla constantment — petjades, brots, vetes, ocells — i qui aprèn a llegir-lo deixa de vagar a cegues.",
+    unlocks_action_ids: ["act_caca_aguait","act_seguir_ramat","act_mapa_verd","act_collita_guiada","act_llegir_veta","act_triar_fibra","act_llegir_presagis","act_cami_ocells"]
   },
   {
-    id: "bt_rasclador_fi", name: "Rasclador Fi",
-    inheritanceRate: 0.35,
-    universal_prereq: "ut_eines",
-    inclination_conditions: { operator: "OR", conditions: [{ axis: "intel·lecte", min: 0.18 }, { axis: "sociabilitat", min: 0.18 }] },
-    unlocks_action_ids: ["act_molda_grans", "act_faonar_eines", "act_treballar_estris"],
-    passive_effect: { type: "bonus_action_output", action_id: "act_recollectar_arrels", output_min_bonus: 1, desc: "+1 mínim recol·lecta" },
-    is_hidden: false
+    id: "tdb_02", name: "La Pedra que Talla", emoji: "🪨",
+    universal_prereq: null,
+    inclination_conditions: { operator: "OR", conditions: [
+      { axis: "impuls", min: 0.15 }, { axis: "intel·lecte", min: 0.15 },
+      { axis: "espiritualitat", min: 0.15 }, { axis: "sociabilitat", min: 0.15 }
+    ]},
+    narrative: "Una vora esmolada canvia la relació amb el món: el que abans s'arrencava, ara es talla.",
+    unlocks_action_ids: ["act_esquarterar","act_punta_crua","act_pelar_escorca","act_partir_fruits","act_tallar_ascles","act_bescanviar_ascles","act_gravar_amulet","act_pedra_guardiana"]
   },
   {
-    id: "bt_buri", name: "Burí i Gravat",
-    inheritanceRate: 0.40,
-    universal_prereq: "ut_eines",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.25 }, { axis: "impuls", max: 0.20 }] },
-    unlocks_action_ids: ["act_gravar_os", "act_intercanviar_eines"],
-    passive_effect: { type: "bonus_action_output", action_id: "act_faonar_eines", output_min_bonus: 1, desc: "+1 eina en façonar estris (el burí permet formes més precises)" },
-    is_hidden: false
+    id: "tdb_03", name: "El Cercle del Foc", emoji: "🔥",
+    universal_prereq: "ut_foc",
+    inclination_conditions: { operator: "OR", conditions: [
+      { axis: "impuls", min: 0.20 }, { axis: "intel·lecte", min: 0.20 },
+      { axis: "espiritualitat", min: 0.20 }, { axis: "sociabilitat", min: 0.20 }
+    ]},
+    narrative: "El foc no només escalfa: transforma l'aliment, reuneix el clan i redefineix què és possible.",
+    unlocks_action_ids: ["act_rostir_caca","act_foc_batuda","act_pedres_bullir","act_cercle_vespre","act_endurir_puntes","act_dominar_brasa","act_vetlla_flames","act_cendres_sagrades"]
   },
   {
-    id: "bt_eines_cerimonials", name: "Eines Cerimonials",
-    inheritanceRate: 0.40,
-    universal_prereq: "ut_eines",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.18 }, { axis: "sociabilitat", min: 0.15 }] },
-    unlocks_action_ids: ["act_ofrena_eines", "act_cerimonia_eines"],
-    is_hidden: false
+    id: "tdb_04", name: "La Nit Domada", emoji: "🌒",
+    universal_prereq: "ut_foc",
+    inclination_conditions: { operator: "OR", conditions: [
+      { axis: "impuls", min: 0.20 }, { axis: "intel·lecte", min: 0.20 },
+      { axis: "espiritualitat", min: 0.20 }, { axis: "sociabilitat", min: 0.20 }
+    ]},
+    narrative: "Amb el foc, la nit deixa de ser temps perdut. El dia s'allarga per a qui s'atreveix a usar-lo.",
+    unlocks_action_ids: ["act_aguait_nocturn","act_torxa_persecucio","act_feina_llum","act_vigilar_brases","act_taller_nocturn","act_reparar_vora","act_dansa_ombres","act_somnis_guiats"]
   },
   {
-    id: "bt_musica_os", name: "Flautes d'Os",
-    inheritanceRate: 0.40,
+    id: "tdb_05", name: "La Mà que Transforma", emoji: "🔧",
     universal_prereq: "ut_eines",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.15 }, { axis: "espiritualitat", min: 0.15 }] },
-    unlocks_action_ids: ["act_tallar_flauta", "act_musica_vetlla"],
-    passive_effect: { type: "grant_health", amount: 5, desc: "+5 Salut (la música calma el clan a les nits llargues)" },
-    is_hidden: false
+    inclination_conditions: { operator: "OR", conditions: [
+      { axis: "impuls", min: 0.25 }, { axis: "intel·lecte", min: 0.25 },
+      { axis: "espiritualitat", min: 0.25 }, { axis: "sociabilitat", min: 0.25 }
+    ]},
+    narrative: "L'eina deixa de ser una pedra trobada i esdevé un objecte pensat: mànec, lligadura, propòsit.",
+    unlocks_action_ids: ["act_llanca_emmanegada","act_desollar_traca","act_basto_cavador","act_espremer_fruits","act_taller_percussio","act_encarrecs","act_basto_esperits","act_foragitar_pors"]
   },
   {
-    id: "bt_agulla_os", name: "Agulla d'Os",
-    inheritanceRate: 0.35,
+    id: "tdb_06", name: "El Pes i la Palanca", emoji: "⚖️",
+    universal_prereq: "ut_eines",
+    inclination_conditions: { operator: "OR", conditions: [
+      { axis: "impuls", min: 0.25 }, { axis: "intel·lecte", min: 0.25 },
+      { axis: "espiritualitat", min: 0.25 }, { axis: "sociabilitat", min: 0.25 }
+    ]},
+    narrative: "El descobriment que la força es pot enganyar: un tronc, un punt de suport, i el món pesa menys.",
+    unlocks_action_ids: ["act_fossa_parany","act_encerclar_presa","act_perxa_llarga","act_arrossegar_troncs","act_palanca_pedrera","act_llosa_llar","act_pedra_dreta","act_ofrena_feixuga"]
+  },
+  {
+    id: "tdb_07", name: "Els Símbols a la Pedra", emoji: "🎨",
+    universal_prereq: "ut_art",
+    inclination_conditions: { operator: "OR", conditions: [
+      { axis: "impuls", min: 0.30 }, { axis: "intel·lecte", min: 0.30 },
+      { axis: "espiritualitat", min: 0.30 }, { axis: "sociabilitat", min: 0.30 }
+    ]},
+    narrative: "Una marca que perdura val més que mil paraules dites: el clan comença a escriure's al món.",
+    unlocks_action_ids: ["act_marcar_territori","act_mural_gesta","act_senyals_cami","act_comptar_osques","act_gravar_patrons","act_pedres_bescanvi","act_pintar_esperits","act_ocre_sagrat"]
+  },
+  {
+    id: "tdb_08", name: "La Veu que Perdura", emoji: "🗣️",
+    universal_prereq: "ut_art",
+    inclination_conditions: { operator: "OR", conditions: [
+      { axis: "impuls", min: 0.30 }, { axis: "intel·lecte", min: 0.30 },
+      { axis: "espiritualitat", min: 0.30 }, { axis: "sociabilitat", min: 0.30 }
+    ]},
+    narrative: "Relats, cants i noms: el coneixement aprèn a viatjar entre generacions sense tocar de peus a terra.",
+    unlocks_action_ids: ["act_relat_gesta","act_crits_caca","act_canco_collita","act_veus_bosc","act_nom_eines","act_memoria_ofici","act_cant_ancestres","act_lletania_clan"]
+  },
+  {
+    id: "tdb_09", name: "La Segona Pell", emoji: "🧵",
     universal_prereq: "ut_vestimenta",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.20 }, { axis: "impuls", max: 0.20 }] },
-    unlocks_action_ids: ["act_cosir_pells", "act_construir_refugi"],
-    passive_effect: { type: "grant_health", amount: 15, desc: "+15 Salut (vestimenta)" },
-    is_hidden: false
+    inclination_conditions: { operator: "OR", conditions: [
+      { axis: "impuls", min: 0.35 }, { axis: "intel·lecte", min: 0.35 },
+      { axis: "espiritualitat", min: 0.35 }, { axis: "sociabilitat", min: 0.35 }
+    ]},
+    narrative: "Cobrir el cos canvia el mapa del possible: el fred deixa de ser mur i esdevé estació.",
+    unlocks_action_ids: ["act_adobar_pell","act_caca_hivern","act_capes_trenades","act_collir_fred","act_agulla_os","act_vestits_bescanvi","act_mantell_ritual","act_embolcallar_nadons"]
   },
   {
-    id: "bt_trampes", name: "Trampes i Llaços",
-    inheritanceRate: 0.45,
-    universal_prereq: "ut_corda",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "sociabilitat", min: 0.10 }] },
-    unlocks_action_ids: ["act_parar_trampes", "act_revisar_trampes"],
-    passive_effect: { type: "bonus_action_output", action_id: "act_parar_trampes", output_min_bonus: 1, desc: "+1 mínim parar trampes (les trampes de corda son més eficaces)" },
-    is_hidden: false
-  },
-  // ── El Foc ──────────────────────────────────────────────────────────────────
-  {
-    id: "bt_cuina_conservacio", name: "Cuina i Conservació",
-    inheritanceRate: 0.45,
-    universal_prereq: "ut_foc",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.15 }, { axis: "impuls", max: 0.20 }] },
-    unlocks_action_ids: ["act_cocinar_arrels", "act_ahumar_carn"],
-    is_hidden: false
-  },
-  {
-    id: "bt_guardia_flama", name: "Guàrdia de la Flama",
-    inheritanceRate: 0.40,
-    universal_prereq: "ut_foc",
-    inclination_conditions: { operator: "OR", conditions: [{ axis: "impuls", min: 0.10 }, { axis: "intel·lecte", min: 0.10 }, { axis: "espiritualitat", min: 0.10 }, { axis: "sociabilitat", min: 0.10 }] },
-    unlocks_action_ids: ["act_alimentar_foc", "act_torxa_escolta"],
-    passive_effect: { type: "grant_health", amount: 5, desc: "+5 Salut (el foc protegeix el campament a la nit)" },
-    is_hidden: false
-  },
-  {
-    id: "bt_guariment_plantes", name: "Rituals de la Flama",
-    inheritanceRate: 0.45,
-    universal_prereq: "ut_foc",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.20 }, { axis: "intel·lecte", min: 0.10 }] },
-    unlocks_action_ids: ["act_curar_herbes", "act_preparar_ungüent"],
-    passive_effect: { type: "grant_health", amount: 8, desc: "+8 Salut (les infusions amb calor curen ferides i malalties)" },
-    is_hidden: false
-  },
-  {
-    id: "bt_adhesius", name: "Adhesius i Emmanegament",
-    inheritanceRate: 0.35,
-    universal_prereq: "ut_foc",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.20 }, { axis: "impuls", max: 0.20 }] },
-    unlocks_action_ids: ["act_destillar_quitra", "act_emmanegar_eines"],
-    is_hidden: false
-  },
-  {
-    id: "bt_pintura_rupestre", name: "Pintura Rupestre",
-    inheritanceRate: 0.40,
-    universal_prereq: "ut_art",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.30 }, { axis: "sociabilitat", min: 0.20 }] },
-    unlocks_action_ids: ["act_pintar_parets", "act_narrar_llegendes"],
-    is_hidden: false
-  },
-  {
-    id: "bt_marques_territori", name: "Marques de Territori",
-    inheritanceRate: 0.40,
-    universal_prereq: "ut_art",
-    inclination_conditions: { operator: "OR", conditions: [{ axis: "impuls", min: 0.20 }, { axis: "intel·lecte", min: 0.18 }] },
-    unlocks_action_ids: ["act_marcar_territori", "act_rastreig_rutes"],
-    passive_effect: { type: "unlock_zone", unlocks_zone: "Bosc", desc: "Les marques revelen camins al Bosc" },
-    is_hidden: false
-  },
-  {
-    id: "bt_ornaments", name: "Ornaments i Adorn",
-    inheritanceRate: 0.35,
-    universal_prereq: "ut_art",
-    inclination_conditions: { operator: "OR", conditions: [{ axis: "espiritualitat", min: 0.20 }, { axis: "sociabilitat", min: 0.25 }] },
-    unlocks_action_ids: ["act_ornamentar_se", "act_consagrar_ornaments", "act_ritual_talisman"],
-    is_hidden: false
-  },
-  {
-    id: "bt_narracio_oral", name: "Narració Oral",
-    inheritanceRate: 0.50,
-    universal_prereq: "ut_art",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "sociabilitat", min: 0.20 }] },
-    unlocks_action_ids: ["act_explicar_orígens", "act_cants_grup"],
-    is_hidden: false
-  },
-  // ── La Vestimenta ────────────────────────────────────────────────────────────
-  {
-    id: "bt_adobament_pells", name: "Adobament de Pells",
-    inheritanceRate: 0.40,
+    id: "tdb_10", name: "El Camí Llarg", emoji: "🥾",
     universal_prereq: "ut_vestimenta",
-    inclination_conditions: { operator: "OR", conditions: [{ axis: "impuls", min: 0.15 }, { axis: "intel·lecte", min: 0.20 }] },
-    unlocks_action_ids: ["act_preparar_cuiro", "act_roba_hivern"],
-    passive_effect: { type: "grant_health", amount: 8, desc: "+8 Salut (la roba de cuir protegeix de les ferides i el fred)" },
-    is_hidden: false
+    inclination_conditions: { operator: "OR", conditions: [
+      { axis: "impuls", min: 0.35 }, { axis: "intel·lecte", min: 0.35 },
+      { axis: "espiritualitat", min: 0.35 }, { axis: "sociabilitat", min: 0.35 }
+    ]},
+    narrative: "Protegit del fred i carregat de provisions, el clan descobreix que el món és més gran que l'horitzó.",
+    unlocks_action_ids: ["act_expedicio","act_obrir_cami","act_intercanvi_llunya","act_rutes_fruita","act_pedres_llunyanes","act_lligar_carregues","act_pelegrinatge","act_terres_esperits"]
   },
   {
-    id: "bt_pigments_tintures", name: "Pigments i Tintures",
-    inheritanceRate: 0.35,
-    universal_prereq: "ut_vestimenta",
-    inclination_conditions: { operator: "OR", conditions: [{ axis: "espiritualitat", min: 0.18 }, { axis: "sociabilitat", min: 0.18 }] },
-    unlocks_action_ids: ["act_decorar_cos", "act_tenyir_pells"],
-    is_hidden: false
-  },
-  // ── La Corda ─────────────────────────────────────────────────────────────────
-  {
-    id: "bt_arc_fletxes", name: "Arc i Fletxes",
-    inheritanceRate: 0.45,
+    id: "tdb_11", name: "El Nus que Reté", emoji: "🪢",
     universal_prereq: "ut_corda",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "impuls", min: 0.20 }, { axis: "intel·lecte", min: 0.10 }] },
-    unlocks_action_ids: ["act_caçar_amb_arc", "act_practicar_tir"],
-    passive_effect: { type: "bonus_action_output", action_id: "act_espiar_ramat", output_min_bonus: 2, desc: "+2 mínim caça (l'arc permet atacar des de la distància)" },
-    is_hidden: false
+    inclination_conditions: { operator: "OR", conditions: [
+      { axis: "impuls", min: 0.38 }, { axis: "intel·lecte", min: 0.38 },
+      { axis: "espiritualitat", min: 0.38 }, { axis: "sociabilitat", min: 0.38 }
+    ]},
+    narrative: "La corda captura el que les mans no poden retenir: preses, peixos, càrregues, records.",
+    unlocks_action_ids: ["act_parar_llacos","act_xarxa_ocells","act_xarxa_riu","act_lligar_farcells","act_trenar_corda","act_nusos_mesura","act_nusos_memoria","act_lligar_mals"]
   },
   {
-    id: "bt_coneixement_plantes", name: "Coneixement de Plantes",
-    inheritanceRate: 0.45,
+    id: "tdb_12", name: "Els Fils del Clan", emoji: "🤝",
     universal_prereq: "ut_corda",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "sociabilitat", min: 0.10 }] },
-    unlocks_action_ids: ["act_recollida_bolets", "act_assecament_plantes", "act_trenar_garbell"],
-    passive_effect: { type: "bonus_action_output", action_id: "act_recollida_bolets", output_max_bonus: 2, desc: "+2 màxim recollida de bolets (coneixes quins valen la pena)" },
-    is_hidden: false
+    inclination_conditions: { operator: "OR", conditions: [
+      { axis: "impuls", min: 0.38 }, { axis: "intel·lecte", min: 0.38 },
+      { axis: "espiritualitat", min: 0.38 }, { axis: "sociabilitat", min: 0.38 }
+    ]},
+    narrative: "El clan descobreix que ell mateix és un teixit: junts, els individus fan coses que sols no podrien.",
+    unlocks_action_ids: ["act_cacera_conjunta","act_repartir_boti","act_teixir_cercle","act_taula_comuna","act_aprenents","act_obrar_plegats","act_ritu_pas","act_cercle_dol"]
   },
   {
-    id: "bt_nusos_sagrats", name: "Nusos Sagrats",
-    inheritanceRate: 0.40,
-    universal_prereq: "ut_corda",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.15 }, { axis: "sociabilitat", min: 0.15 }] },
-    unlocks_action_ids: ["act_ritual_nusos", "act_tela_sagrada"],
-    passive_effect: { type: "grant_health", amount: 8, desc: "+8 Salut (els nusos sagrats uneixen el clan i milloren la cohesió)" },
-    is_hidden: false
-  },
-  {
-    id: "bt_pesca", name: "Pesca amb Arpó i Xarxa",
-    inheritanceRate: 0.45,
-    universal_prereq: "ut_corda",
-    inclination_conditions: { operator: "OR", conditions: [{ axis: "impuls", min: 0.12 }, { axis: "sociabilitat", min: 0.12 }] },
-    unlocks_action_ids: ["act_pescar_riu", "act_xarxa_pesca"],
-    passive_effect: { type: "bonus_action_output", action_id: "act_pescar_riu", output_min_bonus: 1, desc: "+1 mínim pesca (coneixes els passos del riu)" },
-    is_hidden: false
-  },
-  {
-    id: "bt_calendari_natural", name: "Calendari Natural",
-    inheritanceRate: 0.40,
-    universal_prereq: "ut_eines",
-    inclination_conditions: { operator: "OR", conditions: [{ axis: "intel·lecte", min: 0.18 }, { axis: "espiritualitat", min: 0.20 }] },
-    unlocks_action_ids: ["act_observar_cel", "act_transit_nocturn"],
-    is_hidden: false
-  },
-  {
-    id: "bt_llavor_selectiva", name: "Llavor Selectiva",
-    inheritanceRate: 0.35,
+    id: "tdb_13", name: "El Vas que Guarda", emoji: "🏺",
     universal_prereq: "ut_ceramica",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "sociabilitat", min: 0.15 }] },
-    unlocks_action_ids: ["act_seleccionar_llavors", "act_preparar_terreny", "act_recollectar_garbell"],
-    passive_effect: { type: "bonus_action_output", action_id: "act_seleccionar_llavors", output_min_bonus: 2, desc: "+2 mínim selecció de llavors (les millors llavors formen part de la cultura del clan)" },
-    is_hidden: false
+    inclination_conditions: { operator: "OR", conditions: [
+      { axis: "impuls", min: 0.42 }, { axis: "intel·lecte", min: 0.42 },
+      { axis: "espiritualitat", min: 0.42 }, { axis: "sociabilitat", min: 0.42 }
+    ]},
+    narrative: "El recipient de fang trenca la tirania del present: el que avui sobra ja no es perd.",
+    unlocks_action_ids: ["act_greix_vas","act_provisions_caca","act_gerres_gra","act_aigua_guardada","act_modelar_vasos","act_segellar_vasos","act_vas_ofrenes","act_urna_ancestres"]
   },
   {
-    id: "bt_domini_terra", name: "Domini de la Terra",
-    inheritanceRate: 0.40,
+    id: "tdb_14", name: "El Fang i el Forn", emoji: "♨️",
     universal_prereq: "ut_ceramica",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "impuls", min: 0.12 }, { axis: "sociabilitat", min: 0.12 }] },
-    unlocks_action_ids: ["act_control_territori", "act_negociar_pastures"],
-    passive_effect: { type: "grant_health", amount: 10, desc: "+10 Salut (domini del territori)" },
-    is_hidden: false
+    inclination_conditions: { operator: "OR", conditions: [
+      { axis: "impuls", min: 0.42 }, { axis: "intel·lecte", min: 0.42 },
+      { axis: "espiritualitat", min: 0.42 }, { axis: "sociabilitat", min: 0.42 }
+    ]},
+    narrative: "El forn concentra el foc i el fa precís: cocció, fum controlat i el fang tornat pedra.",
+    unlocks_action_ids: ["act_fumador","act_coure_moll","act_torrar_llavors","act_olla_foc","act_forn_terra","act_coure_fang","act_figures_fang","act_forn_visions"]
   },
   {
-    id: "bt_intercanvi_troc", name: "Intercanvi i Troc",
-    inheritanceRate: 0.45,
-    universal_prereq: "ut_ceramica",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "sociabilitat", min: 0.20 }] },
-    unlocks_action_ids: ["act_fira_intercanvi", "act_ceramica_regalada"],
-    is_hidden: false
-  },
-  {
-    id: "bt_terrissa", name: "Terrissa",
-    inheritanceRate: 0.35,
-    universal_prereq: "ut_ceramica",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.22 }, { axis: "impuls", max: 0.20 }] },
-    unlocks_action_ids: ["act_modelar_argila", "act_coure_ceramica"],
-    is_hidden: false
-  },
-  // ── L'Agricultura ────────────────────────────────────────────────────────────
-  {
-    id: "bt_sembra_collita", name: "Sembra i Collita",
-    inheritanceRate: 0.40,
+    id: "tdb_15", name: "La Llavor Confiada", emoji: "🌱",
     universal_prereq: "ut_agricultura",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "intel·lecte", min: 0.20 }, { axis: "impuls", max: 0.15 }] },
-    unlocks_action_ids: ["act_sembrar_llavors", "act_collita_sistematica"],
-    passive_effect: { type: "bonus_action_output", action_id: "act_recollectar_arrels", output_min_bonus: 2, desc: "+2 mínim recol·lecta (la sembra sistemàtica augmenta el rendiment)" },
-    is_hidden: false
+    inclination_conditions: { operator: "OR", conditions: [
+      { axis: "impuls", min: 0.45 }, { axis: "intel·lecte", min: 0.45 },
+      { axis: "espiritualitat", min: 0.45 }, { axis: "sociabilitat", min: 0.45 }
+    ]},
+    narrative: "Enterrar menjar avui creient que en sortirà més demà: l'acte de fe que canviarà el món.",
+    unlocks_action_ids: ["act_atraure_ramat","act_tanca_bestiar","act_hort_clan","act_triar_llavors","act_aixada","act_obrir_solcs","act_beneir_camps","act_primera_espiga"]
   },
   {
-    id: "bt_domesticacio_animals", name: "Domesticació d'Animals",
-    inheritanceRate: 0.40,
+    id: "tdb_16", name: "El Cicle de les Estacions", emoji: "🌗",
     universal_prereq: "ut_agricultura",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "impuls", min: 0.10 }, { axis: "sociabilitat", min: 0.15 }] },
-    unlocks_action_ids: ["act_amansar_animal", "act_pasturar_bestiar"],
-    passive_effect: { type: "bonus_action_output", action_id: "act_espiar_ramat", output_min_bonus: 2, desc: "+2 mínim caça (els animals domesticats faciliten la caça)" },
-    is_hidden: false
-  },
-  {
-    id: "bt_construccio_refugis", name: "Construcció de Refugis",
-    inheritanceRate: 0.45,
-    universal_prereq: "ut_agricultura",
-    inclination_conditions: { operator: "OR", conditions: [{ axis: "intel·lecte", min: 0.20 }, { axis: "impuls", min: 0.20 }] },
-    unlocks_action_ids: ["act_edificar_cabana", "act_reforçar_palissada"],
-    passive_effect: { type: "grant_health", amount: 12, desc: "+12 Salut (els refugis permanents protegeixen de les inclemències)" },
-    is_hidden: false
-  },
-  {
-    id: "bt_ritus_sembra", name: "Ritus de la Sembra",
-    inheritanceRate: 0.40,
-    universal_prereq: "ut_agricultura",
-    inclination_conditions: { operator: "AND", conditions: [{ axis: "espiritualitat", min: 0.25 }, { axis: "sociabilitat", min: 0.15 }] },
-    unlocks_action_ids: ["act_ofrena_terra", "act_danses_fertilitat"],
-    is_hidden: false
+    inclination_conditions: { operator: "OR", conditions: [
+      { axis: "impuls", min: 0.45 }, { axis: "intel·lecte", min: 0.45 },
+      { axis: "espiritualitat", min: 0.45 }, { axis: "sociabilitat", min: 0.45 }
+    ]},
+    narrative: "El clan aixeca la vista i veu l'any sencer: qui entén el cicle, deixa de reaccionar i comença a planificar.",
+    unlocks_action_ids: ["act_llegir_migracions","act_darrera_cacera","act_calendari_collita","act_rebost_hivern","act_eines_temps","act_llegat_taller","act_festa_solstici","act_roda_any"]
   }
 ];
+
 
 // ─── Requisits d'inclinació per acció ─────────────────────────────────────────
 // Les accions BASE de supervivència no tenen requisits (visibles sempre).
@@ -554,81 +452,173 @@ const SKILL_DEFS = [
 // Format: { [axis]: { min?, max? } }  — totes les condicions son AND.
 // Consultat per getActionVisibility() com a fallback si l'acció no té inclination_requirements propi.
 const ACTION_INCLINATION_REQUIREMENTS = {
-  // ── Vetlla al Foc (universal/foc) — lleu toc espiritual ──
-  act_ritual_foc:              { espiritualitat: { min: 0.05 } },
+  // Standalones (conservats)
+  act_ritual_foc:          { espiritualitat: { min: 0.05 } },
+  act_caca_llanca:         { impuls: { min: 0.15 } },
+  act_ahumar_carn:         { impuls: { max: 0.35 } },
+  act_gran_ritual:         { espiritualitat: { min: 0.10 } },
 
-  // ══ CAÇADOR ══════════════════════════════════════════════
-  act_forjar_punta:            { impuls: { min: 0.12 } },                              // creació llança
-  act_caca_llanca:             { impuls: { min: 0.15 }, sociabilitat: { max: 0.45 } },
-  act_emboscada_nocturna:      { impuls: { min: 0.20 }, sociabilitat: { max: 0.30 } },
-  act_rastreig_rutes:          { impuls: { min: 0.10 } },
-  act_caçar_amb_arc:           { impuls: { min: 0.15 } },
-  act_amansar_animal:          { sociabilitat: { min: 0.05 } },     // transició cap a social
-  act_pasturar_bestiar:        { impuls: { min: 0.05 } },           // pont caçador/social
-  act_control_territori:       { impuls: { min: 0.08 }, sociabilitat: { min: 0.08 } },
-  act_aguait_coordinat:        { impuls: { min: 0.10 } },           // upgrade espiar_ramat
+  // TdB 1 — Els Rastres del Món
+  act_caca_aguait:         { impuls: { min: 0.10 } },
+  act_seguir_ramat:        { impuls: { min: 0.10 } },
+  act_mapa_verd:           { sociabilitat: { min: 0.10 } },
+  act_collita_guiada:      { sociabilitat: { min: 0.10 } },
+  act_llegir_veta:         { "intel·lecte": { min: 0.10 } },
+  act_triar_fibra:         { "intel·lecte": { min: 0.10 } },
+  act_llegir_presagis:     { espiritualitat: { min: 0.10 } },
+  act_cami_ocells:         { espiritualitat: { min: 0.10 } },
 
-  // ══ RECOL·LECTOR ═════════════════════════════════════════
-  // act_recollir_branques: sense restricció — recollir fibres és habilitat bàsica del Bosc, no exclusiva
-  act_trenar_garbell:          { impuls: { max: 0.20 } },                              // creació garbell
-  act_recollectar_garbell:     { impuls: { max: 0.25 } },                              // consum garbell
-  act_molda_grans:             { impuls: { max: 0.30 } },
-  act_parar_trampes:           { impuls: { max: 0.35 } },           // pont recol·lector/caçador
-  act_revisar_trampes:         { impuls: { max: 0.35 } },
-  act_recollida_bolets:        { impuls: { max: 0.20 } },
-  act_assecament_plantes:      { impuls: { max: 0.20 } },
-  act_seleccionar_llavors:     { "intel·lecte": { min: 0.08 }, impuls: { max: 0.20 } },
-  act_preparar_terreny:        { impuls: { max: 0.25 } },
-  act_recollecta_metodica:     { impuls: { max: 0.25 } },           // upgrade recollectar_arrels
+  // TdB 2 — La Pedra que Talla
+  act_esquarterar:         { impuls: { min: 0.10 } },
+  act_punta_crua:          { impuls: { min: 0.10 } },
+  act_pelar_escorca:       { sociabilitat: { min: 0.10 } },
+  act_partir_fruits:       { sociabilitat: { min: 0.10 } },
+  act_tallar_ascles:       { "intel·lecte": { min: 0.10 } },
+  act_bescanviar_ascles:   { "intel·lecte": { min: 0.10 } },
+  act_gravar_amulet:       { espiritualitat: { min: 0.10 } },
+  act_pedra_guardiana:     { espiritualitat: { min: 0.10 } },
 
-  // ══ ARTESÀ ═══════════════════════════════════════════════
-  act_treballar_estris:        { "intel·lecte": { min: 0.10 } },                      // consum estri
-  act_faonar_eines:            { "intel·lecte": { min: 0.10 } },
-  act_gravar_os:               { "intel·lecte": { min: 0.15 } },
-  act_intercanviar_eines:      { "intel·lecte": { min: 0.08 } },    // pont artesà/social
-  act_cosir_pells:             { "intel·lecte": { min: 0.12 } },
-  act_construir_refugi:        { "intel·lecte": { min: 0.08 } },
-  act_destillar_quitra:        { "intel·lecte": { min: 0.15 }, impuls: { max: 0.30 } },
-  act_emmanegar_eines:         { "intel·lecte": { min: 0.12 } },
-  act_coure_ceramica:          { "intel·lecte": { min: 0.15 } },
-  act_sembrar_llavors:         { "intel·lecte": { min: 0.12 }, impuls: { max: 0.20 } },
-  act_collita_sistematica:     { "intel·lecte": { min: 0.10 } },
-  act_edificar_cabana:         { "intel·lecte": { min: 0.10 } },
+  // TdB 3 — El Cercle del Foc
+  act_rostir_caca:         { impuls: { min: 0.10 } },
+  act_foc_batuda:          { impuls: { min: 0.10 } },
+  act_pedres_bullir:       { sociabilitat: { min: 0.10 } },
+  act_cercle_vespre:       { sociabilitat: { min: 0.10 } },
+  act_endurir_puntes:      { "intel·lecte": { min: 0.10 } },
+  act_dominar_brasa:       { "intel·lecte": { min: 0.10 } },
+  act_vetlla_flames:       { espiritualitat: { min: 0.10 } },
+  act_cendres_sagrades:    { espiritualitat: { min: 0.10 } },
 
-  // ══ MÍSTIC ════════════════════════════════════════════════
-  act_ritual_talisman:         { espiritualitat: { min: 0.15 } },                             // consum ungüent/talisman
-  act_curar_herbes:            { espiritualitat: { min: 0.10 } },
-  act_pintar_parets:           { espiritualitat: { min: 0.20 }, sociabilitat: { min: 0.10 } },
-  act_narrar_llegendes:        { espiritualitat: { min: 0.10 }, sociabilitat: { min: 0.10 } },
-  act_ornamentar_se:           { espiritualitat: { min: 0.05 } },   // accessible (pont)
-  act_consagrar_ornaments:     { espiritualitat: { min: 0.15 }, sociabilitat: { min: 0.08 } },
-  act_transit_nocturn:         { espiritualitat: { min: 0.20 } },
-  act_ofrena_eines:            { espiritualitat: { min: 0.12 }, sociabilitat: { min: 0.08 } },
-  act_cerimonia_eines:         { espiritualitat: { min: 0.12 }, sociabilitat: { min: 0.10 } },
-  act_tallar_flauta:           { "intel·lecte": { min: 0.08 }, espiritualitat: { min: 0.05 } },
-  act_musica_vetlla:           { espiritualitat: { min: 0.08 } },
-  act_ritual_nusos:            { espiritualitat: { min: 0.10 } },
-  act_tela_sagrada:            { espiritualitat: { min: 0.08 } },
-  act_ofrena_terra:            { espiritualitat: { min: 0.15 }, sociabilitat: { min: 0.08 } },
-  act_danses_fertilitat:       { espiritualitat: { min: 0.12 }, sociabilitat: { min: 0.12 } },
-  act_gran_ritual:             { espiritualitat: { min: 0.10 } },   // upgrade ritual_foc
+  // TdB 4 — La Nit Domada
+  act_aguait_nocturn:      { impuls: { min: 0.10 } },
+  act_torxa_persecucio:    { impuls: { min: 0.10 } },
+  act_feina_llum:          { sociabilitat: { min: 0.10 } },
+  act_vigilar_brases:      { sociabilitat: { min: 0.10 } },
+  act_taller_nocturn:      { "intel·lecte": { min: 0.10 } },
+  act_reparar_vora:        { "intel·lecte": { min: 0.10 } },
+  act_dansa_ombres:        { espiritualitat: { min: 0.10 } },
+  act_somnis_guiats:       { espiritualitat: { min: 0.10 } },
 
-  // ══ PONT / SOCIAL / COMPARTIT ═════════════════════════════
-  act_cocinar_arrels:          { impuls: { max: 0.30 } },           // recol·lector/artesà
-  act_ahumar_carn:             { impuls: { max: 0.30 } },
-  act_torxa_escolta:           { impuls: { min: 0.05 } },
-  act_roba_hivern:             { "intel·lecte": { min: 0.05 } },
-  act_decorar_cos:             { espiritualitat: { min: 0.05 }, sociabilitat: { min: 0.05 } },
-  act_tenyir_pells:            { espiritualitat: { min: 0.05 } },
-  act_xarxa_pesca:             { "intel·lecte": { min: 0.05 } },
-  act_fira_intercanvi:         { sociabilitat: { min: 0.10 } },
-  act_ceramica_regalada:       { sociabilitat: { min: 0.08 } },
-  act_negociar_pastures:       { sociabilitat: { min: 0.08 } },
-  act_explicar_orígens:        { sociabilitat: { min: 0.10 } },
-  act_cants_grup:              { sociabilitat: { min: 0.08 } },
-  act_reforçar_palissada:      { impuls: { min: 0.05 } },
-  act_defensa_activa:          { sociabilitat: { min: 0.05 } },     // upgrade vigilar_campament
+  // TdB 5 — La Mà que Transforma
+  act_llanca_emmanegada:   { impuls: { min: 0.10 } },
+  act_desollar_traca:      { impuls: { min: 0.10 } },
+  act_basto_cavador:       { sociabilitat: { min: 0.10 } },
+  act_espremer_fruits:     { sociabilitat: { min: 0.10 } },
+  act_taller_percussio:    { "intel·lecte": { min: 0.10 } },
+  act_encarrecs:           { "intel·lecte": { min: 0.10 } },
+  act_basto_esperits:      { espiritualitat: { min: 0.10 } },
+  act_foragitar_pors:      { espiritualitat: { min: 0.10 } },
+
+  // TdB 6 — El Pes i la Palanca
+  act_fossa_parany:        { impuls: { min: 0.10 } },
+  act_encerclar_presa:     { impuls: { min: 0.10 } },
+  act_perxa_llarga:        { sociabilitat: { min: 0.10 } },
+  act_arrossegar_troncs:   { sociabilitat: { min: 0.10 } },
+  act_palanca_pedrera:     { "intel·lecte": { min: 0.10 } },
+  act_llosa_llar:          { "intel·lecte": { min: 0.10 } },
+  act_pedra_dreta:         { espiritualitat: { min: 0.10 } },
+  act_ofrena_feixuga:      { espiritualitat: { min: 0.10 } },
+
+  // TdB 7 — Els Símbols a la Pedra
+  act_marcar_territori:    { impuls: { min: 0.10 } },
+  act_mural_gesta:         { impuls: { min: 0.10 } },
+  act_senyals_cami:        { sociabilitat: { min: 0.10 } },
+  act_comptar_osques:      { sociabilitat: { min: 0.10 } },
+  act_gravar_patrons:      { "intel·lecte": { min: 0.10 } },
+  act_pedres_bescanvi:     { "intel·lecte": { min: 0.10 } },
+  act_pintar_esperits:     { espiritualitat: { min: 0.10 } },
+  act_ocre_sagrat:         { espiritualitat: { min: 0.10 } },
+
+  // TdB 8 — La Veu que Perdura
+  act_relat_gesta:         { impuls: { min: 0.10 } },
+  act_crits_caca:          { impuls: { min: 0.10 } },
+  act_canco_collita:       { sociabilitat: { min: 0.10 } },
+  act_veus_bosc:           { sociabilitat: { min: 0.10 } },
+  act_nom_eines:           { "intel·lecte": { min: 0.10 } },
+  act_memoria_ofici:       { "intel·lecte": { min: 0.10 } },
+  act_cant_ancestres:      { espiritualitat: { min: 0.10 } },
+  act_lletania_clan:       { espiritualitat: { min: 0.10 } },
+
+  // TdB 9 — La Segona Pell
+  act_adobar_pell:         { impuls: { min: 0.10 } },
+  act_caca_hivern:         { impuls: { min: 0.10 } },
+  act_capes_trenades:      { sociabilitat: { min: 0.10 } },
+  act_collir_fred:         { sociabilitat: { min: 0.10 } },
+  act_agulla_os:           { "intel·lecte": { min: 0.10 } },
+  act_vestits_bescanvi:    { "intel·lecte": { min: 0.10 } },
+  act_mantell_ritual:      { espiritualitat: { min: 0.10 } },
+  act_embolcallar_nadons:  { espiritualitat: { min: 0.10 } },
+
+  // TdB 10 — El Camí Llarg
+  act_expedicio:           { impuls: { min: 0.10 } },
+  act_obrir_cami:          { impuls: { min: 0.10 } },
+  act_intercanvi_llunya:   { sociabilitat: { min: 0.10 } },
+  act_rutes_fruita:        { sociabilitat: { min: 0.10 } },
+  act_pedres_llunyanes:    { "intel·lecte": { min: 0.10 } },
+  act_lligar_carregues:    { "intel·lecte": { min: 0.10 } },
+  act_pelegrinatge:        { espiritualitat: { min: 0.10 } },
+  act_terres_esperits:     { espiritualitat: { min: 0.10 } },
+
+  // TdB 11 — El Nus que Reté
+  act_parar_llacos:        { impuls: { min: 0.10 } },
+  act_xarxa_ocells:        { impuls: { min: 0.10 } },
+  act_xarxa_riu:           { sociabilitat: { min: 0.10 } },
+  act_lligar_farcells:     { sociabilitat: { min: 0.10 } },
+  act_trenar_corda:        { "intel·lecte": { min: 0.10 } },
+  act_nusos_mesura:        { "intel·lecte": { min: 0.10 } },
+  act_nusos_memoria:       { espiritualitat: { min: 0.10 } },
+  act_lligar_mals:         { espiritualitat: { min: 0.10 } },
+
+  // TdB 12 — Els Fils del Clan
+  act_cacera_conjunta:     { impuls: { min: 0.10 } },
+  act_repartir_boti:       { impuls: { min: 0.10 } },
+  act_teixir_cercle:       { sociabilitat: { min: 0.10 } },
+  act_taula_comuna:        { sociabilitat: { min: 0.10 } },
+  act_aprenents:           { "intel·lecte": { min: 0.10 } },
+  act_obrar_plegats:       { "intel·lecte": { min: 0.10 } },
+  act_ritu_pas:            { espiritualitat: { min: 0.10 } },
+  act_cercle_dol:          { espiritualitat: { min: 0.10 } },
+
+  // TdB 13 — El Vas que Guarda
+  act_greix_vas:           { impuls: { min: 0.10 } },
+  act_provisions_caca:     { impuls: { min: 0.10 } },
+  act_gerres_gra:          { sociabilitat: { min: 0.10 } },
+  act_aigua_guardada:      { sociabilitat: { min: 0.10 } },
+  act_modelar_vasos:       { "intel·lecte": { min: 0.10 } },
+  act_segellar_vasos:      { "intel·lecte": { min: 0.10 } },
+  act_vas_ofrenes:         { espiritualitat: { min: 0.10 } },
+  act_urna_ancestres:      { espiritualitat: { min: 0.10 } },
+
+  // TdB 14 — El Fang i el Forn
+  act_fumador:             { impuls: { min: 0.10 } },
+  act_coure_moll:          { impuls: { min: 0.10 } },
+  act_torrar_llavors:      { sociabilitat: { min: 0.10 } },
+  act_olla_foc:            { sociabilitat: { min: 0.10 } },
+  act_forn_terra:          { "intel·lecte": { min: 0.10 } },
+  act_coure_fang:          { "intel·lecte": { min: 0.10 } },
+  act_figures_fang:        { espiritualitat: { min: 0.10 } },
+  act_forn_visions:        { espiritualitat: { min: 0.10 } },
+
+  // TdB 15 — La Llavor Confiada
+  act_atraure_ramat:       { impuls: { min: 0.10 } },
+  act_tanca_bestiar:       { impuls: { min: 0.10 } },
+  act_hort_clan:           { sociabilitat: { min: 0.10 } },
+  act_triar_llavors:       { sociabilitat: { min: 0.10 } },
+  act_aixada:              { "intel·lecte": { min: 0.10 } },
+  act_obrir_solcs:         { "intel·lecte": { min: 0.10 } },
+  act_beneir_camps:        { espiritualitat: { min: 0.10 } },
+  act_primera_espiga:      { espiritualitat: { min: 0.10 } },
+
+  // TdB 16 — El Cicle de les Estacions
+  act_llegir_migracions:   { impuls: { min: 0.10 } },
+  act_darrera_cacera:      { impuls: { min: 0.10 } },
+  act_calendari_collita:   { sociabilitat: { min: 0.10 } },
+  act_rebost_hivern:       { sociabilitat: { min: 0.10 } },
+  act_eines_temps:         { "intel·lecte": { min: 0.10 } },
+  act_llegat_taller:       { "intel·lecte": { min: 0.10 } },
+  act_festa_solstici:      { espiritualitat: { min: 0.10 } },
+  act_roda_any:            { espiritualitat: { min: 0.10 } },
 };
+
 
 // output_resource: "food" (default) | "token" | "health"  — ha de coincidir amb id de RESOURCE_DEFS
 // side_effects: array de side-effects [{ resource: 'health'|'food'|..., delta: N }] — s'apliquen genèricament
@@ -767,318 +757,1172 @@ const ACTIONS = [
     inclination_deltas: { impuls: +0.08, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
     event_pool_id: "pool_caca"
   },
+  // ── TdB 1 — Els Rastres del Món ──────────────────────────────────────────────
   {
-    id: "act_emboscada_nocturna", name: "Emboscada Nocturna", is_base: false, zona: "Planes",
-    description: "La foscor és el teu aliat. Atacs per sorpresa quan la presa dorm. Molt perillós però molt rendible.",
-    maxAge: 12,
-    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 10, output_max: 16, side_effects: [{ resource: 'health', delta: -14 }],
-    stat_key: "forca", stat_gain: 0.20,
-    inclination_deltas: { impuls: +0.10, "intel·lecte": 0, espiritualitat: 0, sociabilitat: -0.08 },
-    event_pool_id: "pool_caca"
-  },
-
-  // HUNTER branch — bt_punta_llanca (creació llança)
-  {
-    id: "act_forjar_punta", name: "Forjar Punta de Llança", is_base: false, zona: "Campament",
-    description: "Troceges el sílex fins que la punta queda lleugera i esmolada. La llança que fabriques és més mortal que la que trobes.",
-    purchase_cost: 3, execute_cost: 0,
-    requires: [{ resource: 'pedra', min: 2 }, { resource: 'branques', min: 1 }],
-    output_resource: "eina", output_min: 1, output_max: 1,
-    side_effects: [{ resource: 'pedra', delta: -2 }, { resource: 'branques', delta: -1 }],
-    token_min: 1, token_max: 2,
-    stat_key: "forca", stat_gain: 0.15,
-    is_tool_action: true, tool_branch: 'branch_hunter',
-    inclination_deltas: { impuls: +0.05, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
-    event_pool_id: "pool_artesania"
-  },
-
-  // HUNTER branch — bt_marques_territori
-  {
-    id: "act_marcar_territori", name: "Marcar Territori", is_base: false, zona: "Planes",
-    description: "Senyals als arbres i roques que indiquen que aquest territori és del teu clan.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 1, output_max: 3, side_effects: [{ resource: 'health', delta: -3 }],
-    stat_key: "forca", stat_gain: 0.15,
-    inclination_deltas: { impuls: +0.05, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
-    event_pool_id: "pool_social"
+    id: "act_caca_aguait", name: "Caça a l'Aguait", is_base: false, zona: "Planes",
+    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 4, output_max: 8,
+    side_effects: [{ resource: 'health', delta: -3 }],
+    token_min: 2, token_max: 4, stat_key: "forca", stat_gain: 0.12,
+    inclination_deltas: { impuls: +0.06, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_caca",
+    description: "Esperes immòbil on el rastre diu que passarà. La presa fa la feina per tu."
   },
   {
-    id: "act_rastreig_rutes", name: "Rastreig de Rutes", is_base: false, zona: "Bosc",
-    description: "Segueixes les pistes dels animals per aprendre els seus camins. Coneixement que es converteix en provisions.",
+    id: "act_seguir_ramat", name: "Seguir el Ramat", is_base: false, zona: "Planes",
+    purchase_cost: 3, execute_cost: 1, output_resource: "food", output_min: 2, output_max: 5,
+    token_min: 3, token_max: 5, stat_key: "forca", stat_gain: 0.08,
+    inclination_deltas: { impuls: +0.04, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_caca",
+    description: "Camines dies rere les petjades. El ramat t'alimenta sense saber que existeixes."
+  },
+  {
+    id: "act_mapa_verd", name: "El Mapa Verd", is_base: false, zona: "Bosc",
     purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 3, output_max: 6,
-    stat_key: "forca", stat_gain: 0.15,
-    inclination_deltas: { impuls: +0.03, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
-    event_pool_id: "pool_caca"
-  },
-
-  // GATHERER branch — bt_rasclador_fi
-  {
-    id: "act_molda_grans", name: "Mòlta de Grans", is_base: false, zona: "Campament",
-    description: "Raspes grans silvestres amb el raspador fi per obtenir farina primitiva. Estable i nutritiu.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 3, output_max: 7,
-    stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: -0.01, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.03 },
-    event_pool_id: "pool_recollecta"
-  },
-
-  // GATHERER branch — bt_coneixement_plantes (creació garbell)
-  {
-    id: "act_trenar_garbell", name: "Trenar un Garbell", is_base: false, zona: "Campament",
-    description: "Entrellaçes fibres vegetals i una vora de pedra fins a crear un tamís. La bona llavor es separa sola de la terra i la palla.",
-    purchase_cost: 3, execute_cost: 0,
-    requires: [{ resource: 'branques', min: 2 }, { resource: 'pedra', min: 1 }],
-    output_resource: "eina", output_min: 1, output_max: 1,
-    side_effects: [{ resource: 'branques', delta: -2 }, { resource: 'pedra', delta: -1 }],
-    token_min: 1, token_max: 2,
-    stat_key: "enginy", stat_gain: 0.15,
-    is_tool_action: true, tool_branch: 'branch_gatherer',
-    inclination_deltas: { impuls: 0, "intel·lecte": +0.04, espiritualitat: +0.02, sociabilitat: 0 },
-    event_pool_id: "pool_recollecta"
-  },
-
-  // GATHERER branch — bt_trampes
-  {
-    id: "act_parar_trampes", name: "Parar Trampes", is_base: false, zona: "Planes",
-    description: "Col·loques llaços i trampes en llocs de pas. La caça passiva allibera temps per a altres tasques.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 2, output_max: 6,
-    requires: [{ resource: 'branques', min: 1 }], side_effects: [{ resource: 'branques', delta: -1 }],
-    stat_key: "forca", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.03 },
-    event_pool_id: "pool_caca"
-  },
-  {
-    id: "act_revisar_trampes", name: "Revisar les Trampes", is_base: false, zona: "Bosc",
-    description: "Fas la ronda matinal per les trampes. Algunes han funcionat. Una t'ha agafat el dit.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 1, output_max: 4, side_effects: [{ resource: 'health', delta: -3 }],
-    stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: -0.01, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.03 },
-    event_pool_id: "pool_caca"
-  },
-
-  // GATHERER branch — bt_llavor_selectiva (consum garbell → menjar millorat)
-  {
-    id: "act_recollectar_garbell", name: "Recol·lectar amb Garbell", is_base: false, zona: "Planes",
-    description: "El garbell separa les llavors bones de la terra i la palla. Treballes el doble de ràpid i els resultats es veuen.",
-    purchase_cost: 3, execute_cost: 0,
-    requires: [{ resource: 'eina', min: 1 }],
-    output_resource: "food", output_min: 4, output_max: 8,
-    side_effects: [{ resource: 'eina', delta: -1 }],
-    token_min: 1, token_max: 2,
-    stat_key: "forca", stat_gain: 0.10,
-    inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.04 },
-    event_pool_id: "pool_recollecta"
-  },
-
-  // GATHERER branch — bt_coneixement_plantes
-  {
-    id: "act_recollida_bolets", name: "Recollida de Bolets", is_base: false, zona: "Bosc",
-    description: "Coneixes quins bolets del bosc són comestibles i quins cal evitar. Provisions i salut.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 2, output_max: 5, side_effects: [{ resource: 'health', delta: +5 }],
-    stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.03 },
-    event_pool_id: "pool_recollecta"
-  },
-  {
-    id: "act_assecament_plantes", name: "Assecament de Plantes", is_base: false, zona: "Campament",
-    description: "Asseques les plantes recol·lectades per conservar-les. Reserves que aguanten setmanes.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 1, output_max: 3,
-    stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: -0.01, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.03 },
-    event_pool_id: "pool_recollecta"
-  },
-
-  // GATHERER branch — bt_llavor_selectiva
-  {
-    id: "act_seleccionar_llavors", name: "Seleccionar Llavors", is_base: false, zona: "Campament",
-    description: "Tries les millors llavors de la collita. Les plantes del proper cicle donaran més.",
-    purchase_cost: 4, execute_cost: 0, output_resource: "food", output_min: 3, output_max: 6,
-    stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: -0.01, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.03 },
-    event_pool_id: "pool_recollecta"
-  },
-  {
-    id: "act_preparar_terreny", name: "Preparar el Terreny", is_base: false, zona: "Planes",
-    description: "Neteges una petita parcel·la de pedres i males herbes. El terra nu et sembla prometedor.",
-    purchase_cost: 4, execute_cost: 0, output_resource: "food", output_min: 2, output_max: 4, side_effects: [{ resource: 'health', delta: -5 }],
-    stat_key: "forca", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.04 },
-    event_pool_id: "pool_recollecta"
-  },
-
-  // CRAFTSMAN branch — bt_rasclador_fi
-  {
-    id: "act_faonar_eines", name: "Façonar Estris", is_base: false, zona: "Campament",
-    description: "Treballes el sílex fins a donar-li la forma exacta que cal. Els estris precisos fan possible el que les mans soles no podrien.",
-    purchase_cost: 3, execute_cost: 0,
-    requires: [{ resource: 'pedra', min: 2 }, { resource: 'branques', min: 1 }],
-    output_resource: "eina", output_min: 1, output_max: 1,
-    side_effects: [{ resource: 'pedra', delta: -2 }, { resource: 'branques', delta: -1 }],
-    token_min: 1, token_max: 2,
-    stat_key: "enginy", stat_gain: 0.15,
-    is_tool_action: true, tool_branch: 'branch_craftsman',
-    inclination_deltas: { impuls: 0, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
-    event_pool_id: "pool_artesania"
-  },
-
-  // CRAFTSMAN branch — bt_buri
-  {
-    id: "act_gravar_os", name: "Gravar Os i Ivori", is_base: false, zona: "Campament",
-    description: "El burí permet gravar formes en os i ivori. Art i eina, alhora. Millora enginy i espiritualitat.",
-    purchase_cost: 4, execute_cost: 0, token_min: 2, token_max: 3,
-    stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: +0.02, sociabilitat: 0 },
-    event_pool_id: "pool_artesania"
-  },
-  {
-    id: "act_intercanviar_eines", name: "Intercanviar Eines", is_base: false, zona: "Planes",
-    description: "Intercanvies eines de qualitat per provisions i aliances. Sociabilitat i menjar a canvi de feina artesanal.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 2, output_max: 4,
-    requires: [{ resource: 'eina', min: 1 }], side_effects: [{ resource: 'eina', delta: -1 }],
-    token_min: 1, token_max: 2,
-    stat_key: "vincle", stat_gain: 0.15,
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.10,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.05 },
-    event_pool_id: "pool_social"
+    event_pool_id: "pool_recollecta",
+    description: "Recordeu entre tots on madura cada fruit. El bosc deixa de tenir secrets."
+  },
+  {
+    id: "act_collita_guiada", name: "Collita Guiada", is_base: false, zona: "Planes",
+    is_upgrade: true, upgrades_action_id: "act_recollectar_arrels",
+    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 2, output_max: 5,
+    side_effects: [{ resource: 'branques', delta: 1 }],
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.08,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: +0.04 },
+    event_pool_id: "pool_recollecta",
+    description: "Ja no caves a l'atzar: caves on la planta t'ho diu. I res no es llença."
+  },
+  {
+    id: "act_llegir_veta", name: "Llegir la Veta", is_base: false, zona: "Planes",
+    is_upgrade: true, upgrades_action_id: "act_recollectar_pedra",
+    purchase_cost: 3, execute_cost: 0, output_resource: "pedra", output_min: 2, output_max: 4,
+    token_min: 2, token_max: 4, stat_key: "enginy", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "Copeges la roca i escoltes. La que sona neta, trenca neta."
+  },
+  {
+    id: "act_triar_fibra", name: "Triar la Fibra Justa", is_base: false, zona: "Bosc",
+    purchase_cost: 3, execute_cost: 0, output_resource: "branques", output_min: 3, output_max: 5,
+    token_min: 2, token_max: 4, stat_key: "enginy", stat_gain: 0.10,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.04, espiritualitat: 0, sociabilitat: +0.02 },
+    event_pool_id: "pool_artesania",
+    description: "No totes les escorces serveixen. Les teves mans ja saben quina cedirà bé."
+  },
+  {
+    id: "act_llegir_presagis", name: "Llegir els Presagis", is_base: false, zona: "Campament",
+    purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 5,
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.06, sociabilitat: 0 },
+    event_pool_id: "pool_ritual",
+    description: "El fum s'inclina, l'ocell calla. Qui sap què vindrà, dorm més tranquil."
+  },
+  {
+    id: "act_cami_ocells", name: "El Camí dels Ocells", is_base: false, zona: "Planes",
+    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 2, output_max: 4,
+    token_min: 3, token_max: 5, stat_key: "vincle", stat_gain: 0.08,
+    inclination_deltas: { impuls: +0.02, "intel·lecte": 0, espiritualitat: +0.04, sociabilitat: 0 },
+    event_pool_id: "pool_ritual",
+    description: "Segueixes els ocells fins on ells mengen. Els esperits assenyalen amb ales."
   },
 
-  // CRAFTSMAN branch — bt_agulla_os
+  // ── TdB 2 — La Pedra que Talla ────────────────────────────────────────────────
   {
-    id: "act_cosir_pells", name: "Cosir Pells", is_base: false, zona: "Campament",
-    description: "Cosius pells amb agulles d'os. La roba que protegeixes millora la salut de tot el clan.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 6,
-    token_min: 1, token_max: 2,
-    stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
-    event_pool_id: "pool_artesania"
+    id: "act_esquarterar", name: "Esquarterar amb Vora", is_base: false, zona: "Planes",
+    purchase_cost: 4, execute_cost: 0, output_resource: "food", output_min: 5, output_max: 9,
+    side_effects: [{ resource: 'health', delta: -4 }, { resource: 'eina', delta: -1 }],
+    token_min: 2, token_max: 4, stat_key: "forca", stat_gain: 0.15,
+    inclination_deltas: { impuls: +0.05, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_caca",
+    description: "Amb tall, cap presa es desaprofita. La vora es gasta; la panxa, s'omple."
   },
   {
-    id: "act_construir_refugi", name: "Construir Refugi", is_base: false, zona: "Campament",
-    description: "Construcció d'un aixopluc millor. El grup descansa protegit i recupera salut.",
-    purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 4, output_max: 8,
-    token_min: 1, token_max: 3,
-    stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: +0.02 },
-    event_pool_id: "pool_artesania"
-  },
-
-  // MYSTIC branch — bt_guariment_plantes
-  {
-    id: "act_curar_herbes", name: "Curar amb Herbes", is_base: false, zona: "Campament",
-    description: "Prepareu infusions i cataplasmes d'herbes per als membres malalts o ferits.",
-    purchase_cost: 3, execute_cost: 2, output_resource: "health", output_min: 8, output_max: 14,
-    stat_key: "vincle", stat_gain: 0.20,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: 0 },
-    event_pool_id: "pool_ritual"
+    id: "act_punta_crua", name: "La Punta Crua", is_base: false, zona: "Campament",
+    purchase_cost: 3, execute_cost: 0, output_resource: "eina", output_min: 1, output_max: 1,
+    side_effects: [{ resource: 'pedra', delta: -2 }],
+    token_min: 2, token_max: 3, stat_key: "enginy", stat_gain: 0.10,
+    inclination_deltas: { impuls: +0.02, "intel·lecte": +0.04, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "No és bonica ni durarà, però és teva i talla. El caçador no espera ningú."
   },
   {
-    id: "act_preparar_ungüent", name: "Preparar un Ungüent", is_base: false, zona: "Campament",
-    description: "Mols la pedra fins a pols fina, combines resines i fibres i cuus la pasta sobre les brases. L'ungüent que obtens guareix les ferides i protegeix la pell: és l'eina del curador, la que cap forjador no sap fer.",
-    purchase_cost: 3, execute_cost: 0,
-    requires: [{ resource: 'branques', min: 2 }, { resource: 'pedra', min: 1 }],
-    output_resource: "eina", output_min: 1, output_max: 1,
-    side_effects: [{ resource: 'branques', delta: -2 }, { resource: 'pedra', delta: -1 }],
-    token_min: 1, token_max: 2,
-    stat_key: "enginy", stat_gain: 0.15,
-    is_tool_action: true, tool_branch: 'branch_mystic',
-    inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: +0.03, sociabilitat: 0 },
-    event_pool_id: "pool_ritual"
-  },
-
-  // MYSTIC branch — bt_pintura_rupestre
-  {
-    id: "act_pintar_parets", name: "Pintar les Parets", is_base: false, zona: "Bosc",
-    description: "Cerques els jaciments d'ocre i manganès que només tu reconeixes, i en mols els minerals fins a fer pols de color. Les visions queden fixades a la roca —i a la teva bossa, la pedra que no has gastat.",
-    purchase_cost: 4, execute_cost: 0, output_resource: "pedra", output_min: 2, output_max: 3,
-    stat_key: "vincle", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: +0.05, sociabilitat: 0 },
-    event_pool_id: "pool_ritual"
+    id: "act_pelar_escorca", name: "Pelar l'Escorça", is_base: false, zona: "Bosc",
+    is_upgrade: true, upgrades_action_id: "act_recollir_branques",
+    purchase_cost: 3, execute_cost: 0, output_resource: "branques", output_min: 4, output_max: 6,
+    side_effects: [{ resource: 'pedra', delta: -1 }],
+    token_min: 2, token_max: 4, stat_key: "enginy", stat_gain: 0.08,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: +0.04 },
+    event_pool_id: "pool_recollecta",
+    description: "La vora llisca sota l'escorça i surt en tires llargues, senceres, dòcils."
   },
   {
-    id: "act_narrar_llegendes", name: "Narrar les Llegendes", is_base: false, zona: "Campament",
-    description: "La veu pren força davant del foc. Dins de cada llegenda hi ha un mapa: on beure a l'estiu, quin arbust dona cordell, on creix la fibra que no es trenca. El clan escolta, i demà surt a trobar-la.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "branques", output_min: 2, output_max: 3,
-    token_min: 1, token_max: 2,
-    stat_key: "vincle", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: +0.05 },
-    event_pool_id: "pool_social"
+    id: "act_partir_fruits", name: "Partir els Fruits Durs", is_base: false, zona: "Bosc",
+    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 3, output_max: 5,
+    side_effects: [{ resource: 'pedra', delta: -1 }],
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.08,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.04 },
+    event_pool_id: "pool_recollecta",
+    description: "El que abans es trencava a cops ara s'obre net. Dins hi havia menjar tot aquest temps."
   },
-
-  // MYSTIC branch — bt_ornaments (consum talisman → salut alta)
   {
-    id: "act_ritual_talisman", name: "Ritual del Talisman", is_base: false, zona: "Campament",
-    description: "Cremes encens i entones les paraules antigues mentre el talisman s'escalfa al foc. La protecció que ofereix és real i immediata.",
-    purchase_cost: 4, execute_cost: 0,
-    requires: [{ resource: 'eina', min: 1 }],
-    output_resource: "health", output_min: 8, output_max: 14,
+    id: "act_tallar_ascles", name: "Tallar Ascles", is_base: false, zona: "Campament",
+    purchase_cost: 4, execute_cost: 0, output_resource: "eina", output_min: 1, output_max: 1,
+    side_effects: [{ resource: 'pedra', delta: -2 }],
+    token_min: 2, token_max: 4, stat_key: "enginy", stat_gain: 0.20,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.06, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "Un cop precís i la pedra revela la vora que amagava. Has fet la teva primera eina."
+  },
+  {
+    id: "act_bescanviar_ascles", name: "Bescanviar Ascles", is_base: false, zona: "Campament",
+    purchase_cost: 3, execute_cost: 0, output_resource: "token", output_min: 4, output_max: 6,
     side_effects: [{ resource: 'eina', delta: -1 }],
-    token_min: 1, token_max: 2,
-    stat_key: "vincle", stat_gain: 0.20,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.08, sociabilitat: +0.03 },
-    event_pool_id: "pool_ritual"
+    token_min: 0, token_max: 0, stat_key: "vincle", stat_gain: 0.08,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: +0.03 },
+    event_pool_id: "pool_artesania",
+    description: "Tothom vol una vora i pocs saben fer-la. El teu ofici comença a tenir preu."
   },
-
-  // MYSTIC branch — bt_ornaments
   {
-    id: "act_ornamentar_se", name: "Ornamentar-se", is_base: false, zona: "Campament",
-    description: "El ritual de preparar-se i posar-se les marques t'ancora. El grup et mira diferent i tu et sents diferent.",
+    id: "act_gravar_amulet", name: "Gravar un Amulet", is_base: false, zona: "Campament",
+    purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 4, output_max: 6,
+    side_effects: [{ resource: 'pedra', delta: -1 }],
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.06, sociabilitat: 0 },
+    event_pool_id: "pool_ritual",
+    description: "Rasques el senyal a la pedra i la penges al coll. Qui la duu, camina protegit."
+  },
+  {
+    id: "act_pedra_guardiana", name: "La Pedra Guardiana", is_base: false, zona: "Campament",
     purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 2, output_max: 4,
-    stat_key: "vincle", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.02, sociabilitat: +0.02 },
-    event_pool_id: "pool_social"
+    token_min: 2, token_max: 3, stat_key: "vincle", stat_gain: 0.10,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.04, sociabilitat: +0.02 },
+    event_pool_id: "pool_ritual",
+    description: "Una pedra dreta a l'entrada del campament. Els mals esperits no travessen el llindar."
+  },
+
+  // ── TdB 3 — El Cercle del Foc ─────────────────────────────────────────────────
+  {
+    id: "act_rostir_caca", name: "Rostir la Caça", is_base: false, zona: "Campament",
+    purchase_cost: 4, execute_cost: 0, output_resource: "food", output_min: 4, output_max: 7,
+    side_effects: [{ resource: 'health', delta: 2 }],
+    token_min: 2, token_max: 3, stat_key: "enginy", stat_gain: 0.08,
+    inclination_deltas: { impuls: +0.03, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.02 },
+    event_pool_id: "pool_caca",
+    description: "La carn al foc alimenta el doble i el clan s'hi asseu al voltant. Bon negoci."
   },
   {
-    id: "act_consagrar_ornaments", name: "Consagrar Ornaments", is_base: false, zona: "Campament",
-    description: "Passes la nit amb les peces al costat del foc, entonant pregàries. Quan surt el sol, els ornaments porten la protecció dels avantpassats.",
-    purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 5, output_max: 9,
-    stat_key: "vincle", stat_gain: 0.15,
+    id: "act_foc_batuda", name: "La Batuda amb Foc", is_base: false, zona: "Planes",
+    purchase_cost: 5, execute_cost: 1, output_resource: "food", output_min: 7, output_max: 12,
+    side_effects: [{ resource: 'health', delta: -5 }],
+    token_min: 3, token_max: 5, stat_key: "forca", stat_gain: 0.18,
+    inclination_deltas: { impuls: +0.08, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_caca",
+    description: "Cales foc a l'herba seca i corres amb les flames. El ramat fuig cap on tu vols."
+  },
+  {
+    id: "act_pedres_bullir", name: "Bullir amb Pedres Roents", is_base: false, zona: "Campament",
+    purchase_cost: 4, execute_cost: 0, output_resource: "food", output_min: 3, output_max: 6,
+    side_effects: [{ resource: 'health', delta: 1 }, { resource: 'pedra', delta: -1 }],
+    token_min: 2, token_max: 3, stat_key: "vincle", stat_gain: 0.10,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.04 },
+    event_pool_id: "pool_recollecta",
+    description: "Pedres roents dins l'aigua i les arrels dures es rendeixen. Tot es torna menjable."
+  },
+  {
+    id: "act_cercle_vespre", name: "El Cercle del Vespre", is_base: false, zona: "Campament",
+    purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 5,
+    side_effects: [{ resource: 'food', delta: -1 }],
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.06 },
+    event_pool_id: "pool_social",
+    description: "Al voltant del foc, el clan comparteix el dia. Els cossos descansen; els llaços, creixen."
+  },
+  {
+    id: "act_endurir_puntes", name: "Endurir Puntes al Foc", is_base: false, zona: "Campament",
+    purchase_cost: 4, execute_cost: 0, output_resource: "eina", output_min: 1, output_max: 1,
+    side_effects: [{ resource: 'branques', delta: -1 }, { resource: 'pedra', delta: -1 }],
+    token_min: 2, token_max: 3, stat_key: "enginy", stat_gain: 0.18,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "La punta que passa per la brasa torna més dura que l'os. El foc també és eina."
+  },
+  {
+    id: "act_dominar_brasa", name: "Dominar la Brasa", is_base: false, zona: "Campament",
+    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 3, output_max: 5,
+    side_effects: [{ resource: 'pedra', delta: -1 }],
+    token_min: 2, token_max: 3, stat_key: "enginy", stat_gain: 0.10,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.04, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "Sobre lloses roents, cous el que sigui sense cremar-ho. Precisió, no força."
+  },
+  {
+    id: "act_vetlla_flames", name: "La Vetlla de les Flames", is_base: false, zona: "Campament",
+    is_upgrade: true, upgrades_action_id: "act_contemplacio",
+    purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 5, output_max: 8,
+    side_effects: [{ resource: 'food', delta: -1 }],
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.15,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.07, sociabilitat: 0 },
+    event_pool_id: "pool_ritual",
+    description: "Passes la nit parlant amb el foc. A l'alba, el cos pesa menys i els mals han fugit."
+  },
+  {
+    id: "act_cendres_sagrades", name: "Les Cendres Sagrades", is_base: false, zona: "Campament",
+    purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 5,
+    token_min: 2, token_max: 3, stat_key: "vincle", stat_gain: 0.10,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: 0 },
+    event_pool_id: "pool_ritual",
+    description: "La cendra del foc vetllat guareix ferides i marca la pell dels protegits."
+  },
+
+  // ── TdB 4 — La Nit Domada ─────────────────────────────────────────────────────
+  {
+    id: "act_aguait_nocturn", name: "Aguait Nocturn", is_base: false, zona: "Planes",
+    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 6, output_max: 10,
+    side_effects: [{ resource: 'health', delta: -6 }],
+    token_min: 3, token_max: 5, stat_key: "forca", stat_gain: 0.18,
+    inclination_deltas: { impuls: +0.08, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_caca",
+    description: "Surts quan tothom torna. La foscor amaga la presa, però també t'amaga a tu."
+  },
+  {
+    id: "act_torxa_persecucio", name: "Perseguir amb Torxa", is_base: false, zona: "Planes",
+    purchase_cost: 4, execute_cost: 0, output_resource: "food", output_min: 5, output_max: 8,
+    side_effects: [{ resource: 'health', delta: -4 }, { resource: 'branques', delta: -1 }],
+    token_min: 3, token_max: 4, stat_key: "forca", stat_gain: 0.14,
+    inclination_deltas: { impuls: +0.06, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_caca",
+    description: "La flama enlluerna la presa i li roba la nit. Corre espantada cap al teu parany."
+  },
+  {
+    id: "act_feina_llum", name: "Feina a la Llum", is_base: false, zona: "Campament",
+    purchase_cost: 3, execute_cost: 0, output_resource: "branques", output_min: 3, output_max: 5,
+    token_min: 3, token_max: 5, stat_key: "vincle", stat_gain: 0.08,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: +0.04 },
+    event_pool_id: "pool_artesania",
+    description: "Mentre el clan dorm, les teves mans trenen. Cada nit, un cistell més."
+  },
+  {
+    id: "act_vigilar_brases", name: "Vigilar les Brases", is_base: false, zona: "Campament",
+    purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 2, output_max: 4,
+    token_min: 3, token_max: 4, stat_key: "vincle", stat_gain: 0.10,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.05 },
+    event_pool_id: "pool_social",
+    description: "Qui vetlla el foc del clan es guanya el respecte de tots. I dorm prop de l'escalfor."
+  },
+  {
+    id: "act_taller_nocturn", name: "El Taller de Nit", is_base: false, zona: "Campament",
+    purchase_cost: 4, execute_cost: 0, output_resource: "token", output_min: 4, output_max: 7,
+    side_effects: [{ resource: 'pedra', delta: -1 }],
+    token_min: 0, token_max: 0, stat_key: "enginy", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "Les hores que el sol no dona, el foc les presta. El teu ofici avança mentre tothom dorm."
+  },
+  {
+    id: "act_reparar_vora", name: "Reparar a la Vora del Foc", is_base: false, zona: "Campament",
+    purchase_cost: 3, execute_cost: 0, output_resource: "eina", output_min: 1, output_max: 1,
+    side_effects: [{ resource: 'branques', delta: -1 }],
+    token_min: 1, token_max: 2, stat_key: "enginy", stat_gain: 0.10,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.04, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "L'eina esquerdada no es llença: es reviu. Manteniment barat per a mans pacients."
+  },
+  {
+    id: "act_dansa_ombres", name: "La Dansa de les Ombres", is_base: false, zona: "Campament",
+    purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 4, output_max: 6,
+    side_effects: [{ resource: 'food', delta: -1 }],
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.12,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: +0.03 },
-    event_pool_id: "pool_ritual"
+    event_pool_id: "pool_ritual",
+    description: "Les ombres ballen a la paret quan tu balles davant del foc. El clan mira i sana."
+  },
+  {
+    id: "act_somnis_guiats", name: "Els Somnis Guiats", is_base: false, zona: "Campament",
+    purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 5,
+    token_min: 3, token_max: 5, stat_key: "vincle", stat_gain: 0.10,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.06, sociabilitat: 0 },
+    event_pool_id: "pool_ritual",
+    description: "Abans de dormir, demanes el somni que vols. De vegades, els esperits l'envien."
   },
 
-  // MYSTIC branch — bt_calendari_natural
+  // ── TdB 5 — La Mà que Transforma ──────────────────────────────────────────────
   {
-    id: "act_observar_cel", name: "Observar el Cel Nocturn", is_base: false, zona: "Planes",
-    description: "Nit rere nit fixes la marxa dels astres en la memòria. Quan la lluna i les estrelles s'alineen com aquell any, ho saps: és el dia que baixa el salmó, que cau el fruit, que passa la manada. El cel et diu quan menjar.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 4, output_max: 7,
-    stat_key: "vincle", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": +0.04, espiritualitat: +0.04, sociabilitat: 0 },
-    event_pool_id: "pool_ritual"
+    id: "act_llanca_emmanegada", name: "La Llança Emmanegada", is_base: false, zona: "Planes",
+    is_upgrade: true, upgrades_action_id: "act_caca_llanca",
+    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 6, output_max: 12,
+    side_effects: [{ resource: 'health', delta: -6 }, { resource: 'eina', delta: -1 }],
+    token_min: 3, token_max: 5, stat_key: "forca", stat_gain: 0.20,
+    inclination_deltas: { impuls: +0.08, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_caca",
+    description: "Punta, mànec i lligadura: la primera arma pensada. La presa cau abans d'olorar-te."
   },
   {
-    id: "act_transit_nocturn", name: "Trànsit Nocturn", is_base: false, zona: "Bosc",
-    description: "Surts a la nit guiat pels astres, on els altres no gosen. El fred, la por i l'esgotament són reals —però qui supera l'ordalia torna amb la presa que la foscor amagava. El cos paga, el clan menja.",
-    purchase_cost: 4, execute_cost: 0, output_resource: "food", output_min: 6, output_max: 12, side_effects: [{ resource: 'health', delta: -5 }],
-    stat_key: "vincle", stat_gain: 0.15,
-    inclination_deltas: { impuls: +0.06, "intel·lecte": 0, espiritualitat: +0.08, sociabilitat: 0 },
-    event_pool_id: "pool_caca"
+    id: "act_desollar_traca", name: "Desollar amb Traça", is_base: false, zona: "Planes",
+    purchase_cost: 4, execute_cost: 0, output_resource: "food", output_min: 4, output_max: 7,
+    side_effects: [{ resource: 'branques', delta: 1 }],
+    token_min: 2, token_max: 4, stat_key: "forca", stat_gain: 0.12,
+    inclination_deltas: { impuls: +0.04, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_caca",
+    description: "Carn, pell i tendons: ara res no es queda al terra. La presa sencera torna a casa."
+  },
+  {
+    id: "act_basto_cavador", name: "El Bastó Cavador", is_base: false, zona: "Planes",
+    is_upgrade: true, upgrades_action_id: "act_collita_guiada",
+    purchase_cost: 4, execute_cost: 0, output_resource: "food", output_min: 4, output_max: 7,
+    side_effects: [{ resource: 'eina', delta: -1 }],
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.10,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.05 },
+    event_pool_id: "pool_recollecta",
+    description: "El bastó entra on els dits no arriben. La terra cedeix les arrels sense discutir."
+  },
+  {
+    id: "act_espremer_fruits", name: "Esprémer els Fruits", is_base: false, zona: "Bosc",
+    purchase_cost: 4, execute_cost: 0, output_resource: "food", output_min: 3, output_max: 6,
+    side_effects: [{ resource: 'health', delta: 1 }],
+    token_min: 2, token_max: 4, stat_key: "enginy", stat_gain: 0.08,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.04 },
+    event_pool_id: "pool_recollecta",
+    description: "Entre dues pedres llises, el fruit dona fins a l'última gota. Dolçor que reconforta."
+  },
+  {
+    id: "act_taller_percussio", name: "El Taller de Percussió", is_base: false, zona: "Campament",
+    is_upgrade: true, upgrades_action_id: "act_tallar_ascles",
+    purchase_cost: 5, execute_cost: 0, output_resource: "eina", output_min: 1, output_max: 1,
+    side_effects: [{ resource: 'pedra', delta: -1 }, { resource: 'branques', delta: -1 }],
+    token_min: 3, token_max: 4, stat_key: "enginy", stat_gain: 0.20,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.06, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "Percussor a la dreta, nucli a l'esquerra, mètode al cap. Cada cop és on ha de ser."
+  },
+  {
+    id: "act_encarrecs", name: "Els Encàrrecs", is_base: false, zona: "Campament",
+    purchase_cost: 4, execute_cost: 0, output_resource: "token", output_min: 5, output_max: 8,
+    side_effects: [{ resource: 'eina', delta: -1 }],
+    token_min: 0, token_max: 0, stat_key: "vincle", stat_gain: 0.10,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.04, espiritualitat: 0, sociabilitat: +0.03 },
+    event_pool_id: "pool_artesania",
+    description: "El clan fa cua davant del teu taller. Cada eina que surt de les teves mans té un preu."
+  },
+  {
+    id: "act_basto_esperits", name: "El Bastó dels Esperits", is_base: false, zona: "Campament",
+    purchase_cost: 5, execute_cost: 0, output_resource: "health", output_min: 6, output_max: 9,
+    side_effects: [{ resource: 'eina', delta: -1 }, { resource: 'food', delta: -1 }],
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.15,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.08, sociabilitat: 0 },
+    event_pool_id: "pool_ritual",
+    description: "Alces el bastó coronat i el clan calla. Quan colpeja el terra, els mals marxen."
+  },
+  {
+    id: "act_foragitar_pors", name: "Foragitar les Pors", is_base: false, zona: "Llar",
+    purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 4, output_max: 6,
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: +0.03 },
+    event_pool_id: "pool_familia",
+    description: "T'asseus amb qui no dorm i li treus la por amb paraules i fum. La llar respira."
   },
 
-  // SHARED — bt_domini_terra
+  // ── TdB 6 — El Pes i la Palanca ───────────────────────────────────────────────
   {
-    id: "act_control_territori", name: "Control del Territori", is_base: false, zona: "Planes",
-    description: "Coordines el clan per controlar les zones de caça i recol·lecció. El territori és vostre.",
-    minAge: 8,
-    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 3, output_max: 7, side_effects: [{ resource: 'health', delta: -5 }],
-    stat_key: "forca", stat_gain: 0.15,
-    inclination_deltas: { impuls: +0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.02 },
-    event_pool_id: "pool_social"
+    id: "act_fossa_parany", name: "La Fossa Parany", is_base: false, zona: "Planes",
+    purchase_cost: 5, execute_cost: 1, output_resource: "food", output_min: 5, output_max: 10,
+    side_effects: [{ resource: 'health', delta: -2 }],
+    token_min: 3, token_max: 4, stat_key: "enginy", stat_gain: 0.12,
+    inclination_deltas: { impuls: +0.05, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_caca",
+    description: "Caves, cobreixes, esperes. La presa cau pel seu propi pes. Tu només mires."
   },
   {
-    id: "act_negociar_pastures", name: "Negociar les Pastures", is_base: false, zona: "Planes",
-    description: "Trobes els rastres d'un altre grup a les teves zones. T'aproximes amb gestos oberts. Acabeu repartint el territori.",
-    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 3, output_max: 6, side_effects: [{ resource: 'health', delta: +3 }],
-    stat_key: "vincle", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.03 },
-    event_pool_id: "pool_social"
+    id: "act_encerclar_presa", name: "Encerclar la Presa", is_base: false, zona: "Planes",
+    purchase_cost: 4, execute_cost: 0, output_resource: "food", output_min: 4, output_max: 8,
+    side_effects: [{ resource: 'health', delta: -3 }],
+    token_min: 2, token_max: 4, stat_key: "forca", stat_gain: 0.12,
+    inclination_deltas: { impuls: +0.05, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_caca",
+    description: "L'empenys cap al barranc, pas a pas. El terreny és el teu segon caçador."
+  },
+  {
+    id: "act_perxa_llarga", name: "La Perxa Llarga", is_base: false, zona: "Bosc",
+    purchase_cost: 4, execute_cost: 0, output_resource: "food", output_min: 3, output_max: 6,
+    side_effects: [{ resource: 'branques', delta: 1 }],
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.08,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.04 },
+    event_pool_id: "pool_recollecta",
+    description: "Els fruits de dalt de tot, els que ningú tocava, cauen ara a la teva falda."
+  },
+  {
+    id: "act_arrossegar_troncs", name: "Arrossegar Troncs", is_base: false, zona: "Bosc",
+    purchase_cost: 4, execute_cost: 0, output_resource: "branques", output_min: 4, output_max: 7,
+    side_effects: [{ resource: 'health', delta: -2 }],
+    token_min: 2, token_max: 4, stat_key: "forca", stat_gain: 0.10,
+    inclination_deltas: { impuls: +0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.03 },
+    event_pool_id: "pool_recollecta",
+    description: "Amb corrons i esforç compartit, el bosc sencer viatja fins al campament."
+  },
+  {
+    id: "act_palanca_pedrera", name: "La Palanca de la Pedrera", is_base: false, zona: "Planes",
+    is_upgrade: true, upgrades_action_id: "act_llegir_veta",
+    purchase_cost: 4, execute_cost: 0, output_resource: "pedra", output_min: 3, output_max: 6,
+    token_min: 2, token_max: 4, stat_key: "enginy", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "Falques el tronc, carregues el pes, i la llosa es desprèn. La muntanya negocia."
+  },
+  {
+    id: "act_llosa_llar", name: "Alçar la Llosa de la Llar", is_base: false, zona: "Campament",
+    purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 2, output_max: 4,
+    side_effects: [{ resource: 'pedra', delta: -2 }],
+    token_min: 4, token_max: 6, stat_key: "enginy", stat_gain: 0.10,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.04, espiritualitat: 0, sociabilitat: +0.02 },
+    event_pool_id: "pool_artesania",
+    description: "Una llosa ben posada al centre del campament: taula, altar i orgull de l'ofici."
+  },
+  {
+    id: "act_pedra_dreta", name: "Dreçar la Pedra", is_base: false, zona: "Campament",
+    purchase_cost: 5, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 5,
+    side_effects: [{ resource: 'pedra', delta: -2 }],
+    token_min: 4, token_max: 6, stat_key: "vincle", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.06, sociabilitat: +0.02 },
+    event_pool_id: "pool_ritual",
+    description: "El clan sencer estira les cordes i la pedra s'alça. Ara el cel sap que hi sou."
+  },
+  {
+    id: "act_ofrena_feixuga", name: "Portar l'Ofrena Feixuga", is_base: false, zona: "Planes",
+    purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 4, output_max: 6,
+    side_effects: [{ resource: 'food', delta: -1 }],
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.10,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: 0 },
+    event_pool_id: "pool_ritual",
+    description: "Portes l'ofrena fins al lloc alt, pas a pas. El cansament és part del pagament."
   },
 
-  // ── bt_cuina_conservacio (El Foc — Recol·lector/Artesà) ─────────────────────
+  // ── TdB 7 — Els Símbols a la Pedra ───────────────────────────────────────────
   {
-    id: "act_cocinar_arrels", name: "Cuinar Arrels", is_base: false, zona: "Campament",
-    description: "Coues arrels i tubercles al foc fins que es tornen tous i digeribles. El foc multiplica el valor dels aliments.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 3, output_max: 6,
-    stat_key: "enginy", stat_gain: 0.10,
-    inclination_deltas: { impuls: -0.01, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: +0.02 },
-    event_pool_id: "pool_recollecta"
+    id: "act_marcar_territori", name: "Marcar el Territori", is_base: false, zona: "Planes",
+    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 5, output_max: 9,
+    token_min: 3, token_max: 5, stat_key: "forca", stat_gain: 0.12,
+    inclination_deltas: { impuls: +0.05, "intel·lecte": 0, espiritualitat: +0.02, sociabilitat: 0 },
+    event_pool_id: "pool_caca",
+    description: "Els teus senyals a les roques guarden els millors llocs de caça. Ningú més no hi va."
   },
+  {
+    id: "act_mural_gesta", name: "El Mural de la Gesta", is_base: false, zona: "Campament",
+    purchase_cost: 4, execute_cost: 0, output_resource: "token", output_min: 5, output_max: 8,
+    side_effects: [{ resource: 'pedra', delta: -1 }],
+    token_min: 0, token_max: 0, stat_key: "vincle", stat_gain: 0.10,
+    inclination_deltas: { impuls: +0.03, "intel·lecte": 0, espiritualitat: +0.04, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "Pintes la cacera a la paret. Cada visitant que la mira fa créixer el teu nom."
+  },
+  {
+    id: "act_senyals_cami", name: "Senyals al Camí", is_base: false, zona: "Bosc",
+    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 4, output_max: 7,
+    token_min: 3, token_max: 4, stat_key: "vincle", stat_gain: 0.10,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.05 },
+    event_pool_id: "pool_recollecta",
+    description: "Les osques als troncs guien el clan als llocs bons. Ningú no es perd; res no es perd."
+  },
+  {
+    id: "act_comptar_osques", name: "Comptar amb Osques", is_base: false, zona: "Campament",
+    purchase_cost: 4, execute_cost: 0, output_resource: "token", output_min: 4, output_max: 7,
+    token_min: 0, token_max: 0, stat_key: "enginy", stat_gain: 0.10,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.04, espiritualitat: 0, sociabilitat: +0.03 },
+    event_pool_id: "pool_artesania",
+    description: "Una osca per cistell, una ratlla per lluna. El clan comença a saber quant té."
+  },
+  {
+    id: "act_gravar_patrons", name: "Gravar Patrons", is_base: false, zona: "Campament",
+    is_upgrade: true, upgrades_action_id: "act_endurir_puntes",
+    purchase_cost: 4, execute_cost: 0, output_resource: "eina", output_min: 1, output_max: 1,
+    side_effects: [{ resource: 'pedra', delta: -1 }],
+    token_min: 2, token_max: 3, stat_key: "enginy", stat_gain: 0.18,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.06, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "El patró no és adorn: és mesura i mètode. Les teves eines ja es reconeixen de lluny."
+  },
+  {
+    id: "act_pedres_bescanvi", name: "Pedres de Bescanvi", is_base: false, zona: "Campament",
+    purchase_cost: 5, execute_cost: 0, output_resource: "token", output_min: 6, output_max: 9,
+    side_effects: [{ resource: 'pedra', delta: -2 }],
+    token_min: 0, token_max: 0, stat_key: "vincle", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.04, espiritualitat: 0, sociabilitat: +0.03 },
+    event_pool_id: "pool_artesania",
+    description: "Pedres gravades amb el teu senyal: tothom sap qui les fa i tothom en vol una."
+  },
+  {
+    id: "act_pintar_esperits", name: "Pintar els Esperits", is_base: false, zona: "Campament",
+    purchase_cost: 5, execute_cost: 0, output_resource: "health", output_min: 6, output_max: 10,
+    side_effects: [{ resource: 'food', delta: -2 }],
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.18,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.08, sociabilitat: 0 },
+    event_pool_id: "pool_ritual",
+    description: "L'esperit pintat a la roca vetlla el clan dia i nit. La paret sencera protegeix."
+  },
+  {
+    id: "act_ocre_sagrat", name: "L'Ocre Sagrat", is_base: false, zona: "Bosc",
+    purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 4, output_max: 6,
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.06, sociabilitat: 0 },
+    event_pool_id: "pool_ritual",
+    description: "Vas al bosc a buscar la terra roja. Qui es pinta amb ocre duu la vida a la pell."
+  },
+
+  // ── TdB 8 — La Veu que Perdura ────────────────────────────────────────────────
+  {
+    id: "act_relat_gesta", name: "El Relat de la Gesta", is_base: false, zona: "Campament",
+    purchase_cost: 4, execute_cost: 0, output_resource: "token", output_min: 5, output_max: 8,
+    side_effects: [{ resource: 'health', delta: 1 }],
+    token_min: 0, token_max: 0, stat_key: "vincle", stat_gain: 0.12,
+    inclination_deltas: { impuls: +0.03, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.04 },
+    event_pool_id: "pool_social",
+    description: "Expliques la cacera i creixes amb cada paraula. El clan escolta; el nom, s'escampa."
+  },
+  {
+    id: "act_crits_caca", name: "Els Crits de Caça", is_base: false, zona: "Planes",
+    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 5, output_max: 9,
+    side_effects: [{ resource: 'health', delta: -3 }],
+    token_min: 3, token_max: 4, stat_key: "forca", stat_gain: 0.14,
+    inclination_deltas: { impuls: +0.06, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.02 },
+    event_pool_id: "pool_caca",
+    description: "Cada crit té un significat: ara, aquí, encercla. La colla caça com un sol cos."
+  },
+  {
+    id: "act_canco_collita", name: "La Cançó de la Collita", is_base: false, zona: "Campament",
+    purchase_cost: 4, execute_cost: 0, output_resource: "food", output_min: 3, output_max: 6,
+    token_min: 3, token_max: 5, stat_key: "vincle", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.06 },
+    event_pool_id: "pool_recollecta",
+    description: "La cançó diu quan madura cada cosa. Qui la canta, mai no torna de buit."
+  },
+  {
+    id: "act_veus_bosc", name: "Les Veus del Bosc", is_base: false, zona: "Bosc",
+    purchase_cost: 4, execute_cost: 0, output_resource: "branques", output_min: 4, output_max: 7,
+    side_effects: [{ resource: 'health', delta: 1 }],
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.10,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.05 },
+    event_pool_id: "pool_recollecta",
+    description: "Treballeu cantant, a torns de veu. Les mans no es cansen si la cançó no s'atura."
+  },
+  {
+    id: "act_nom_eines", name: "Donar Nom a les Eines", is_base: false, zona: "Campament",
+    purchase_cost: 4, execute_cost: 0, output_resource: "token", output_min: 4, output_max: 7,
+    token_min: 0, token_max: 0, stat_key: "vincle", stat_gain: 0.10,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: +0.02 },
+    event_pool_id: "pool_artesania",
+    description: "L'eina amb nom té història, i la història té valor. El teu taller ja té llegenda."
+  },
+  {
+    id: "act_memoria_ofici", name: "La Memòria de l'Ofici", is_base: false, zona: "Llar",
+    purchase_cost: 4, execute_cost: 0, output_resource: "token", output_min: 4, output_max: 6,
+    side_effects: [{ resource: 'health', delta: 1 }],
+    token_min: 0, token_max: 0, stat_key: "vincle", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.04, espiritualitat: 0, sociabilitat: +0.03 },
+    event_pool_id: "pool_familia",
+    description: "Cantes el mètode al fill mentre treballes: cop, gir, cop. L'ofici ja no morirà amb tu."
+  },
+  {
+    id: "act_cant_ancestres", name: "El Cant dels Ancestres", is_base: false, zona: "Llar",
+    purchase_cost: 5, execute_cost: 0, output_resource: "health", output_min: 5, output_max: 8,
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.18,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.07, sociabilitat: 0 },
+    event_pool_id: "pool_familia",
+    description: "Cantes els noms dels que ja no hi són, i la llar s'omple de presències que curen."
+  },
+  {
+    id: "act_lletania_clan", name: "La Lletania del Clan", is_base: false, zona: "Campament",
+    purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 4, output_max: 6,
+    side_effects: [{ resource: 'food', delta: -1 }],
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: +0.03 },
+    event_pool_id: "pool_ritual",
+    description: "Tot el clan repeteix les paraules velles alhora. Cent veus, un sol cos que sana."
+  },
+
+  // ── TdB 9 — La Segona Pell ────────────────────────────────────────────────────
+  {
+    id: "act_adobar_pell", name: "Adobar la Pell", is_base: false, zona: "Campament",
+    purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 4, output_max: 6,
+    side_effects: [{ resource: 'food', delta: -1 }],
+    token_min: 2, token_max: 4, stat_key: "enginy", stat_gain: 0.10,
+    inclination_deltas: { impuls: +0.03, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "Rasques, estires, untes. La pell de la presa vençuda ara et guarda del fred."
+  },
+  {
+    id: "act_caca_hivern", name: "La Caça d'Hivern", is_base: false, zona: "Planes",
+    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 7, output_max: 12,
+    side_effects: [{ resource: 'health', delta: -4 }],
+    token_min: 3, token_max: 5, stat_key: "forca", stat_gain: 0.18,
+    inclination_deltas: { impuls: +0.07, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_caca",
+    description: "La neu delata cada petjada i tu ja no tens fred. L'hivern és el teu aliat nou."
+  },
+  {
+    id: "act_capes_trenades", name: "Capes de Fibra Trenada", is_base: false, zona: "Campament",
+    purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 5,
+    side_effects: [{ resource: 'branques', delta: -2 }],
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.10,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.05 },
+    event_pool_id: "pool_artesania",
+    description: "Capa sobre capa de fibra trenada. El clan sencer vesteix el treball de les teves mans."
+  },
+  {
+    id: "act_collir_fred", name: "Collir sota el Fred", is_base: false, zona: "Bosc",
+    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 5, output_max: 8,
+    side_effects: [{ resource: 'branques', delta: -1 }],
+    token_min: 3, token_max: 4, stat_key: "vincle", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.05 },
+    event_pool_id: "pool_recollecta",
+    description: "Abrigat, arribes on abans no arribaves: baies tardanes, arrels d'hivern, bosc buit de rivals."
+  },
+  {
+    id: "act_agulla_os", name: "L'Agulla d'Os", is_base: false, zona: "Campament",
+    purchase_cost: 4, execute_cost: 0, output_resource: "eina", output_min: 1, output_max: 1,
+    side_effects: [{ resource: 'branques', delta: -2 }],
+    token_min: 2, token_max: 3, stat_key: "enginy", stat_gain: 0.18,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.06, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "Un os polit amb un ull al capdamunt. L'eina més petita que has fet, i la que més canvia."
+  },
+  {
+    id: "act_vestits_bescanvi", name: "Vestits de Bescanvi", is_base: false, zona: "Campament",
+    purchase_cost: 5, execute_cost: 0, output_resource: "token", output_min: 6, output_max: 10,
+    side_effects: [{ resource: 'branques', delta: -2 }, { resource: 'eina', delta: -1 }],
+    token_min: 0, token_max: 0, stat_key: "vincle", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.04, espiritualitat: 0, sociabilitat: +0.03 },
+    event_pool_id: "pool_artesania",
+    description: "Els teus vestits cosits viatgen més lluny que tu. Tothom vol dur la teva feina."
+  },
+  {
+    id: "act_mantell_ritual", name: "El Mantell Ritual", is_base: false, zona: "Campament",
+    purchase_cost: 5, execute_cost: 0, output_resource: "health", output_min: 6, output_max: 9,
+    side_effects: [{ resource: 'branques', delta: -2 }, { resource: 'food', delta: -1 }],
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.15,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.08, sociabilitat: 0 },
+    event_pool_id: "pool_ritual",
+    description: "Quan et poses el mantell, ja no ets tu qui parla. El clan ho sap i escolta."
+  },
+  {
+    id: "act_embolcallar_nadons", name: "Embolcallar els Nadons", is_base: false, zona: "Llar",
+    purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 4, output_max: 6,
+    side_effects: [{ resource: 'branques', delta: -1 }],
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: +0.03 },
+    event_pool_id: "pool_familia",
+    description: "Cada nadó embolcallat amb el senyal del clan. Els esperits sabran de qui és fill."
+  },
+
+  // ── TdB 10 — El Camí Llarg ────────────────────────────────────────────────────
+  {
+    id: "act_expedicio", name: "L'Expedició", is_base: false, zona: "Planes",
+    purchase_cost: 6, execute_cost: 1, output_resource: "food", output_min: 8, output_max: 14,
+    side_effects: [{ resource: 'health', delta: -8 }],
+    token_min: 3, token_max: 5, stat_key: "forca", stat_gain: 0.20,
+    inclination_deltas: { impuls: +0.08, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_caca",
+    description: "Tres dies de camí fins on els ramats no coneixen la por. Tornes carregat o no tornes."
+  },
+  {
+    id: "act_obrir_cami", name: "Obrir Camí", is_base: false, zona: "Planes",
+    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 5, output_max: 8,
+    side_effects: [{ resource: 'health', delta: -3 }],
+    token_min: 4, token_max: 6, stat_key: "forca", stat_gain: 0.14,
+    inclination_deltas: { impuls: +0.05, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.02 },
+    event_pool_id: "pool_caca",
+    description: "Vas al davant, marcant el pas i el perill. El clan et segueix; el mèrit és teu."
+  },
+  {
+    id: "act_intercanvi_llunya", name: "L'Intercanvi Llunyà", is_base: false, zona: "Planes",
+    purchase_cost: 5, execute_cost: 0, output_resource: "token", output_min: 6, output_max: 10,
+    side_effects: [{ resource: 'food', delta: -2 }],
+    token_min: 0, token_max: 0, stat_key: "vincle", stat_gain: 0.15,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.07 },
+    event_pool_id: "pool_social",
+    description: "Carregues el que sobra i tornes amb el que falta. Els estranys ja et saluden pel nom."
+  },
+  {
+    id: "act_rutes_fruita", name: "Les Rutes de la Fruita", is_base: false, zona: "Bosc",
+    purchase_cost: 5, execute_cost: 1, output_resource: "food", output_min: 6, output_max: 9,
+    token_min: 3, token_max: 4, stat_key: "vincle", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.05 },
+    event_pool_id: "pool_recollecta",
+    description: "Un circuit de dies per tots els llocs bons, en l'ordre just. La ruta és el tresor."
+  },
+  {
+    id: "act_pedres_llunyanes", name: "Pedres de Lluny", is_base: false, zona: "Planes",
+    purchase_cost: 5, execute_cost: 1, output_resource: "pedra", output_min: 4, output_max: 7,
+    token_min: 2, token_max: 4, stat_key: "enginy", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "El sílex bo és a dues jornades. Hi vas, en tornes carregat, i el taller ho nota."
+  },
+  {
+    id: "act_lligar_carregues", name: "Lligar les Càrregues", is_base: false, zona: "Planes",
+    purchase_cost: 4, execute_cost: 0, output_resource: "pedra", output_min: 3, output_max: 5,
+    side_effects: [{ resource: 'branques', delta: -1 }],
+    token_min: 2, token_max: 4, stat_key: "enginy", stat_gain: 0.10,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.04, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "Amb el farcell ben lligat a l'esquena, cada viatge porta el doble. Enginy pur."
+  },
+  {
+    id: "act_pelegrinatge", name: "El Pelegrinatge", is_base: false, zona: "Bosc",
+    purchase_cost: 6, execute_cost: 0, output_resource: "health", output_min: 7, output_max: 11,
+    side_effects: [{ resource: 'food', delta: -3 }],
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.18,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.08, sociabilitat: 0 },
+    event_pool_id: "pool_ritual",
+    description: "Camines fins al lloc on l'invisible pesa. En tornes buidat de mals i ple de força."
+  },
+  {
+    id: "act_terres_esperits", name: "Les Terres dels Esperits", is_base: false, zona: "Bosc",
+    purchase_cost: 5, execute_cost: 1, output_resource: "health", output_min: 5, output_max: 8,
+    token_min: 3, token_max: 5, stat_key: "vincle", stat_gain: 0.14,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.06, sociabilitat: 0 },
+    event_pool_id: "pool_ritual",
+    description: "Coneixes els llocs on cal aturar-se, callar i deixar alguna cosa. Ells ho retornen."
+  },
+
+  // ── TdB 11 — El Nus que Reté ──────────────────────────────────────────────────
+  {
+    id: "act_parar_llacos", name: "Parar Llaços", is_base: false, zona: "Planes",
+    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 5, output_max: 9,
+    side_effects: [{ resource: 'branques', delta: -2 }],
+    token_min: 3, token_max: 4, stat_key: "enginy", stat_gain: 0.14,
+    inclination_deltas: { impuls: +0.04, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_caca",
+    description: "Pares el llaç al pas del rastre i te'n vas. La presa es caça sola. Cap ferida, tota la carn."
+  },
+  {
+    id: "act_xarxa_ocells", name: "La Xarxa d'Ocells", is_base: false, zona: "Planes",
+    purchase_cost: 4, execute_cost: 0, output_resource: "food", output_min: 4, output_max: 7,
+    side_effects: [{ resource: 'branques', delta: -1 }],
+    token_min: 2, token_max: 4, stat_key: "enginy", stat_gain: 0.10,
+    inclination_deltas: { impuls: +0.04, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_caca",
+    description: "La xarxa alçada entre dos pals, al pas del vol baix. El cel també es pot collir."
+  },
+  {
+    id: "act_xarxa_riu", name: "La Xarxa del Riu", is_base: false, zona: "Planes",
+    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 5, output_max: 9,
+    side_effects: [{ resource: 'branques', delta: -2 }],
+    token_min: 3, token_max: 4, stat_key: "vincle", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.05 },
+    event_pool_id: "pool_recollecta",
+    description: "La calaix al riu al vespre; al matí, plena. El corrent treballa per al clan."
+  },
+  {
+    id: "act_lligar_farcells", name: "Lligar Farcells", is_base: false, zona: "Bosc",
+    purchase_cost: 4, execute_cost: 0, output_resource: "branques", output_min: 5, output_max: 8,
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.10,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.04 },
+    event_pool_id: "pool_recollecta",
+    description: "Amb corda, cada viatge al bosc porta el triple. Les esquenes ho agraeixen."
+  },
+  {
+    id: "act_trenar_corda", name: "Trenar Cordam", is_base: false, zona: "Campament",
+    purchase_cost: 3, execute_cost: 0, output_resource: "eina", output_min: 1, output_max: 1,
+    side_effects: [{ resource: 'branques', delta: -3 }],
+    token_min: 1, token_max: 2, stat_key: "enginy", stat_gain: 0.14,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "Tres cordills es tornen un; el que era herba ara aguanta el pes d'un home."
+  },
+  {
+    id: "act_nusos_mesura", name: "Els Nusos de Mesura", is_base: false, zona: "Campament",
+    purchase_cost: 5, execute_cost: 0, output_resource: "token", output_min: 5, output_max: 8,
+    side_effects: [{ resource: 'branques', delta: -1 }],
+    token_min: 0, token_max: 0, stat_key: "enginy", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "Una corda amb nusos a distàncies iguals: ara pots mesurar, comparar, cobrar just."
+  },
+  {
+    id: "act_nusos_memoria", name: "Els Nusos de la Memòria", is_base: false, zona: "Campament",
+    purchase_cost: 5, execute_cost: 0, output_resource: "token", output_min: 5, output_max: 8,
+    side_effects: [{ resource: 'branques', delta: -1 }],
+    token_min: 0, token_max: 0, stat_key: "vincle", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.02, espiritualitat: +0.05, sociabilitat: 0 },
+    event_pool_id: "pool_ritual",
+    description: "Cada nus, un nom; cada tram, una generació. El llinatge sencer cap en una corda."
+  },
+  {
+    id: "act_lligar_mals", name: "Lligar els Mals", is_base: false, zona: "Campament",
+    purchase_cost: 5, execute_cost: 0, output_resource: "health", output_min: 6, output_max: 9,
+    side_effects: [{ resource: 'branques', delta: -2 }],
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.15,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.07, sociabilitat: 0 },
+    event_pool_id: "pool_ritual",
+    description: "Nuses el mal dins la corda i l'enterres lluny. El malalt es lleva lleuger."
+  },
+
+  // ── TdB 12 — Els Fils del Clan ────────────────────────────────────────────────
+  {
+    id: "act_cacera_conjunta", name: "La Cacera Conjunta", is_base: false, zona: "Planes",
+    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 7, output_max: 12,
+    side_effects: [{ resource: 'health', delta: -3 }],
+    token_min: 4, token_max: 6, stat_key: "forca", stat_gain: 0.16,
+    inclination_deltas: { impuls: +0.05, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.04 },
+    event_pool_id: "pool_caca",
+    description: "Deu llances, un sol pla. La presa gran cau i el risc es reparteix entre tots."
+  },
+  {
+    id: "act_repartir_boti", name: "Repartir el Botí", is_base: false, zona: "Campament",
+    purchase_cost: 5, execute_cost: 0, output_resource: "token", output_min: 6, output_max: 9,
+    side_effects: [{ resource: 'food', delta: -2 }],
+    token_min: 0, token_max: 0, stat_key: "vincle", stat_gain: 0.12,
+    inclination_deltas: { impuls: +0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.05 },
+    event_pool_id: "pool_social",
+    description: "Reparteixes les millors parts amb les teves mans. Qui dona la carn, mana al clan."
+  },
+  {
+    id: "act_teixir_cercle", name: "Teixir en Cercle", is_base: false, zona: "Campament",
+    purchase_cost: 5, execute_cost: 0, output_resource: "branques", output_min: 4, output_max: 7,
+    side_effects: [{ resource: 'health', delta: 1 }],
+    token_min: 3, token_max: 4, stat_key: "vincle", stat_gain: 0.14,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.06 },
+    event_pool_id: "pool_social",
+    description: "El cercle de teixidores parla, riu i produeix. La feina surt sola quan es fa en companyia."
+  },
+  {
+    id: "act_taula_comuna", name: "La Taula Comuna", is_base: false, zona: "Campament",
+    purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 4, output_max: 6,
+    side_effects: [{ resource: 'food', delta: -2 }],
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.06 },
+    event_pool_id: "pool_social",
+    description: "Tot el que hi ha, es posa al mig. Ningú menja sol; ningú passa gana sol."
+  },
+  {
+    id: "act_aprenents", name: "Els Aprenents", is_base: false, zona: "Campament",
+    purchase_cost: 5, execute_cost: 0, output_resource: "token", output_min: 5, output_max: 8,
+    token_min: 0, token_max: 0, stat_key: "vincle", stat_gain: 0.14,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.04, espiritualitat: 0, sociabilitat: +0.04 },
+    event_pool_id: "pool_artesania",
+    description: "Quatre mans joves repeteixen els teus gestos. El taller produeix el doble i aprèn."
+  },
+  {
+    id: "act_obrar_plegats", name: "Obrar Plegats", is_base: false, zona: "Campament",
+    is_upgrade: true, upgrades_action_id: "act_taller_percussio",
+    purchase_cost: 5, execute_cost: 0, output_resource: "eina", output_min: 1, output_max: 1,
+    side_effects: [{ resource: 'pedra', delta: -1 }, { resource: 'branques', delta: -1 }],
+    token_min: 3, token_max: 4, stat_key: "enginy", stat_gain: 0.18,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: +0.02 },
+    event_pool_id: "pool_artesania",
+    description: "Un talla, l'altre poleix, el tercer lliga. La cadena de mans fa eines millors que cap mà sola."
+  },
+  {
+    id: "act_ritu_pas", name: "El Ritu de Pas", is_base: false, zona: "Llar",
+    purchase_cost: 5, execute_cost: 0, output_resource: "health", output_min: 5, output_max: 8,
+    side_effects: [{ resource: 'food', delta: -2 }],
+    token_min: 3, token_max: 5, stat_key: "vincle", stat_gain: 0.16,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.07, sociabilitat: +0.02 },
+    event_pool_id: "pool_familia",
+    description: "El jove entra nen al cercle i en surt membre del clan. Tots en sortiu més forts."
+  },
+  {
+    id: "act_cercle_dol", name: "El Cercle del Dol", is_base: false, zona: "Campament",
+    purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 5, output_max: 7,
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.14,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.06, sociabilitat: +0.03 },
+    event_pool_id: "pool_ritual",
+    description: "Quan algú marxa, el clan es tanca en cercle i plora junt. El dolor compartit pesa la meitat."
+  },
+
+  // ── TdB 13 — El Vas que Guarda ────────────────────────────────────────────────
+  {
+    id: "act_greix_vas", name: "Greix al Vas", is_base: false, zona: "Campament",
+    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 5, output_max: 8,
+    side_effects: [{ resource: 'health', delta: 1 }],
+    token_min: 2, token_max: 4, stat_key: "enginy", stat_gain: 0.10,
+    inclination_deltas: { impuls: +0.03, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "Fons el greix i el segelles dins el vas. L'hivern ja no fa tanta por."
+  },
+  {
+    id: "act_provisions_caca", name: "Provisions de Caça", is_base: false, zona: "Planes",
+    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 6, output_max: 10,
+    side_effects: [{ resource: 'health', delta: -2 }],
+    token_min: 3, token_max: 5, stat_key: "forca", stat_gain: 0.16,
+    inclination_deltas: { impuls: +0.06, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_caca",
+    description: "Surts amb el vas ple i tornes quan vols, no quan la gana mana. Caceres més llargues, preses millors."
+  },
+  {
+    id: "act_gerres_gra", name: "Gerres de Gra", is_base: false, zona: "Campament",
+    obsoletes_action_id: "act_pedres_bullir",
+    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 6, output_max: 9,
+    token_min: 3, token_max: 4, stat_key: "vincle", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.05 },
+    event_pool_id: "pool_recollecta",
+    description: "Files de gerres plenes a la vora de la llar. El clan compta l'abundància amb els dits."
+  },
+  {
+    id: "act_aigua_guardada", name: "L'Aigua Guardada", is_base: false, zona: "Campament",
+    purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 4, output_max: 6,
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.10,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: +0.04 },
+    event_pool_id: "pool_recollecta",
+    description: "Aigua neta al campament, sempre. Els vells i els nadons ho noten primer."
+  },
+  {
+    id: "act_modelar_vasos", name: "Modelar Vasos", is_base: false, zona: "Campament",
+    purchase_cost: 5, execute_cost: 0, output_resource: "token", output_min: 6, output_max: 10,
+    side_effects: [{ resource: 'pedra', delta: -1 }],
+    token_min: 0, token_max: 0, stat_key: "enginy", stat_gain: 0.16,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.06, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "Les teves mans donen forma al fang i el fang dona forma al teu prestigi."
+  },
+  {
+    id: "act_segellar_vasos", name: "Segellar els Vasos", is_base: false, zona: "Campament",
+    purchase_cost: 4, execute_cost: 0, output_resource: "food", output_min: 4, output_max: 6,
+    side_effects: [{ resource: 'branques', delta: -1 }],
+    token_min: 2, token_max: 3, stat_key: "enginy", stat_gain: 0.10,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.04, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "Tapa de pell, corda i resina: el que entra al vas, no es fa malbé. Res no es llença."
+  },
+  {
+    id: "act_vas_ofrenes", name: "El Vas de les Ofrenes", is_base: false, zona: "Campament",
+    purchase_cost: 5, execute_cost: 0, output_resource: "health", output_min: 6, output_max: 9,
+    side_effects: [{ resource: 'food', delta: -2 }],
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.15,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.07, sociabilitat: 0 },
+    event_pool_id: "pool_ritual",
+    description: "El vas sagrat rep la part dels esperits. Mentre sigui ple, el clan estarà protegit."
+  },
+  {
+    id: "act_urna_ancestres", name: "L'Urna dels Ancestres", is_base: false, zona: "Campament",
+    purchase_cost: 5, execute_cost: 0, output_resource: "health", output_min: 5, output_max: 8,
+    side_effects: [{ resource: 'pedra', delta: -1 }],
+    token_min: 3, token_max: 5, stat_key: "vincle", stat_gain: 0.14,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.07, sociabilitat: 0 },
+    event_pool_id: "pool_ritual",
+    description: "Les cendres dels avis reposen dins l'urna, al centre del campament. Ja no marxaran mai."
+  },
+
+  // ── TdB 14 — El Fang i el Forn ────────────────────────────────────────────────
+  {
+    id: "act_fumador", name: "El Fumador", is_base: false, zona: "Campament",
+    is_upgrade: true, upgrades_action_id: "act_ahumar_carn",
+    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 6, output_max: 9,
+    token_min: 2, token_max: 4, stat_key: "enginy", stat_gain: 0.12,
+    inclination_deltas: { impuls: +0.03, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "El fum tancat amb la carn a dins: ni una brasa perduda, ni un tall florit."
+  },
+  {
+    id: "act_coure_moll", name: "Coure el Moll de l'Os", is_base: false, zona: "Campament",
+    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 5, output_max: 8,
+    side_effects: [{ resource: 'health', delta: 2 }],
+    token_min: 2, token_max: 3, stat_key: "enginy", stat_gain: 0.10,
+    inclination_deltas: { impuls: +0.03, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "Els ossos que abans llençàveu bullen ara dins l'olla. El moll dona força als febles."
+  },
+  {
+    id: "act_torrar_llavors", name: "Torrar les Llavors", is_base: false, zona: "Campament",
+    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 5, output_max: 8,
+    token_min: 3, token_max: 4, stat_key: "vincle", stat_gain: 0.10,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.05 },
+    event_pool_id: "pool_recollecta",
+    description: "Al forn suau, les llavors s'obren i perfumen el campament. Durar i agradar alhora."
+  },
+  {
+    id: "act_olla_foc", name: "L'Olla al Foc", is_base: false, zona: "Campament",
+    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 4, output_max: 7,
+    side_effects: [{ resource: 'health', delta: 2 }],
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.05 },
+    event_pool_id: "pool_recollecta",
+    description: "L'olla bull sola mentre feu altra feina. El brou calent cura més que moltes paraules."
+  },
+  {
+    id: "act_forn_terra", name: "El Forn de Terra", is_base: false, zona: "Campament",
+    is_upgrade: true, upgrades_action_id: "act_obrar_plegats",
+    purchase_cost: 6, execute_cost: 0, output_resource: "eina", output_min: 1, output_max: 1,
+    side_effects: [{ resource: 'pedra', delta: -2 }],
+    token_min: 3, token_max: 5, stat_key: "enginy", stat_gain: 0.20,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.07, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "El forn cou el fang, endureix la fusta i trempa la pedra. El taller definitiu de l'Era."
+  },
+  {
+    id: "act_coure_fang", name: "Coure el Fang", is_base: false, zona: "Campament",
+    purchase_cost: 5, execute_cost: 0, output_resource: "token", output_min: 7, output_max: 11,
+    side_effects: [{ resource: 'pedra', delta: -1 }, { resource: 'branques', delta: -1 }],
+    token_min: 0, token_max: 0, stat_key: "enginy", stat_gain: 0.14,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "Cada fornada surt amb el teu segell. Els clans veïns paguen bé pel fang tornat pedra."
+  },
+  {
+    id: "act_figures_fang", name: "Figures de Fang", is_base: false, zona: "Campament",
+    purchase_cost: 5, execute_cost: 0, output_resource: "health", output_min: 5, output_max: 8,
+    token_min: 3, token_max: 5, stat_key: "vincle", stat_gain: 0.14,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.07, sociabilitat: 0 },
+    event_pool_id: "pool_ritual",
+    description: "Modeles l'esperit amb les mans i el forn el fa etern. La figura vetlla des de la llar."
+  },
+  {
+    id: "act_forn_visions", name: "El Forn de les Visions", is_base: false, zona: "Campament",
+    purchase_cost: 6, execute_cost: 0, output_resource: "health", output_min: 7, output_max: 10,
+    side_effects: [{ resource: 'food', delta: -2 }],
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.16,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.08, sociabilitat: 0 },
+    event_pool_id: "pool_ritual",
+    description: "El fum d'herbes dins l'espai tancat obre portes. En surts havent vist; en surts curat."
+  },
+
+  // ── TdB 15 — La Llavor Confiada ───────────────────────────────────────────────
+  {
+    id: "act_atraure_ramat", name: "Atraure el Ramat", is_base: false, zona: "Planes",
+    purchase_cost: 6, execute_cost: 0, output_resource: "food", output_min: 7, output_max: 12,
+    side_effects: [{ resource: 'health', delta: -3 }],
+    token_min: 3, token_max: 5, stat_key: "forca", stat_gain: 0.18,
+    inclination_deltas: { impuls: +0.06, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_caca",
+    description: "Deixes farratge on tu vols i el ramat s'acostuma a venir. La caça comença a ser cita."
+  },
+  {
+    id: "act_tanca_bestiar", name: "La Tanca del Bestiar", is_base: false, zona: "Planes",
+    purchase_cost: 6, execute_cost: 0, output_resource: "food", output_min: 6, output_max: 10,
+    side_effects: [{ resource: 'branques', delta: -2 }],
+    token_min: 3, token_max: 4, stat_key: "enginy", stat_gain: 0.14,
+    inclination_deltas: { impuls: +0.04, "intel·lecte": +0.04, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_caca",
+    description: "Pals i corda tanquen el que abans calia perseguir. La carn espera dreta al costat de casa."
+  },
+  {
+    id: "act_hort_clan", name: "L'Hort del Clan", is_base: false, zona: "Campament",
+    purchase_cost: 6, execute_cost: 1, output_resource: "food", output_min: 7, output_max: 11,
+    token_min: 3, token_max: 5, stat_key: "vincle", stat_gain: 0.14,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.06 },
+    event_pool_id: "pool_recollecta",
+    description: "Els teus rengs verds al costat del campament. Cada matí, el clan es lleva més ric."
+  },
+  {
+    id: "act_triar_llavors", name: "Triar les Llavors", is_base: false, zona: "Campament",
+    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 5, output_max: 8,
+    token_min: 3, token_max: 4, stat_key: "vincle", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: +0.04 },
+    event_pool_id: "pool_recollecta",
+    description: "Guardes la llavor de la planta més grossa, any rere any. Les collites t'obeeixen a poc a poc."
+  },
+  {
+    id: "act_aixada", name: "L'Aixada", is_base: false, zona: "Campament",
+    purchase_cost: 5, execute_cost: 0, output_resource: "eina", output_min: 1, output_max: 1,
+    side_effects: [{ resource: 'pedra', delta: -1 }, { resource: 'branques', delta: -1 }],
+    token_min: 2, token_max: 3, stat_key: "enginy", stat_gain: 0.18,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.06, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "Fulla de pedra, mànec corbat: l'eina que obre la terra. El camp sencer depèn del teu taller."
+  },
+  {
+    id: "act_obrir_solcs", name: "Obrir els Solcs", is_base: false, zona: "Planes",
+    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 6, output_max: 9,
+    side_effects: [{ resource: 'eina', delta: -1 }],
+    token_min: 3, token_max: 4, stat_key: "forca", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "L'aixada mossega la terra en línies rectes. On passes tu, després hi creix menjar."
+  },
+  {
+    id: "act_beneir_camps", name: "Beneir els Camps", is_base: false, zona: "Campament",
+    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 4, output_max: 8,
+    side_effects: [{ resource: 'health', delta: 2 }],
+    token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.14,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.07, sociabilitat: 0 },
+    event_pool_id: "pool_ritual",
+    description: "Camines els solcs cantant i deixant ofrenes. La terra beneïda dona amb més ganes."
+  },
+  {
+    id: "act_primera_espiga", name: "La Primera Espiga", is_base: false, zona: "Campament",
+    purchase_cost: 6, execute_cost: 0, output_resource: "health", output_min: 6, output_max: 9,
+    side_effects: [{ resource: 'food', delta: -2 }],
+    token_min: 4, token_max: 6, stat_key: "vincle", stat_gain: 0.16,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.08, sociabilitat: 0 },
+    event_pool_id: "pool_ritual",
+    description: "La primera espiga de cada collita crema a l'altar. El clan celebra i el cel pren nota."
+  },
+
+  // ── TdB 16 — El Cicle de les Estacions ───────────────────────────────────────
+  {
+    id: "act_llegir_migracions", name: "Llegir les Migracions", is_base: false, zona: "Planes",
+    obsoletes_action_id: "act_seguir_ramat",
+    purchase_cost: 6, execute_cost: 0, output_resource: "food", output_min: 8, output_max: 13,
+    side_effects: [{ resource: 'health', delta: -2 }],
+    token_min: 3, token_max: 5, stat_key: "forca", stat_gain: 0.18,
+    inclination_deltas: { impuls: +0.07, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_caca",
+    description: "Saps on serà el ramat abans que el ramat ho decideixi. Ja no el segueixes: l'esperes."
+  },
+  {
+    id: "act_darrera_cacera", name: "La Darrera Cacera", is_base: false, zona: "Planes",
+    purchase_cost: 6, execute_cost: 1, output_resource: "food", output_min: 9, output_max: 15,
+    side_effects: [{ resource: 'health', delta: -7 }, { resource: 'eina', delta: -1 }],
+    token_min: 4, token_max: 6, stat_key: "forca", stat_gain: 0.20,
+    inclination_deltas: { impuls: +0.08, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_caca",
+    description: "La presa més gran de la teva vida, al final de la temporada. La gesta que et sobreviurà."
+  },
+  {
+    id: "act_calendari_collita", name: "El Calendari de la Collita", is_base: false, zona: "Campament",
+    obsoletes_action_id: "act_canco_collita",
+    purchase_cost: 6, execute_cost: 0, output_resource: "food", output_min: 7, output_max: 10,
+    token_min: 3, token_max: 5, stat_key: "vincle", stat_gain: 0.14,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.06 },
+    event_pool_id: "pool_recollecta",
+    description: "Osques, cançons i llunes reunides en un sol saber. El clan menja tot l'any sense ensurt."
+  },
+  {
+    id: "act_rebost_hivern", name: "El Rebost d'Hivern", is_base: false, zona: "Campament",
+    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 6, output_max: 9,
+    side_effects: [{ resource: 'health', delta: 1 }],
+    token_min: 3, token_max: 4, stat_key: "vincle", stat_gain: 0.12,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.05 },
+    event_pool_id: "pool_recollecta",
+    description: "Gerres, farcells i carn fumada, comptats i endreçats abans del fred. Que vingui l'hivern."
+  },
+  {
+    id: "act_eines_temps", name: "Les Eines de Cada Temps", is_base: false, zona: "Campament",
+    purchase_cost: 6, execute_cost: 0, output_resource: "eina", output_min: 1, output_max: 1,
+    side_effects: [{ resource: 'pedra', delta: -1 }],
+    token_min: 4, token_max: 6, stat_key: "enginy", stat_gain: 0.18,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.06, espiritualitat: 0, sociabilitat: 0 },
+    event_pool_id: "pool_artesania",
+    description: "A l'hivern fas les eines de l'estiu; a l'estiu, les de l'hivern. El taller viu avançat a l'any."
+  },
+  {
+    id: "act_llegat_taller", name: "El Llegat del Taller", is_base: false, zona: "Llar",
+    purchase_cost: 6, execute_cost: 0, output_resource: "token", output_min: 7, output_max: 11,
+    side_effects: [{ resource: 'eina', delta: -1 }],
+    token_min: 0, token_max: 0, stat_key: "vincle", stat_gain: 0.16,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: +0.03 },
+    event_pool_id: "pool_familia",
+    description: "Poses la teva millor eina a les mans del fill i li expliques per què és la millor. Això no té preu — o el té tot."
+  },
+  {
+    id: "act_festa_solstici", name: "La Festa del Solstici", is_base: false, zona: "Campament",
+    purchase_cost: 6, execute_cost: 0, output_resource: "health", output_min: 8, output_max: 12,
+    side_effects: [{ resource: 'food', delta: -3 }],
+    token_min: 3, token_max: 5, stat_key: "vincle", stat_gain: 0.20,
+    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.08, sociabilitat: 0 },
+    event_pool_id: "pool_ritual",
+    description: "El dia més llarg, el foc més gran, el clan sencer ballant. Tothom en surt renovat per dins."
+  },
+  {
+    id: "act_roda_any", name: "La Roda de l'Any", is_base: false, zona: "Campament",
+    purchase_cost: 6, execute_cost: 0, output_resource: "health", output_min: 6, output_max: 9,
+    side_effects: [{ resource: 'food', delta: -2 }],
+    token_min: 4, token_max: 6, stat_key: "vincle", stat_gain: 0.16,
+    inclination_deltas: { impuls: 0, "intel·lecte": +0.02, espiritualitat: +0.07, sociabilitat: 0 },
+    event_pool_id: "pool_ritual",
+    description: "Un ritual per a cada frontissa de l'any. El clan ja no tem el temps: hi balla a dins."
+  },
+
+  // STANDALONES (no TdB — purchasables directes)
   {
     id: "act_ahumar_carn", name: "Ahumar Carn", is_base: false, zona: "Campament",
     description: "Pengeu la carn sobre el fum del foc durant hores. La carn fumada dura dies i els guanya temps.",
@@ -1097,332 +1941,6 @@ const ACTIONS = [
     stat_key: "enginy", stat_gain: 0.08,
     inclination_deltas: { impuls: -0.01, "intel·lecte": +0.02, espiritualitat: +0.01, sociabilitat: 0 },
     event_pool_id: "pool_artesania"
-  },
-  // CRAFTSMAN branch — bt_rasclador_fi (consum estri → menjar)
-  {
-    id: "act_treballar_estris", name: "Treballar amb Estris", is_base: false, zona: "Campament",
-    description: "Amb els estris adequats, el procés de conservació és més precís. Les provisions rinden molt més del que esperaves.",
-    purchase_cost: 4, execute_cost: 0,
-    requires: [{ resource: 'eina', min: 1 }],
-    output_resource: "food", output_min: 4, output_max: 8,
-    side_effects: [{ resource: 'eina', delta: -1 }],
-    token_min: 1, token_max: 2,
-    stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: -0.02, "intel·lecte": +0.04, espiritualitat: 0, sociabilitat: 0 },
-    event_pool_id: "pool_artesania"
-  },
-
-  // ── bt_adhesius (El Foc — Artesà) ────────────────────────────────────────────
-  {
-    id: "act_destillar_quitra", name: "Destil·lar Quitrà", is_base: false, zona: "Campament",
-    description: "Cous escorça de bedoll sota brases tapades fins que en regalima una pasta negra i enganxosa. El que s'enganxa, no es perd.",
-    purchase_cost: 4, execute_cost: 0, token_min: 2, token_max: 4,
-    side_effects: [{ resource: 'health', delta: -2 }],
-    stat_key: "enginy", stat_gain: 0.20,
-    inclination_deltas: { impuls: -0.02, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
-    event_pool_id: "pool_artesania"
-  },
-  {
-    id: "act_emmanegar_eines", name: "Emmanegar Eines", is_base: false, zona: "Campament",
-    description: "Fixes una fulla de sílex a un mànec de fusta amb quitrà i tendons. L'eina composta multiplica la força de la mà.",
-    purchase_cost: 4, execute_cost: 0,
-    requires: [{ resource: 'pedra', min: 1 }],
-    character_effect: { type: 'make_tool', pedra_cost: 1 },
-    token_min: 2, token_max: 3,
-    stat_key: "enginy", stat_gain: 0.20,
-    inclination_deltas: { impuls: 0, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
-    event_pool_id: "pool_artesania"
-  },
-  // ── bt_guardia_flama (El Foc — Caçador/Artesà/Recol·lector/Místic) ──────────
-  {
-    id: "act_alimentar_foc", name: "Alimentar el Foc", is_base: false, zona: "Campament",
-    description: "Mantens el foc viu tota la nit amb fusta seca i cendra. El campament dorm segur i sa.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 5,
-    side_effects: [{ resource: 'branques', delta: -1 }],
-    stat_key: "vincle", stat_gain: 0.10,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.03, sociabilitat: +0.03 },
-    event_pool_id: "pool_ritual"
-  },
-  {
-    id: "act_torxa_escolta", name: "Torxa d'Escolta", is_base: false, zona: "Campament",
-    description: "Fabriques una torxa i recorres el perímetre del campament a la nit. La foscor no és del clan, és del que l'amenaça.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 2, output_max: 5,
-    requires: [{ resource: 'branques', min: 1 }], side_effects: [{ resource: "health", delta: -3 }, { resource: 'branques', delta: -1 }],
-    stat_key: "forca", stat_gain: 0.10,
-    inclination_deltas: { impuls: +0.04, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.02 },
-    event_pool_id: "pool_social"
-  },
-  // ── bt_adobament_pells (La Vestimenta — Caçador/Artesà/Recol·lector) ─────────
-  {
-    id: "act_preparar_cuiro", name: "Preparar Cuiro", is_base: false, zona: "Campament",
-    description: "Estires i asseques la pell fins que queda rígida i dura. Token resistent per a roba i estris.",
-    purchase_cost: 3, execute_cost: 0, token_min: 2, token_max: 4,
-    stat_key: "forca", stat_gain: 0.10,
-    inclination_deltas: { impuls: +0.02, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
-    event_pool_id: "pool_artesania"
-  },
-  {
-    id: "act_roba_hivern", name: "Roba d'Hivern", is_base: false, zona: "Campament",
-    description: "Cousis diverses pells adobades formant una capa gruixuda. El fred ja no penetra com abir.",
-    purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 4, output_max: 8,
-    requires: [{ resource: 'branques', min: 2 }], side_effects: [{ resource: 'branques', delta: -2 }],
-    stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: -0.02, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
-    event_pool_id: "pool_artesania"
-  },
-  // ── bt_pigments_tintures (La Vestimenta — Místic) ────────────────────────────
-  {
-    id: "act_decorar_cos", name: "Decorar el Cos", is_base: false, zona: "Campament",
-    description: "Abans de la cerimònia recorres el bosc collint les fibres, escorces i tintures que el ritual demana. Les mans se't tenyeixen, i en tornes amb un feix de matèria viva: la decoració comença molt abans del foc.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "branques", output_min: 2, output_max: 3,
-    stat_key: "vincle", stat_gain: 0.10,
-    inclination_deltas: { impuls: -0.02, "intel·lecte": -0.02, espiritualitat: +0.04, sociabilitat: +0.04 },
-    event_pool_id: "pool_social"
-  },
-  {
-    id: "act_tenyir_pells", name: "Tenyir Pells", is_base: false, zona: "Campament",
-    description: "Immergeixes les pells en una solució de plantes i argila fins que agafen color. Símbol d'identitat del clan.",
-    purchase_cost: 3, execute_cost: 0, token_min: 1, token_max: 3,
-    stat_key: "enginy", stat_gain: 0.10,
-    inclination_deltas: { impuls: 0, "intel·lecte": +0.02, espiritualitat: +0.03, sociabilitat: 0 },
-    event_pool_id: "pool_artesania"
-  },
-  // ── bt_arc_fletxes (La Corda — Caçador/Artesà) ───────────────────────────────
-  {
-    id: "act_caçar_amb_arc", name: "Caçar amb Arc", is_base: false, zona: "Planes",
-    description: "L'arc permet atacar des de la distància segura. La presa no pot fugir del que no ha vist venir.",
-    purchase_cost: 4, execute_cost: 0, output_resource: "food", output_min: 4, output_max: 9,
-    side_effects: [{ resource: "health", delta: -4 }],
-    stat_key: "forca", stat_gain: 0.20,
-    inclination_deltas: { impuls: +0.06, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: 0 },
-    event_pool_id: "pool_caca"
-  },
-  {
-    id: "act_practicar_tir", name: "Practicar el Tir", is_base: false, zona: "Planes",
-    description: "Practiques la tècnica de tir fins que el moviment es torna automàtic. La repetició és el mestre invisible.",
-    purchase_cost: 3, execute_cost: 0, token_min: 1, token_max: 2,
-    stat_key: "enginy", stat_gain: 0.20,
-    inclination_deltas: { impuls: +0.05, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
-    event_pool_id: "pool_artesania"
-  },
-  // ── bt_narracio_oral (L'Art — Místic/social) ─────────────────────────────────
-  {
-    id: "act_explicar_orígens", name: "Explicar els Orígens", is_base: false, zona: "Campament",
-    description: "Expliques com va néixer el clan, d'on vénen i per qué fan el que fan. El grup escolta en silenci.",
-    purchase_cost: 3, execute_cost: 0, side_effects: [{ resource: "health", delta: +3 }],
-    stat_key: "vincle", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": +0.02, espiritualitat: +0.03, sociabilitat: +0.04 },
-    event_pool_id: "pool_social"
-  },
-  {
-    id: "act_cants_grup", name: "Cants de Grup", is_base: false, zona: "Campament",
-    description: "La veu compartida tanca les nafres que el silenci deixa obertes. Qui canta amb el clan no carrega sol: la fatiga i la por es dissolen en el ritme col·lectiu.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 5,
-    stat_key: "vincle", stat_gain: 0.10,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.04, sociabilitat: +0.05 },
-    event_pool_id: "pool_ritual"
-  },
-  // MYSTIC branch — bt_eines_cerimonials (creació talisman)
-
-  // ── bt_eines_cerimonials (Les Eines — Místic) ────────────────────────────────
-  {
-    id: "act_ofrena_eines", name: "Ofrena d'Eines", is_base: false, zona: "Campament",
-    description: "Ofreneu eines de sílex al foc com a ofrena als esperits de la terra. El que es dóna torna multiplicat.",
-    purchase_cost: 3, execute_cost: 0, requires: [{ resource: 'pedra', min: 1 }],
-    side_effects: [{ resource: "health", delta: +5 }, { resource: "pedra", delta: -1 }],
-    stat_key: "vincle", stat_gain: 0.10,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: +0.03 },
-    event_pool_id: "pool_ritual"
-  },
-  {
-    id: "act_cerimonia_eines", name: "Cerimònia de les Eines", is_base: false, zona: "Campament",
-    description: "Celebres una cerimònia col·lectiva on les eines passen de mà en mà. Cada nus de coneixement reforça el clan.",
-    purchase_cost: 4, execute_cost: 0, side_effects: [{ resource: "health", delta: +3 }],
-    stat_key: "vincle", stat_gain: 0.10,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.04, sociabilitat: +0.05 },
-    event_pool_id: "pool_ritual"
-  },
-  // ── bt_musica_os (Les Eines — pont Artesà/Místic) ────────────────────────────
-  {
-    id: "act_tallar_flauta", name: "Tallar una Flauta d'Os", is_base: false, zona: "Campament",
-    description: "Forades un os d'ala de voltor amb el burí, forat a forat. Quan hi bufes, en surt una veu que no és de ningú.",
-    purchase_cost: 4, execute_cost: 0, token_min: 1, token_max: 2,
-    stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": +0.03, espiritualitat: +0.03, sociabilitat: 0 },
-    event_pool_id: "pool_artesania"
-  },
-  {
-    id: "act_musica_vetlla", name: "Música a la Vetlla", is_base: false, zona: "Campament",
-    description: "Toques la flauta quan el campament es recull. Els infants s'adormen abans i els vells parlen més fluix.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 5,
-    stat_key: "vincle", stat_gain: 0.15,
-    inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: +0.03, sociabilitat: +0.04 },
-    event_pool_id: "pool_ritual"
-  },
-  // ── bt_nusos_sagrats (La Corda — Místic) ─────────────────────────────────────
-  {
-    id: "act_ritual_nusos", name: "Ritual dels Nusos", is_base: false, zona: "Campament",
-    description: "Fas nusos específics en presència del clan. Cada nus és un vincle invisible entre el passat i el futur.",
-    purchase_cost: 3, execute_cost: 0, side_effects: [{ resource: "health", delta: +5 }],
-    stat_key: "vincle", stat_gain: 0.10,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: +0.04 },
-    event_pool_id: "pool_ritual"
-  },
-  {
-    id: "act_tela_sagrada", name: "Tela Sagrada", is_base: false, zona: "Campament",
-    description: "Treballes fils i fibres en patrons complexos que el clan reconeix com a símbols de protecció.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 5, token_min: 1, token_max: 3,
-    stat_key: "vincle", stat_gain: 0.10,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.04, sociabilitat: +0.03 },
-    event_pool_id: "pool_ritual"
-  },
-  // ── bt_pesca (La Corda — pont Caçador/Recol·lector) ──────────────────────────
-  {
-    id: "act_pescar_riu", name: "Pescar al Riu", is_base: false, zona: "Bosc",
-    description: "T'esperes immòbil al gual amb l'arpó alçat. El riu dona menjar sense exigir sang a canvi.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 3, output_max: 6,
-    stat_key: "forca", stat_gain: 0.10,
-    inclination_deltas: { impuls: +0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.02 },
-    event_pool_id: "pool_caca"
-  },
-  {
-    id: "act_xarxa_pesca", name: "Calar la Xarxa", is_base: false, zona: "Bosc",
-    description: "Cales la xarxa de fibra entre dues roques del riu i tornes l'endemà. La corda treballa mentre dorms.",
-    purchase_cost: 5, execute_cost: 1, output_resource: "food", output_min: 4, output_max: 9,
-    side_effects: [{ resource: 'health', delta: -2 }],
-    stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: +0.01, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.04 },
-    event_pool_id: "pool_caca"
-  },
-  // ── bt_intercanvi_troc (La Ceràmica — Místic/social) ─────────────────────────
-  {
-    id: "act_fira_intercanvi", name: "Fira d'Intercanvi", is_base: false, zona: "Planes",
-    description: "Organitzes una trobada on diversos clans intercanvien ceràmica, pells i provisions. Tothom torna amb alguna cosa.",
-    purchase_cost: 4, execute_cost: 1, token_min: 3, token_max: 6,
-    stat_key: "vincle", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.06 },
-    event_pool_id: "pool_social"
-  },
-  {
-    id: "act_ceramica_regalada", name: "Ceràmica Regalada", is_base: false, zona: "Planes",
-    description: "Offereixes una peça de ceràmica decorada a un grup veí com a gest d'aliança. La bellesa és la primera moneda.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 2, output_max: 4,
-    stat_key: "vincle", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.02, sociabilitat: +0.05 },
-    event_pool_id: "pool_social"
-  },
-  // ── bt_terrissa (La Ceràmica — Artesà) ───────────────────────────────────────
-  {
-    id: "act_modelar_argila", name: "Modelar Argila", is_base: false, zona: "Campament",
-    description: "Pastes argila humida i en surten formes: una dona, un bisó, un ós. Quan passen pel foc, es tornen pedra.",
-    purchase_cost: 4, execute_cost: 0, token_min: 2, token_max: 4,
-    stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": +0.04, espiritualitat: +0.02, sociabilitat: 0 },
-    event_pool_id: "pool_artesania"
-  },
-  {
-    id: "act_coure_ceramica", name: "Coure Vasos d'Argila", is_base: false, zona: "Campament",
-    description: "Cous els vasos a la fossa del foc tota la nit. El que abans es feia malbé ara espera, tranquil, dins l'argila.",
-    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 2, output_max: 4,
-    token_min: 2, token_max: 3,
-    stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: -0.02, "intel·lecte": +0.04, espiritualitat: 0, sociabilitat: 0 },
-    event_pool_id: "pool_artesania"
-  },
-  // ── bt_sembra_collita (L'Agricultura — Artesà/Recol·lector) ──────────────────
-  {
-    id: "act_sembrar_llavors", name: "Sembrar Llavors", is_base: false, zona: "Planes",
-    description: "Plantes llavors seleccionades en la parcel·la preparada. Un gest petit que canviarà el món.",
-    purchase_cost: 4, execute_cost: 1, output_resource: "food", output_min: 3, output_max: 7,
-    stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: -0.02, "intel·lecte": +0.04, espiritualitat: 0, sociabilitat: 0 },
-    event_pool_id: "pool_recollecta"
-  },
-  {
-    id: "act_collita_sistematica", name: "Collita Sistemàtica", is_base: false, zona: "Planes",
-    description: "Colles la parcel·la amb ordre, reserves una part per sembrar i distribueixes la resta al clan.",
-    purchase_cost: 5, execute_cost: 0, output_resource: "food", output_min: 5, output_max: 9,
-    stat_key: "forca", stat_gain: 0.10,
-    inclination_deltas: { impuls: -0.01, "intel·lecte": +0.03, espiritualitat: 0, sociabilitat: 0 },
-    event_pool_id: "pool_recollecta"
-  },
-  // ── bt_domesticacio_animals (L'Agricultura — Caçador/social) ─────────────────
-  {
-    id: "act_amansar_animal", name: "Amansar un Animal", is_base: false, zona: "Planes",
-    description: "Dediques temps a guanyar-te la confiança d'un animal jove. La paciència és la teva arma.",
-    purchase_cost: 4, execute_cost: 2, output_resource: "food", output_min: 2, output_max: 5,
-    side_effects: [{ resource: "health", delta: -2 }],
-    stat_key: "vincle", stat_gain: 0.15,
-    inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.04 },
-    event_pool_id: "pool_caca"
-  },
-  {
-    id: "act_pasturar_bestiar", name: "Pasturar el Bestiar", is_base: false, zona: "Planes",
-    description: "Cuides i condueixes el bestiar domesticat cap a bons prats. Els animals confiats donen més.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "food", output_min: 3, output_max: 7,
-    stat_key: "forca", stat_gain: 0.10,
-    inclination_deltas: { impuls: +0.02, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.03 },
-    event_pool_id: "pool_caca"
-  },
-  // ── bt_construccio_refugis (L'Agricultura — Artesà/Caçador) ──────────────────
-  {
-    id: "act_edificar_cabana", name: "Edificar una Cabana", is_base: false, zona: "Campament",
-    description: "Construeixes una cabana de pals i fulles per al clan. Quatre parets que valen per totes les nits que vindran.",
-    purchase_cost: 5, execute_cost: 0, output_resource: "health", output_min: 5, output_max: 10,
-    requires: [{ resource: 'branques', min: 2 }], side_effects: [{ resource: 'branques', delta: -2 }],
-    stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: +0.02 },
-    event_pool_id: "pool_artesania"
-  },
-  {
-    id: "act_reforçar_palissada", name: "Reforçar la Palissada", is_base: false, zona: "Campament",
-    description: "Claveu estacades afilades al voltant del campament. El que és de fora sap que aquí hi ha clan.",
-    purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 3, output_max: 6,
-    requires: [{ resource: 'branques', min: 1 }], side_effects: [{ resource: 'branques', delta: -1 }],
-    stat_key: "forca", stat_gain: 0.15,
-    inclination_deltas: { impuls: +0.03, "intel·lecte": 0, espiritualitat: 0, sociabilitat: +0.02 },
-    event_pool_id: "pool_artesania"
-  },
-  // ── bt_ritus_sembra (L'Agricultura — Místic) ─────────────────────────────────
-  {
-    id: "act_ofrena_terra", name: "Ofrena a la Terra", is_base: false, zona: "Campament",
-    description: "Ofreneu llavors i pigments a la terra abans de sembrar. El que es dóna a la terra torna en abundància.",
-    purchase_cost: 4, execute_cost: 1, side_effects: [{ resource: "health", delta: +5 }],
-    stat_key: "vincle", stat_gain: 0.15,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.06, sociabilitat: +0.04 },
-    event_pool_id: "pool_ritual"
-  },
-  {
-    id: "act_danses_fertilitat", name: "Danses de Fertilitat", is_base: false, zona: "Campament",
-    description: "Organitzes danses rituals per cridar l'abundància. El ritme dels peus és la pregunta que la terra respon.",
-    purchase_cost: 3, execute_cost: 0, output_resource: "health", output_min: 2, output_max: 4,
-    side_effects: [{ resource: "food", delta: -1 }],
-    stat_key: "vincle", stat_gain: 0.10,
-    inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.05, sociabilitat: +0.05 },
-    event_pool_id: "pool_ritual"
-  },
-
-  // UPGRADES
-  // B-01: Acció exclusiva branca Recol·lector — payoff tangible Gen 1
-  {
-    id: "act_aguait_coordinat", name: "Aguait Coordinat", is_upgrade: true, upgrades_action_id: "act_espiar_ramat", zona: "Planes",
-    description: "Senyal coordinat amb el grup. La presa no pot fugir. Rendiment molt superior.",
-    requires: [{ type: 'has_destresa', id: 'd_rastreig' }],
-    purchase_cost: 8, execute_cost: 0, output_resource: "food", output_min: 5, output_max: 10,
-    token_min: 1, token_max: 2,
-    stat_key: "forca", stat_gain: 0.10,
-    inclination_deltas: { impuls: +0.05, "intel·lecte": +0.02, espiritualitat: 0, sociabilitat: +0.03 },
-    event_pool_id: "pool_caca"
-  },
-  {
-    id: "act_recollecta_metodica", name: "Recol·lecta Metòdica", is_upgrade: true, upgrades_action_id: "act_recollectar_arrels", zona: "Planes",
-    description: "Apliques coneixement acumulat: zones, estació, plantes. Rendiment molt superior.",
-    requires: [{ type: 'has_destresa', id: 'd_botanica' }],
-    purchase_cost: 6, execute_cost: 0, output_resource: "food", output_min: 4, output_max: 7,
-    token_min: 1, token_max: 2,
-    stat_key: "enginy", stat_gain: 0.10,
-    inclination_deltas: { impuls: -0.02, "intel·lecte": +0.03, espiritualitat: +0.02, sociabilitat: +0.02 },
-    event_pool_id: "pool_recollecta"
   },
   {
     id: "act_gran_ritual", name: "Gran Ritual", is_upgrade: true, upgrades_action_id: "act_ritual_foc", zona: "Campament",
