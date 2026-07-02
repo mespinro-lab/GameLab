@@ -117,7 +117,6 @@ const ACTION_ICONS = {
   act_defensa_activa:     '⚔️',
   act_aguait_coordinat:   '🎯',
   act_recollecta_metodica:'🌿',
-  act_talla_avancada:     '💎',
   act_recollecta_avancada:'🌾',
   act_control_territori:  '🗺️',
   act_negociar_pastures:  '🕊️',
@@ -1228,8 +1227,7 @@ function executeAction(actionId) {
     const outRes = action.output_resource;
     let output = 0, outDef = null;
     if (outRes && action.output_min != null) {
-      const _qualBonus = (state.character.purchasedActionIds.has('act_talla_avancada') && action.requires?.some(r => r.resource === 'eina')) ? 1.3 : 1.0;
-      output = Math.round(randInt(action.output_min + outMinBonus, Math.round((action.output_max + outMaxBonus) * _qualBonus)) * getStatMultiplier(action)) + destresaBonus;
+      output = Math.round(randInt(action.output_min + outMinBonus, action.output_max + outMaxBonus) * getStatMultiplier(action)) + destresaBonus;
       outDef = RESOURCE_DEFS.find(r => r.id === outRes);
     }
     // FEEDBACK (2026-06-29): "assist" de matèria primera — tenir pedra/fibres ajuda accions base abans de fer eines.
@@ -1694,6 +1692,17 @@ function renderZoneNodes() {
 const CAROUSEL = { actions: [], idx: 0, zoneId: null, dragStartX: 0, dragDelta: 0, dragging: false, didDrag: false };
 const CAROUSEL_STEP = 110;
 
+function isSupersededByUpgrade(actionId) {
+  let id = actionId;
+  for (let i = 0; i < 8; i++) {
+    const up = ACTIONS.find(u => u.is_upgrade && u.upgrades_action_id === id);
+    if (!up) return false;
+    if (state.character.purchasedActionIds.has(up.id)) return true;
+    id = up.id;
+  }
+  return false;
+}
+
 function getZoneActions(zoneId) {
   const age = characterAge();
   const base = ACTIONS.filter(a => {
@@ -1703,11 +1712,9 @@ function getZoneActions(zoneId) {
     if (a.maxAge !== undefined && age > a.maxAge) return false;
     // always_show_locked: include even when character requirements not met (shown as unavailable)
     if (!evaluateCharacterRequires(a) && !a.always_show_locked) return false;
-    // Hide base action when a purchased upgrade or obsoleting action supersedes it
-    if (ACTIONS.some(u => (
-      (u.is_upgrade && u.upgrades_action_id === a.id) ||
-      u.obsoletes_action_id === a.id
-    ) && state.character.purchasedActionIds.has(u.id))) return false;
+    // Hide base action when superseded: direct obsolete OR any upgrade in the chain
+    if (ACTIONS.some(u => u.obsoletes_action_id === a.id && state.character.purchasedActionIds.has(u.id))) return false;
+    if (isSupersededByUpgrade(a.id)) return false;
     return true; // include even if minAge not met — shown as tooYoung
   });
   // SKILL-DISC-01 (2026-06-28): mostrar l'acció de descobriment sempre que hi hagi una tecnologia descoberta
@@ -1910,9 +1917,6 @@ function updateCarouselInfo() {
   }
   if (action.character_effect?.type === 'explore_zone') {
     parts.push(`<span class="benefit-stat-badge">🗺️<span class="bsb-tri">?</span></span>`);
-  }
-  if (state.character.purchasedActionIds.has('act_talla_avancada') && action.requires?.some(r => r.resource === 'eina')) {
-    parts.push('⭐ eines qualitat');
   }
   if (action.stat_key && action.stat_gain) {
     const statEmoji = { forca: '💪', enginy: '🧠', vincle: '🔗' };

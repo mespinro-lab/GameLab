@@ -142,8 +142,8 @@ const APRENENTATGE_DEFS = [
     id: "apr_cures_basiques", name: "Cures Bàsiques", icon: "🩹",
     description: "Saps aplicar remeis senzills: compreses d'arrels i embenats. Curar és ara molt més eficaç.",
     discoveryChance: 0.30,
-    discovery_action_ids: ["act_curar_herbes", "act_preparar_ungüent", "act_contemplacio"],
-    effect: { type: "bonus_action_output", action_id: "act_curar_herbes", output_min_bonus: 2, output_max_bonus: 2, desc: "+2 Salut en curar amb herbes" }
+    discovery_action_ids: ["act_contemplacio", "act_vetlla_flames"],
+    effect: { type: "bonus_action_output", action_id: "act_contemplacio", output_min_bonus: 2, output_max_bonus: 2, desc: "+2 Salut en contemplació" }
   },
   {
     id: "apr_conservar_provisions", name: "Conservació", icon: "🧂",
@@ -163,8 +163,8 @@ const APRENENTATGE_DEFS = [
     id: "apr_treball_pedra", name: "Treball de la Pedra", icon: "🪨",
     description: "Tries el millor sílex i calcules l'angle de talla. L'artesania de pedra dona molt més.",
     discoveryChance: 0.30,
-    discovery_action_ids: ["act_recollectar_pedra", "act_faonar_eines"],
-    effect: { type: "bonus_action_output", action_id: "act_faonar_eines", output_min_bonus: 2, output_max_bonus: 2, desc: "+2 eines en façonar estris" }
+    discovery_action_ids: ["act_recollectar_pedra", "act_tallar_ascles"],
+    effect: { type: "bonus_action_output", action_id: "act_tallar_ascles", output_min_bonus: 2, output_max_bonus: 2, desc: "+2 eines en tallar ascles" }
   },
   {
     id: "apr_lectura_senyals", name: "Lectura de Senyals", icon: "👣",
@@ -177,16 +177,14 @@ const APRENENTATGE_DEFS = [
     id: "apr_plantes_medicinals", name: "Plantes Medicinals", icon: "🌿",
     description: "Saps quines plantes i bolets curen, nodreixen i calmen. La recollida del bosc rendeix més i és més sana.",
     discoveryChance: 0.30,
-    discovery_action_ids: ["act_recollectar_arrels", "act_assecament_plantes", "act_preparar_ungüent"],
-    // APR-01 (2026-06-28): diferenciat de la destresa Botànica (que dona +food a arrels). Aquí, medicinal →
-    // buffa la recollida de bolets (food + salut), no arrels: evita el doble stacking i el rol és distint.
-    effect: { type: "bonus_action_output", action_id: "act_recollida_bolets", output_min_bonus: 1, output_max_bonus: 1, desc: "+1 recol·lecció de bolets (plantes que nodreixen i curen)" }
+    discovery_action_ids: ["act_recollectar_arrels", "act_ritual_foc"],
+    effect: { type: "bonus_action_output", action_id: "act_ritual_foc", output_min_bonus: 1, output_max_bonus: 1, desc: "+1 Salut en vetlla al foc (plantes guaridores)" }
   },
   {
     id: "apr_veu_clan", name: "La Veu del Clan", icon: "🗣️",
     description: "Saps transmetre, inspirar i mediar. Les teves paraules generen recursos allà on les llances no arriben.",
     discoveryChance: 0.20,
-    discovery_action_ids: ["act_narrar_llegendes", "act_explicar_orígens", "act_cants_grup"],
+    discovery_action_ids: ["act_relat_gesta", "act_crits_caca", "act_canco_collita"],
     effect: { type: "token_bonus", value: 1, desc: "+1 token a totes les accions" }
   },
 ];
@@ -2015,7 +2013,7 @@ const EVENT_POOLS = {
         {
           text: "Atac directe amb llances",
           food_delta: +12, health_delta: -6, discovers: false,
-          skill_modifier: { skill_id: "bt_punta_llanca", absent_health_delta: -12 }
+          skill_modifier: { skill_id: "tdb_01", absent_health_delta: -12 }
         },
         { text: "Conduir-lo cap al barranc",   food_delta: +10, health_delta: -1, discovers: false },
         { text: "Deixar-lo, seguir un rens",   food_delta:  +2, health_delta:  0, discovers: false }
@@ -2068,7 +2066,7 @@ const EVENT_POOLS = {
       options: [
         { text: "Seguir recollint fins que truoni",          food_delta: +3, health_delta: -1, discovers: false },
         { text: "Arreplegar el que tinc i córrer",           food_delta: +1, health_delta: +1, discovers: false },
-        { text: "Marco els tubercles, agafo les baies peribles i marxo", food_delta: +2, health_delta: +1, requires_skill: "bt_coneixement_plantes", discovers: false }
+        { text: "Marco els tubercles, agafo les baies peribles i marxo", food_delta: +2, health_delta: +1, requires_skill: "tdb_04", discovers: false }
       ]
     },
     {
@@ -2086,7 +2084,7 @@ const EVENT_POOLS = {
       options: [
         { text: "Agafar-lo i repartir-lo",       food_delta: +3, health_delta: -3, discovers: false },
         { text: "Deixar-lo estar, seguim",        discovers: false },
-        { text: "Observo el peu, l'olor, el color de les làmines — decideixo", food_delta: +2, health_delta: +1, requires_skill: "bt_coneixement_plantes", discovers: false }
+        { text: "Observo el peu, l'olor, el color de les làmines — decideixo", food_delta: +2, health_delta: +1, requires_skill: "tdb_04", discovers: false }
       ]
     },
     {
@@ -2151,7 +2149,7 @@ const EVENT_POOLS = {
     },
     {
       id: "ev_tecnica_subtil",
-      blocked_if: [{ type: "not_has_skill", id: "bt_buri" }],
+      blocked_if: [{ type: "not_has_skill", id: "tdb_07" }],
       text: "He notat que quan inclino el burí uns dits cap a l'esquerra, el solc surt net i sense esclats. Un artesà que no havia vist mai s'ha assegut al costat i treballa amb el burí inclinat, exactament com ho he provat jo. Sembla que ja ho sap des de fa temps.",
       options: [
         { text: "Preguntar-li directament: mostro el meu solc i el seu, i espero.", health_delta: +1, discovers: false },
@@ -2167,7 +2165,7 @@ const EVENT_POOLS = {
       options: [
         {
           text: "Aplica les herbes guaridores que coneixes.",
-          requires_skill: "bt_guariment_plantes",
+          requires_skill: "tdb_03",
           food_delta: -1, health_delta: -3, discovers: false
         },
         {
@@ -2241,7 +2239,7 @@ const EVENT_POOLS = {
           text: "Provar la rel a dosi petita. Veure com respon.",
           food_delta: 0, discovers: false,
           skill_modifier: {
-            skill_id: "bt_guariment_plantes",
+            skill_id: "tdb_03",
             present_health_delta: +3,
             absent_health_options: [+1, -2]
           }
@@ -2349,7 +2347,7 @@ const EVENT_POOLS = {
         {
           text: "Cerco les herbes que he vist usar a la curandera. Ho provaré.",
           food_delta: -1, discovers: false,
-          skill_modifier: { skill_id: "bt_guariment_plantes", present_health_delta: +4, absent_health_delta: +1 }
+          skill_modifier: { skill_id: "tdb_03", present_health_delta: +4, absent_health_delta: +1 }
         },
         { text: "Repòs, caliu i carn bullida fins que millori.", food_delta: -2, health_delta: +2, discovers: false },
         { text: "Crido l'ancià del ritual. Que ell s'en faci càrrec.", food_delta: 0, health_delta: +1, discovers: false }

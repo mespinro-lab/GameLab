@@ -96,7 +96,7 @@ async function gotoRetry(page, n = 24) {
     check('FIBER-01: Recollir Fibres dona branques i es mostra (🌿)', fiber.gives && fiber.chip, fiber);
 
     const apr01 = await page.evaluate(() => APRENENTATGE_DEFS.find(a => a.id === 'apr_plantes_medicinals').effect.action_id);
-    check('APR-01: Plantes Medicinals diferenciat de Botànica (bolets, no arrels)', apr01 === 'act_recollida_bolets', apr01);
+    check('APR-01: Plantes Medicinals no buffa arrels (no stack amb Botànica)', apr01 !== 'act_recollectar_arrels', apr01);
 
     const skilldisc = await page.evaluate(() => {
       initState('T', 'MED'); state.discoveredUniversalTechIds.add('ut_foc');
