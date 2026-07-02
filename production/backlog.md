@@ -108,16 +108,35 @@
     - **Foc = UT transversal**: cada branca l'aprofita al seu estil (documentat a Doc 1 §2.3).
   - ECON-01 i ECON-02 queden **resolts** aquí. La feina de contingut/codi passa a **DESIGN-02-IMPL**.
 
-## P1 OPEN CONTENT — DESIGN-02-IMPL — Aplicar les decisions de DESIGN-02 al contingut
+## P0 DONE CONTENT — ERA1-CONTENT — Implementar contingut Era 1 de Fable (128 accions + 16 TdBs)
 
+- **Origen**: document `design/gdd/bloodline/bloodline_era1_contingut.md` (Fable 5, 2026-07-02).
+- **Abast**: substitució completa del contingut de branch-techs/habilitats/accions existent.
+  Les 9 accions base i les 7 tecnologies universals es mantenen sense canvis.
+- **Nou contingut**: 16 Tecnologies de Branca × 4 branques × 2 accions = 128 accions noves.
+- **Mecànica nova**: tipus `obsoleta:` (compra al Mercat + avís) diferent de `upgrade:` (botó a l'acció).
+- **Zona Llar**: ja existeix al codi (starts_discovered: false, apareix amb parella). ✓
+- **IDs**: cal mapejar IDs assumits del doc contra els reals (`act_espiar_ramat`, `act_caca_llanca`, etc.)
+- **Checklist**:
+  1. [ ] Mapeig d'IDs base (acció base real → ID assumit al doc Fable)
+  2. [ ] Eliminar branch techs i accions comprables existents (mantenir base + UT)
+  3. [ ] Afegir les 16 entrades TdB a SKILL_DEFS (una per TdB, 4 branques cadascuna)
+  4. [ ] Afegir les 128 accions a ACTIONS (format existent)
+  5. [ ] Implementar mecànica `obsoleta:` a game.js (Mercat + avís que fa obsoleta altra)
+  6. [ ] Verificar headless
+- **Absorbeix**: DESIGN-02-IMPL items 1–6, DESIGN-01, PACE-01 (TdBs 1-2 cobreixen c0–c16)
+- **✅ RESOLT 2026-07-02** (commit 5964ebd): 16 TdBs (tdb_01–tdb_16) + 128 accions + mecànica obsoleta_action_id.
+  22/22 tests passes. Accions standalone conservades (ritual_foc, ahumar_carn, assecar_provisions, gran_ritual, caca_llanca).
+
+## P1 DEFERRED CONTENT — DESIGN-02-IMPL — Aplicar les decisions de DESIGN-02 al contingut
+
+- **⛔ ABSORBIDA per ERA1-CONTENT (2026-07-02)**: els items 1–6 (contingut d'accions) queden
+  substituïts pel contingut de Fable (128 accions + 16 TdBs). Els items 7–9 segueixen vius:
+  - [7] Cadena lliure d'eines + registre "eines conegudes" → DESIGN-02-IMPL-MECH
+  - [8] Panell d'identitat de branca → DESIGN-02-IMPL-MECH
+  - [9] `act_recollir_branques` threshold fix → DESIGN-02-IMPL-MECH
 - **Fitxers**: `prototypes/bloodline-v2/data.js` (contingut), `prototypes/bloodline-v2/game.js`
   (eines/UI), `design/gdd/bloodline/`.
-- **Origen**: decisions de DESIGN-02 (2026-06-25). Vegeu `branch-model-redesign.md` §7.1 i
-  `progression-distribution.md` §9.2.
-- **📄 DRAFT DE CONTINGUT 2026-06-27** (per revisar, NO implementat): `design/gdd/bloodline/design-02-impl-content-draft.md`
-  — specs concretes (ids, output, deltes, narrativa) de les 3 accions-pont Místic, 2 ponts nous,
-  `bt_mapa_recursos`, família de foc del Caçador, reubicació de plantes. Revisa/ajusta valors i aprova abans
-  de tocar `data.js`. Opcional: polir veu narrativa amb `era-writer`/`era-historian`.
 - **Assignació**: contingut (accions/habilitats a `data.js`) via `era-writer` + `era-historian`
   (`/era-design`); lògica d'eines i UI a `game.js` directament. Target = prototip JS (NO Godot).
 - **Checklist**:
@@ -175,7 +194,7 @@
   de qualsevol altra) + **retorn gratuït** a una eina ja coneguda pel llinatge (set "eines conegudes"
   heretat al 100%). Implementació a DESIGN-02-IMPL ítem 7.
 
-## P1 OPEN DESIGN — DESIGN-01 — Rethinking complet d'accions + habilitats (Era 1)
+## P1 DONE DESIGN — DESIGN-01 — Rethinking complet d'accions + habilitats (Era 1)
 
 - **Fitxers**: `prototypes/bloodline-v2/data.js`, `design/gdd/bloodline/action-economy.md`,
   `design/eras/prehistoria/03-skills.md`
@@ -192,8 +211,8 @@
   la mateixa branca donen el mateix recurs amb el mateix perfil de risc; ≥2 accions/branca són ponts temàtics.
 - **Assignació (2026-06-24)**: a executar per **agent especialitzat** (`era-writer` + `era-historian`,
   via la skill `/era-design`), per indicació de l'usuari. No fer-ho manualment.
-- **Relació**: passada POSTERIOR dins de DESIGN-02 (la justificació temàtica ve un cop definit el marc
-  d'arquitectura branques/techs/habilitats/accions).
+- **✅ RESOLT 2026-07-02 (via ERA1-CONTENT)**: Fable 5 ha generat les 128 accions amb justificació
+  narrativa completa per acció, diferenciació risc/recompensa per branca, i ponts temàtics integrats.
 
 ---
 <!-- ════════════════════════════ 🔧 DESENVOLUPAR (codi obert) ════════════════════════════ -->
@@ -272,16 +291,22 @@
   intern + Chromium, crida funcions internes (determinista, ràpid), surt ≠0 si falla (apte CI). 9 checks:
   START-01, 2a, EVT-OPT-MAT, FOOD-CAP-01, BAL-01, LOG-02, TEACH-01, SUCC-01, sense errors. **9/9 passats.**
 
-## P1 OPEN DOCS — DOCS-SYNC — Actualitzar docu + resoldre incoherència Godot↔JS
+## P1 OPEN DOCS — DOCS-SYNC — Actualitzar docu + eliminar Godot del projecte
 
-- **Origen**: petició usuari 2026-06-27.
-- **Tasques**: README bloodline-v2 (recomptes reals); systems-index + DESIGN-02 propagats; **incoherència
-  engine**: CLAUDE.md/technical-preferences diuen **Godot 4.6** però el joc viu és el **prototip JS** (Godot
-  abandonat — memòria). Reflectir-ho amb una nota d'estat clara sense perdre el context Godot.
-- **Acceptance**: docu coherent amb la realitat (prototip JS actiu); recomptes correctes.
-- **⏳ PARCIAL 2026-06-27**: afegida nota d'estat d'engine a `CLAUDE.md` (prototip JS actiu, Godot en pausa) +
-  decisió formal escalada a `next-steps.md` §P3. **Falta**: actualitzar recomptes del README bloodline-v2
-  (~104 accions / 48 branch-techs reals vs 79/30 declarats) i systems-index.
+- **Origen**: petició usuari 2026-06-27. Decisió Godot: usuari 2026-07-01.
+- **Decisió engine (2026-07-01)**: **Godot eliminat**. El joc viu és el prototip JS; Godot no s'usarà.
+  La futura decisió d'engine (si cal un engine per a "gràfics xulos") és nova i s'escollirà quan toqui.
+- **Tasques**:
+  1. Eliminar o arxivar `src/bloodline/` (port Godot abandonat).
+  2. Reescriure `CLAUDE.md` i `.claude/docs/technical-preferences.md`: treure totes les referències Godot;
+     declarar JS/HTML com a stack actiu del prototip; deixar la decisió d'engine futura com a P3 oberta.
+  3. Arxivar/eliminar `docs/engine-reference/godot/`, `docs/architecture/ADR-001-engine-godot4.md`.
+  4. Actualitzar recomptes del README bloodline-v2 (~104 accions / 48 branch-techs reals vs 79/30 declarats).
+  5. Actualitzar systems-index si escau.
+- **Acceptance**: cap referència activa a Godot a CLAUDE.md ni technical-preferences; docu coherent amb
+  la realitat (prototip JS actiu); recomptes correctes; `src/bloodline/` arxivat o eliminat.
+- **✅ RESOLT 2026-07-02** (commit 5f138b3): CLAUDE.md i technical-preferences.md reescrits (JS actiu,
+  Godot abandonat); README bloodline-v2 amb recomptes correctes; src/bloodline/README.md d'arxiu.
 
 ## P1 DONE QA — TEST-PLAN — Pla de proves manual per a l'usuari
 
@@ -477,6 +502,36 @@
   exploració (`pendingDiscoveries`) en particular no semblen quedar registrats a `_pendingTurnEntry.event`.
 - **Acceptance**: cada event que es dispara queda registrat al log/historial visible amb el seu nom i resultat.
 
+## P1 DONE NETEJA — TALLA-OUT — Eliminar `act_tallar_pedra` ("Practicar la Talla") i netejar refs
+
+- **Origen**: feedback usuari 2026-07-01. Decisió: l'acció va fora sense excepció.
+- **Fitxers**: `prototypes/bloodline-v2/data.js`, `game.js`
+- **Canvis necessaris**:
+  1. Eliminar l'entrada `act_tallar_pedra` de `ACTIONS` (`data.js:667`).
+  2. Eliminar `act_tallar_pedra` de `ACTION_INCLINATION_REQUIREMENTS` (`data.js:596`).
+  3. Rerouting destresa `d_talla_silex` (`data.js:128`): el camp `action_id` apunta a `act_tallar_pedra`
+     — canviar a `act_recollectar_pedra` (ja és a la mateixa descoberta) o eliminar el camp.
+  4. Eliminar `act_tallar_pedra` de `discovery_action_ids` de `apr_treball_pedra` (`data.js:166`).
+  5. Verificar que `act_talla_avancada` (upgrade que requereix `d_talla_silex`) segueixi funcionant
+     (la destresa es pot adquirir per `act_recollectar_pedra` si es rerouting).
+- **✅ RESOLT 2026-07-02** (commit 8a2838f): `act_tallar_pedra` i `act_talla_avancada` eliminades;
+  `d_talla_silex` redirigida a `act_recollectar_pedra`; test TOOLS-01 actualitzat. 22/22 passes.
+
+## P1 DONE DESIGN — FOC-PREREQ — Treure `universal_prereq: "ut_foc"` d'"Assecar Provisions" i "Vetlla al Foc"
+
+- **Origen**: feedback usuari 2026-07-01. Decisió: cap acció depèn d'un descobriment universal.
+- **Fitxers**: `prototypes/bloodline-v2/data.js`
+- **Accions afectades**:
+  - `act_assecar_provisions` "Assecar Provisions" (`data.js:1103`): treure `universal_prereq: "ut_foc"`.
+  - `act_ritual_foc` "Vetlla al Foc" (`data.js:677`): treure `universal_prereq: "ut_foc"`.
+- **Decisió pendent — com es desbloquegen ara?** Opcions:
+  - (A) Via branch tech existent: "Assecar Provisions" → `bt_cuina_conservacio`; "Vetlla al Foc" → `bt_guardia_flama` o nova tech espiritual.
+  - (B) Disponibles al mercat des del principi (gated només per `inclination_conditions` i `purchase_cost`).
+  - Recomanació: opció (A) — és més coherent amb el model de progressió general.
+- **Nota**: `act_ritual_foc` té `inclination_conditions: { espiritualitat: min: 0.05 }` via `ACTION_INCLINATION_REQUIREMENTS`; conservar-ho.
+- **✅ RESOLT 2026-07-02** (commit 8a2838f): opció B aplicada — `universal_prereq: "ut_foc"` tret de
+  `act_ritual_foc`, `act_assecar_provisions` i `act_gran_ritual`. Totes accessibles per inclinació.
+
 ## P2 DEFERRED BALANCE — ECON-03 — No hi ha sumiders reals de material (`material_min ?? 2`)
 
 - **Font**: Playtest 2026-06-23, S3-01 (optimizer MAT-10).
@@ -500,7 +555,7 @@
   (encarir late-tech), no el cap ni el decay. Aquesta tasca queda disponible si més endavant es vol
   convertir el material en una decisió real.
 
-## P2 OPEN DESIGN — PACE-01 — Dead zone pre-`ut_eines` (cicles ~6-16)
+## P2 DONE DESIGN — PACE-01 — Dead zone pre-`ut_eines` (cicles ~6-16)
 
 - **Font**: Playtest 2026-06-23, S2-01 (speed-runner).
 - **Issue**: els perfils de branca d'eina (5 skills sota `ut_eines`, cicle 16) no tenen res nou a
@@ -508,8 +563,33 @@
   només queda funcional ~cicle 18 de 20.
 - **Direcció**: acostar `ut_eines` a cicle 10-12, o donar skills de 1a capa que no depenguin de `ut_eines`.
 - **Acceptance**: cap tram llarg sense decisions/objectius de compra per a cap perfil de branca.
-- **Nota 2026-06-25**: DESIGN-02-IMPL mitiga parcialment el tram c10-16 (coneixement de plantes i família
-  de foc del Caçador passen a `ut_foc` c10). Reavaluar la resta de la dead zone després d'aplicar DESIGN-02-IMPL.
+- **✅ RESOLT 2026-07-02 (via ERA1-CONTENT)**: TdBs 1–2 disponibles des del principi (c0, umbral ≥0.12/0.15)
+  cobreixen el tram c0–c16. TdBs 3–4 al c10 (post-foc). Cap dead zone per a cap branca.
+
+## P2 DONE UX — ESTRANGERS-UX — "Escoltar els Estrangers" silenciosa quan no hi ha habilitats elegibles
+
+- **Origen**: feedback usuari 2026-07-01. Relacionat amb UX-01.
+- **Issue**: l'acció és visible (fix SKILL-DISC-01 aplicat), però quan `getEligibleSkills()` retorna [] el
+  codi fa `addLog(...)` i `return` sense cap feedback visual prominent. El jugador percep "no passa res".
+- **Opcions**:
+  - (A) Mostrar l'acció FADED (no executable) amb el missatge guia visible al carrusel sense clicar.
+  - (B) Toast/overlay en clicar quan no hi ha elegibles (com el "No tens prou provisions" però visible).
+  - (C) Abaixar el llindar d'alguna habilitat inicial per fer-la elegible des del torn 1.
+- **✅ RESOLT 2026-07-02** (commit 8a2838f): opció A — FADED amb missatge guia "Apuja una inclinació
+  cap a una branca per poder aprendre habilitats" quan `getEligibleSkills().length === 0`.
+
+## P2 OPEN UX — TOKEN-FLIGHT — Animació d'icones viatjant del donut als marcadors
+
+- **Origen**: feedback usuari 2026-07-01. Distint del bug SEQ-01.
+- **Descripció**: el jugador descriu icones que "surten del donut i es desplacen fins als marcadors
+  corresponents"; l'efecte s'aplica quan l'icona arriba, i LLAVORS es dispara l'event o l'EOT.
+  Els floaters actuals (fade-up in-place) no compleixen aquesta visió.
+- **Abast**: nova feature d'animació — tween d'element des del centre del donut fins a cada marcador
+  de recurs/stat; callback que aplica l'efecte a l'arribada. No és un fix del SEQ-01 existent.
+- **Relació amb SEQ-01**: una implementació de token-flight resoldria el SEQ-01 de fons (la seqüència
+  esdevé inherent a l'animació), però és una inversió de major abast.
+- **Acceptance**: icones animades del donut → marcadors; efectes aplicats a l'arribada; events i EOT
+  encadenats posteriorment.
 
 ## P2 OPEN UX — UX-01 — Sense distinció visual al mercat entre accions gated-per-branca i universals
 
