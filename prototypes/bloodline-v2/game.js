@@ -358,7 +358,7 @@ function freshInclination() {
 
 function initState(dynastyName, race) {
   const inclination = freshInclination();
-  const basePurchased = new Set(ACTIONS.filter(a => a.is_base).map(a => a.id));
+  const basePurchased = new Set(ACTIONS.filter(a => a.is_base || a.is_discovery_action).map(a => a.id));
   state = {
     dynastyName: dynastyName || randomDynastyName(),
     race: race || 'MED',
@@ -843,7 +843,7 @@ function getEligiblePoolEvents(pool) {
     if (!ev.is_discovery_event) return true;
     const bt = SKILL_DEFS.find(t => t.id === ev.discovery_skill_id);
     if (!bt) return false;
-    if (!state.discoveredUniversalTechIds.has(bt.universal_prereq)) return false;
+    if (bt.universal_prereq && !state.discoveredUniversalTechIds.has(bt.universal_prereq)) return false;
     return evaluateConditions(bt.inclination_conditions);
   });
 }
@@ -1739,7 +1739,6 @@ function openZoneSheet(zoneId) {
 }
 
 function getActionUpgrade(actionId) {
-  if (state.character.purchasedActionIds.has(actionId)) return null;
   return ACTIONS.find(a =>
     a.is_upgrade &&
     a.upgrades_action_id === actionId &&
