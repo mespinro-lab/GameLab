@@ -4,30 +4,26 @@ Indie game development managed through 48 coordinated Claude Code subagents.
 Each agent owns a specific domain, enforcing separation of concerns and quality.
 
 > **Joc actiu**: **Bloodline** — dynasty tycoon (Paleolític), mòbil.
-> ⚠️ **Estat real (2026-06-27)**: el desenvolupament actiu és al **prototip JS** a
-> `prototypes/bloodline-v2/` (jugable, desplegat a GitHub Pages). El **port a Godot**
-> (`src/bloodline/`) està **EN PAUSA**. La resta d'aquest fitxer descriu la configuració
-> Godot prevista per al port; per al treball actual, el target és el prototip JS.
-> Decisió formal d'engine pendent — vegeu `production/next-steps.md` §P3.
+> El desenvolupament actiu és al **prototip JS** a `prototypes/bloodline-v2/`
+> (jugable, desplegat a GitHub Pages). Engine de producció pendent de decidir
+> quan el joc arribi a la fase de producció.
+>
+> ⚠️ **Godot abandonat** (2026-07-01): `src/bloodline/` és un port a Godot 4.6
+> que **no s'usarà**. No modificar. La futura decisió d'engine és nova i s'escollirà
+> quan toqui. ADR-001 (Godot) queda com a historial, no com a decisió activa.
 
 ## Technology Stack
 
-- **Engine**: Godot 4
-- **Language**: GDScript
+- **Stack actiu**: HTML/CSS/JS (vanilla, sense framework) — prototip a `prototypes/bloodline-v2/`
+- **Fitxers clau**: `game.js` (lògica), `data.js` (contingut), `index.html`, `style.css`
+- **Testing**: `node tests/headless/run.cjs` (Playwright headless; auto-arrenca servidor)
+- **Deploy**: GitHub Pages (desplegat automàticament des de `main`)
 - **Version Control**: Git with trunk-based development
-- **Build System**: Godot export templates
-- **Asset Pipeline**: Godot import system
-
-> **Note**: Engine-specialist agents exist for Godot, Unity, and Unreal with
-> dedicated sub-specialists. Use the set matching your engine.
+- **Engine de producció**: pendent de decisió (quan el prototip JS validi el joc complet)
 
 ## Project Structure
 
 @.claude/docs/directory-structure.md
-
-## Engine Version Reference
-
-@docs/engine-reference/godot/VERSION.md
 
 ## Technical Preferences
 

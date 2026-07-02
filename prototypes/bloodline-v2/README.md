@@ -20,23 +20,23 @@ Obre `index.html` directament al navegador (no cal servidor).
 
 | Element | Nombre |
 |---|---|
-| Accions totals | 79 (11 base auto-desbloq. + 68 comprables) |
-| Tecnologies de branca (branch techs) | 30 |
+| Accions totals | 99 (9 base auto-desbloq. + 90 comprables) |
+| Tecnologies de branca (branch techs) | 48 |
 | Tecnologies universals | 7 |
 | Zones del mapa | 5 (Campament, Planes, Bosc, Mercat, Llar) |
-| Destreses | 5 |
-| Recursos actius | 5 (menjar, salut, token, pedra, eines) |
+| Destreses | 4 |
+| Recursos actius | 6 (menjar, salut, token, pedra, fibres, eines) |
 
 ### Sistemes implementats
 
 - **Core loop**: accions → inclinació → branques → habilitats → noves accions
 - **4 branques actives**: Caçador, Recol·lector, Artesà, Místic
-- **30 branch techs** amb passive_effects i herència probabilística
-- **79 accions** en 4 zones; visibilitat condicionada per inclinació (fade/ocultes)
+- **48 branch techs** amb passive_effects i herència probabilística
+- **99 accions** en 5 zones; visibilitat condicionada per inclinació (fade/ocultes)
 - **7 tecnologies universals** (foc cicle 10, eines 16, art 36, vestimenta 50, corda 65, ceràmica 80, agricultura 92)
 - **5 destreses**: aptituds desbloq. per repetició (llindar configurable)
-- **Cadena d'eines**: Recollir Pedra → Tallar Pedra (🪨→⚒️) → Talla Avançada (+30% output eines)
-- **Menjar dinàmic**: cap inicial 8, creix fins a 20 amb Assecar Provisions (×3); consum reduïble
+- **Cadena d'eines**: accions per branca descobertes via "Escoltar els Estrangers"
+- **Menjar dinàmic**: cap inicial 6, creix fins a 10 amb Assecar Provisions; consum reduïble
 - **Recursos persistents**: token (30%), pedra (100%), eines (30%) hereten entre generacions
 - **Successió generacional**: fills hereten inclinació (85%) i stats (50%)
 - **Sistema d'events** balancejat dinàmicament (positius/negatius per historial)
@@ -52,7 +52,7 @@ Obre `index.html` directament al navegador (no cal servidor).
 | `ERA_CYCLES` | 100 cicles per era (~5 generacions) |
 | `LIFE_EXPECTANCY` | 20 cicles per personatge |
 | `STARTING_FOOD` | 4 |
-| `FOOD_MAX_START` | 8 (cap. inicial d'emmagatzematge) |
+| `FOOD_MAX_START` | 6 (cap. inicial d'emmagatzematge) |
 | `FOOD_MAX` | 20 (sostre absolut) |
 | `FOOD_UPKEEP` | 2/torn (reduïble fins a 1.1 amb Assecar Provisions) |
 | `STARTING_HEALTH` | 30 (pic a 40; +25% immediat en descobrir foc) |
