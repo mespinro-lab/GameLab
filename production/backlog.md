@@ -108,6 +108,23 @@
     - **Foc = UT transversal**: cada branca l'aprofita al seu estil (documentat a Doc 1 §2.3).
   - ECON-01 i ECON-02 queden **resolts** aquí. La feina de contingut/codi passa a **DESIGN-02-IMPL**.
 
+## P0 DONE BUG — S1S2-PATCH — Bugs del playtest ERA1-CONTENT (TD-01..11)
+
+- **✅ RESOLT 2026-07-02** (commits 74c866f + 72152ea, 22/22 tests):
+  - **TD-01** `act_escoltar_estrangers` no s'executava → `basePurchased` inclou `is_discovery_action`
+  - **TD-02** 13 `discovery_skill_id` bt_* → tdb_NN (EVENT_POOLS + null guard prereq)
+  - **TD-03** `getActionUpgrade()` guarda always-true eliminada → 13 upgrades accessibles
+  - **TD-04** `apr_veu_clan` discovery_action_ids morts → accions TdB 8 existents
+  - **TD-05** `ev_mamut_sol` skill_modifier bt_punta_llanca → tdb_01
+  - **TD-06** `pe_malaltia` requires_skill bt_guariment_plantes → tdb_03
+  - **TD-07** Dead code `act_talla_avancada` eliminat (ACTION_ICONS + _qualBonus + badge)
+  - **TD-08** 3 aprenentatges `bonus_action_output` morts → accions existents
+  - **TD-10** `ev_tecnica_subtil` not_has_skill bt_buri → tdb_07
+  - **TD-11** `isSupersededByUpgrade()` — cadena transitiva a `getZoneActions`
+  - **S3-03** requires_skill bt_coneixement_plantes (×2) → tdb_04
+  - Tots els bt_* restants en skill_modifier → tdb_NN equivalent
+- **Nota**: TD-09 (resource_below) i S3-01 (axis_above) ja estaven implementats a `evaluateBlockedIf` — falsos positius del playtest.
+
 ## P0 DONE CONTENT — ERA1-CONTENT — Implementar contingut Era 1 de Fable (128 accions + 16 TdBs)
 
 - **Origen**: document `design/gdd/bloodline/bloodline_era1_contingut.md` (Fable 5, 2026-07-02).
