@@ -145,11 +145,11 @@ async function gotoRetry(page, n = 24) {
     check('ACT-DIFF-01: Vetlla (5-8, social) ≠ Contemplació (2-4, espiritual)', actdiff.vMax === 8 && actdiff.vSoc >= 0.08 && actdiff.cMax === 4 && actdiff.cEsp >= 0.08, actdiff);
 
     const tools01 = await page.evaluate(() => {
-      const t = ACTIONS.find(a => a.id === 'act_tallar_pedra');
+      const tallaPedra = ACTIONS.find(a => a.id === 'act_tallar_pedra');
       const forja = ACTIONS.find(a => a.id === 'act_forjar_punta');
-      return { tallaNoOut: !t.output_resource, forjaRecipe: (forja.requires || []).some(r => r.resource === 'pedra') && (forja.requires || []).some(r => r.resource === 'branques'), forjaOut: forja.output_resource, forjaPrereq: forja.universal_prereq || (SKILL_DEFS.find(s => (s.unlocks_action_ids || []).includes('act_forjar_punta')) || {}).id };
+      return { tallaEliminada: !tallaPedra, forjaRecipe: (forja.requires || []).some(r => r.resource === 'pedra') && (forja.requires || []).some(r => r.resource === 'branques'), forjaOut: forja.output_resource };
     });
-    check('TOOLS-01 (revisat): eines per habilitat — talla=pràctica (sense output), forjar_punta=recepta→eina', tools01.tallaNoOut && tools01.forjaRecipe && tools01.forjaOut === 'eina', tools01);
+    check('TOOLS-01: act_tallar_pedra eliminada; forjar_punta=recepta→eina', tools01.tallaEliminada && tools01.forjaRecipe && tools01.forjaOut === 'eina', tools01);
 
     const fb = await page.evaluate(() => {
       const hunt = ACTIONS.find(a => a.id === 'act_espiar_ramat');

@@ -125,7 +125,7 @@ const RESOURCE_DEFS = [
 const DESTRESA_DEFS = [
   { id: "d_rastreig",    name: "Rastreig",       action_id: "act_espiar_ramat",        conditions: [{ axis: "impuls",         min: 0.10 }] },
   { id: "d_botanica",    name: "Botànica",        action_id: "act_recollectar_arrels",  conditions: [{ axis: "intel·lecte",    min: 0.10 }] },
-  { id: "d_talla_silex", name: "Talla de Sílex",  action_id: "act_tallar_pedra",        conditions: [{ axis: "intel·lecte",    min: 0.15 }] },
+  { id: "d_talla_silex", name: "Talla de Sílex",  action_id: "act_recollectar_pedra",    conditions: [{ axis: "intel·lecte",    min: 0.15 }] },
   { id: "d_custodi_foc", name: "Custodi del Foc", action_id: "act_ritual_foc",          conditions: [{ axis: "espiritualitat", min: 0.10 }] },
 ];
 
@@ -163,7 +163,7 @@ const APRENENTATGE_DEFS = [
     id: "apr_treball_pedra", name: "Treball de la Pedra", icon: "🪨",
     description: "Tries el millor sílex i calcules l'angle de talla. L'artesania de pedra dona molt més.",
     discoveryChance: 0.30,
-    discovery_action_ids: ["act_tallar_pedra", "act_recollectar_pedra", "act_faonar_eines"],
+    discovery_action_ids: ["act_recollectar_pedra", "act_faonar_eines"],
     effect: { type: "bonus_action_output", action_id: "act_faonar_eines", output_min_bonus: 2, output_max_bonus: 2, desc: "+2 eines en façonar estris" }
   },
   {
@@ -593,7 +593,6 @@ const ACTION_INCLINATION_REQUIREMENTS = {
   act_coure_ceramica:          { "intel·lecte": { min: 0.15 } },
   act_sembrar_llavors:         { "intel·lecte": { min: 0.12 }, impuls: { max: 0.20 } },
   act_collita_sistematica:     { "intel·lecte": { min: 0.10 } },
-  act_talla_avancada:          { "intel·lecte": { min: 0.10 } },    // upgrade tallar_pedra
   act_edificar_cabana:         { "intel·lecte": { min: 0.10 } },
 
   // ══ MÍSTIC ════════════════════════════════════════════════
@@ -664,17 +663,7 @@ const ACTIONS = [
     event_pool_id: "pool_recollecta"
   },
   {
-    id: "act_tallar_pedra", name: "Practicar la Talla", is_base: true, zona: "Campament",
-    description: "Practiques la talla del sílex: la mà aprèn l'angle i la força. Encara NO en surten eines (les eines arriben amb una habilitat, després de descobrir les Eines), però hi guanyes enginy i destresa per a quan en sàpigues fer.",
-    execute_cost: 0,
-    token_min: 1, token_max: 2,
-    stat_key: "enginy", stat_gain: 0.10,
-    destresa_id: "d_talla_silex",
-    inclination_deltas: { impuls: -0.03, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
-    event_pool_id: "pool_artesania"
-  },
-  {
-    id: "act_ritual_foc", name: "Vetlla al Foc", is_base: false, universal_prereq: "ut_foc", zona: "Campament",
+    id: "act_ritual_foc", name: "Vetlla al Foc", is_base: false, zona: "Campament",
     description: "El clan es reuneix al voltant del foc. El caliu compartit cura TOT el grup (més que la contemplació en solitari) i enforteix els llaços; els cants travessen la nit.",
     purchase_cost: 4, execute_cost: 0, output_resource: "health", output_min: 5, output_max: 8,
     stat_key: "vincle", stat_gain: 0.12,
@@ -1102,7 +1091,6 @@ const ACTIONS = [
   {
     id: "act_assecar_provisions", name: "Assecar Provisions", is_base: false, zona: "Campament",
     description: "Poses a assecar carn i arrels sobre la calor del foc. Les provisions aguanten molt més temps: el magatzem s'amplia en +2.",
-    universal_prereq: "ut_foc",
     purchase_cost: 5, execute_cost: 0,
     food_cap_delta: 2, max_executions: 2,
     token_min: 1, token_max: 2,
@@ -1437,21 +1425,10 @@ const ACTIONS = [
     event_pool_id: "pool_recollecta"
   },
   {
-    id: "act_talla_avancada", name: "Talla Avançada", is_upgrade: true, upgrades_action_id: "act_tallar_pedra", zona: "Campament",
-    description: "Domines la talla del sílex. No en surten eines, però millora el rendiment de totes les accions de la teva branca que gasten eines.",
-    quality_tools: true,
-    requires: [{ type: 'has_destresa', id: 'd_talla_silex' }],
-    purchase_cost: 8, execute_cost: 0,
-    token_min: 1, token_max: 2,
-    stat_key: "enginy", stat_gain: 0.15,
-    inclination_deltas: { impuls: -0.02, "intel·lecte": +0.05, espiritualitat: 0, sociabilitat: 0 },
-    event_pool_id: "pool_artesania"
-  },
-  {
     id: "act_gran_ritual", name: "Gran Ritual", is_upgrade: true, upgrades_action_id: "act_ritual_foc", zona: "Campament",
     description: "El ritual s'extén a tota la nit. Cohesió màxima i regeneració profunda.",
     requires: [{ type: 'has_destresa', id: 'd_custodi_foc' }],
-    purchase_cost: 6, execute_cost: 0, universal_prereq: "ut_foc", side_effects: [{ resource: 'health', delta: +10 }],
+    purchase_cost: 6, execute_cost: 0, side_effects: [{ resource: 'health', delta: +10 }],
     stat_key: "vincle", stat_gain: 0.10,
     inclination_deltas: { impuls: -0.02, "intel·lecte": 0, espiritualitat: +0.06, sociabilitat: +0.05 },
     event_pool_id: "pool_ritual"

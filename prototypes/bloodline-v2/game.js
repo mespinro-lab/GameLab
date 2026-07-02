@@ -416,6 +416,8 @@ function getActionVisibility(action) {
     const primaryToolId = getPrimaryToolActionId();
     if (primaryToolId && action.id !== primaryToolId) return 'HIDDEN';
   }
+  // ESTRANGERS-UX: descoberta FADED quan no hi ha habilitats elegibles (inclinació insuficient)
+  if (action.is_discovery_action && getEligibleSkills().length === 0) return 'FADED';
   // FOOD-CAP-01 (2026-06-27): accions que amplien el cap de magatzem (food_cap_delta) es deshabiliten
   // (FADED, no executable) quan el benefici s'esgota: usos esgotats o cap de menjar ja al màxim absolut.
   if (action.food_cap_delta) {
@@ -1836,6 +1838,8 @@ function carouselNavigate(newIdx) {
 // "la branca s'allunya" per a tot). Cada causa explica el seu perquè.
 function disableReason(action) {
   if (isActionTooYoung(action)) return `🔒 Encara no tens edat (cal edat ${action.minAge})`;
+  if (action.is_discovery_action && getEligibleSkills().length === 0)
+    return '📚 Apuja una inclinació cap a una branca per poder aprendre habilitats';
   const vis = getActionVisibility(action);
   if (vis === 'FADED' && action.food_cap_delta) {
     const used = state.character.actionUseCounts[action.id] || 0;
