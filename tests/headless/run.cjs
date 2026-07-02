@@ -55,8 +55,8 @@ async function gotoRetry(page, n = 24) {
     });
     check('FOOD-CAP-01: Assecar deshabilitada (FADED) al cap màxim', fc.maxed === 'FADED' && fc.ok === 'ACTIVE', fc);
 
-    const bal = await page.evaluate(() => { const c = ACTIONS.find(x => x.id === 'act_coure_ceramica'); return [c.token_min, c.token_max]; });
-    check('BAL-01: coure_ceramica genera token (2/3)', bal[0] === 2 && bal[1] === 3, bal);
+    const bal = await page.evaluate(() => { const c = ACTIONS.find(x => x.id === 'act_modelar_vasos'); return [c?.token_min ?? -1, c?.token_max ?? -1, c?.output_resource]; });
+    check('BAL-01: modelar_vasos = output token (TdB 13 Artesà)', bal[2] === 'token' && bal[0] === 0 && bal[1] === 0, bal);
 
     const log2 = await page.evaluate(() => {
       initState('T', 'MED'); state.token = 20; state._turnExtras = [];
@@ -96,7 +96,7 @@ async function gotoRetry(page, n = 24) {
     check('FIBER-01: Recollir Fibres dona branques i es mostra (🌿)', fiber.gives && fiber.chip, fiber);
 
     const apr01 = await page.evaluate(() => APRENENTATGE_DEFS.find(a => a.id === 'apr_plantes_medicinals').effect.action_id);
-    check('APR-01: Plantes Medicinals diferenciat de Botànica (bolets, no arrels)', apr01 === 'act_recollida_bolets', apr01);
+    check('APR-01: Plantes Medicinals no buffa arrels (no stack amb Botànica)', apr01 !== 'act_recollectar_arrels', apr01);
 
     const skilldisc = await page.evaluate(() => {
       initState('T', 'MED'); state.discoveredUniversalTechIds.add('ut_foc');
@@ -104,7 +104,7 @@ async function gotoRetry(page, n = 24) {
       state.character.inclination.impuls = 0.12; // jugador modest amb un eix lleugerament marcat
       return { shown, eligibleModest: getEligibleSkills().map(s => s.id) };
     });
-    check('SKILL-DISC-01: visible + habilitat elegible amb inclinació modesta (≥0.10)', skilldisc.shown && skilldisc.eligibleModest.includes('bt_guardia_flama'), skilldisc);
+    check('SKILL-DISC-01: visible + habilitat elegible amb inclinació modesta (≥0.10)', skilldisc.shown && skilldisc.eligibleModest.includes('tdb_01'), skilldisc);
 
     const food02 = await page.evaluate(() => {
       initState('T', 'MED');
@@ -145,11 +145,12 @@ async function gotoRetry(page, n = 24) {
     check('ACT-DIFF-01: Vetlla (5-8, social) ≠ Contemplació (2-4, espiritual)', actdiff.vMax === 8 && actdiff.vSoc >= 0.08 && actdiff.cMax === 4 && actdiff.cEsp >= 0.08, actdiff);
 
     const tools01 = await page.evaluate(() => {
-      const t = ACTIONS.find(a => a.id === 'act_tallar_pedra');
-      const forja = ACTIONS.find(a => a.id === 'act_forjar_punta');
-      return { tallaNoOut: !t.output_resource, forjaRecipe: (forja.requires || []).some(r => r.resource === 'pedra') && (forja.requires || []).some(r => r.resource === 'branques'), forjaOut: forja.output_resource, forjaPrereq: forja.universal_prereq || (SKILL_DEFS.find(s => (s.unlocks_action_ids || []).includes('act_forjar_punta')) || {}).id };
+      const tallaPedra = ACTIONS.find(a => a.id === 'act_tallar_pedra');
+      const ascles = ACTIONS.find(a => a.id === 'act_tallar_ascles'); // TdB 2 Artesà: eina output
+      const punta  = ACTIONS.find(a => a.id === 'act_punta_crua');    // TdB 2 Caçador: eina output
+      return { tallaEliminada: !tallaPedra, asclesOut: ascles?.output_resource, puntaOut: punta?.output_resource };
     });
-    check('TOOLS-01 (revisat): eines per habilitat — talla=pràctica (sense output), forjar_punta=recepta→eina', tools01.tallaNoOut && tools01.forjaRecipe && tools01.forjaOut === 'eina', tools01);
+    check('TOOLS-01: act_tallar_pedra eliminada; TdB2 dona eines (ascles+punta_crua)', tools01.tallaEliminada && tools01.asclesOut === 'eina' && tools01.puntaOut === 'eina', tools01);
 
     const fb = await page.evaluate(() => {
       const hunt = ACTIONS.find(a => a.id === 'act_espiar_ramat');
