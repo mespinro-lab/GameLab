@@ -608,7 +608,7 @@
 - **Acceptance**: icones animades del donut → marcadors; efectes aplicats a l'arribada; events i EOT
   encadenats posteriorment.
 
-## P2 OPEN UX — UX-01 — Sense distinció visual al mercat entre accions gated-per-branca i universals
+## P2 DONE UX — UX-01 — Sense distinció visual al mercat entre accions gated-per-branca i universals
 
 - **Font**: Playtest 2026-06-23, S2-02 (optimizer MAT-07 + claredat).
 - **Issue**: sota D4 el jugador veu al mercat accions que requerien desbloquejar una branch tech i altres
@@ -620,6 +620,7 @@
   hi ha habilitats elegibles (inclinació + tech universal complerta) i en desbloqueja la més madura → llavors
   les seves accions es fan comprables al mercat. NO es "compren" habilitats; es descobreixen via aquesta
   acció. Cal fer el flux molt més visible (o repensar-lo dins DESIGN-02-IMPL).
+- **✅ RESOLT 2026-07-03** (commit 0d77c46): badge `shop-tdb-badge` afegit a `renderShop()` mostrant quin TdB desbloqueja cada acció del mercat. El jugador veu immediatament la TdB requerida per cada compra.
 
 ## P3 DONE BUG — SUCC-01 — pendingDeath/pendingSuccession no es desen (pèrdua en background-kill)
 
@@ -636,12 +637,13 @@
   `serialize/deserializeSuccessors` per als Sets dels successors) + `pendingNewGen`. Verificat headless:
   després de save→load la successió pendent es manté i `inheritedAprenentatges` torna a ser un Set correcte.
 
-## P3 OPEN UX — UX-02 — Avís de mort sense hereu poc visible
+## P3 DONE UX — UX-02 — Avís de mort sense hereu poc visible
 
 - **Font**: Playtest 2026-06-23, S3-04 (speed-runner).
 - **Issue**: la finestra `act_cercar_parella` (edat 5-14) vs l'avís a edat 12; un jugador centrat en
   material pot perdre per extinció sense bloqueig clar.
 - **Acceptance**: l'avís de risc d'extinció és prou visible/urgent abans que la finestra es tanqui.
+- **✅ RESOLT 2026-07-03** (commit 0d77c46): pill `#heir-warn` afegida a `renderCharPanel()` que apareix quan el personatge té ≥8 cicles i cap fill. S'activa amb `classList.toggle('hidden', ...)`. Animació pulse vermella per cridar l'atenció.
 
 ## P3 DONE BALANCE — BAL-01 — `act_coure_ceramica` costa 5 al mercat però té `material 0/0`
 
@@ -665,6 +667,103 @@
 - **DECIDIT (2026-06-19)**: opció B — títols per fites numèriques (X generacions, Y techs). Falta NOMÉS
   implementar (prioritat baixa). Ja no és una decisió pendent.
 - **Acceptance**: ≥6 títols amb condicions verificables; almenys 1 secret.
+
+<!-- ▼▼▼ DISSENY 2026-07-03 — TdBs com a coneixement de llinatge ▼▼▼ -->
+
+## P1 DONE DESIGN — TDB-LINEAGE — TdBs movent-se de personatge a llinatge
+
+- **Origen**: discussió de disseny 2026-07-03 (usuari + agent).
+- **Decisió**: les TdBs (Tecnologies de Branca) deixen de ser coneixement personal (`state.character.unlockedSkillIds`) i passen a ser coneixement col·lectiu del llinatge (`state.unlockedTdbIds`, top-level, com `discoveredUniversalTechIds`).
+- **Implicacions implementades**:
+  - `state.unlockedTdbIds` (top-level Set) reemplaça `state.character.unlockedSkillIds`
+  - `createCharacter()` elimina `inheritedSkillIds`; successors no transporten TdBs
+  - `unlockSkill()` escriu a `state.unlockedTdbIds`; log → "Nova Tecnologia de Branca"
+  - Mercat, passive effects, events, score: tots llegeixen `state.unlockedTdbIds`
+  - `getActionUpgrade()` afegit gate TdB (fix UPG-GATE)
+  - Pills TdB al panell del personatge: secció "Llinatge sap:", click → tooltip (fix PILL-TOOLTIP)
+  - Etiquetes UI: "Habilitats" → "Tecnologies de Branca"/"TdBs" (fix HABILITAT-RENAME)
+  - Backwards compat: loadGame recupera TdBs de `d.character.unlockedSkillIds` (saves velles)
+- **✅ RESOLT 2026-07-03**: 22/22 tests passats. Tanca UPG-GATE, PILL-TOOLTIP, HABILITAT-RENAME de passada.
+
+<!-- ▲▲▲ DISSENY 2026-07-03 ▲▲▲ -->
+
+<!-- ▼▼▼ FEEDBACK 2026-07-03 (7 punts del jugador) ▼▼▼ -->
+
+## P1 OPEN BUG — DISC-DOUBLE — Doble "Escoltar els Estrangers" al carrusel
+
+- **Origen**: feedback usuari 2026-07-03, punt 5.
+- **Root cause**: `getZoneActions()` (game.js:~1676-1695) fa `base.unshift(disc)` però `act_escoltar_estrangers`
+  JA és a `base` perquè `basePurchased` l'inclou via el filtre `is_base || is_discovery_action`. Doble inserció.
+- **Fix**: excloure `is_discovery_action` del filtre de `basePurchased`, o comprovar que `disc` no és ja present a `base` abans de fer `unshift`.
+- **Fitxers**: `prototypes/bloodline-v2/game.js` (`getZoneActions`, ~1676)
+- **Acceptance**: `act_escoltar_estrangers` apareix exactament 1 cop al carrusel.
+
+## P1 OPEN BUG — ANIM-TIMING — L'event s'obre als 200ms mentre les boles de recurs volen fins a 880ms
+
+- **Origen**: feedback usuari 2026-07-03, punt 7.
+- **Root cause**: `setTimeout(() => { renderAll(); saveGame(); }, 200)` (game.js:~1264) obre l'event als 200ms,
+  però `spawnResBalls` pot tardar fins a ~880ms (delay inicial + 700ms de vol).
+- **Fix**: augmentar el timeout a ~700-900ms per deixar que l'animació acabi; o encadenar l'event a un callback de l'animació.
+- **Fitxers**: `prototypes/bloodline-v2/game.js` (~1264)
+- **Acceptance**: l'event (i el fi de torn) no apareix fins que totes les boles de recurs han aterrat als marcadors.
+
+## P1 DONE UX — UPG-GATE — El botó upgrade apareix sense tenir la TdB que el desbloqueja
+
+- **Origen**: feedback usuari 2026-07-03, punt 2.
+- **Root cause**: `getActionUpgrade()` (game.js:~1718-1726) no comprova si el personatge posseeix la TdB
+  (`state.character.unlockedSkillIds`) que desbloqueja aquell upgrade via `unlocks_action_ids`.
+- **Fix**: `const unlockingSkill = SKILL_DEFS.find(bt => (bt.unlocks_action_ids || []).includes(a.id));`
+  `if (unlockingSkill && !state.character.unlockedSkillIds.has(unlockingSkill.id)) return false;`
+- **Fitxers**: `prototypes/bloodline-v2/game.js` (`getActionUpgrade`, ~1718)
+- **Acceptance**: el botó `↑` ONLY apareix quan el personatge té la TdB que desbloqueja aquell upgrade.
+- **✅ RESOLT 2026-07-03**: `getActionUpgrade()` comprova `state.unlockedTdbIds`. Resolt de passada com a part de TDB-LINEAGE.
+
+## P2 OPEN UX — CHIP-ZONES — Chips de recursos apareixen en zones incorrectes
+
+- **Origen**: feedback usuari 2026-07-03, punt 1.
+- **Issue**: pedra (🪨) i fibra (🌿) apareixen als chips tant de Campament com de Bosc. Cada recurs hauria
+  de mostrar-se ONLY a la zona on és la font primària.
+- **Decisió pendent**: Campament → chip eina (🪃) only; Bosc → chip fibra (🌿) only; Planes → chip pedra (🪨) only.
+- **Nota**: FIBER-01 (2026-06-28) va afegir 🌿 a Bosc i Campament per visibilitat. Ara cal acotar cada zona.
+- **Fitxers**: `prototypes/bloodline-v2/game.js` (lògica de chips de zona, ~1584-1594)
+- **Acceptance**: cada recurs secundari (pedra/fibra/eina) apareix com a chip ONLY en la zona on s'obté principalment.
+
+## P2 DONE NETEJA — HABILITAT-RENAME — "Habilitats" → "Tecnologies de Branca" / "TdBs"
+
+- **Origen**: feedback usuari 2026-07-03, punt 6.
+- **Issue**: 5 llocs on el text visible o el log diu "habilitat/s" quan hauria de dir "Tecnologies de Branca" o "TdBs".
+- **Llocs identificats**:
+  1. `game.js:~540` — log d'unlock ("habilitat apresa" → "TdB desbloqueada")
+  2. `index.html:~467` — panell de debug/test
+  3. `index.html:~578` — panell de CD
+  4. `game.js:~2721` — score (comptador d'habilitats → "TdBs")
+  5. `game.js:~2112` — tipus al torn log (valor `'habilitat'` → pot quedar intern; el text visible sí)
+- **Fitxers**: `prototypes/bloodline-v2/game.js`, `index.html`
+- **Acceptance**: cap menció visible a la UI/log de "habilitat/s" referida a TdBs. El tipus intern `'skill'` pot mantenir-se per no trencar codi.
+- **✅ RESOLT 2026-07-03**: log → "Nova Tecnologia de Branca"; panell test → "Tecnologies de Branca (TdBs)"; panell CD → "Tecnologies de Branca". Resolt de passada com a part de TDB-LINEAGE.
+
+## P2 DONE UX — PILL-TOOLTIP — Les pills de TdB al panell de personatge no fan res en clicar
+
+- **Origen**: feedback usuari 2026-07-03, punt 3.
+- **Issue**: elements `pill-skill` (TdBs desbloquejades a `#layer-know`) no tenen `addEventListener`. L'usuari
+  clica "els rastres del món" i no passa res. Les pills d'altres tipus (aprenentatge, destresa) sí que obren info.
+- **Fix**: afegir click handler als `pill-skill` per mostrar nom + descripció de la TdB (tooltip/overlay existent).
+- **Fitxers**: `prototypes/bloodline-v2/game.js` (`renderCharPanel`, ~2017-2025)
+- **Acceptance**: clicar una pill de TdB obre un overlay/tooltip amb el nom i descripció de la tecnologia.
+- **✅ RESOLT 2026-07-03**: pills TdB mostren emoji+nom i `addEventListener('click', showPillInfoTooltip(...))`. Resolt de passada com a part de TDB-LINEAGE.
+
+## P3 OPEN DESIGN — ESCOLTAR-LIMIT — "Escoltar els Estrangers" serveix ONLY per a descobrir TdBs
+
+- **Origen**: feedback usuari 2026-07-03, punt 4.
+- **Issue**: l'acció no té output ni side effect fora del flux de descobriment de TdBs. Un cop totes les
+  TdBs estan descobertes (o l'acció és FADED per manca d'elegibles), no té cap altre propòsit.
+- **Opcions**:
+  - (A) Afegir output secundari (+saber o +inclinació social) per fer-la útil fora del context de TdBs.
+  - (B) Limitar `max_executions` al nombre de TdBs descobertes (desapareix en acabar el seu cicle vital).
+  - (C) Mantenir el disseny actual (acció de servei, no de producció) — documentar-ho millor a la UI.
+- **Acceptance**: el jugador entén el propòsit de l'acció i no surt decebut si la crida quan no hi ha TdBs elegibles.
+
+<!-- ▲▲▲ FEEDBACK 2026-07-03 ▲▲▲ -->
 
 ---
 <!-- ════════════════════════════ ✅ RESOLT ════════════════════════════ -->

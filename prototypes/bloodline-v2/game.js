@@ -119,7 +119,6 @@ function serializeSuccessors(arr) {
   return (arr || []).map(s => ({
     ...s,
     inheritedPurchased:     [...(s.inheritedPurchased     || [])],
-    inheritedSkills:        [...(s.inheritedSkills        || [])],
     inheritedDestreses:     [...(s.inheritedDestreses     || [])],
     inheritedAprenentatges: [...(s.inheritedAprenentatges || [])],
   }));
@@ -128,7 +127,6 @@ function deserializeSuccessors(arr) {
   return (arr || []).map(s => ({
     ...s,
     inheritedPurchased:     new Set(s.inheritedPurchased     || []),
-    inheritedSkills:        new Set(s.inheritedSkills        || []),
     inheritedDestreses:     new Set(s.inheritedDestreses     || []),
     inheritedAprenentatges: new Set(s.inheritedAprenentatges || []),
   }));
@@ -144,7 +142,6 @@ function saveGame() {
         birthCycle: state.character.birthCycle, label: state.character.label,
         inclination: { ...state.character.inclination },
         purchasedActionIds:  [...state.character.purchasedActionIds],
-        unlockedSkillIds:    [...state.character.unlockedSkillIds],
         stats:    { ...state.character.stats },
         destreses:           [...state.character.destreses],
         aprenentatges:       [...(state.character.aprenentatges || [])],
@@ -153,6 +150,7 @@ function saveGame() {
         partnerName: state.character.partnerName || null,
         children: state.character.children,
       },
+      unlockedTdbIds:             [...state.unlockedTdbIds],
       discoveredUniversalTechIds: [...state.discoveredUniversalTechIds],
       discoveredZoneIds:          [...state.discoveredZoneIds],
       firedSingleUseEventIds:     [...state.firedSingleUseEventIds],
@@ -206,7 +204,6 @@ function loadGame() {
         birthCycle: d.character.birthCycle, label: d.character.label,
         inclination: { ...d.character.inclination },
         purchasedActionIds:  new Set(d.character.purchasedActionIds),
-        unlockedSkillIds:    new Set(d.character.unlockedSkillIds),
         stats:    { ...d.character.stats },
         destreses:           new Set(d.character.destreses),
         aprenentatges:       new Set(d.character.aprenentatges || []),
@@ -215,6 +212,8 @@ function loadGame() {
         partnerName: d.character.partnerName || null,
         children: d.character.children || [],
       },
+      // Backwards compat: old saves stored TdBs in d.character.unlockedSkillIds
+      unlockedTdbIds: new Set([...(d.unlockedTdbIds || []), ...(d.character?.unlockedSkillIds || [])]),
       discoveredUniversalTechIds: new Set(d.discoveredUniversalTechIds),
       discoveredZoneIds:          new Set(d.discoveredZoneIds),
       firedSingleUseEventIds:     new Set(d.firedSingleUseEventIds || []),
@@ -298,13 +297,12 @@ function pickInitialDestreses(parentDestreses) {
   return result;
 }
 
-function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedSkillIds, inheritedStats, inheritedDestreses, inheritedAprenentatges, birthCycle = 0, label = '') {
+function createCharacter(inheritedInclination, inheritedPurchasedIds, inheritedStats, inheritedDestreses, inheritedAprenentatges, birthCycle = 0, label = '') {
   return {
     birthCycle,
     label,
     inclination: { ...inheritedInclination },
     purchasedActionIds: new Set(inheritedPurchasedIds),
-    unlockedSkillIds: new Set(inheritedSkillIds),
     stats: inheritedStats
       ? { ...inheritedStats }
       : Object.fromEntries(STAT_DEFS.map(s => [s.id, STAT_STARTING_VALUE])),
@@ -335,8 +333,9 @@ function initState(dynastyName, race) {
     cycle: 0,
     generation: 1,
     ...Object.fromEntries(RESOURCE_DEFS.map(r => [r.id, r.startVal])),
-    character: createCharacter(inclination, basePurchased, new Set(), null, pickInitialDestreses(new Set()), new Set(), 0, CHILD_NAMES[0]),
+    character: createCharacter(inclination, basePurchased, null, pickInitialDestreses(new Set()), new Set(), 0, CHILD_NAMES[0]),
     discoveredUniversalTechIds: new Set(),
+    unlockedTdbIds: new Set(),
     discoveredZoneIds: new Set(ZONE_DEFS.filter(z => z.starts_discovered).map(z => z.id)),
     firedSingleUseEventIds: new Set(),
     recentEventIds: [],
@@ -522,7 +521,7 @@ function getEligibleSkills() {
   return SKILL_DEFS.filter(bt =>
     !bt.is_hidden &&
     (!bt.universal_prereq || state.discoveredUniversalTechIds.has(bt.universal_prereq)) &&
-    !state.character.unlockedSkillIds.has(bt.id) &&
+    !state.unlockedTdbIds.has(bt.id) &&
     evaluateConditions(bt.inclination_conditions)
   );
 }
@@ -535,9 +534,9 @@ function getSkillMaturity(bt) {
   return score;
 }
 function unlockSkill(bt) {
-  if (state.character.unlockedSkillIds.has(bt.id)) return;
-  state.character.unlockedSkillIds.add(bt.id);
-  addLog(`Nova habilitat: ${bt.name}`);
+  if (state.unlockedTdbIds.has(bt.id)) return;
+  state.unlockedTdbIds.add(bt.id);
+  addLog(`Nova Tecnologia de Branca: ${bt.name}`);
   pushExtra('🧩', bt.name);
   if (bt.unlocks_action_ids) {
     // D4 (2026-06-22): les accions amb cost es compren al mercat un cop desbloquejada la tech;
@@ -616,7 +615,7 @@ function checkAprenentagesAfterAction(executedActionId) {
 function evaluateCharacterRequires(action) {
   if (!action.requires || action.requires.length === 0) return true;
   return action.requires.every(req => {
-    if (req.type === 'has_any_skill')        return state.character.unlockedSkillIds.size > 0;
+    if (req.type === 'has_any_skill')        return state.unlockedTdbIds.size > 0;
     if (req.type === 'has_any_aprenentatge') return state.character.aprenentatges.size > 0;
     if (req.type === 'has_untaught_child')   return state.character.children.some(c => !c.taughtApr);
     if (req.type === 'has_destresa')     return state.character.destreses.has(req.id);
@@ -819,8 +818,8 @@ function getEligiblePoolEvents(pool) {
 function evaluateBlockedIf(conditions) {
   if (!conditions || conditions.length === 0) return false;
   return conditions.some(cond => {
-    if (cond.type === 'has_skill')        return state.character.unlockedSkillIds.has(cond.id);
-    if (cond.type === 'not_has_skill')    return !state.character.unlockedSkillIds.has(cond.id);
+    if (cond.type === 'has_skill')        return state.unlockedTdbIds.has(cond.id);
+    if (cond.type === 'not_has_skill')    return !state.unlockedTdbIds.has(cond.id);
     if (cond.type === 'has_destresa')     return state.character.destreses.has(cond.id);
     if (cond.type === 'has_aprenentatge') return state.character.aprenentatges.has(cond.id);
     if (cond.type === 'stat_min')       return (state.character.stats[cond.stat] || 0) >= cond.min;
@@ -845,7 +844,7 @@ function triggerSuccession() {
       cause: state.health <= 0 ? 'Salut esgotada' : 'Era finalitzada',
       topAxis,
       branches: getActiveBranches().map(b => b.name),
-      skills: state.character.unlockedSkillIds.size,
+      skills: state.unlockedTdbIds.size,
       aprenentatges: state.character.aprenentatges.size,
       hadHeir: children.length > 0 || siblings.length > 0,
     });
@@ -862,7 +861,7 @@ function triggerSuccession() {
       cause: 'Extinció del llinatge',
       topAxis,
       branches: getActiveBranches().map(b => b.name),
-      skills: state.character.unlockedSkillIds.size,
+      skills: state.unlockedTdbIds.size,
       aprenentatges: state.character.aprenentatges.size,
       hadHeir: false,
     });
@@ -883,14 +882,13 @@ function triggerSuccession() {
     ])
   );
   const inheritedPurchased    = new Set(state.character.purchasedActionIds);
-  // Habilitats: sempre heretades al 100% — pertanyen al llinatge, no al personatge
-  const inheritedSkills       = new Set(state.character.unlockedSkillIds);
   // Destreses: 1 del pare (tirada aleatòria entre les seves) + 1 aleatòria del pool global
   const inheritedDestreses    = pickInitialDestreses(state.character.destreses);
   // Aprenentatges (TEACH-01, 2026-06-27): cada fill hereta NOMÉS el que se li va ensenyar (c.taughtApr), per-fill.
+  // TdBs: llinatge-level (state.unlockedTdbIds) — no cal heretar-les per personatge.
   const childSuccessors = children.map(c => ({
     ...c, is_sibling: false,
-    inheritedInclination, inheritedStats, inheritedPurchased, inheritedSkills, inheritedDestreses,
+    inheritedInclination, inheritedStats, inheritedPurchased, inheritedDestreses,
     inheritedAprenentatges: c.taughtApr ? new Set([c.taughtApr]) : new Set(),
   }));
   const siblingSuccessors = siblings.map(s => ({ ...s, is_sibling: true }));
@@ -907,7 +905,7 @@ function triggerSuccession() {
     cause:      state.health <= 0 ? 'Salut esgotada' : 'Vida complerta',
     topAxis,
     branches:   getActiveBranches().map(b => b.name),
-    skills:     state.character.unlockedSkillIds.size,
+    skills:     state.unlockedTdbIds.size,
     aprenentatges: state.character.aprenentatges.size,
     hadHeir:    children.length > 0 || siblings.length > 0,
   });
@@ -952,7 +950,6 @@ function continueSuccession(successorId) {
   state.character = createCharacter(
     chosen.inheritedInclination,
     chosen.inheritedPurchased,
-    chosen.inheritedSkills,
     chosen.inheritedStats,
     chosen.inheritedDestreses,
     chosen.inheritedAprenentatges || new Set(),
@@ -1176,7 +1173,7 @@ function executeAction(actionId) {
 
     // ── CÀLCUL OUTPUT (no aplicat encara) ────────────────────────────────
     const destresaBonus = (action.destresa_id && state.character.destreses.has(action.destresa_id)) ? DESTRESA_BONUS : 0;
-    const outMinBonus = [...state.character.unlockedSkillIds].reduce((s, sid) => {
+    const outMinBonus = [...state.unlockedTdbIds].reduce((s, sid) => {
       const bt = SKILL_DEFS.find(t => t.id === sid);
       return bt?.passive_effect?.type === 'bonus_action_output' && bt.passive_effect.action_id === actionId
         ? s + (bt.passive_effect.output_min_bonus || 0) : s;
@@ -1185,7 +1182,7 @@ function executeAction(actionId) {
       return apr?.effect?.type === 'bonus_action_output' && apr.effect.action_id === actionId
         ? s + (apr.effect.output_min_bonus || 0) : s;
     }, 0);
-    const outMaxBonus = [...state.character.unlockedSkillIds].reduce((s, sid) => {
+    const outMaxBonus = [...state.unlockedTdbIds].reduce((s, sid) => {
       const bt = SKILL_DEFS.find(t => t.id === sid);
       return bt?.passive_effect?.type === 'bonus_action_output' && bt.passive_effect.action_id === actionId
         ? s + (bt.passive_effect.output_max_bonus || 0) : s;
@@ -1716,13 +1713,15 @@ function openZoneSheet(zoneId) {
 }
 
 function getActionUpgrade(actionId) {
-  return ACTIONS.find(a =>
-    a.is_upgrade &&
-    a.upgrades_action_id === actionId &&
-    !state.character.purchasedActionIds.has(a.id) &&
-    evaluateCharacterRequires(a) &&
-    (a.universal_prereq ? state.discoveredUniversalTechIds.has(a.universal_prereq) : true)
-  ) || null;
+  return ACTIONS.find(a => {
+    if (!a.is_upgrade || a.upgrades_action_id !== actionId) return false;
+    if (state.character.purchasedActionIds.has(a.id)) return false;
+    if (!evaluateCharacterRequires(a)) return false;
+    if (a.universal_prereq && !state.discoveredUniversalTechIds.has(a.universal_prereq)) return false;
+    const unlockingTdb = SKILL_DEFS.find(bt => (bt.unlocks_action_ids || []).includes(a.id));
+    if (unlockingTdb && !state.unlockedTdbIds.has(unlockingTdb.id)) return false;
+    return true;
+  }) || null;
 }
 
 function buildCarouselItems() {
@@ -2013,15 +2012,19 @@ function renderCharPanel() {
     }
   }
 
-  // Skill pills
+  // TdB pills — llinatge (no per personatge)
   const skillEl = el('skill-badges');
   skillEl.innerHTML = '';
-  for (const skillId of state.character.unlockedSkillIds) {
+  for (const skillId of state.unlockedTdbIds) {
     const bt = SKILL_DEFS.find(t => t.id === skillId);
     if (!bt) continue;
     const pill = document.createElement('span');
     pill.className   = 'pill-skill';
-    pill.textContent = bt.name;
+    pill.textContent = (bt.emoji ? bt.emoji + ' ' : '') + bt.name;
+    pill.addEventListener('click', () => showPillInfoTooltip(
+      (bt.emoji ? bt.emoji + ' ' : '') + bt.name,
+      bt.description || 'Tecnologia de Branca desbloqueada pel llinatge.'
+    ));
     skillEl.appendChild(pill);
   }
 
@@ -2214,7 +2217,7 @@ function renderInMapOverlay() {
         .filter(({ opt }) => {
           if (opt.requires_children && !hasChildren) return false;
           if (opt.requires_no_children && hasChildren) return false;
-          if (opt.requires_skill && !state.character.unlockedSkillIds.has(opt.requires_skill)) return false;
+          if (opt.requires_skill && !state.unlockedTdbIds.has(opt.requires_skill)) return false;
           return true;
         });
       visibleOptions.forEach(({ opt, i }) => {
@@ -2373,7 +2376,7 @@ function resolveDiscoveryOption(optionIndex) {
   // Health (may be modified by skill_modifier)
   let healthDelta = opt.health_delta ?? 0;
   if (opt.skill_modifier) {
-    const hasSk = state.character.unlockedSkillIds.has(opt.skill_modifier.skill_id);
+    const hasSk = state.unlockedTdbIds.has(opt.skill_modifier.skill_id);
     if (!hasSk && opt.skill_modifier.absent_health_options) {
       const roll = Math.random();
       healthDelta = opt.skill_modifier.absent_health_options[Math.floor(roll * opt.skill_modifier.absent_health_options.length)];
@@ -2550,7 +2553,7 @@ function renderTestingPanel() {
   // Skills
   const skEl = el('test-skills');
   skEl.innerHTML = SKILL_DEFS.map(bt => {
-    const have = state.character.unlockedSkillIds.has(bt.id);
+    const have = state.unlockedTdbIds.has(bt.id);
     return `<span class="test-badge test-badge-skill${have ? '' : ' locked'}">${have ? '✓' : '○'} ${bt.name}</span>`;
   }).join('');
 
@@ -2806,7 +2809,7 @@ function getBuyableActions() {
     if (a.universal_prereq && !state.discoveredUniversalTechIds.has(a.universal_prereq)) return false;
     // D4: si una branch tech desbloqueja aquesta acció, cal tenir la tech desbloquejada per comprar-la
     const unlockingSkill = SKILL_DEFS.find(bt => (bt.unlocks_action_ids || []).includes(a.id));
-    if (unlockingSkill && !state.character.unlockedSkillIds.has(unlockingSkill.id)) return false;
+    if (unlockingSkill && !state.unlockedTdbIds.has(unlockingSkill.id)) return false;
     return true;
   });
 }
@@ -3368,12 +3371,12 @@ function openCharDetail() {
     famEl.innerHTML = parts.length ? parts.join('') : '<span class="cd-empty">Sense família</span>';
   }
 
-  // Skills
+  // TdBs (llinatge)
   const skillsEl = el('cd-skills-list');
-  if (c.unlockedSkillIds.size === 0) {
-    skillsEl.innerHTML = '<span class="cd-empty">Cap habilitat encara</span>';
+  if (state.unlockedTdbIds.size === 0) {
+    skillsEl.innerHTML = '<span class="cd-empty">Cap TdB encara</span>';
   } else {
-    skillsEl.innerHTML = [...c.unlockedSkillIds].map(sid => {
+    skillsEl.innerHTML = [...state.unlockedTdbIds].map(sid => {
       const bt = SKILL_DEFS.find(t => t.id === sid);
       return bt ? `<span class="cd-pill-skill">${bt.name}</span>` : '';
     }).join('');
