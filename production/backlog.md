@@ -308,7 +308,7 @@
   intern + Chromium, crida funcions internes (determinista, ràpid), surt ≠0 si falla (apte CI). 9 checks:
   START-01, 2a, EVT-OPT-MAT, FOOD-CAP-01, BAL-01, LOG-02, TEACH-01, SUCC-01, sense errors. **9/9 passats.**
 
-## P1 OPEN DOCS — DOCS-SYNC — Actualitzar docu + eliminar Godot del projecte
+## P1 DONE DOCS — DOCS-SYNC — Actualitzar docu + eliminar Godot del projecte
 
 - **Origen**: petició usuari 2026-06-27. Decisió Godot: usuari 2026-07-01.
 - **Decisió engine (2026-07-01)**: **Godot eliminat**. El joc viu és el prototip JS; Godot no s'usarà.
@@ -595,7 +595,7 @@
 - **✅ RESOLT 2026-07-02** (commit 8a2838f): opció A — FADED amb missatge guia "Apuja una inclinació
   cap a una branca per poder aprendre habilitats" quan `getEligibleSkills().length === 0`.
 
-## P2 OPEN UX — TOKEN-FLIGHT — Animació d'icones viatjant del donut als marcadors
+## P2 DONE UX — TOKEN-FLIGHT — Animació d'icones viatjant del donut als marcadors
 
 - **Origen**: feedback usuari 2026-07-01. Distint del bug SEQ-01.
 - **Descripció**: el jugador descriu icones que "surten del donut i es desplacen fins als marcadors
@@ -607,6 +607,7 @@
   esdevé inherent a l'animació), però és una inversió de major abast.
 - **Acceptance**: icones animades del donut → marcadors; efectes aplicats a l'arribada; events i EOT
   encadenats posteriorment.
+- **✅ RESOLT 2026-07-03**: comptadors top-bar revertits als valors pre-acció immediatament després de renderAll(); boles volen 920ms; renderAll() als 920ms actualitza comptadors → event/EOT s'encadena just després.
 
 ## P2 DONE UX — UX-01 — Sense distinció visual al mercat entre accions gated-per-branca i universals
 
@@ -661,12 +662,13 @@
   bloc `if (outRes && action.output_min != null)` (game.js ~1150) i `act_tallar_pedra` no té output. Sense
   impacte funcional; cap canvi de codi necessari. La destresa segueix valent com a prereq de `act_talla_avancada`.
 
-## P3 DEFERRED CONTENT — C-02 — Títols de dinastia amb condicions verificables
+## P3 DONE CONTENT — C-02 — Títols de dinastia amb condicions verificables
 
 - **Fitxers**: `prototypes/bloodline-v2/game.js` → `calculateScore()`
 - **DECIDIT (2026-06-19)**: opció B — títols per fites numèriques (X generacions, Y techs). Falta NOMÉS
   implementar (prioritat baixa). Ja no és una decisió pendent.
 - **Acceptance**: ≥6 títols amb condicions verificables; almenys 1 secret.
+- **✅ RESOLT 2026-07-03**: 20 títols de dinastia (5 tiers × 4 eixos, condicions de score numèric) + 7 badges d'assoliment (5 normals + 2 secrets). Scores de TdBs corregit a `state.unlockedTdbIds.size` (únics, no sumats per gen). Breakdown end-screen: "habilitats" → "TdBs".
 
 <!-- ▼▼▼ DISSENY 2026-07-03 — TdBs com a coneixement de llinatge ▼▼▼ -->
 
@@ -755,7 +757,7 @@
 - **Acceptance**: clicar una pill de TdB obre un overlay/tooltip amb el nom i descripció de la tecnologia.
 - **✅ RESOLT 2026-07-03**: pills TdB mostren emoji+nom i `addEventListener('click', showPillInfoTooltip(...))`. Resolt de passada com a part de TDB-LINEAGE.
 
-## P3 OPEN DESIGN — ESCOLTAR-LIMIT — "Escoltar els Estrangers" serveix ONLY per a descobrir TdBs
+## P3 DONE DESIGN — ESCOLTAR-LIMIT — "Escoltar els Estrangers" serveix ONLY per a descobrir TdBs
 
 - **Origen**: feedback usuari 2026-07-03, punt 4.
 - **Issue**: l'acció no té output ni side effect fora del flux de descobriment de TdBs. Un cop totes les
@@ -765,6 +767,7 @@
   - (B) Limitar `max_executions` al nombre de TdBs descobertes (desapareix en acabar el seu cicle vital).
   - (C) Mantenir el disseny actual (acció de servei, no de producció) — documentar-ho millor a la UI.
 - **Acceptance**: el jugador entén el propòsit de l'acció i no surt decebut si la crida quan no hi ha TdBs elegibles.
+- **✅ RESOLT 2026-07-03 (opció C)**: descripció reescrita per deixar clar que és una "acció de coneixement, no de producció" i que "el que aprens queda al llinatge, no a la persona".
 
 <!-- ▲▲▲ FEEDBACK 2026-07-03 ▲▲▲ -->
 
