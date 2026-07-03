@@ -740,7 +740,7 @@ const ACTIONS = [
   // DISCOVERY
   {
     id: "act_escoltar_estrangers", name: "Escoltar els Estrangers", is_base: false, is_discovery_action: true, zona: "Campament",
-    description: "Passes estona amb visitants d'un altre clan i n'aprens una tècnica nova (habilitat de branca). Cal una inclinació prou marcada cap a una branca: aquí es desbloquegen les habilitats.",
+    description: "Trobes visitants d'un altre clan i compartiu sabers. Acció de coneixement: no produeix recursos, però si el llinatge té prou inclinació cap a una branca, desbloqueja la seva Tecnologia de Branca per sempre. El que aprens queda al llinatge, no a la persona.",
     execute_cost: 0, output_resource: "food", output_min: 0, output_max: 0,
     stat_key: "enginy", stat_gain: 0.10,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: 0, sociabilitat: 0 },

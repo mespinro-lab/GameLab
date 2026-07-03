@@ -1245,7 +1245,8 @@ function executeAction(actionId) {
     if (assistOk && action.assist.desc) addLog(action.assist.desc);
     spawnResBalls(snapOut); // FLOATER-01: icones del menjar/salut/token de l'OUTPUT volant al comptador
     applyFxFloaters(snapOut);
-    // renderAll perquè els comptadors del panell reflecteixin el canvi JA
+    // Renderitzem tot (panell personatge, log, inclinació…) però NO els comptadors de recurs top-bar:
+    // TOKEN-FLIGHT — els comptadors es reverteixen als valors pre-acció perquè les boles els "portin" visualment.
     renderAll();
     if (state.health <= 0) {
       state._pendingTurnEntry = null;
@@ -1254,6 +1255,10 @@ function executeAction(actionId) {
       saveGame();
       return;
     }
+    // TOKEN-FLIGHT: revertir display dels comptadors top-bar als valors pre-acció mentre les boles volen
+    el('hex-food').textContent   = `${Math.round(snapOut.food   || 0)}/${foodMax()}`;
+    el('hex-health').textContent = `${Math.round(snapOut.health || 0)}`;
+    const _tokValEl = el('tok-token-val'); if (_tokValEl) _tokValEl.textContent = `${Math.round(snapOut.token || 0)}`;
     if (state.pendingEvent) {
       // SEQ-01: l'output ja s'ha aplicat; aquí NOMÉS esperem que el jugador
       // resolgui l'event (beat separat). No hi ha pendingActionResult.
@@ -1261,8 +1266,8 @@ function executeAction(actionId) {
       setTimeout(() => { renderAll(); saveGame(); }, 920);
       return;
     }
-    // ANIM-TIMING: 920ms per deixar que les res-balls aterrin abans del donut de fi de torn
-    setTimeout(() => proceedToEndOfTurn(), 920);
+    // ANIM-TIMING: 920ms per deixar que les res-balls aterrin; renderAll actualitza comptadors LLAVORS
+    setTimeout(() => { renderAll(); proceedToEndOfTurn(); }, 920);
   });
 }
 
@@ -2607,7 +2612,7 @@ function calculateScore() {
   const cycles    = state.cycle;
   const gens      = state.genealogy.length;
   const techs     = state.discoveredUniversalTechIds.size;
-  const skills    = state.genealogy.reduce((s, g) => s + (g.skills || 0), 0);
+  const skills    = state.unlockedTdbIds.size; // TdBs únics del llinatge (no suma per gen)
   const branches  = new Set(state.genealogy.flatMap(g => g.branches || [])).size;
   const aprs      = state.genealogy.reduce((s, g) => s + (g.aprenentatges || 0), 0);
   const heirBonus = state.genealogy.filter(g => g.hadHeir).length * 20;
@@ -2667,9 +2672,16 @@ function getAchievementBadges(score) {
     badges.push({ icon: '🔮', name: 'La Saviesa de les Eres', desc: 'Totes les tecnologies universals descobertes' });
   if (score.fullLifeBonus >= 60)
     badges.push({ icon: '🦴', name: "L'Ancià del Llinatge", desc: '2+ personatges que han viscut fins al límit', secret: false });
+  if (state.unlockedTdbIds.size >= 8)
+    badges.push({ icon: '🧬', name: 'El Llinatge dels Savis', desc: '8+ Tecnologies de Branca descobertes', secret: false });
+  if (score.cycles >= 80)
+    badges.push({ icon: '⏳', name: 'La Llarga Espera', desc: 'El llinatge ha sobreviscut 80+ cicles', secret: false });
   // Secret: finish the era with only 1 generation (no succession)
   if (state.gameOverReason === 'era_complete' && score.gens <= 1)
     badges.push({ icon: '⚡', name: "L'Invicte Solitari", desc: 'Completada l\'era sense successió', secret: true });
+  // Secret: discover all TdBs (16)
+  if (state.unlockedTdbIds.size >= SKILL_DEFS.length)
+    badges.push({ icon: '🏛️', name: 'El Llegat Complet', desc: 'Totes les Tecnologies de Branca descobertes en una sola era', secret: true });
   return badges;
 }
 
@@ -2719,7 +2731,7 @@ function renderEndScreen() {
   breakdownEl.innerHTML = [
     score.genScore > 0 ? `${score.gens} generació${score.gens !== 1 ? 'ns' : ''} (per edat) = <b>${score.genScore}</b>` : null,
     score.techs    > 0 ? `${score.techs} techs × 100 = <b>${score.techs * 100}</b>` : null,
-    score.skills   > 0 ? `${score.skills} habilitats × 30 = <b>${score.skills * 30}</b>` : null,
+    score.skills   > 0 ? `${score.skills} TdBs × 30 = <b>${score.skills * 30}</b>` : null,
     score.branches > 0 ? `${score.branches} branques × 40 = <b>${score.branches * 40}</b>` : null,
     score.aprs     > 0 ? `${score.aprs} aprenentatges × 50 = <b>${score.aprs * 50}</b>` : null,
     score.heirBonus > 0 ? `Hereus deixats: <b>+${score.heirBonus}</b>` : null,
