@@ -2044,6 +2044,13 @@ function renderCharPanel() {
     }
   }
 
+  // Heir warning
+  const heirWarnEl = el('heir-warn');
+  if (heirWarnEl) {
+    const needsHeirWarn = state.character.children.length === 0 && characterAge() >= 8;
+    heirWarnEl.classList.toggle('hidden', !needsHeirWarn);
+  }
+
   // Aprenentatge pills
   const aprEl = el('aprenentatge-badges');
   if (aprEl) {
@@ -2844,6 +2851,10 @@ function renderShop() {
       const obsoletesNote = obsoletesBase
         ? `<span class="shop-upgrade-note">⚠️ Fa obsoleta: ${obsoletesBase.name}</span>`
         : '';
+      const unlockingSkill = SKILL_DEFS.find(bt => (bt.unlocks_action_ids || []).includes(action.id));
+      const tdbBadge = unlockingSkill
+        ? `<span class="shop-tdb-badge">${unlockingSkill.emoji || ''} ${unlockingSkill.name}</span>`
+        : '';
       const row = document.createElement('div');
       row.className = 'shop-row' + (canAfford ? '' : ' shop-row-disabled');
       row.innerHTML = `
@@ -2851,6 +2862,7 @@ function renderShop() {
         <div class="shop-info">
           <span class="shop-name">${action.name || action.id}</span>
           <span class="shop-desc">${action.description || ''}${upgradeNote}${obsoletesNote}</span>
+          ${tdbBadge}
         </div>
         <button class="shop-buy-btn" ${canAfford ? '' : 'disabled'} data-id="${action.id}">
           🔵${action.purchase_cost}

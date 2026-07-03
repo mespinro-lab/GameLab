@@ -1107,7 +1107,7 @@ const ACTIONS = [
   },
   {
     id: "act_basto_esperits", name: "El Bastó dels Esperits", is_base: false, zona: "Campament",
-    purchase_cost: 5, execute_cost: 0, output_resource: "health", output_min: 6, output_max: 9,
+    purchase_cost: 5, execute_cost: 0, output_resource: "health", output_min: 5, output_max: 8,
     side_effects: [{ resource: 'eina', delta: -1 }, { resource: 'food', delta: -1 }],
     token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.15,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.08, sociabilitat: 0 },
@@ -1252,7 +1252,7 @@ const ACTIONS = [
   },
   {
     id: "act_pintar_esperits", name: "Pintar els Esperits", is_base: false, zona: "Campament",
-    purchase_cost: 5, execute_cost: 0, output_resource: "health", output_min: 6, output_max: 10,
+    purchase_cost: 5, execute_cost: 0, output_resource: "health", output_min: 5, output_max: 8,
     side_effects: [{ resource: 'food', delta: -2 }],
     token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.18,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.08, sociabilitat: 0 },
@@ -1468,7 +1468,7 @@ const ACTIONS = [
   },
   {
     id: "act_pelegrinatge", name: "El Pelegrinatge", is_base: false, zona: "Bosc",
-    purchase_cost: 6, execute_cost: 0, output_resource: "health", output_min: 7, output_max: 11,
+    purchase_cost: 6, execute_cost: 0, output_resource: "health", output_min: 5, output_max: 9,
     side_effects: [{ resource: 'food', delta: -3 }],
     token_min: 2, token_max: 4, stat_key: "vincle", stat_gain: 0.18,
     inclination_deltas: { impuls: 0, "intel·lecte": 0, espiritualitat: +0.08, sociabilitat: 0 },
