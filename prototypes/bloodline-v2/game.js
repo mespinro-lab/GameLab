@@ -1257,12 +1257,12 @@ function executeAction(actionId) {
     if (state.pendingEvent) {
       // SEQ-01: l'output ja s'ha aplicat; aquí NOMÉS esperem que el jugador
       // resolgui l'event (beat separat). No hi ha pendingActionResult.
-      // 200ms de pausa abans de mostrar l'event
-      setTimeout(() => { renderAll(); saveGame(); }, 200);
+      // ANIM-TIMING: 920ms perquè les res-balls (fins a 5 × 80ms + 560ms vol) acabin de volar
+      setTimeout(() => { renderAll(); saveGame(); }, 920);
       return;
     }
-    // 200ms de pausa i llavors donut de final de torn
-    setTimeout(() => proceedToEndOfTurn(), 200);
+    // ANIM-TIMING: 920ms per deixar que les res-balls aterrin abans del donut de fi de torn
+    setTimeout(() => proceedToEndOfTurn(), 920);
   });
 }
 
@@ -1576,19 +1576,16 @@ function renderZoneNodes() {
     node.dataset.zone = zoneDef.id;
     node.style.left   = pos.left + '%';
     node.style.top    = pos.top  + '%';
-    // Zone info chips
+    // Zone info chips — CHIP-ZONES: cada recurs only a la seva zona font
     let chipHtml = '';
-    if (zoneDef.id === 'Campament' && ((state.pedra || 0) > 0 || (state.eina || 0) > 0 || (state.branques || 0) > 0)) {
-      const pedraChip = (state.pedra || 0) > 0 ? `<span>🪨 ${state.pedra}</span>` : '';
-      const fibraChip = (state.branques || 0) > 0 ? `<span>🌿 ${state.branques}</span>` : '';
-      const einaChip  = (state.eina  || 0) > 0 ? `<span>⚒️ ${state.eina}</span>` : '';
-      chipHtml = `<div class="zone-chip">${pedraChip}${fibraChip}${einaChip}</div>`;
+    if (zoneDef.id === 'Campament' && (state.eina || 0) > 0) {
+      chipHtml = `<div class="zone-chip"><span>⚒️ ${state.eina}</span></div>`;
     }
-    // FIBER-01 (2026-06-28): mostrar les fibres (i pedra) al Bosc, on es recullen, perquè "Recollir Fibres" tingui feedback visible
-    if (zoneDef.id === 'Bosc' && ((state.branques || 0) > 0 || (state.pedra || 0) > 0)) {
-      const fibraChip = (state.branques || 0) > 0 ? `<span>🌿 ${state.branques}</span>` : '';
-      const pedraChip = (state.pedra || 0) > 0 ? `<span>🪨 ${state.pedra}</span>` : '';
-      chipHtml = `<div class="zone-chip">${fibraChip}${pedraChip}</div>`;
+    if (zoneDef.id === 'Bosc' && (state.branques || 0) > 0) {
+      chipHtml = `<div class="zone-chip"><span>🌿 ${state.branques}</span></div>`;
+    }
+    if (zoneDef.id === 'Planes' && (state.pedra || 0) > 0) {
+      chipHtml = `<div class="zone-chip"><span>🪨 ${state.pedra}</span></div>`;
     }
     if (zoneDef.id === 'Llar' && state.character.partnerName) {
       const fills = state.character.children.length;
@@ -1674,6 +1671,7 @@ function getZoneActions(zoneId) {
   const age = characterAge();
   const base = ACTIONS.filter(a => {
     if (a.zona !== zoneId) return false;
+    if (a.is_discovery_action) return false; // handled separately below (avoids double-insert DISC-DOUBLE)
     if (!isActionOwned(a)) return false;
     if (getActionVisibility(a) === 'HIDDEN') return false;
     if (a.maxAge !== undefined && age > a.maxAge) return false;
