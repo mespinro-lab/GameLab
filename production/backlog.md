@@ -689,7 +689,7 @@
 
 <!-- ▼▼▼ FEEDBACK 2026-07-03 (7 punts del jugador) ▼▼▼ -->
 
-## P1 OPEN BUG — DISC-DOUBLE — Doble "Escoltar els Estrangers" al carrusel
+## P1 DONE BUG — DISC-DOUBLE — Doble "Escoltar els Estrangers" al carrusel
 
 - **Origen**: feedback usuari 2026-07-03, punt 5.
 - **Root cause**: `getZoneActions()` (game.js:~1676-1695) fa `base.unshift(disc)` però `act_escoltar_estrangers`
@@ -697,8 +697,9 @@
 - **Fix**: excloure `is_discovery_action` del filtre de `basePurchased`, o comprovar que `disc` no és ja present a `base` abans de fer `unshift`.
 - **Fitxers**: `prototypes/bloodline-v2/game.js` (`getZoneActions`, ~1676)
 - **Acceptance**: `act_escoltar_estrangers` apareix exactament 1 cop al carrusel.
+- **✅ RESOLT 2026-07-03**: afegit `if (a.is_discovery_action) return false` al filtre de `getZoneActions()`. Les actions de descobriment s'exclouen del filtre base i s'afegeixen explícitament via `unshift`.
 
-## P1 OPEN BUG — ANIM-TIMING — L'event s'obre als 200ms mentre les boles de recurs volen fins a 880ms
+## P1 DONE BUG — ANIM-TIMING — L'event s'obre als 200ms mentre les boles de recurs volen fins a 880ms
 
 - **Origen**: feedback usuari 2026-07-03, punt 7.
 - **Root cause**: `setTimeout(() => { renderAll(); saveGame(); }, 200)` (game.js:~1264) obre l'event als 200ms,
@@ -706,6 +707,7 @@
 - **Fix**: augmentar el timeout a ~700-900ms per deixar que l'animació acabi; o encadenar l'event a un callback de l'animació.
 - **Fitxers**: `prototypes/bloodline-v2/game.js` (~1264)
 - **Acceptance**: l'event (i el fi de torn) no apareix fins que totes les boles de recurs han aterrat als marcadors.
+- **✅ RESOLT 2026-07-03**: ambdós `setTimeout` (event + EOT) canviats de 200ms a 920ms (bola màx: 4×80ms + 560ms vol = ~896ms).
 
 ## P1 DONE UX — UPG-GATE — El botó upgrade apareix sense tenir la TdB que el desbloqueja
 
@@ -718,7 +720,7 @@
 - **Acceptance**: el botó `↑` ONLY apareix quan el personatge té la TdB que desbloqueja aquell upgrade.
 - **✅ RESOLT 2026-07-03**: `getActionUpgrade()` comprova `state.unlockedTdbIds`. Resolt de passada com a part de TDB-LINEAGE.
 
-## P2 OPEN UX — CHIP-ZONES — Chips de recursos apareixen en zones incorrectes
+## P2 DONE UX — CHIP-ZONES — Chips de recursos apareixen en zones incorrectes
 
 - **Origen**: feedback usuari 2026-07-03, punt 1.
 - **Issue**: pedra (🪨) i fibra (🌿) apareixen als chips tant de Campament com de Bosc. Cada recurs hauria
@@ -727,6 +729,7 @@
 - **Nota**: FIBER-01 (2026-06-28) va afegir 🌿 a Bosc i Campament per visibilitat. Ara cal acotar cada zona.
 - **Fitxers**: `prototypes/bloodline-v2/game.js` (lògica de chips de zona, ~1584-1594)
 - **Acceptance**: cada recurs secundari (pedra/fibra/eina) apareix com a chip ONLY en la zona on s'obté principalment.
+- **✅ RESOLT 2026-07-03**: Campament → ⚒️ eina only; Bosc → 🌿 fibra only; Planes → 🪨 pedra only (afegida zona Planes). Pedra i fibra eliminades de Campament/Bosc on no s'obtenien.
 
 ## P2 DONE NETEJA — HABILITAT-RENAME — "Habilitats" → "Tecnologies de Branca" / "TdBs"
 
