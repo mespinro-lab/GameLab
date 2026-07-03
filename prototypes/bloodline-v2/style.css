@@ -460,6 +460,17 @@ button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
   box-shadow: 0 3px 8px rgba(40,25,10,.4), inset 0 1px 0 rgba(255,255,255,.25);
   white-space: nowrap;
 }
+.pill-heir-warn {
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 20px;
+  color: #fff;
+  background: linear-gradient(180deg, #ef4444, #c42020);
+  box-shadow: 0 3px 8px rgba(40,0,0,.4), inset 0 1px 0 rgba(255,255,255,.2);
+  white-space: nowrap;
+  animation: pulse-rate 1.2s ease-in-out infinite;
+}
 .pill-destresa {
   font-size: 9.5px;
   font-weight: 800;
@@ -1212,6 +1223,7 @@ body.donut-active * { pointer-events: none !important; }
 .shop-name { font-weight: 700; font-size: .9rem; }
 .shop-desc { font-size: .75rem; opacity: .65; line-height: 1.3; }
 .shop-upgrade-note { display: block; font-size: .7rem; color: var(--gold); opacity: .9; margin-top: .15rem; }
+.shop-tdb-badge { display: block; font-size: .68rem; color: #7bc8a4; opacity: .85; margin-top: .1rem; }
 .shop-buy-btn {
   background: rgba(160,110,55,.75);
   border: 1px solid rgba(255,190,80,.5);
