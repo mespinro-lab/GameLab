@@ -156,7 +156,7 @@ const APRENENTATGE_DEFS = [
     id: "apr_orientacio", name: "Orientació", icon: "🧭",
     description: "Llegeixes el terreny i les estrelles amb naturalitat. Explorar rendeix molt més.",
     discoveryChance: 0.25,
-    discovery_action_ids: ["act_explorar_voltants", "act_rastreig_rutes", "act_transit_nocturn"],
+    discovery_action_ids: ["act_explorar_voltants", "act_obrir_cami", "act_expedicio"],
     effect: { type: "bonus_action_output", action_id: "act_explorar_voltants", output_min_bonus: 1, output_max_bonus: 2, desc: "+1/+2 token en explorar" }
   },
   {
@@ -170,7 +170,7 @@ const APRENENTATGE_DEFS = [
     id: "apr_lectura_senyals", name: "Lectura de Senyals", icon: "👣",
     description: "Rastre, excrement, mossegades: el bosc t'explica on han passat els animals. La caça és molt menys incerta.",
     discoveryChance: 0.30,
-    discovery_action_ids: ["act_espiar_ramat", "act_rastreig_rutes", "act_marcar_territori"],
+    discovery_action_ids: ["act_espiar_ramat", "act_seguir_ramat", "act_marcar_territori"],
     effect: { type: "bonus_action_output", action_id: "act_espiar_ramat", output_min_bonus: 1, output_max_bonus: 2, desc: "+1/+2 aliment en espiar el ramat" }
   },
   {
@@ -450,6 +450,9 @@ const SKILL_DEFS = [
 // Format: { [axis]: { min?, max? } }  — totes les condicions son AND.
 // Consultat per getActionVisibility() com a fallback si l'acció no té inclination_requirements propi.
 const ACTION_INCLINATION_REQUIREMENTS = {
+  // Base actions amb restricció d'inclinació
+  act_recollir_branques:   { impuls: { max: 0.50 } },
+
   // Standalones (conservats)
   act_ritual_foc:          { espiritualitat: { min: 0.05 } },
   act_caca_llanca:         { impuls: { min: 0.15 } },
@@ -2098,8 +2101,8 @@ const EVENT_POOLS = {
     }
   ],
   pool_artesania: [
-    { id: "ev_eina_trencada", text: "L'eina es trenca durant la feina. Cal refer-la.", effects: { eina: -1 }, blocked_if: [{ type: "stat_min", stat: "enginy", min: 3.5 }] },
-    { id: "ev_eina_trencada", text: "L'eina es trenca en plena feina i, en saltar, s'endú la pedra que treballaves.", effects: { eina: -1, pedra: -1 }, blocked_if: [{ type: "stat_min", stat: "enginy", min: 4.0 }] },
+    { id: "ev_eina_trencada",   text: "L'eina es trenca durant la feina. Cal refer-la.", effects: { eina: -1 }, blocked_if: [{ type: "stat_min", stat: "enginy", min: 3.5 }] },
+    { id: "ev_eina_trencada_2", text: "L'eina es trenca en plena feina i, en saltar, s'endú la pedra que treballaves.", effects: { eina: -1, pedra: -1 }, blocked_if: [{ type: "stat_min", stat: "enginy", min: 4.0 }] },
     { id: "ev_tecnica_nova",     text: "Un descobriment accidental millora la tècnica.",               effects: { food: +1 } },
     { id: "ev_intercanvi_eines", text: "Un grup veí demana eines a canvi de provisions.",              effects: { food: +2 } },
     {
