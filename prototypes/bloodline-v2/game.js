@@ -111,6 +111,15 @@ function hide(id) { const e = el(id); if (e) e.classList.add('hidden'); }
 // ═══════════════════════════════════════════════════════════ GAME STATE
 let state = null;
 
+// SEQ-ARCH (2026-07-10): pipeline Promise-based — substitueix setTimeout ad-hoc
+// Ref: design/gdd/bloodline/seq-arch-spec.md
+let _ballCount        = 0;     // boles en vol (spawnResBalls ↔ waitForAllBalls)
+let _allBallsResolver = null;  // Promise.resolve cridat quan _ballCount → 0
+let _resolveEvent     = null;  // cridat per dismissEvent / resolveDiscoveryOption
+let _resolveDiscovery = null;  // cridat per dismissDiscovery
+let _resolveBirth     = null;  // cridat per dismissBirth
+let _pipelineRunning  = false; // guard de no reentrança
+
 // ═══════════════════════════════════════════════════════════ SAVE / LOAD
 const SAVE_KEY = 'bloodline_v2_save';
 
@@ -236,7 +245,7 @@ function loadGame() {
       foodUpkeepReduction: d.foodUpkeepReduction || 0,
       foodMax: d.foodMax ?? FOOD_MAX_START,
       lifeProgress: d.lifeProgress || 0,
-      pendingEvent: null, pendingActionResult: null,
+      pendingEvent: null,
       // SUCC-01: restaura la successió/mort pendent desada
       pendingSuccession: d.pendingSuccession
         ? { ...d.pendingSuccession, successors: deserializeSuccessors(d.pendingSuccession.successors) }
@@ -346,11 +355,9 @@ function initState(dynastyName, race) {
     genealogy: [],
     siblingPool: [],
     pendingEvent: null,
-    pendingActionResult: null,
     pendingSuccession: null,
     pendingDiscoveries: [],
     pendingBirths: [],
-    pendingEndOfTurn: false,
     pendingDeath: null,
     pendingNewGen: null,
     nextGenHealthMax: null,
@@ -1000,88 +1007,285 @@ function applyTurnUpkeep() {
   state.lifeProgress = Math.min(1, (state.lifeProgress || 0) + lifeIncPerTurn());
 }
 
-// ═══════════════════════════════════════════════════════════ END-OF-TURN PHASE
-// Called after action effects (if no event) OR after event resolves.
-// Shows its own donut, then applies cycle/upkeep, then checks succession.
-function beginEndOfTurnPhase() {
-  // SEQ-01: NO fem clearFloaters() aquí — els floaters d'acció ja s'hauran extingit
-  // durant el donut (1.25s animació > 1.4s durada floater). Netejar aquí els esborrava
-  // abans que el jugador els veiés.
-  const ring = el('exec-donut-ring');
-  if (ring) ring.style.stroke = '#888';
-  showDonutAnimation({ _icon: '🌙', id: '_eot', name: 'Fi de torn' }, null, () => {
-    if (ring) ring.style.stroke = 'var(--gold)';
-    const snapEot = snapshotNums();
-    state.cycle++;
-    autoDiscoverUniversalTechs();
-    applyTurnUpkeep();
-    applyFxFloaters(snapEot);
-    // Age-gate notifications
-    for (const a of ACTIONS.filter(x => x.is_base && x.minAge)) {
-      const alreadyNotified = state.pendingDiscoveries.some(d => d._isEvent && d.name === a.name);
-      const requiresSatisfied = !a.requires?.[0]?.state || !state.character.charState[a.requires[0].state];
-      if (characterAge() === a.minAge && requiresSatisfied && !alreadyNotified) {
-        state.pendingDiscoveries.push({ _isEvent: true, icon: getActionIcon(a), name: a.name, desc: `Ja tens edat per "${a.name}". ${a.description || ''}` });
-      }
+// ═══════════════════════════════════════════════════════════ TURN PIPELINE
+// SEQ-ARCH (2026-07-10): substitueix setTimeout ad-hoc per un pipeline async/await lineal.
+// Elimina: beginEndOfTurnPhase, proceedToEndOfTurn, afterDismiss, TOKEN-FLIGHT hack.
+// Ref: design/gdd/bloodline/seq-arch-spec.md
+
+// ── FASE COST: extreta del callback del donut ──────────────────────────────
+function applyCostEffects(action) {
+  const actionId = action.id;
+  if (action.execute_cost) state.food = Math.max(0, state.food - action.execute_cost);
+  // Token universal — sempre immediat (moneda de compra)
+  const elderBonus = characterAge() >= 11 ? 1 : 0;
+  if (elderBonus && !(state.character.charState.loggedElder)) {
+    state.character.charState.loggedElder = 1;
+    addLog('Sàvia experiència: els ancians generen +1 token per acció');
+  }
+  const matMin = (action.token_min ?? 2) + elderBonus;
+  const matMax = (action.token_max ?? 3) + elderBonus;
+  const aprMatBonus = [...state.character.aprenentatges].reduce((s, aid) => {
+    const apr = APRENENTATGE_DEFS.find(a => a.id === aid);
+    return apr?.effect?.type === 'token_bonus' ? s + apr.effect.value : s;
+  }, 0);
+  state.token = Math.min(tokenMax(), state.token + randInt(matMin, matMax) + aprMatBonus);
+  // Reducció upkeep i ampliació cap — immediats (efecte permanent)
+  if (action.food_upkeep_delta) {
+    const prevCount = state.character.actionUseCounts[actionId] || 0;
+    if (prevCount < (action.max_executions || 99)) {
+      state.foodUpkeepReduction = Math.min(FOOD_UPKEEP - 0.5, (state.foodUpkeepReduction || 0) + Math.abs(action.food_upkeep_delta));
+      addLog(`Conservació millorada: upkeep −${(state.foodUpkeepReduction).toFixed(1)}/torn`);
     }
-    // Partner warning (only if still alive)
-    if (state.health > 0 && characterAge() === 12 && state.character.charState.parella === 0) {
-      const alreadyWarned = state.pendingDiscoveries.some(d => d._isPartnerWarning);
-      if (!alreadyWarned) {
-        state.pendingDiscoveries.push({ _isPartnerWarning: true, icon: '💑', name: 'Edat per a la parella s\'acaba', desc: 'Tens 2 cicles per cercar parella (l\'acció s\'esgota a edat 14). Sense parella, no hi ha successió possible.' });
-      }
+  }
+  if (action.food_cap_delta) {
+    const prevCount = state.character.actionUseCounts[actionId] || 0;
+    if (prevCount < (action.max_executions || 99)) {
+      state.foodMax = Math.min(FOOD_MAX_BASIC, (state.foodMax ?? FOOD_MAX_START) + action.food_cap_delta);
+      addLog(`Emmagatzematge ampliat: cap. → ${state.foodMax}`);
     }
-    // Complete turn history entry
-    if (state._pendingTurnEntry) {
-      const foodDelta   = Math.round(state.food)   - Math.round(snapEot.food);
-      const healthDelta = Math.round(state.health) - Math.round(snapEot.health);
-      const parts = [];
-      if (foodDelta   !== 0) parts.push(`${foodDelta   > 0 ? '+' : ''}${foodDelta}🌾`);
-      if (healthDelta !== 0) parts.push(`${healthDelta > 0 ? '+' : ''}${healthDelta}❤️`);
-      state._pendingTurnEntry.upkeep = parts.join(' ') || '—';
-      // LOG-01: adjunta descobriments i habilitats acumulats durant el torn (bucket transitori)
-      state._pendingTurnEntry.extras = (state._turnExtras || []).slice();
-      state.turnHistory.unshift(state._pendingTurnEntry);
-      if (state.turnHistory.length > 10) state.turnHistory.length = 10;
-      state._pendingTurnEntry = null;
-      state._turnExtras = [];
-    }
-    // Succession / death check
-    if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0 || state.lifeProgress >= 1) {
-      triggerSuccession();
-    }
-    renderAll();
-    saveGame();
-  });
+  }
+  // Estat intern — inclinació, stats, efecte personatge, comptadors, destreses, zones
+  applyInclinationDeltas(action.inclination_deltas);
+  if (action.stat_key && action.stat_gain) {
+    state.character.stats[action.stat_key] = Math.min(STAT_MAX, state.character.stats[action.stat_key] + action.stat_gain);
+  }
+  applyCharacterEffect(action);
+  state.character.actionUseCounts[actionId] = (state.character.actionUseCounts[actionId] || 0) + 1;
+  checkDestresesAfterAction(actionId);
+  checkAprenentagesAfterAction(actionId);
+  if (action.unlocks_zone && !state.discoveredZoneIds.has(action.unlocks_zone)) {
+    state.discoveredZoneIds.add(action.unlocks_zone);
+    addLog(`Nova zona: ${action.unlocks_zone}!`);
+    pushExtra(ZONE_ICONS[action.unlocks_zone] || '🗺️', action.unlocks_zone);
+    state.pendingDiscoveries.push({
+      _isZone: true, icon: ZONE_ICONS[action.unlocks_zone] || '🗺️',
+      name: action.unlocks_zone, desc: `Has descobert ${action.unlocks_zone}. Ara apareix al teu mapa.`,
+    });
+  }
 }
 
-// ── Gate de final de torn (punt 1, 2026-06-22) ──────────────────────────────
-// L'EOT espera que es resolguin TOTS els descobriments/events/naixements generats per
-// l'acció (p.ex. el resultat d'"Explorar els Voltants") abans de córrer (cycle++, upkeep).
-// No es desa en diferir: el torn és atòmic i només es desa quan l'EOT acaba.
-function proceedToEndOfTurn() {
-  if (state.pendingEvent || state.pendingDiscoveries.length > 0 || state.pendingBirths.length > 0) {
-    state.pendingEndOfTurn = true;
+// ── FASE OUTPUT: extreta del callback del donut ────────────────────────────
+function applyOutputEffects(action) {
+  const actionId = action.id;
+  // Comprovació event (entre cost i output, com a l'original)
+  if (action.event_pool_id && EVENT_POOLS[action.event_pool_id] && Math.random() < EVENT_TRIGGER_CHANCE) {
+    const eligible = getEligiblePoolEvents(EVENT_POOLS[action.event_pool_id]);
+    if (eligible.length > 0) state.pendingEvent = selectBalancedEvent(eligible);
+  }
+  // Càlcul output
+  const destresaBonus = (action.destresa_id && state.character.destreses.has(action.destresa_id)) ? DESTRESA_BONUS : 0;
+  const outMinBonus = [...state.unlockedTdbIds].reduce((s, sid) => {
+    const bt = SKILL_DEFS.find(t => t.id === sid);
+    return bt?.passive_effect?.type === 'bonus_action_output' && bt.passive_effect.action_id === actionId
+      ? s + (bt.passive_effect.output_min_bonus || 0) : s;
+  }, 0) + [...state.character.aprenentatges].reduce((s, aid) => {
+    const apr = APRENENTATGE_DEFS.find(a => a.id === aid);
+    return apr?.effect?.type === 'bonus_action_output' && apr.effect.action_id === actionId
+      ? s + (apr.effect.output_min_bonus || 0) : s;
+  }, 0);
+  const outMaxBonus = [...state.unlockedTdbIds].reduce((s, sid) => {
+    const bt = SKILL_DEFS.find(t => t.id === sid);
+    return bt?.passive_effect?.type === 'bonus_action_output' && bt.passive_effect.action_id === actionId
+      ? s + (bt.passive_effect.output_max_bonus || 0) : s;
+  }, 0) + [...state.character.aprenentatges].reduce((s, aid) => {
+    const apr = APRENENTATGE_DEFS.find(a => a.id === aid);
+    return apr?.effect?.type === 'bonus_action_output' && apr.effect.action_id === actionId
+      ? s + (apr.effect.output_max_bonus || 0) : s;
+  }, 0);
+  const outRes = action.output_resource;
+  let output = 0, outDef = null;
+  if (outRes && action.output_min != null) {
+    output = Math.round(randInt(action.output_min + outMinBonus, action.output_max + outMaxBonus) * getStatMultiplier(action)) + destresaBonus;
+    outDef = RESOURCE_DEFS.find(r => r.id === outRes);
+  }
+  // FEEDBACK (2026-06-29): "assist" de matèria primera
+  const assistOk = !!(action.assist && (state[action.assist.resource] || 0) >= (action.assist.min || 1));
+  if (assistOk && action.assist.output_delta) output += action.assist.output_delta;
+  const seAssist = (se) => (assistOk && action.assist.health_delta && se.resource === 'health') ? se.delta + action.assist.health_delta : se.delta;
+  // Log
+  const actionLabel = output > 0 ? `${action.name}: +${output} ${outDef?.label || outRes}` : action.name;
+  addLog(`[${state.cycle + 1}] ${actionLabel}`);
+  // LOG-01: entrada estructurada
+  const actionDeltaPairs = [];
+  if (output > 0 && outRes) actionDeltaPairs.push([outRes, output]);
+  if (action.side_effects) for (const se of action.side_effects) actionDeltaPairs.push([se.resource, seAssist(se)]);
+  if (assistOk && action.assist.consume) actionDeltaPairs.push([action.assist.resource, -action.assist.consume]);
+  state._pendingTurnEntry = { cycle: state.cycle + 1, action: { name: action.name, delta: fmtPairs(actionDeltaPairs) }, events: [], upkeep: null };
+  // Aplica output a l'estat
+  if (outDef && output > 0) {
+    const newVal = (state[outRes] || 0) + output;
+    state[outRes] = outRes === 'food' ? newVal : outDef.max != null ? Math.min(outDef.max, newVal) : newVal; // FOOD-02: overflow permès
+  }
+  if (action.side_effects) {
+    for (const se of action.side_effects) {
+      const resDef = RESOURCE_DEFS.find(r => r.id === se.resource);
+      if (!resDef) continue;
+      const newVal = (state[se.resource] || 0) + seAssist(se);
+      state[se.resource] = resDef.max != null ? Math.max(0, Math.min(resDef.max, newVal)) : Math.max(0, newVal);
+    }
+  }
+  if (assistOk && action.assist.consume) state[action.assist.resource] = Math.max(0, (state[action.assist.resource] || 0) - action.assist.consume);
+  if (assistOk && action.assist.desc) addLog(action.assist.desc);
+}
+
+// ── drainPendingCards: drena events/descobriments/naixements en seqüència ─────
+async function drainPendingCards() {
+  while (
+    state.pendingEvent ||
+    state.pendingDiscoveries.length > 0 ||
+    state.pendingBirths.length > 0
+  ) {
+    renderAll();  // assegura que la targeta és visible
+    if (state.pendingEvent) {
+      await waitForEventResolution();
+      // dismissEvent/resolveDiscoveryOption ja han aplicat efectes + spawnat boles
+      await waitForAllBalls();
+      renderAll();
+      saveGame();
+      if (state.health <= 0 || state.lifeProgress >= 1) {
+        state._pendingTurnEntry = null;
+        triggerSuccession();
+        renderAll(); saveGame();
+        return false;
+      }
+    } else if (state.pendingDiscoveries.length > 0) {
+      await waitForDiscoveryDismiss();
+    } else if (state.pendingBirths.length > 0) {
+      await waitForBirthDismiss();
+    }
+  }
+  return true;
+}
+
+// ── runEndOfTurnPhase: substitueix beginEndOfTurnPhase ────────────────────
+async function runEndOfTurnPhase() {
+  const ring = el('exec-donut-ring');
+  if (ring) ring.style.stroke = '#888';
+  await showDonutAnimationAsync({ _icon: '🌙', id: '_eot', name: 'Fi de torn' }, null);
+  if (ring) ring.style.stroke = 'var(--gold)';
+  const snapEot = snapshotNums();
+  state.cycle++;
+  autoDiscoverUniversalTechs();
+  applyTurnUpkeep();
+  applyFxFloaters(snapEot);
+  // Age-gate notifications
+  for (const a of ACTIONS.filter(x => x.is_base && x.minAge)) {
+    const alreadyNotified = state.pendingDiscoveries.some(d => d._isEvent && d.name === a.name);
+    const requiresSatisfied = !a.requires?.[0]?.state || !state.character.charState[a.requires[0].state];
+    if (characterAge() === a.minAge && requiresSatisfied && !alreadyNotified) {
+      state.pendingDiscoveries.push({ _isEvent: true, icon: getActionIcon(a), name: a.name, desc: `Ja tens edat per "${a.name}". ${a.description || ''}` });
+    }
+  }
+  // Partner warning (only if still alive)
+  if (state.health > 0 && characterAge() === 12 && state.character.charState.parella === 0) {
+    const alreadyWarned = state.pendingDiscoveries.some(d => d._isPartnerWarning);
+    if (!alreadyWarned) {
+      state.pendingDiscoveries.push({ _isPartnerWarning: true, icon: '💑', name: 'Edat per a la parella s\'acaba', desc: 'Tens 2 cicles per cercar parella (l\'acció s\'esgota a edat 14). Sense parella, no hi ha successió possible.' });
+    }
+  }
+  // Complete turn history entry
+  if (state._pendingTurnEntry) {
+    const foodDelta   = Math.round(state.food)   - Math.round(snapEot.food);
+    const healthDelta = Math.round(state.health) - Math.round(snapEot.health);
+    const parts = [];
+    if (foodDelta   !== 0) parts.push(`${foodDelta   > 0 ? '+' : ''}${foodDelta}🌾`);
+    if (healthDelta !== 0) parts.push(`${healthDelta > 0 ? '+' : ''}${healthDelta}❤️`);
+    state._pendingTurnEntry.upkeep = parts.join(' ') || '—';
+    // LOG-01: adjunta descobriments i habilitats acumulats durant el torn
+    state._pendingTurnEntry.extras = (state._turnExtras || []).slice();
+    state.turnHistory.unshift(state._pendingTurnEntry);
+    if (state.turnHistory.length > 10) state.turnHistory.length = 10;
+    state._pendingTurnEntry = null;
+    state._turnExtras = [];
+  }
+  // Succession / death check
+  if (characterAge() >= LIFE_EXPECTANCY || state.health <= 0 || state.lifeProgress >= 1) {
+    triggerSuccession();
+    renderAll(); saveGame();
+    return;
+  }
+  renderAll();
+  saveGame();
+  // Si l'EOT ha generat discoveries (age-gate, partner warning), drenatge addicional
+  if (state.pendingDiscoveries.length > 0 || state.pendingBirths.length > 0) {
+    await drainPendingCards();
+  }
+}
+
+// ── runTurnPipeline: flux principal d'un torn ──────────────────────────────
+async function runTurnPipeline(action) {
+  hide('overlay-zone-actions');
+  await showDonutAnimationAsync(action, null);
+
+  // ── FASE COST ──────────────────────────────────────────────────────────
+  const snapCost = snapshotNums();
+  applyCostEffects(action);
+  spawnResBalls(snapCost);
+  applyFxFloaters(snapCost);
+
+  // Mort per cost (execute_cost) — exit primerenc
+  if (state.health <= 0) {
+    state._pendingTurnEntry = null;
+    state.pendingEvent = null;
+    triggerSuccession();
+    renderAll(); saveGame();
+    return;
+  }
+
+  // ── FASE OUTPUT ────────────────────────────────────────────────────────
+  const snapOut = snapshotNums();
+  applyOutputEffects(action);
+  spawnResBalls(snapOut);
+  applyFxFloaters(snapOut);
+
+  // Mort per output (side effect de salut negatiu)
+  if (state.health <= 0) {
+    state._pendingTurnEntry = null;
+    triggerSuccession();
+    renderAll(); saveGame();
+    return;
+  }
+
+  // ── ESPERA BOLES i RENDER FINAL ────────────────────────────────────────
+  // Cap renderAll() fins que TOTES les boles hagin aterrat.
+  // Elimina la necessitat del TOKEN-FLIGHT hack (AC-3).
+  await waitForAllBalls();
+  renderAll();
+  saveGame();
+
+  // ── FASE TARGETES (event, descobriments, naixements) ──────────────────
+  const survived = await drainPendingCards();
+  if (!survived) return;
+
+  // ── FASE EOT ──────────────────────────────────────────────────────────
+  await delay(200);
+  await runEndOfTurnPhase();
+}
+
+// ── runDiscoveryPipeline: flux d'acció de descobriment ────────────────────
+async function runDiscoveryPipeline(action) {
+  const eligible = getEligibleSkills();
+  if (eligible.length === 0) {
+    addLog('Cap tècnica nova ara: apuja una inclinació cap a una branca (fes-ne accions) perquè se\'n facin d\'elegibles.');
     renderAll();
     return;
   }
-  state.pendingEndOfTurn = false;
-  beginEndOfTurnPhase();
-}
-function afterDismiss() {
-  if (state.pendingEndOfTurn &&
-      !state.pendingEvent &&
-      state.pendingDiscoveries.length === 0 &&
-      state.pendingBirths.length === 0) {
-    state.pendingEndOfTurn = false;
-    beginEndOfTurnPhase();
-  } else {
-    renderAll();
-  }
+  const maxScore = Math.max(...eligible.map(bt => getSkillMaturity(bt)));
+  const top = eligible.filter(bt => getSkillMaturity(bt) === maxScore);
+  const chosen = top[Math.floor(Math.random() * top.length)];
+  hide('overlay-zone-actions');
+  await showDonutAnimationAsync(action, null);
+  const snap = snapshotNums();
+  unlockSkill(chosen);
+  applyFxFloaters(snap);
+  addLog(`[${state.cycle + 1}] ${action.name}`);
+  state._pendingTurnEntry = { cycle: state.cycle + 1, action: { name: action.name, delta: '' }, events: [], upkeep: null };
+  await runEndOfTurnPhase();
 }
 
 // ═══════════════════════════════════════════════════════════ ACTION EXECUTION
 function executeAction(actionId) {
+  if (_pipelineRunning) return;
   if (state.pendingEvent || state.pendingSuccession || state.gameOver) return;
   const action = ACTIONS.find(a => a.id === actionId);
   if (!action || !isActionOwned(action)) return;
@@ -1091,184 +1295,20 @@ function executeAction(actionId) {
   if (action.maxAge !== undefined && age > action.maxAge) return;
   if (!evaluateCharacterRequires(action)) return;
 
-  // Handle discovery action (learn a branch tech)
-  if (action.is_discovery_action) {
-    const eligible = getEligibleSkills();
-    if (eligible.length === 0) { addLog('Cap tècnica nova ara: apuja una inclinació cap a una branca (fes-ne accions) perquè se\'n facin d\'elegibles.'); renderAll(); return; }
-    const maxScore = Math.max(...eligible.map(bt => getSkillMaturity(bt)));
-    const top = eligible.filter(bt => getSkillMaturity(bt) === maxScore);
-    const chosen = top[Math.floor(Math.random() * top.length)];
-    hide('overlay-zone-actions');
-    showDonutAnimation(action, null, () => {
-      const snap = snapshotNums();
-      unlockSkill(chosen);
-      applyFxFloaters(snap);
-      addLog(`[${state.cycle + 1}] ${action.name}`);
-      state._pendingTurnEntry = { cycle: state.cycle + 1, action: { name: action.name, delta: '' }, events: [], upkeep: null };
-      proceedToEndOfTurn();
-    });
-    return;
-  }
-
-  // Normal action execution
   if ((action.execute_cost || 0) > 0 && state.food < action.execute_cost) {
     addLog('No tens prou provisions');
     renderAll();
     return;
   }
-  hide('overlay-zone-actions');
-  showDonutAnimation(action, null, () => {
-    // ── FASE COST: cost immediate + estat intern ──────────────────────────
-    const snapCost = snapshotNums();
-    if (action.execute_cost) state.food = Math.max(0, state.food - action.execute_cost);
-    // Token universal — sempre immediat (moneda de compra)
-    const elderBonus = characterAge() >= 11 ? 1 : 0;
-    if (elderBonus && !(state.character.charState.loggedElder)) {
-      state.character.charState.loggedElder = 1;
-      addLog('Sàvia experiència: els ancians generen +1 token per acció');
-    }
-    const matMin = (action.token_min ?? 2) + elderBonus;
-    const matMax = (action.token_max ?? 3) + elderBonus;
-    const aprMatBonus = [...state.character.aprenentatges].reduce((s, aid) => {
-      const apr = APRENENTATGE_DEFS.find(a => a.id === aid);
-      return apr?.effect?.type === 'token_bonus' ? s + apr.effect.value : s;
-    }, 0);
-    state.token = Math.min(tokenMax(), state.token + randInt(matMin, matMax) + aprMatBonus);
-    // Reducció upkeep i ampliació cap — immediats (efecte permanent)
-    if (action.food_upkeep_delta) {
-      const prevCount = state.character.actionUseCounts[actionId] || 0;
-      if (prevCount < (action.max_executions || 99)) {
-        state.foodUpkeepReduction = Math.min(FOOD_UPKEEP - 0.5, (state.foodUpkeepReduction || 0) + Math.abs(action.food_upkeep_delta));
-        addLog(`Conservació millorada: upkeep −${(state.foodUpkeepReduction).toFixed(1)}/torn`);
-      }
-    }
-    if (action.food_cap_delta) {
-      const prevCount = state.character.actionUseCounts[actionId] || 0;
-      if (prevCount < (action.max_executions || 99)) {
-        state.foodMax = Math.min(FOOD_MAX_BASIC, (state.foodMax ?? FOOD_MAX_START) + action.food_cap_delta);
-        addLog(`Emmagatzematge ampliat: cap. → ${state.foodMax}`);
-      }
-    }
-    // Estat intern — inclinació, stats, efecte personatge, comptadors, destreses, zones
-    applyInclinationDeltas(action.inclination_deltas);
-    if (action.stat_key && action.stat_gain) {
-      state.character.stats[action.stat_key] = Math.min(STAT_MAX, state.character.stats[action.stat_key] + action.stat_gain);
-    }
-    applyCharacterEffect(action);
-    state.character.actionUseCounts[actionId] = (state.character.actionUseCounts[actionId] || 0) + 1;
-    checkDestresesAfterAction(actionId);
-    checkAprenentagesAfterAction(actionId);
-    if (action.unlocks_zone && !state.discoveredZoneIds.has(action.unlocks_zone)) {
-      state.discoveredZoneIds.add(action.unlocks_zone);
-      addLog(`Nova zona: ${action.unlocks_zone}!`);
-      pushExtra(ZONE_ICONS[action.unlocks_zone] || '🗺️', action.unlocks_zone);
-      state.pendingDiscoveries.push({
-        _isZone: true, icon: ZONE_ICONS[action.unlocks_zone] || '🗺️',
-        name: action.unlocks_zone, desc: `Has descobert ${action.unlocks_zone}. Ara apareix al teu mapa.`,
-      });
-    }
-    // Floaters de la fase cost (cost execute + token)
-    spawnResBalls(snapCost);
-    applyFxFloaters(snapCost);
 
-    // ── CÀLCUL OUTPUT (no aplicat encara) ────────────────────────────────
-    const destresaBonus = (action.destresa_id && state.character.destreses.has(action.destresa_id)) ? DESTRESA_BONUS : 0;
-    const outMinBonus = [...state.unlockedTdbIds].reduce((s, sid) => {
-      const bt = SKILL_DEFS.find(t => t.id === sid);
-      return bt?.passive_effect?.type === 'bonus_action_output' && bt.passive_effect.action_id === actionId
-        ? s + (bt.passive_effect.output_min_bonus || 0) : s;
-    }, 0) + [...state.character.aprenentatges].reduce((s, aid) => {
-      const apr = APRENENTATGE_DEFS.find(a => a.id === aid);
-      return apr?.effect?.type === 'bonus_action_output' && apr.effect.action_id === actionId
-        ? s + (apr.effect.output_min_bonus || 0) : s;
-    }, 0);
-    const outMaxBonus = [...state.unlockedTdbIds].reduce((s, sid) => {
-      const bt = SKILL_DEFS.find(t => t.id === sid);
-      return bt?.passive_effect?.type === 'bonus_action_output' && bt.passive_effect.action_id === actionId
-        ? s + (bt.passive_effect.output_max_bonus || 0) : s;
-    }, 0) + [...state.character.aprenentatges].reduce((s, aid) => {
-      const apr = APRENENTATGE_DEFS.find(a => a.id === aid);
-      return apr?.effect?.type === 'bonus_action_output' && apr.effect.action_id === actionId
-        ? s + (apr.effect.output_max_bonus || 0) : s;
-    }, 0);
-    const outRes = action.output_resource;
-    let output = 0, outDef = null;
-    if (outRes && action.output_min != null) {
-      output = Math.round(randInt(action.output_min + outMinBonus, action.output_max + outMaxBonus) * getStatMultiplier(action)) + destresaBonus;
-      outDef = RESOURCE_DEFS.find(r => r.id === outRes);
-    }
-    // FEEDBACK (2026-06-29): "assist" de matèria primera — tenir pedra/fibres ajuda accions base abans de fer eines.
-    const assistOk = !!(action.assist && (state[action.assist.resource] || 0) >= (action.assist.min || 1));
-    if (assistOk && action.assist.output_delta) output += action.assist.output_delta;
-    const seAssist = (se) => (assistOk && action.assist.health_delta && se.resource === 'health') ? se.delta + action.assist.health_delta : se.delta;
-    // Log (inclou output calculat fins i tot si es difereix)
-    const actionLabel = output > 0 ? `${action.name}: +${output} ${outDef?.label || outRes}` : action.name;
-    addLog(`[${state.cycle + 1}] ${actionLabel}`);
-    // LOG-01: entrada estructurada — delta propi de l'acció (output + side_effects)
-    const actionDeltaPairs = [];
-    if (output > 0 && outRes) actionDeltaPairs.push([outRes, output]);
-    if (action.side_effects) for (const se of action.side_effects) actionDeltaPairs.push([se.resource, seAssist(se)]);
-    if (assistOk && action.assist.consume) actionDeltaPairs.push([action.assist.resource, -action.assist.consume]);
-    state._pendingTurnEntry = { cycle: state.cycle + 1, action: { name: action.name, delta: fmtPairs(actionDeltaPairs) }, events: [], upkeep: null };
+  if (action.is_discovery_action) {
+    _pipelineRunning = true;
+    runDiscoveryPipeline(action).finally(() => { _pipelineRunning = false; });
+    return;
+  }
 
-    // ── COMPROVACIÓ EVENT ─────────────────────────────────────────────────
-    if (action.event_pool_id && EVENT_POOLS[action.event_pool_id] && Math.random() < EVENT_TRIGGER_CHANCE) {
-      const eligible = getEligiblePoolEvents(EVENT_POOLS[action.event_pool_id]);
-      if (eligible.length > 0) state.pendingEvent = selectBalancedEvent(eligible);
-    }
-    // Mort per cost (execute_cost) — salta event i EOT
-    if (state.health <= 0) {
-      state._pendingTurnEntry = null;
-      state.pendingEvent = null;
-      triggerSuccession();
-      renderAll();
-      saveGame();
-      return;
-    }
-    // ── SEQ-01: apliquem output + side_effects SEMPRE aquí (al fi d'acció) ──
-    // Tant si vindrà event com si no, l'output de l'acció és visible en acabar
-    // el donut d'ACCIÓ. L'event és un beat separat posterior.
-    const snapOut = snapshotNums();
-    if (outDef && output > 0) {
-      const newVal = (state[outRes] || 0) + output;
-      state[outRes] = outRes === 'food' ? newVal : outDef.max != null ? Math.min(outDef.max, newVal) : newVal; // FOOD-02: overflow de menjar permès durant el torn
-    }
-    if (action.side_effects) {
-      for (const se of action.side_effects) {
-        const resDef = RESOURCE_DEFS.find(r => r.id === se.resource);
-        if (!resDef) continue;
-        const newVal = (state[se.resource] || 0) + seAssist(se);
-        state[se.resource] = resDef.max != null ? Math.max(0, Math.min(resDef.max, newVal)) : Math.max(0, newVal);
-      }
-    }
-    if (assistOk && action.assist.consume) state[action.assist.resource] = Math.max(0, (state[action.assist.resource] || 0) - action.assist.consume);
-    if (assistOk && action.assist.desc) addLog(action.assist.desc);
-    spawnResBalls(snapOut); // FLOATER-01: icones del menjar/salut/token de l'OUTPUT volant al comptador
-    applyFxFloaters(snapOut);
-    // Renderitzem tot (panell personatge, log, inclinació…) però NO els comptadors de recurs top-bar:
-    // TOKEN-FLIGHT — els comptadors es reverteixen als valors pre-acció perquè les boles els "portin" visualment.
-    renderAll();
-    if (state.health <= 0) {
-      state._pendingTurnEntry = null;
-      triggerSuccession();
-      renderAll();
-      saveGame();
-      return;
-    }
-    // TOKEN-FLIGHT: revertir display dels comptadors top-bar als valors pre-acció mentre les boles volen
-    el('hex-food').textContent   = `${Math.round(snapOut.food   || 0)}/${foodMax()}`;
-    el('hex-health').textContent = `${Math.round(snapOut.health || 0)}`;
-    const _tokValEl = el('tok-token-val'); if (_tokValEl) _tokValEl.textContent = `${Math.round(snapOut.token || 0)}`;
-    if (state.pendingEvent) {
-      // SEQ-01: l'output ja s'ha aplicat; aquí NOMÉS esperem que el jugador
-      // resolgui l'event (beat separat). No hi ha pendingActionResult.
-      // ANIM-TIMING: 920ms perquè les res-balls (fins a 5 × 80ms + 560ms vol) acabin de volar
-      setTimeout(() => { renderAll(); saveGame(); }, 920);
-      return;
-    }
-    // ANIM-TIMING: 920ms per deixar que les res-balls aterrin; renderAll actualitza comptadors LLAVORS
-    setTimeout(() => { renderAll(); proceedToEndOfTurn(); }, 920);
-  });
+  _pipelineRunning = true;
+  runTurnPipeline(action).finally(() => { _pipelineRunning = false; });
 }
 
 // ═══════════════════════════════════════════════════════════ ANIMATION SYSTEM
@@ -1352,6 +1392,7 @@ function spawnResBalls(before) {
     const pos = delta > 0;
     const count = Math.min(Math.abs(delta), 5);
     for (let i = 0; i < count; i++) {
+      _ballCount++;                              // SEQ-ARCH: comptador global de boles en vol
       setTimeout(() => {
         const ball = document.createElement('div');
         ball.className = `res-ball ${pos ? 'res-ball-pos' : 'res-ball-neg'}`;
@@ -1369,6 +1410,12 @@ function spawnResBalls(before) {
             targetEl.classList.remove('tok-bump');
             void targetEl.offsetWidth;
             targetEl.classList.add('tok-bump');
+            _ballCount--;                        // SEQ-ARCH: bola ha aterrat
+            if (_ballCount === 0 && _allBallsResolver) {
+              const resolve = _allBallsResolver;
+              _allBallsResolver = null;
+              resolve();                         // desbloqueja waitForAllBalls
+            }
           }, 560);
         }));
       }, i * 80);
@@ -1429,6 +1476,27 @@ function showDonutAnimation(action, label, onComplete) {
     document.body.classList.remove('donut-active');
     onComplete();
   }, 1250);
+}
+
+// SEQ-ARCH: Promise wrappers per al pipeline async (ref: seq-arch-spec.md §5)
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+function waitForAllBalls() {
+  if (_ballCount === 0) return Promise.resolve();
+  return new Promise(resolve => { _allBallsResolver = resolve; });
+}
+function showDonutAnimationAsync(action, label) {
+  return new Promise(resolve => { showDonutAnimation(action, label, resolve); });
+}
+function waitForEventResolution() {
+  return new Promise(resolve => { _resolveEvent = resolve; });
+}
+function waitForDiscoveryDismiss() {
+  return new Promise(resolve => { _resolveDiscovery = resolve; });
+}
+function waitForBirthDismiss() {
+  return new Promise(resolve => { _resolveBirth = resolve; });
 }
 
 // ═══════════════════════════════════════════════════════════ SKY / SUN / LIFE
@@ -2292,11 +2360,13 @@ function dismissDiscovery() {
     state.character.purchasedActionIds.add(disc._pendingUpgradeId);
   }
   state.pendingDiscoveries.shift();
-  afterDismiss();
+  // SEQ-ARCH: desbloqueja drainPendingCards (waitForDiscoveryDismiss)
+  if (_resolveDiscovery) { const r = _resolveDiscovery; _resolveDiscovery = null; r(); }
 }
 function dismissBirth() {
   state.pendingBirths.shift();
-  afterDismiss();
+  // SEQ-ARCH: desbloqueja drainPendingCards (waitForBirthDismiss)
+  if (_resolveBirth) { const r = _resolveBirth; _resolveBirth = null; r(); }
 }
 function applyEventEffects(fx) {
   if (!fx) return;
@@ -2313,24 +2383,6 @@ function applyEventEffects(fx) {
   }
 }
 
-function applyPendingActionResult() {
-  const res = state.pendingActionResult;
-  if (!res) return;
-  state.pendingActionResult = null;
-  if (res.outDef && res.output > 0) {
-    const newVal = (state[res.outRes] || 0) + res.output;
-    state[res.outRes] = res.outRes === 'food'
-      ? newVal  // FOOD-02: overflow permès (retall a l'EOT)
-      : res.outDef.max != null ? Math.min(res.outDef.max, newVal) : newVal;
-  }
-  for (const se of (res.side_effects || [])) {
-    const resDef = RESOURCE_DEFS.find(r => r.id === se.resource);
-    if (!resDef) continue;
-    const newVal = (state[se.resource] || 0) + se.delta;
-    state[se.resource] = resDef.max != null ? Math.max(0, Math.min(resDef.max, newVal)) : Math.max(0, newVal);
-  }
-}
-
 function dismissEvent() {
   const ev = state.pendingEvent;
   if (!ev) return;
@@ -2339,29 +2391,21 @@ function dismissEvent() {
     state.recentEventIds = [...(state.recentEventIds || []), ev.id].slice(-4);
   }
   trackEventFired(ev);
-  // SEQ-01: l'output de l'acció JA s'ha aplicat al fi d'acció; aquí apliquem
-  // NOMÉS els efectes propis de l'event (beat separat).
+  // SEQ-ARCH: l'output de l'acció JA s'ha aplicat; aquí apliquem NOMÉS els efectes de l'event.
+  // Ordre crític (spec §8.4): spawnResBalls BEFORE _resolveEvent perquè _ballCount estigui
+  // incrementat quan drainPendingCards arriba al waitForAllBalls().
   const snapDismiss = snapshotNums();
   applyEventEffects(ev.effects);
-  spawnResBalls(snapDismiss);
+  spawnResBalls(snapDismiss);      // ← _ballCount incrementat
   applyFxFloaters(snapDismiss);
-  // LOG-01: registra l'event al torn (array, amb el seu delta propi)
+  // LOG-01: registra l'event al torn
   if (state._pendingTurnEntry) {
     if (!state._pendingTurnEntry.events) state._pendingTurnEntry.events = [];
     state._pendingTurnEntry.events.push({ name: ev.text.slice(0, 50), choice: '(continua)', delta: fmtPairs(Object.entries(ev.effects || {})) });
   }
   state.pendingEvent = null;
-  if (state.health <= 0 || state.lifeProgress >= 1) {
-    state._pendingTurnEntry = null;
-    triggerSuccession();
-    renderAll();
-    saveGame();
-    return;
-  }
-  renderAll();
-  saveGame();
-  // 200ms de pausa abans del donut de final de torn
-  setTimeout(() => proceedToEndOfTurn(), 200);
+  // SEQ-ARCH: desbloqueja drainPendingCards (waitForEventResolution) — ÚLTIM
+  if (_resolveEvent) { const r = _resolveEvent; _resolveEvent = null; r(); }
 }
 function resolveDiscoveryOption(optionIndex) {
   const ev = state.pendingEvent;
@@ -2399,7 +2443,8 @@ function resolveDiscoveryOption(optionIndex) {
     const bt = SKILL_DEFS.find(t => t.id === ev.discovery_skill_id);
     if (bt) unlockSkill(bt);
   }
-  spawnResBalls(snapDisc);
+  // SEQ-ARCH: spawnResBalls BEFORE _resolveEvent (spec §8.4 — ordre crític)
+  spawnResBalls(snapDisc);          // ← _ballCount incrementat
   applyFxFloaters(snapDisc);
 
   // Only consume single-use if the player accepted the discovery — declining lets it re-fire in future gens
@@ -2418,17 +2463,8 @@ function resolveDiscoveryOption(optionIndex) {
     state._pendingTurnEntry.events.push({ name: ev.text.slice(0, 50), choice: opt.text.slice(0, 35), delta: fmtPairs(optPairs) });
   }
   state.pendingEvent = null;
-  if (state.health <= 0 || state.lifeProgress >= 1) {
-    state._pendingTurnEntry = null;
-    triggerSuccession();
-    renderAll();
-    saveGame();
-    return;
-  }
-  renderAll();
-  saveGame();
-  // 200ms de pausa abans del donut de final de torn
-  setTimeout(() => proceedToEndOfTurn(), 200);
+  // SEQ-ARCH: desbloqueja drainPendingCards (waitForEventResolution) — ÚLTIM
+  if (_resolveEvent) { const r = _resolveEvent; _resolveEvent = null; r(); }
 }
 
 // ═══════════════════════════════════════════════════════════ FULL-SCREEN OVERLAYS
