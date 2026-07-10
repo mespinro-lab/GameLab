@@ -17,6 +17,42 @@
 ---
 <!-- ════════════════════════════ 🔴 PRIORITARI ════════════════════════════ -->
 
+## P1 OPEN DESIGN — SEQ-ARCH — Refactor arquitectural del turn sequence pipeline
+
+- **Origen**: feedback recurrent usuari (SEQ-01 × 4 vegades). Decisió 2026-07-10: cal disseny formal.
+- **Issue**: `executeAction()` usa setTimeout encadenats ad-hoc. El pipeline
+  acció→animació→event→EOT no és explícitament seqüencial; cada fix ha afegit un nou pegat visual.
+- **Estat**: agent de disseny llançat (2026-07-10) → output a `design/gdd/bloodline/seq-arch-spec.md`.
+  Implementació pendent d'aprovació del doc.
+- **Acceptance**: pipeline seqüencial explícit (callback/promise); acció→animació completa→event→EOT;
+  sense setTimeout ad-hoc; verificat headless.
+
+## P1 DONE BUG — STANDALONE-TDB — 4 accions al mercat sense gate TdB
+
+- **Origen**: feedback usuari 2026-07-10. Vetlla al Foc i 3 més disponibles des del torn 1.
+- **✅ RESOLT 2026-07-10** (commit 6db0229):
+  - `act_caca_llanca` → `tdb_02` (La Pedra que Talla)
+  - `act_ritual_foc` + `act_ahumar_carn` → `tdb_03` (El Cercle del Foc, requereix ut_foc)
+  - `act_assecar_provisions` → `tdb_04` (La Nit Domada, requereix ut_foc)
+
+## P2 DONE UX — HEIR-WARN — Warning hereu apareix massa aviat (edat 8)
+
+- **Origen**: feedback usuari 2026-07-10.
+- **✅ RESOLT 2026-07-10** (commit 6db0229): threshold canviat a `>= 10` (LIFE_EXPECTANCY 14).
+
+## P2 DONE UX — UPG-UX — Upgrade actualitza el carrusel immediatament (no espera card)
+
+- **Origen**: feedback usuari 2026-07-10. "No s'ha d'actualitzar l'acció en si" — el canvi ha
+  de ser visible al tornar, no en el moment de pagar.
+- **✅ RESOLT 2026-07-10** (commit 6db0229): `doUpgrade()` usa `_pendingUpgradeId` a la discovery card;
+  `dismissDiscovery()` aplica `purchasedActionIds.add()` al descartar la card.
+
+## P2 OPEN QA — BALANCE-REVIEW-0710 — Revisió balanç 128 accions + 16 TdBs (Fable)
+
+- **Origen**: proposta usuari 2026-07-10.
+- **Estat**: agent Fable llançat (2026-07-10) → output a `production/playtests/2026-07-10-balance-review.md`.
+  Pendent de llegir informe i prioritzar issues.
+
 ## P0 DONE BUG — SEQ-01 — Els efectes de l'acció es veuen al fi de torn, no al fi d'acció
 
 - **✅ RESOLT 2026-06-25** (commit 17462e9): output aplicat + `renderAll()` al fi d'acció; eliminat el
