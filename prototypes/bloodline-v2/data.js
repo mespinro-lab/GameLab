@@ -299,7 +299,7 @@ const SKILL_DEFS = [
       { axis: "espiritualitat", min: 0.15 }, { axis: "sociabilitat", min: 0.15 }
     ]},
     narrative: "Una vora esmolada canvia la relació amb el món: el que abans s'arrencava, ara es talla.",
-    unlocks_action_ids: ["act_esquarterar","act_punta_crua","act_pelar_escorca","act_partir_fruits","act_tallar_ascles","act_bescanviar_ascles","act_gravar_amulet","act_pedra_guardiana"]
+    unlocks_action_ids: ["act_esquarterar","act_punta_crua","act_pelar_escorca","act_partir_fruits","act_tallar_ascles","act_bescanviar_ascles","act_gravar_amulet","act_pedra_guardiana","act_caca_llanca"]
   },
   {
     id: "tdb_03", name: "El Cercle del Foc", emoji: "🔥",
@@ -309,7 +309,7 @@ const SKILL_DEFS = [
       { axis: "espiritualitat", min: 0.20 }, { axis: "sociabilitat", min: 0.20 }
     ]},
     narrative: "El foc no només escalfa: transforma l'aliment, reuneix el clan i redefineix què és possible.",
-    unlocks_action_ids: ["act_rostir_caca","act_foc_batuda","act_pedres_bullir","act_cercle_vespre","act_endurir_puntes","act_dominar_brasa","act_vetlla_flames","act_cendres_sagrades"]
+    unlocks_action_ids: ["act_rostir_caca","act_foc_batuda","act_pedres_bullir","act_cercle_vespre","act_endurir_puntes","act_dominar_brasa","act_vetlla_flames","act_cendres_sagrades","act_ritual_foc","act_ahumar_carn"]
   },
   {
     id: "tdb_04", name: "La Nit Domada", emoji: "🌒",
@@ -319,7 +319,7 @@ const SKILL_DEFS = [
       { axis: "espiritualitat", min: 0.20 }, { axis: "sociabilitat", min: 0.20 }
     ]},
     narrative: "Amb el foc, la nit deixa de ser temps perdut. El dia s'allarga per a qui s'atreveix a usar-lo.",
-    unlocks_action_ids: ["act_aguait_nocturn","act_torxa_persecucio","act_feina_llum","act_vigilar_brases","act_taller_nocturn","act_reparar_vora","act_dansa_ombres","act_somnis_guiats"]
+    unlocks_action_ids: ["act_aguait_nocturn","act_torxa_persecucio","act_feina_llum","act_vigilar_brases","act_taller_nocturn","act_reparar_vora","act_dansa_ombres","act_somnis_guiats","act_assecar_provisions"]
   },
   {
     id: "tdb_05", name: "La Mà que Transforma", emoji: "🔧",

@@ -2053,7 +2053,7 @@ function renderCharPanel() {
   // Heir warning
   const heirWarnEl = el('heir-warn');
   if (heirWarnEl) {
-    const needsHeirWarn = state.character.children.length === 0 && characterAge() >= 8;
+    const needsHeirWarn = state.character.children.length === 0 && characterAge() >= 10;
     heirWarnEl.classList.toggle('hidden', !needsHeirWarn);
   }
 
@@ -2285,8 +2285,11 @@ function dismissDiscovery() {
       if (!prevEvent) {
         state._pendingTurnEntry.event = label.slice(0, 50);
       }
-      // Si ja hi havia un event, afegim-lo com a nota addicional
     }
+  }
+  // UPG-UX: aplica l'upgrade quan es descarta la card (no al moment de pagar)
+  if (disc && disc._pendingUpgradeId) {
+    state.character.purchasedActionIds.add(disc._pendingUpgradeId);
   }
   state.pendingDiscoveries.shift();
   afterDismiss();
@@ -3229,17 +3232,13 @@ function doUpgrade(upgradeId) {
   if (!upgrade || !upgrade.purchase_cost) return;
   if ((state.token ?? 0) < upgrade.purchase_cost) return;
   state.token -= upgrade.purchase_cost;
-  state.character.purchasedActionIds.add(upgradeId);
+  // UPG-UX: no s'aplica purchasedActionIds aquí — s'aplica quan es descarta la card de descobriment
   addLog(`Upgrade: ${upgrade.name}`);
   pushExtra('⬆️', `Upgrade: ${upgrade.name}`);
-  const outIcons = { food: '🌾', token: '🔵', health: '❤️', pedra: '🪨', eina: '⚒️', branques: '🌿' };
-  const parts = [];
-  if (upgrade.output_resource && upgrade.output_min != null) {
-    parts.push(`${outIcons[upgrade.output_resource] || '📦'} ${upgrade.output_min}–${upgrade.output_max}`);
-  }
   const base = ACTIONS.find(a => a.id === upgrade.upgrades_action_id);
   state.pendingDiscoveries.push({
-    _isAction: true, icon: getActionIcon(upgrade), name: upgrade.name,
+    _isAction: true, _pendingUpgradeId: upgradeId,
+    icon: getActionIcon(upgrade), name: upgrade.name,
     desc: upgrade.description || '',
     effect: base ? { desc: `Substitueix: "${base.name}"` } : null,
   });
