@@ -17,15 +17,20 @@
 ---
 <!-- ════════════════════════════ 🔴 PRIORITARI ════════════════════════════ -->
 
-## P1 OPEN DESIGN — SEQ-ARCH — Refactor arquitectural del turn sequence pipeline
+## P1 DONE DESIGN — SEQ-ARCH — Refactor arquitectural del turn sequence pipeline
 
 - **Origen**: feedback recurrent usuari (SEQ-01 × 4 vegades). Decisió 2026-07-10: cal disseny formal.
 - **Issue**: `executeAction()` usa setTimeout encadenats ad-hoc. El pipeline
   acció→animació→event→EOT no és explícitament seqüencial; cada fix ha afegit un nou pegat visual.
-- **Estat**: agent de disseny llançat (2026-07-10) → output a `design/gdd/bloodline/seq-arch-spec.md`.
-  Implementació pendent d'aprovació del doc.
-- **Acceptance**: pipeline seqüencial explícit (callback/promise); acció→animació completa→event→EOT;
-  sense setTimeout ad-hoc; verificat headless.
+- **✅ RESOLT 2026-07-10** (commit 5a0b9d7): pipeline async/await complet implementat.
+  - Spec: `design/gdd/bloodline/seq-arch-spec.md`
+  - Funcions noves: `runTurnPipeline`, `drainPendingCards`, `runEndOfTurnPhase`, `runDiscoveryPipeline`,
+    `waitForAllBalls`, `waitForEventResolution`, `waitForDiscoveryDismiss`, `waitForBirthDismiss`,
+    `showDonutAnimationAsync`, `applyCostEffects`, `applyOutputEffects`, `delay`
+  - Funcions eliminades: `beginEndOfTurnPhase`, `proceedToEndOfTurn`, `afterDismiss`, `applyPendingActionResult`
+  - TOKEN-FLIGHT hack eliminat; condicions de carrera SEQ-01 resoltes estructuralment
+  - Variables mòdul: `_ballCount`, `_resolveEvent`, `_resolveDiscovery`, `_resolveBirth`, `_pipelineRunning`
+  - 22/22 tests passes
 
 ## P1 DONE BUG — STANDALONE-TDB — 4 accions al mercat sense gate TdB
 
@@ -38,7 +43,7 @@
 ## P2 DONE UX — HEIR-WARN — Warning hereu apareix massa aviat (edat 8)
 
 - **Origen**: feedback usuari 2026-07-10.
-- **✅ RESOLT 2026-07-10** (commit 6db0229): threshold canviat a `>= 10` (LIFE_EXPECTANCY 14).
+- **✅ RESOLT 2026-07-10** (commit 6db0229): threshold canviat a `>= 10` (LIFE_EXPECTANCY real = 20).
 
 ## P2 DONE UX — UPG-UX — Upgrade actualitza el carrusel immediatament (no espera card)
 
@@ -47,11 +52,19 @@
 - **✅ RESOLT 2026-07-10** (commit 6db0229): `doUpgrade()` usa `_pendingUpgradeId` a la discovery card;
   `dismissDiscovery()` aplica `purchasedActionIds.add()` al descartar la card.
 
-## P2 OPEN QA — BALANCE-REVIEW-0710 — Revisió balanç 128 accions + 16 TdBs (Fable)
+## P2 DONE QA — BALANCE-REVIEW-0710 — Revisió balanç 128 accions + 16 TdBs (Fable)
 
 - **Origen**: proposta usuari 2026-07-10.
-- **Estat**: agent Fable llançat (2026-07-10) → output a `production/playtests/2026-07-10-balance-review.md`.
-  Pendent de llegir informe i prioritzar issues.
+- **✅ RESOLT 2026-07-10** (commit 5a0b9d7): informe a `production/playtests/2026-07-10-balance-review.md`.
+  R1–R8 aplicats a `data.js` (24 canvis sobre 18 elements):
+  - R1: sòl alimentari Místic (cendres_sagrades→food, cami_ocells 2-4→3-6, rituals −3→−2)
+  - R2: prima risc Caçador restaurada (health −2 a caca_llanca/llanca_emmanegada/aguait_nocturn; expedicio output↑; darrera_cacera minAge 10)
+  - R3: act_esquarterar sense consum d'eina
+  - R4: cadena eines (reparar_vora fibra 1→2, PC 3→4; trenar_corda fibra 3→2, tokens 2–3)
+  - R5: +1 token a 4 accions primerenques Rec./Místic
+  - R6: calendari UTs (eines 16→24, art 36→34, ceràmica 70→72, agricultura 85→78)
+  - R7: rostir_caca heal +2→+1
+  - R8: BRANCHES.conditions legacy, glossari eines corregit, seguir_ramat 2–5→3–6
 
 ## P0 DONE BUG — SEQ-01 — Els efectes de l'acció es veuen al fi de torn, no al fi d'acció
 
