@@ -1154,6 +1154,8 @@ async function drainPendingCards() {
       await waitForBirthDismiss();
     }
   }
+  // Tanca overlay-action quan no queda res per mostrar (renderInMapOverlay → hide)
+  renderAll();
   return true;
 }
 
@@ -1670,6 +1672,7 @@ function renderZoneNodes() {
     node.addEventListener('touchend', e => {
       e.preventDefault();
       node.classList.remove('zone-node-pressed');
+      if (_pipelineRunning) return;
       if (document.querySelector('#overlay-zone-actions:not(.hidden), #overlay-action:not(.hidden)')) return;
       openZoneSheet(zoneDef.id);
     });
@@ -1677,6 +1680,7 @@ function renderZoneNodes() {
     node.addEventListener('mousedown',   () => node.classList.add('zone-node-pressed'));
     node.addEventListener('mouseup', () => {
       node.classList.remove('zone-node-pressed');
+      if (_pipelineRunning) return;
       if (document.querySelector('#overlay-zone-actions:not(.hidden), #overlay-action:not(.hidden)')) return;
       openZoneSheet(zoneDef.id);
     });
@@ -1710,6 +1714,7 @@ function renderZoneNodes() {
   shopNode.addEventListener('touchend', e => {
     e.preventDefault();
     shopNode.classList.remove('zone-node-pressed');
+    if (_pipelineRunning) return;
     if (document.querySelector('#overlay-zone-actions:not(.hidden), #overlay-action:not(.hidden)')) return;
     openShop();
   });
@@ -1717,6 +1722,7 @@ function renderZoneNodes() {
   shopNode.addEventListener('mousedown',   () => shopNode.classList.add('zone-node-pressed'));
   shopNode.addEventListener('mouseup', () => {
     shopNode.classList.remove('zone-node-pressed');
+    if (_pipelineRunning) return;
     if (document.querySelector('#overlay-zone-actions:not(.hidden), #overlay-action:not(.hidden)')) return;
     openShop();
   });
