@@ -1136,7 +1136,12 @@ async function drainPendingCards() {
     state.pendingBirths.length > 0
   ) {
     renderAll();  // assegura que la targeta és visible
-    if (state.pendingEvent) {
+    if (state.pendingDiscoveries.length > 0) {
+      // Prioritat: descobriments primer (renderInMapOverlay els mostra primers)
+      await waitForDiscoveryDismiss();
+    } else if (state.pendingBirths.length > 0) {
+      await waitForBirthDismiss();
+    } else if (state.pendingEvent) {
       await waitForEventResolution();
       // dismissEvent/resolveDiscoveryOption ja han aplicat efectes + spawnat boles
       await waitForAllBalls();
@@ -1148,10 +1153,6 @@ async function drainPendingCards() {
         renderAll(); saveGame();
         return false;
       }
-    } else if (state.pendingDiscoveries.length > 0) {
-      await waitForDiscoveryDismiss();
-    } else if (state.pendingBirths.length > 0) {
-      await waitForBirthDismiss();
     }
   }
   // Tanca overlay-action quan no queda res per mostrar (renderInMapOverlay → hide)
@@ -2368,11 +2369,13 @@ function dismissDiscovery() {
   state.pendingDiscoveries.shift();
   // SEQ-ARCH: desbloqueja drainPendingCards (waitForDiscoveryDismiss)
   if (_resolveDiscovery) { const r = _resolveDiscovery; _resolveDiscovery = null; r(); }
+  else { renderAll(); }  // fora de pipeline (buyAction, doUpgrade): tanca l'overlay
 }
 function dismissBirth() {
   state.pendingBirths.shift();
   // SEQ-ARCH: desbloqueja drainPendingCards (waitForBirthDismiss)
   if (_resolveBirth) { const r = _resolveBirth; _resolveBirth = null; r(); }
+  else { renderAll(); }
 }
 function applyEventEffects(fx) {
   if (!fx) return;
