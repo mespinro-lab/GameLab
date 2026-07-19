@@ -1,0 +1,19 @@
+{
+  "id": 5,
+  "group": 1,
+  "nameKey": "level.5.name",
+  "grid": [
+    "#######",
+    "#S....#",
+    "#.###.#",
+    "#..*..#",
+    "#.###.#",
+    "#....E#",
+    "#######"
+  ],
+  "diamond": "D6",
+  "enemies": [
+    { "order": 1, "type": "badger", "start": "B5", "axis": "vertical", "initialDir": "down" },
+    { "order": 2, "type": "badger", "start": "F5", "axis": "vertical", "initialDir": "down" }
+  ]
+}

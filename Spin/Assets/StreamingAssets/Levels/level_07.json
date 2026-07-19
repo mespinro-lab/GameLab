@@ -1,0 +1,19 @@
+{
+  "id": 7,
+  "group": 1,
+  "nameKey": "level.7.name",
+  "grid": [
+    "#######",
+    "#S..#.#",
+    "###*#.#",
+    "#...#.#",
+    "#%#%#.#",
+    "#...%.#",
+    "#....E#"
+  ],
+  "diamond": "D7",
+  "enemies": [
+    { "order": 1, "type": "badger", "start": "F2", "axis": "vertical", "initialDir": "down" },
+    { "order": 2, "type": "badger", "start": "B7", "axis": "horizontal", "initialDir": "right" }
+  ]
+}
