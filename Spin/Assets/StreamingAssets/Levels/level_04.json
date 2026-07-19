@@ -1,0 +1,18 @@
+{
+  "id": 4,
+  "group": 1,
+  "nameKey": "level.4.name",
+  "grid": [
+    "#######",
+    "#S....#",
+    "#.###.#",
+    "#*....#",
+    "#.###.#",
+    "#....E#",
+    "#######"
+  ],
+  "diamond": "D4",
+  "enemies": [
+    { "order": 1, "type": "badger", "start": "D4", "axis": "horizontal", "initialDir": "left" }
+  ]
+}

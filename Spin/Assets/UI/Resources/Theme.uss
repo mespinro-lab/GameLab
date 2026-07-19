@@ -1,0 +1,156 @@
+.screen {
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+    background-color: rgb(30, 26, 22);
+    padding: 24px;
+}
+
+.game-screen {
+    justify-content: flex-start;
+}
+
+.title {
+    font-size: 32px;
+    color: rgb(240, 225, 200);
+    -unity-font-style: bold;
+    margin-bottom: 16px;
+    -unity-text-align: middle-center;
+}
+
+.action-button {
+    font-size: 20px;
+    padding: 10px 20px;
+    margin: 6px;
+    background-color: rgb(180, 110, 60);
+    color: rgb(255, 255, 255);
+    border-radius: 8px;
+    border-width: 0;
+}
+
+.action-button:disabled {
+    background-color: rgb(90, 80, 70);
+    color: rgb(160, 150, 140);
+}
+
+.hud-bar {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    background-color: rgba(0, 0, 0, 0.35);
+}
+
+.sub-panel {
+    background-color: rgba(20, 16, 14, 0.92);
+    border-radius: 10px;
+    padding: 16px;
+    align-items: center;
+    position: absolute;
+}
+
+/* --- Grid --- */
+
+.grid-container {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-top: 12px;
+}
+
+.grid-row {
+    flex-direction: row;
+}
+
+.grid-cell {
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    border-width: 1px;
+    border-color: rgb(55, 46, 38);
+}
+
+.cell-fixed { background-color: rgb(20, 17, 14); }
+.cell-wall { background-color: rgb(120, 90, 60); }
+.cell-floor { background-color: rgb(70, 60, 50); }
+.cell-exit { background-color: rgb(150, 120, 70); }
+.cell-spike { background-color: rgb(90, 70, 55); }
+
+.cell-highlight {
+    border-width: 2px;
+    border-color: rgb(230, 190, 90);
+}
+
+.cell-bounce {
+    background-color: rgb(210, 90, 70);
+}
+
+.door-wobble {
+    background-color: rgb(230, 190, 90);
+}
+
+/* --- Level map / puzzle pieces --- */
+
+.level-tile-row {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.level-tile {
+    align-items: center;
+    margin: 6px;
+}
+
+.puzzle-piece {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 4px;
+    background-color: rgb(90, 75, 60);
+    border-radius: 4px;
+}
+
+.puzzle-piece-revealed {
+    background-color: rgb(210, 170, 90);
+}
+
+.puzzle-piece-large {
+    width: 120px;
+    height: 120px;
+    border-radius: 10px;
+}
+
+.puzzle-complete-mosaic {
+    width: 220px;
+    height: 220px;
+    border-radius: 14px;
+    margin-bottom: 16px;
+}
+
+/* --- Tutorial --- */
+
+.tooltip {
+    position: absolute;
+    background-color: rgb(250, 240, 220);
+    color: rgb(30, 26, 22);
+    padding: 8px 12px;
+    border-radius: 6px;
+    max-width: 220px;
+    white-space: normal;
+    font-size: 16px;
+}
+
+.tutorial-highlight {
+    border-width: 2px;
+    border-color: rgb(230, 190, 90);
+}
+
+.tutorial-highlight-pulse {
+    border-color: rgb(255, 235, 170);
+}
+
+.gem-pulse {
+    color: rgb(230, 190, 90);
+    font-size: 22px;
+}
