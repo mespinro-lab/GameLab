@@ -7,16 +7,16 @@
 
 ## Bug Audit
 
-_Analysis failed: 400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."},"request_id":"req_011CeWLNwbhMUEbyPq36v1x7"}_
+_Analysis failed: 400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."},"request_id":"req_011CeXwd9eTV778RbXCUB9WH"}_
 
 ---
 
 ## UX & Readability
 
-_Analysis failed: 400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."},"request_id":"req_011CeWLNxNaj9kZLuwXNE4kh"}_
+_Analysis failed: 400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."},"request_id":"req_011CeXwdAJtwjTe8A7qyoMkX"}_
 
 ---
 
 ## Gameplay Balance
 
-_Analysis failed: 400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."},"request_id":"req_011CeWLNxw4epYKWtJh8fRFL"}_
+_Analysis failed: 400 {"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."},"request_id":"req_011CeXwdAwMDFtdYrGAMG1qB"}_
